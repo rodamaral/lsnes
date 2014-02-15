@@ -41,6 +41,8 @@ lua::class_group lua_class_fileio;
 
 namespace
 {
+	std::list<std::string> startup_scripts;
+
 	void pushpair(lua::state& L, std::string key, double value)
 	{
 		L.pushstring(key.c_str());
@@ -95,7 +97,6 @@ void push_keygroup_parameters(lua::state& L, keyboard::key& p)
 
 lua_render_context* lua_render_ctx = NULL;
 controller_frame* lua_input_controllerdata = NULL;
-bool lua_booted_flag = false;
 
 namespace
 {
@@ -339,12 +340,6 @@ void lua_callback_do_readwrite() throw()
 	run_callback(on_readwrite);
 }
 
-void lua_callback_startup() throw()
-{
-	lua_booted_flag = true;
-	run_callback(on_startup);
-}
-
 void lua_callback_pre_load(const std::string& name) throw()
 {
 	run_callback(on_pre_load, lua::state::string_tag(name));
@@ -539,4 +534,17 @@ bool lua_requests_subframe_paint = false;
 
 lua_unsaferewind::lua_unsaferewind(lua::state& L)
 {
+}
+
+void lua_run_startup_scripts()
+{
+	for(auto i : startup_scripts) {
+		messages << "Trying to run Lua script: " << i << std::endl;
+		do_run_lua(lsnes_lua_state, i);
+	}
+}
+
+void lua_add_startup_script(const std::string& file)
+{
+	startup_scripts.push_back(file);
 }

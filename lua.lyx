@@ -3590,19 +3590,6 @@ Returns two numbers.
 \end_layout
 
 \begin_layout Subsection
-emulator_ready: Check if emulator has been fully initialized
-\end_layout
-
-\begin_layout Itemize
-Syntax: boolean emulator_ready()
-\end_layout
-
-\begin_layout Standard
-Returns true if emulator has finished booting, false if not (on_startup()
- will be issued later).
-\end_layout
-
-\begin_layout Subsection
 set_idle_timeout: Run function after timeout when emulator is idle
 \end_layout
 
@@ -7536,18 +7523,6 @@ Callback: on_frame()
 
 \begin_layout Standard
 Called on each starting whole frame.
-\end_layout
-
-\begin_layout Subsection
-on_startup: Emulator startup complete
-\end_layout
-
-\begin_layout Itemize
-Callback: on_startup()
-\end_layout
-
-\begin_layout Standard
-Called when the emulator is starting (lsnes.rc and --run files has been run).
 \end_layout
 
 \begin_layout Subsection

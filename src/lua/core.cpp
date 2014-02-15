@@ -133,7 +133,7 @@ namespace
 
 	int emulator_ready(lua::state& L, lua::parameters& P)
 	{
-		L.pushboolean(lua_booted_flag ? 1 : 0);
+		L.pushboolean(true);
 		return 1;
 	}
 

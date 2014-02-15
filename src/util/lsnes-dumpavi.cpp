@@ -111,7 +111,7 @@ namespace
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 			std::string a = *i;
 			if(a.length() > 6 && a.substr(0, 6) == "--lua=") {
-				lsnes_cmd.invoke("run-lua " + a.substr(6));
+				lua_add_startup_script(a.substr(6));
 			}
 		}
 	}

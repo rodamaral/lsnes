@@ -494,10 +494,8 @@ bool lsnes_app::OnInit()
 	}
 	our_rom = rom;
 	mov->start_paused = true;
-	for(auto i : c_lua) {
-		messages << "Trying to run Lua script: " << i << std::endl;
-		lsnes_cmd.invoke("run-lua " + i);
-	}
+	for(auto i : c_lua)
+		lua_add_startup_script(i);
 	boot_emulator(rom, *mov);
 	return true;
 }

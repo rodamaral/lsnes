@@ -31,7 +31,6 @@ extern controller_frame* lua_input_controllerdata;
 extern bool* lua_kill_frame;
 extern uint32_t* lua_hscl;
 extern uint32_t* lua_vscl;
-extern bool lua_booted_flag;
 extern uint64_t lua_idle_hook_time;
 extern uint64_t lua_timer_hook_time;
 

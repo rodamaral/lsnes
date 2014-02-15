@@ -17,7 +17,6 @@ void lua_callback_do_frame() throw();
 void lua_callback_do_frame_emulated() throw();
 void lua_callback_do_rewind() throw();
 void lua_callback_do_readwrite() throw();
-void lua_callback_startup() throw();
 void lua_callback_do_idle() throw();
 void lua_callback_do_timer() throw();
 void lua_callback_pre_load(const std::string& name) throw();
@@ -33,6 +32,8 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 bool lua_callback_do_button(uint32_t port, uint32_t controller, uint32_t index, const char* type);
 void lua_callback_movie_lost(const char* what);
 void lua_callback_do_latch(std::list<std::string>& args);
+void lua_run_startup_scripts();
+void lua_add_startup_script(const std::string& file);
 
 #define LUA_TIMED_HOOK_IDLE 0
 #define LUA_TIMED_HOOK_TIMER 1
