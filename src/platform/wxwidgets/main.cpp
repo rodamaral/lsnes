@@ -471,6 +471,8 @@ bool lsnes_app::OnInit()
 		rom.load(c_settings, mov.movie_rtc_second, mov.movie_rtc_subsecond);
 	} catch(std::exception& e) {
 		std::cerr << "Can't load ROM: " << e.what() << std::endl;
+		show_message_ok(NULL, "Error loading ROM", std::string("Error loading ROM:\n\n") +
+			e.what(), wxICON_EXCLAMATION);
 		quit_lua();	//Don't crash.
 		return false;
 	}
@@ -482,6 +484,9 @@ bool lsnes_app::OnInit()
 			rom.load(mov->settings, mov->movie_rtc_second, mov->movie_rtc_subsecond);
 		} catch(std::exception& e) {
 			std::cerr << "Can't load state: " << e.what() << std::endl;
+			show_message_ok(NULL, "Error loading movie", std::string("Error loading movie:\n\n") +
+				e.what(), wxICON_EXCLAMATION);
+			quit_lua();	//Don't crash.
 			return false;
 		}
 	else {
