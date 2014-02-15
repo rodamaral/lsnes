@@ -7408,6 +7408,34 @@ Syntax: none bsnes.enablelayer(number layer, number priority, boolean enabled)
 Enable or disable specified layer at specified priority.
 \end_layout
 
+\begin_layout Subsection
+bsnes.redump_sprite: Redump a sprite
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bsnes.redump_sprite(BITMAP bitmap, [string marea, ] number addr[,
+ number stride])
+\end_layout
+
+\begin_layout Standard
+Like bsnes.dump_sprite, but instead dumps to specified bitmap <bitmap>.
+ The specified bitmap must have size multiple of 8x8.
+\end_layout
+
+\begin_layout Subsection
+bsnes.redump_palette: Redump a palette
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bsnes.dump_palette(PALETTE pal, [string marea, ] number addr,
+ bool first_trans)
+\end_layout
+
+\begin_layout Standard
+Like bsnes.dump_palette, but instead dumps to specified palette <pal>.
+ The specified palette must have either 16 or 256 colors.
+\end_layout
+
 \begin_layout Section
 extensions to table string
 \end_layout
