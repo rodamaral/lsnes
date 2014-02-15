@@ -3441,6 +3441,98 @@ Return a Lua iterator that iterates all the lines in <handle>.
 
 \end_layout
 
+\begin_layout Subsection
+COMPARE_OBJ: Watch memory area for changes
+\end_layout
+
+\begin_layout Standard
+Objects of this class allow fast checking for modifications to given memory
+ block.
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Create a checker
+\end_layout
+
+\begin_layout Itemize
+Syntax: handle classes.COMPARE_OBJ.new([marea], offset, size, [rows, stride])
+\end_layout
+
+\begin_layout Itemize
+Syntax: handle open_file([marea], offset, size, rows, stride)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+marea: string: The memory area to interpret <offset> against.
+ Default is global space.
+\end_layout
+
+\begin_layout Itemize
+offset: number: The initial offset in memory area.
+\end_layout
+
+\begin_layout Itemize
+size: number: The number of bytes in each row.
+\end_layout
+
+\begin_layout Itemize
+rows: number: The number of rows.
+ Default is 1.
+\end_layout
+
+\begin_layout Itemize
+stride: number: The number of bytes offset increments from one row to next.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+A handle to object.
+\end_layout
+
+\begin_layout Standard
+Return an object watching specified memory area.
+\end_layout
+
+\begin_layout Itemize
+Note: For fastest operation, limit checks to inside one memory area (that
+ has to be mappable, individual RAM areas often are).
+\end_layout
+
+\begin_layout Subsubsection
+operator(): Check area for modifications
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean handle()
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+True if memory block has been modified since last call (or object creation
+ if first call), false if not.
+\end_layout
+
+\begin_layout Standard
+Check if the block has been modified.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 Global
 \end_layout
@@ -6598,18 +6690,6 @@ Warning: If the region crosses memory area boundary, the results are undefined.
 \end_layout
 
 \begin_layout Subsection
-memory.read_expr: Evaluate memory watch expression
-\end_layout
-
-\begin_layout Itemize
-Syntax: string memory.read_expr(string expr)
-\end_layout
-
-\begin_layout Standard
-Evaluate specified watch expression and return result
-\end_layout
-
-\begin_layout Subsection
 memory.action: Run core action
 \end_layout
 
@@ -6786,34 +6866,6 @@ Syntax: none memory.setxmask(number mask)
 Set the global execute hook mask to <mask>.
  The meaning of each bit is system-dependent, but bit 0 should be the main
  CPU.
-\end_layout
-
-\begin_layout Subsection
-memory.compare_new: Create memory compare object.
-\end_layout
-
-\begin_layout Itemize
-Syntax: COMPARE_OBJ memory.compare_new([string marea], number size, [number
- rows, number stride])
-\end_layout
-
-\begin_layout Standard
-Create memory compare object of <rows> blocks of <size> bytes starting from
- address <base> (relative to <marea>).
- The blocks are offset by <stride> from one another.
-\end_layout
-
-\begin_layout Subsection
-COMPARE_OBJ(): Region changed?
-\end_layout
-
-\begin_layout Itemize
-Syntax: bool COMPARE_OBJ()
-\end_layout
-
-\begin_layout Standard
-Returns true if region has changed, false if it is still is way it is during
- last call (creation counts).
 \end_layout
 
 \begin_layout Subsection
@@ -7984,6 +8036,13 @@ Read/Write/Execute hooks are supported for ROM, SRAM, WRAM, BSXFLASH, SLOT{A,B}_
 {RAM,ROM}.
 \end_layout
 
+\begin_layout Itemize
+Memory areas are: WRAM, APURAM, VRAM, OAM, CGRAM, RTC, DSPRAM, DSPPROM,
+ DSPDROM, SRAM, ROM, BUS, PTRTABLE, CPU_STATE, PPU_STATE, SMP_STATE, DSP_STATE,
+ BSXFLASH, BSX_RAM, BSX_PRAM, SLOTA_ROM, SLOTB_ROM, SLOTA_RAM, SLOTB_RAM,
+ GBCPU_STATE, GBROM, GBRAM, GBWRAM, GBHRAM.
+\end_layout
+
 \begin_layout Subsection
 gambatte core
 \end_layout
@@ -8008,6 +8067,10 @@ Cheats are supported for ROM, SRAM and WRAM.
 \begin_layout Itemize
 Read/Write/Execute hooks are supported for ROM (read/execute only), SRAM
  and WRAM.
+\end_layout
+
+\begin_layout Itemize
+Memory areas are: SRAM, WRAM, VRAM, IOAMHRAM, ROM, BUS.
 \end_layout
 
 \end_body
