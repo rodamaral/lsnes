@@ -202,12 +202,12 @@ namespace
 		} catch(std::exception& e) {
 			messages << e.what() << std::endl;
 		}
+		recursive_flag = false;
 		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
 			lsnes_cmd.invoke("repaint");
 		}
-		recursive_flag = false;
 		return true;
 	}
 

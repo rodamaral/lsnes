@@ -140,7 +140,7 @@ namespace
 	settingvar::variable<settingvar::model_int<0, 8191>> drb(lsnes_vset, "right-border", "UI‣Right padding",
 		0);
 
-	bool last_redraw_no_lua = true;
+	bool last_redraw_no_lua = false;
 }
 
 framebuffer::fb<false> main_screen;
