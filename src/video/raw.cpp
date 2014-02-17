@@ -4,6 +4,7 @@
 #include "core/moviefile.hpp"
 #include "video/tcp.hpp"
 #include "library/serialization.hpp"
+#include "library/minmax.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -80,9 +81,8 @@ namespace
 		{
 			if(!video)
 				return;
-			auto scl = our_rom.rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
-			uint32_t hscl = scl.first;
-			uint32_t vscl = scl.second;
+			uint32_t hscl, vscl;
+			rpair(hscl, vscl) = our_rom.rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
 			if(bits64) {
 				size_t w = dscr2.get_width();
 				size_t h = dscr2.get_height();

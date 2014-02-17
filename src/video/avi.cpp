@@ -360,15 +360,13 @@ again:
 
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
-			uint32_t hscl = 1;
-			uint32_t vscl = 1;
-			auto scl = our_rom.rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
+			uint32_t hscl = 1, vscl = 1;
 			if(fixed_xfact != 0 && fixed_yfact != 0) {
 				hscl = fixed_xfact;
 				vscl = fixed_yfact;
 			} else if(dump_large) {
-				hscl = scl.first;
-				vscl = scl.second;
+				rpair(hscl, vscl) = our_rom.rtype->get_scale_factors(_frame.get_width(),
+					_frame.get_height());
 			}
 			if(!render_video_hud(dscr, _frame, hscl, vscl, dlb, dtb, drb, dbb, waitfn)) {
 				akill += killed_audio_length(fps_n, fps_d, akillfrac);
@@ -482,8 +480,10 @@ again:
 
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
-			auto c = find_codecs(mode);
-			return c.first->get_hname() + std::string(" / ") + c.second->get_hname();
+			avi_video_codec_type* vcodec;
+			avi_audio_codec_type* acodec;
+			rpair(vcodec, acodec) = find_codecs(mode);
+			return vcodec->get_hname() + std::string(" / ") + acodec->get_hname();
 		}
 
 		bool busy()
@@ -494,6 +494,9 @@ again:
 		void start(const std::string& mode, const std::string& prefix) throw(std::bad_alloc,
 			std::runtime_error)
 		{
+			avi_video_codec_type* vcodec;
+			avi_audio_codec_type* acodec;
+
 			if(prefix == "")
 				throw std::runtime_error("Expected prefix");
 			if(vid_dumper)
@@ -503,9 +506,9 @@ again:
 			info.sample_rate = 32000;
 			info.max_frames = max_frames_per_segment;
 			info.prefix = prefix;
-			auto c = find_codecs(mode);
-			info.vcodec = c.first->get_instance();
-			info.acodec = c.second->get_instance();
+			rpair(vcodec, acodec) = find_codecs(mode);
+			info.vcodec = vcodec->get_instance();
+			info.acodec = acodec->get_instance();
 			try {
 				vid_dumper = new avi_avsnoop(info);
 			} catch(std::bad_alloc& e) {
@@ -515,7 +518,7 @@ again:
 				x << "Error starting AVI dump: " << e.what();
 				throw std::runtime_error(x.str());
 			}
-			messages << "Dumping AVI (" << c.first->get_hname() << " / " << c.second->get_hname()
+			messages << "Dumping AVI (" << vcodec->get_hname() << " / " << acodec->get_hname()
 				<< ") to " << prefix << std::endl;
 			information_dispatch::do_dumper_update();
 			akill = 0;
