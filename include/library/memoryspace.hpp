@@ -252,5 +252,28 @@ private:
 	static int sysendian;
 };
 
+/**
+ * Calculate span of strided request.
+ *
+ * Parameter base: The base address.
+ * Parameter size: The size of each row.
+ * Parameter rows: Number of raows.
+ * Parameter stride: The stride.
+ * Returns: (low, high) of access bounds. low > high if no memory is accessed.
+ */
+std::pair<uint64_t, uint64_t> memoryspace_row_bounds(uint64_t base, uint64_t size, uint64_t rows,
+	uint64_t stride);
+
+/**
+ * Does strided request fit in certain bounds?
+ *
+ * Parameter base: The base address.
+ * Parameter size: The size of each row.
+ * Parameter rows: Number of raows.
+ * Parameter stride: The stride.
+ * Parameter limit: The size of area.
+ * Returns: True if entiere access stays below limit, false otherwise.
+ */
+bool memoryspace_row_limited(uint64_t base, uint64_t size, uint64_t rows, uint64_t stride, uint64_t limit);
 
 #endif

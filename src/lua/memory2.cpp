@@ -256,14 +256,8 @@ namespace
 		if(rows > 1) P(stride);
 
 		//First verify that all reads are to the region.
-		uint64_t tmp = addr;
-		if(size > vmasize && rows)
+		if(!memoryspace_row_limited(addr, size, rows, stride, vmasize))
 			throw std::runtime_error("Region out of range");
-		for(uint64_t i = 0; i < rows; i++) {
-			if(tmp >= vmasize || tmp + size > vmasize)
-				throw std::runtime_error("Region out of range");
-			tmp += stride;
-		}
 
 		auto hstate = T::create();
 		//Try to map the VMA.
@@ -370,14 +364,9 @@ namespace
 		if(rows > 1) P(stride);
 
 		//First verify that all reads are to the region.
-		uint64_t tmp = addr;
-		if(size > vmasize && rows)
+		if(!memoryspace_row_limited(addr, size, rows, stride, vmasize))
 			throw std::runtime_error("Source out of range");
-		for(uint64_t i = 0; i < rows; i++) {
-			if(tmp >= vmasize || tmp + size > vmasize)
-				throw std::runtime_error("Source out of range");
-			tmp += stride;
-		}
+
 		//Calculate new size of target.
 		auto& h = movb.get_mfile().host_memory;
 		size_t rsize = size * rows;

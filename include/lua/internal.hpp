@@ -37,6 +37,4 @@ extern uint64_t lua_timer_hook_time;
 extern void* synchronous_paint_ctx;
 void lua_renderq_run(lua_render_context* ctx, void* synchronous_paint_ctx);
 
-void lua_accessed_range(uint64_t base, uint64_t size, uint64_t rows, uint64_t stride, uint64_t& m, uint64_t& M);
-
 #endif

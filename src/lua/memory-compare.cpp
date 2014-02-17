@@ -55,7 +55,7 @@ namespace
 			size = _size;
 			rows = _rows;
 			stride = _stride;
-			lua_accessed_range(addr, size, rows, stride, minaddr, maxaddr);
+			rpair(minaddr, maxaddr) = memoryspace_row_bounds(addr, size, rows, stride);
 			try_map = (minaddr <= maxaddr && (maxaddr - minaddr + 1));
 			if((size_t)(size * rows) / rows != size)
 				throw std::runtime_error("Size to monitor too large");

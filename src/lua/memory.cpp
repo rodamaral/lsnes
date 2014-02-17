@@ -320,27 +320,6 @@ void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
 	}
 }
 
-void lua_accessed_range(uint64_t base, uint64_t size, uint64_t rows, uint64_t stride, uint64_t& m, uint64_t& M)
-{
-	m = 0xFFFFFFFFFFFFFFFFULL;
-	M = 0;
-	if(!rows || !size)
-		return;
-	for(uint64_t i = 0; i < rows; i++) {
-		if(base + size > base) {
-			m = min(m, base);
-			M = max(M, base + size - 1);
-		} else if(base + size == 0) {
-			m = min(m, base);
-			M = 0xFFFFFFFFFFFFFFFFULL;
-		} else {
-			m = 0;
-			M = 0xFFFFFFFFFFFFFFFFULL;
-		}
-		base += stride;
-	}
-}
-
 typedef void(*dummy1_t)(lua::state& L, uint64_t addr, int lfn);
 dummy1_t dummy_628963286932869328692386963[] = {
 	handle_registerX<DEBUG_READ>,
@@ -552,7 +531,7 @@ namespace
 				P(stride);
 		}
 
-		lua_accessed_range(addr, size, rows, stride, low, high);
+		rpair(low, high) = memoryspace_row_bounds(addr, size, rows, stride);
 		if(low > high || high - low + 1 == 0)
 			mappable = false;
 
@@ -631,7 +610,7 @@ namespace
 		if(rows > 1)
 			P(stride);
 
-		lua_accessed_range(addr, size, rows, stride, low, high);
+		rpair(low, high) = memoryspace_row_bounds(addr, size, rows, stride);
 		if(low > high || high - low + 1 == 0)
 			mappable = false;
 		if(rows && (size_t)(size * rows) / rows != size)

@@ -340,3 +340,82 @@ memory_region_direct::memory_region_direct(const std::string& _name, uint64_t _b
 }
 
 memory_region_direct::~memory_region_direct() throw() {}
+
+namespace
+{
+	const static uint64_t p63 = 0x8000000000000000ULL;
+	const static uint64_t p64m1 = 0xFFFFFFFFFFFFFFFFULL;
+
+	void block_bounds(uint64_t base, uint64_t size, uint64_t& low, uint64_t& high)
+	{
+		if(base + size >= base) {
+			//No warparound.
+			low = min(low, base);
+			high = max(high, base + size - 1);
+		} else if(base + size == 0) {
+			//Just barely avoids warparound.
+			low = min(low, base);
+			high = 0xFFFFFFFFFFFFFFFFULL;
+		} else {
+			//Fully warps around.
+			low = 0;
+			high = 0xFFFFFFFFFFFFFFFFULL;
+		}
+	}
+
+	//Stride < 2^63.
+	//rows and stride is nonzero.
+	std::pair<uint64_t, uint64_t> base_bounds(uint64_t base, uint64_t rows, uint64_t stride)
+	{
+		uint64_t space = p64m1 - base;
+		if(space / stride < rows - 1)
+			//Approximate a bit.
+			return std::make_pair(0, p64m1);
+		return std::make_pair(base, base + (rows - 1) * stride);
+	}
+}
+
+std::pair<uint64_t, uint64_t> memoryspace_row_bounds(uint64_t base, uint64_t size, uint64_t rows,
+	uint64_t stride)
+{
+	uint64_t low = p64m1;
+	uint64_t high = 0;
+	if(size && rows) {
+		uint64_t lb, hb;
+		if(stride == 0) {
+			//Case I: Stride is 0.
+			//Just one block is accessed.
+			lb = base;
+			hb = base;
+			block_bounds(base, size, low, high);
+		} else if(stride == p63) {
+			//Case II: Stride is 2^63.
+			//If there are multiple blocks, There are 2 accessed blocks, [base, base+size) and 
+			//[base+X, base+size+X), where X=2^63.
+			lb = base;
+			hb = (rows > 1) ? (base + p63) : base;
+		} else if(stride > p63) {
+			//Case III: Stride is negative.
+			//Flip the problem around to get stride that is positive.
+			auto g = base_bounds(p64m1 - base, rows, ~stride + 1);
+			lb = p64m1 - g.first;
+			hb = p64m1 - g.second;
+		} else {
+			//Case IV: Stride is positive.
+			auto g = base_bounds(base, rows, stride);
+			lb = g.first;
+			hb = g.second;
+		}
+		block_bounds(lb, size, low, high);
+		block_bounds(hb, size, low, high);
+	}
+	return std::make_pair(low, high);
+}
+
+bool memoryspace_row_limited(uint64_t base, uint64_t size, uint64_t rows, uint64_t stride, uint64_t limit)
+{
+	auto g = memoryspace_row_bounds(base, size, rows, stride);
+	if(g.first > g.second)
+		return true;
+	return (g.second < limit);
+}
