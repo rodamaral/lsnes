@@ -357,6 +357,7 @@ private:
 	std::vector<std::string> c_lua;
 	bool exit_immediately;
 	bool fullscreen_mode;
+	bool start_unpaused;
 };
 
 IMPLEMENT_APP(lsnes_app)
@@ -367,6 +368,7 @@ lsnes_app::lsnes_app()
 	pluginmanager_mode = false;
 	exit_immediately = false;
 	fullscreen_mode = false;
+	start_unpaused = false;
 }
 
 void lsnes_app::OnInitCmdLine(wxCmdLineParser& parser)
@@ -385,6 +387,7 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 			std::cout << "--settings: Show the settings dialog" << std::endl;
 			std::cout << "--pluginmanager: Show the plugin manager" << std::endl;
 			std::cout << "--fullscreen: Start fullscreen" << std::endl;
+			std::cout << "--unpause: Start unpaused (only if ROM is loaded)" << std::endl;
 			std::cout << "--rom=<filename>: Load specified ROM on startup" << std::endl;
 			std::cout << "--load=<filename>: Load specified save/movie on starup" << std::endl;
 			std::cout << "--lua=<filename>: Load specified Lua script on startup" << std::endl;
@@ -395,6 +398,8 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 		}
 		if(i == "--settings")
 			settings_mode = true;
+		if(i == "--unpause")
+			start_unpaused = true;
 		if(i == "--fullscreen")
 			fullscreen_mode = true;
 		if(i == "--pluginmanager")
@@ -498,7 +503,7 @@ bool lsnes_app::OnInit()
 		mov = new moviefile(rom, c_settings, DEFAULT_RTC_SECOND, DEFAULT_RTC_SUBSECOND);
 	}
 	our_rom = rom;
-	mov->start_paused = true;
+	mov->start_paused = start_unpaused ? !(rom.rtype && !rom.rtype->isnull()) : true;
 	for(auto i : c_lua)
 		lua_add_startup_script(i);
 	boot_emulator(rom, *mov, fullscreen_mode);
