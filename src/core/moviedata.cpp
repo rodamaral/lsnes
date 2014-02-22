@@ -543,6 +543,7 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 
 	//Enter readonly mode.
 	movb.get_movie().readonly_mode(true);
+	notify_mode_change(true);
 	try {
 		handle_load_core(movb.get_mfile(), portset, false);
 		movb.get_mfile().is_savestate = false;
