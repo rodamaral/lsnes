@@ -81,6 +81,7 @@ namespace
 	bool cancel_advance;
 	//Emulator advance mode. Detemines pauses at start of frame / subframe, etc..
 	enum advance_mode amode;
+	enum advance_mode old_mode;
 	//Mode and filename of pending load, one of LOAD_* constants.
 	bool load_paused;
 	int loadmode;
@@ -104,8 +105,9 @@ namespace
 	//Macro hold.
 	bool macro_hold_1;
 	bool macro_hold_2;
+	//In break pause.
+	bool break_pause = false;
 
-	enum advance_mode old_mode;
 
 	std::string save_jukebox_name(size_t i)
 	{
@@ -252,6 +254,8 @@ namespace
 	//Do pending load (automatically unpauses).
 	void mark_pending_load(std::string filename, int lmode)
 	{
+		if(break_pause)
+			break_pause = false;
 		loadmode = lmode;
 		pending_load = filename;
 		old_mode = amode;
@@ -327,6 +331,12 @@ void update_movie_state()
 		_status.set("!subframe", "N/A");
 	}
 	_status.set("!dumping", (information_dispatch::get_dumper_count() ? "Y" : ""));
+	if(break_pause)
+		_status.set("!pause", "B");
+	else if(amode == ADVANCE_PAUSE)
+		_status.set("!pause", "P");
+	else
+		_status.set("!pause", "");
 	if(movb) {
 		auto& mo = movb.get_movie();
 		readonly = mo.readonly_mode();
@@ -552,26 +562,25 @@ namespace
 	command::fnptr<> unpause_emulator(lsnes_cmd, "unpause-emulator", "Unpause the emulator",
 		"Syntax: unpause-emulator\nUnpauses the emulator.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			break_pause = false;
 			amode = ADVANCE_AUTO;
 			platform::set_paused(false);
 			platform::cancel_wait();
-			messages << "Unpaused" << std::endl;
 		});
 
 	command::fnptr<> pause_emulator(lsnes_cmd, "pause-emulator", "(Un)pause the emulator",
 		"Syntax: pause-emulator\n(Un)pauses the emulator.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(amode != ADVANCE_AUTO) {
+			if(amode != ADVANCE_AUTO || break_pause) {
+				break_pause = false;
 				amode = ADVANCE_AUTO;
 				platform::set_paused(false);
 				platform::cancel_wait();
-				messages << "Unpaused" << std::endl;
 			} else {
 				platform::cancel_wait();
 				cancel_advance = false;
 				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
-				messages << "Paused" << std::endl;
 			}
 		});
 
@@ -666,6 +675,8 @@ namespace
 	command::fnptr<> padvance_frame(lsnes_cmd, "+advance-frame", "Advance one frame",
 		"Syntax: +advance-frame\nAdvances the emulation by one frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(break_pause)
+				break_pause = false;
 			amode = ADVANCE_FRAME;
 			cancel_advance = false;
 			advanced_once = false;
@@ -684,6 +695,8 @@ namespace
 	command::fnptr<> padvance_poll(lsnes_cmd, "+advance-poll", "Advance one subframe",
 		"Syntax: +advance-poll\nAdvances the emulation by one subframe.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(break_pause)
+				break_pause = false;
 			amode = ADVANCE_SUBFRAME;
 			cancel_advance = false;
 			advanced_once = false;
@@ -694,6 +707,8 @@ namespace
 	command::fnptr<> nadvance_poll(lsnes_cmd, "-advance-poll", "Advance one subframe",
 		"No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(break_pause)
+				break_pause = false;
 			cancel_advance = true;
 			platform::cancel_wait();
 			platform::set_paused(false);
@@ -702,6 +717,8 @@ namespace
 	command::fnptr<> advance_skiplag(lsnes_cmd, "advance-skiplag", "Skip to next poll",
 		"Syntax: advance-skiplag\nAdvances the emulation to the next poll.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(break_pause)
+				break_pause = false;
 			amode = ADVANCE_SKIPLAG_PENDING;
 			platform::cancel_wait();
 			platform::set_paused(false);
@@ -1317,5 +1334,24 @@ void close_rom()
 	if(load_null_rom()) {
 		load_paused = true;
 		mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
+	}
+}
+
+void do_break_pause()
+{
+	break_pause = true;
+	update_movie_state();
+	while(break_pause) {
+		platform::set_paused(true);
+		platform::flush_command_queue();
+	}
+}
+
+void convert_break_to_pause()
+{
+	if(break_pause) {
+		amode = ADVANCE_PAUSE;
+		break_pause = false;
+		update_movie_state();
 	}
 }

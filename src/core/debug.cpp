@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/debug.hpp"
 #include "core/dispatch.hpp"
+#include "core/mainloop.hpp"
 #include "core/moviedata.hpp"
 #include "library/directory.hpp"
 #include <stdexcept>
@@ -18,7 +19,7 @@ namespace
 	};
 	struct cb_trace
 	{
-		std::function<void(uint64_t proc, const char* str)> cb;
+		std::function<void(uint64_t proc, const char* str, bool true_insn)> cb;
 		std::function<void()> dtor;
 	};
 	typedef std::list<cb_rwx> cb_list;
@@ -33,6 +34,7 @@ namespace
 	std::function<void()> tracelog_change_cb;
 	struct dispatch::target<> corechange;
 	bool corechange_r = false;
+	bool requesting_break = false;
 
 	struct tracelog_file
 	{
@@ -125,8 +127,8 @@ debug_handle debug_add_callback(uint64_t addr, debug_type type, std::function<vo
 	return _debug_add_callback(cb, addr, type, t, dtor);
 }
 
-debug_handle debug_add_trace_callback(uint64_t proc, std::function<void(uint64_t proc, const char* str)> fn,
-	std::function<void()> dtor)
+debug_handle debug_add_trace_callback(uint64_t proc, std::function<void(uint64_t proc, const char* str,
+	bool true_insn)> fn, std::function<void()> dtor)
 {
 	cb_trace t;
 	t.cb = fn;
@@ -145,33 +147,45 @@ void debug_remove_callback(uint64_t addr, debug_type type, debug_handle handle)
 
 void debug_fire_callback_read(uint64_t addr, uint64_t value)
 {
+	requesting_break = false;
 	cb_list* cb1 = read_cb.count(debug_all_addr) ? &read_cb[debug_all_addr] : &dummy_cb;
 	cb_list* cb2 = read_cb.count(addr) ? &read_cb[addr] : &dummy_cb;
 	for(auto& i : *cb1) i.cb(addr, value);
 	for(auto& i : *cb2) i.cb(addr, value);
+	if(requesting_break)
+		do_break_pause();
 }
 
 void debug_fire_callback_write(uint64_t addr, uint64_t value)
 {
+	requesting_break = false;
 	cb_list* cb1 = write_cb.count(debug_all_addr) ? &write_cb[debug_all_addr] : &dummy_cb;
 	cb_list* cb2 = write_cb.count(addr) ? &write_cb[addr] : &dummy_cb;
 	for(auto& i : *cb1) i.cb(addr, value);
 	for(auto& i : *cb2) i.cb(addr, value);
+	if(requesting_break)
+		do_break_pause();
 }
 
 void debug_fire_callback_exec(uint64_t addr, uint64_t value)
 {
+	requesting_break = false;
 	cb_list* cb1 = exec_cb.count(debug_all_addr) ? &exec_cb[debug_all_addr] : &dummy_cb;
 	cb_list* cb2 = exec_cb.count(addr) ? &exec_cb[addr] : &dummy_cb;
 	if(value & xmask)
 		for(auto& i : *cb1) i.cb(addr, value);
 	for(auto& i : *cb2) i.cb(addr, value);
+	if(requesting_break)
+		do_break_pause();
 }
 
-void debug_fire_callback_trace(uint64_t proc, const char* str)
+void debug_fire_callback_trace(uint64_t proc, const char* str, bool true_insn)
 {
+	requesting_break = false;
 	cb2_list* cb = trace_cb.count(proc) ? &trace_cb[proc] : &dummy_cb2;
-	for(auto& i : *cb) i.cb(proc, str);
+	for(auto& i : *cb) i.cb(proc, str, true_insn);
+	if(requesting_break)
+		do_break_pause();
 }
 
 void debug_set_cheat(uint64_t addr, uint64_t value)
@@ -226,7 +240,7 @@ void debug_tracelog(uint64_t proc, const std::string& filename)
 			throw std::runtime_error("Can't open '" + full_filename + "'");
 		}
 	}
-	trace_outputs[proc].second = debug_add_trace_callback(proc, [](uint64_t proc, const char* str) {
+	trace_outputs[proc].second = debug_add_trace_callback(proc, [](uint64_t proc, const char* str, bool dummy) {
 		if(!trace_outputs.count(proc)) return;
 		trace_outputs[proc].first->stream << str << std::endl;
 	}, [proc]() { debug_tracelog(proc, ""); });
@@ -251,6 +265,11 @@ void debug_core_change()
 	kill_hooks(write_cb);
 	kill_hooks(exec_cb);
 	kill_hooks(trace_cb);
+}
+
+void debug_request_break()
+{
+	requesting_break = true;
 }
 
 namespace

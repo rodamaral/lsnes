@@ -285,12 +285,13 @@ void handle_registerX(lua::state& L, uint64_t addr, int lfn)
 			D->_dtor(LL->handle());
 		});
 	else
-		D->h = debug_add_trace_callback(addr, [LL, D2](uint64_t proc, const char* str) {
+		D->h = debug_add_trace_callback(addr, [LL, D2](uint64_t proc, const char* str, bool true_insn) {
 			LL->pushlightuserdata(D2);
 			LL->rawget(LUA_REGISTRYINDEX);
 			LL->pushnumber(proc);
 			LL->pushstring(str);
-			do_lua_error(*LL, LL->pcall(2, 0, 0));
+			LL->pushboolean(true_insn);
+			do_lua_error(*LL, LL->pcall(3, 0, 0));
 		}, [LL, D]() {
 			LL->pushlightuserdata(&D->addr);
 			LL->pushnil();

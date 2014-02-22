@@ -1273,6 +1273,10 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 			s << U" [" << read_variable_map(vars, "!saveslotinfo") << U"]";
 		s << U"  Speed: " << read_variable_map(vars, "!speed") << U"%";
 		s << U" ";
+		if(read_variable_map(vars, "!pause") == U"B")
+			s << U" Breakpoint";
+		else if(read_variable_map(vars, "!pause") == U"P")
+			s << U" Paused";
 		if(read_variable_map(vars, "!dumping") != U"")
 			s << U" Dumping";
 		if(read_variable_map(vars, "!mode") == U"C")

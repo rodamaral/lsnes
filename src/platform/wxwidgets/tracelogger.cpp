@@ -2,7 +2,9 @@
 #include "platform/wxwidgets/textrender.hpp"
 #include "platform/wxwidgets/scrollbar.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
+#include "core/command.hpp"
 #include "core/debug.hpp"
+#include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
 #include "core/project.hpp"
 #include "interface/disassembler.hpp"
@@ -15,6 +17,7 @@
 #include <wx/menu.h>
 #include <wx/button.h>
 #include <wx/checkbox.h>
+#include <wx/listbox.h>
 #include <wx/stattext.h>
 #include <wx/combobox.h>
 #include <wx/textctrl.h>
@@ -32,6 +35,10 @@ namespace
 		wxID_GOTO,
 		wxID_DISASM,
 		wxID_DISASM_MORE,
+		wxID_SINGLESTEP,
+		wxID_BREAKPOINTS,
+		wxID_CONTINUE,
+		wxID_FRAMEADVANCE,
 	};
 
 	int prompt_for_save(wxWindow* parent, const std::string& what)
@@ -377,6 +384,123 @@ namespace
 		ok->Enable(is_ok);
 	}
 
+	class wxwin_tracelog;
+
+	class dialog_breakpoint_add : public wxDialog
+	{
+	public:
+		dialog_breakpoint_add(wxWindow* parent, std::list<memory_region*> regions);
+		std::pair<uint64_t, debug_type> get_result();
+		void on_ok(wxCommandEvent& e) { EndModal(wxID_OK); }
+		void on_cancel(wxCommandEvent& e) { EndModal(wxID_CANCEL); }
+		void on_address_change(wxCommandEvent& e);
+	private:
+		std::list<memory_region*> regions;
+		wxComboBox* vmasel;
+		wxTextCtrl* address;
+		wxComboBox* typesel;
+		wxButton* ok;
+		wxButton* cancel;
+	};
+
+	dialog_breakpoint_add::dialog_breakpoint_add(wxWindow* parent, std::list<memory_region*> _regions)
+		: wxDialog(parent, wxID_ANY, "Add breakpoint")
+	{
+		regions = _regions;
+		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
+		SetSizer(top_s);
+
+		top_s->Add(new wxStaticText(this, wxID_ANY, "Memory region:"), 0, wxGROW);
+		top_s->Add(vmasel = new wxComboBox(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
+			0, NULL, wxCB_READONLY), 1, wxGROW);
+		vmasel->Append(towxstring(""));
+		for(auto i : regions)
+			vmasel->Append(towxstring(i->name));
+		vmasel->SetSelection(0);
+
+		top_s->Add(new wxStaticText(this, wxID_ANY, "Offset (hexadecimal):"), 0, wxGROW);
+		top_s->Add(address = new wxTextCtrl(this, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize(350, -1)), 0,
+			 wxGROW);
+
+		top_s->Add(new wxStaticText(this, wxID_ANY, "Breakpoint type:"), 0, wxGROW);
+		top_s->Add(typesel = new wxComboBox(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
+			0, NULL, wxCB_READONLY), 1, wxGROW);
+		typesel->Append(towxstring("Read"));
+		typesel->Append(towxstring("Write"));
+		typesel->Append(towxstring("Execute"));
+		typesel->SetSelection(0);
+
+		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+		pbutton_s->AddStretchSpacer();
+		pbutton_s->Add(ok = new wxButton(this, wxID_ANY, wxT("OK")));
+		pbutton_s->Add(cancel = new wxButton(this, wxID_ANY, wxT("Cancel")));
+		ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(dialog_breakpoint_add::on_ok), NULL,
+			this);
+		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(dialog_breakpoint_add::on_cancel),
+			NULL, this);
+		top_s->Add(pbutton_s, 0, wxGROW);
+		top_s->SetSizeHints(this);
+		Fit();
+	}
+
+	void dialog_breakpoint_add::on_address_change(wxCommandEvent& e)
+	{
+		try {
+			hex::from<uint64_t>(tostdstring(address->GetValue()));
+			ok->Enable(true);
+		} catch(...) {
+			ok->Enable(false);
+		}
+	}
+
+	std::pair<uint64_t, debug_type> dialog_breakpoint_add::get_result()
+	{
+		std::string vmaname = tostdstring(vmasel->GetStringSelection());
+		std::string addrtext = tostdstring(address->GetValue());
+		uint64_t base = 0;
+		if(vmaname != "") {
+			for(auto i : regions)
+				if(i->name == vmaname)
+					base = i->base;
+		}
+		uint64_t addr;
+		try {
+			addr = base + hex::from<uint64_t>(addrtext);
+		} catch(std::exception& e) {
+			addr = base;
+		}
+		debug_type dtype = DEBUG_EXEC;
+		if(typesel->GetSelection() == 0)
+			dtype = DEBUG_READ;
+		if(typesel->GetSelection() == 1)
+			dtype = DEBUG_WRITE;
+		if(typesel->GetSelection() == 2)
+			dtype = DEBUG_EXEC;
+		return std::make_pair(addr, dtype);
+	}
+	
+
+	class dialog_breakpoints : public wxDialog
+	{
+	public:
+		dialog_breakpoints(wxwin_tracelog* parent);
+		void on_ok(wxCommandEvent& e) { EndModal(wxID_OK); }
+		void on_add(wxCommandEvent& e);
+		void on_delete(wxCommandEvent& e);
+		void on_selchange(wxCommandEvent& e);
+	private:
+		std::string format_line(std::pair<uint64_t, debug_type> entry);
+		size_t get_insert_pos(std::pair<uint64_t, debug_type> entry);
+		void populate_breakpoints();
+		std::list<memory_region*> regions;
+		wxButton* ok;
+		wxButton* addb;
+		wxButton* delb;
+		wxListBox* brklist;
+		wxwin_tracelog* pwin;
+		std::vector<std::pair<uint64_t, debug_type>> listsyms;
+	};
+
 	class wxwin_tracelog : public wxFrame
 	{
 	public:
@@ -389,6 +513,9 @@ namespace
 		void on_menu(wxCommandEvent& e);
 		void process_lines();
 		uint64_t get_find_line() { return find_active ? find_line : 0xFFFFFFFFFFFFFFFFULL; }
+		std::set<std::pair<uint64_t, debug_type>> get_breakpoints();
+		void add_breakpoint(uint64_t addr, debug_type dtype);
+		void remove_breakpoint(uint64_t addr, debug_type dtype);
 	private:
 		class _panel : public text_framebuffer_panel
 		{
@@ -400,6 +527,7 @@ namespace
 			uint64_t pos;
 			std::vector<std::string> rows;
 			void on_popup_menu(wxCommandEvent& e);
+			bool scroll_to_end_on_repaint;
 		protected:
 			void prepare_paint();
 		private:
@@ -413,6 +541,8 @@ namespace
 		int cpuid;
 		volatile bool trace_active;
 		debug_handle trace_handle;
+		void do_rwx_break(uint64_t addr, uint64_t value, debug_type type);
+		void kill_debug_hooks();
 		scroll_bar* scroll;
 		_panel* panel;
 		bool broken;
@@ -426,6 +556,9 @@ namespace
 		uint64_t find_line;
 		std::string find_string;
 		bool dirty;
+		bool singlestepping;
+		std::map<std::pair<uint64_t, debug_type>, debug_handle> rwx_breakpoints;
+		wxMenuItem* m_singlestep;
 	};
 
 	wxwin_tracelog::~wxwin_tracelog()
@@ -440,11 +573,25 @@ namespace
 				return;
 		}
 		if(trace_active)
-			runemufn([this]() { debug_remove_callback(cpuid, DEBUG_TRACE, trace_handle); });
+			runemufn([this]() { kill_debug_hooks(); });
 		trace_active = false;
 		if(!closing)
 			Destroy();
 		closing = true;
+	}
+
+	void wxwin_tracelog::kill_debug_hooks()
+	{
+		debug_remove_callback(cpuid, DEBUG_TRACE, trace_handle);
+		umutex_class h(buffer_mutex);
+		for(auto& i : rwx_breakpoints) {
+			if(!i.second.handle)
+				continue;
+			debug_remove_callback(i.first.first, i.first.second, i.second);
+			//Dirty hack.
+			i.second.handle = NULL;
+		}
+		convert_break_to_pause();
 	}
 
 	wxwin_tracelog::_panel::_panel(wxwin_tracelog* parent)
@@ -455,6 +602,7 @@ namespace
 		pressed_row = 0;
 		current_row = 0;
 		holding = false;
+		scroll_to_end_on_repaint = false;
 		this->Connect(wxEVT_SIZE, wxSizeEventHandler(wxwin_tracelog::_panel::on_size), NULL, this);
 		this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxwin_tracelog::_panel::on_mouse), NULL, this);
 		this->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxwin_tracelog::_panel::on_mouse), NULL, this);
@@ -510,6 +658,11 @@ namespace
 	void wxwin_tracelog::_panel::prepare_paint()
 	{
 		p->get_scroll()->set_range(rows.size());
+		if(scroll_to_end_on_repaint) {
+			scroll_to_end_on_repaint = false;
+			p->get_scroll()->set_position(rows.size());
+			pos = p->get_scroll()->get_position();
+		}
 		uint64_t m = min(pressed_row, current_row);
 		uint64_t M = max(pressed_row, current_row);
 		auto s = get_characters();
@@ -521,6 +674,8 @@ namespace
 			uint32_t bg = selected ? 0x000000 : (isfl ? 0xC0FFC0 : 0xFFFFFF);
 			write(rows[i], s.first, 0, i - pos, fg, bg);
 		}
+		for(uint64_t i = rows.size(); i < pos + s.second; i++)
+			write("", s.first, 0, i - pos, 0xFFFFFF, 0xFFFFFF);
 	}
 
 	void wxwin_tracelog::process_lines()
@@ -535,9 +690,16 @@ namespace
 			panel->rows.push_back(i);
 		lines_waiting.clear();
 		unprocessed_lines = false;
-		panel->request_paint();
-		if(panel->rows.size() != osize)
+		if(panel->rows.size() != osize) {
+			panel->scroll_to_end_on_repaint = true;
 			dirty = true;
+		}
+		panel->request_paint();
+	}
+
+	void wxwin_tracelog::do_rwx_break(uint64_t addr, uint64_t value, debug_type type)
+	{
+		debug_request_break();
 	}
 
 	void wxwin_tracelog::on_enabled(wxCommandEvent& e)
@@ -545,10 +707,24 @@ namespace
 		bool enable = enabled->GetValue();
 		runemufn([this, enable]() {
 			if(enable) {
+				umutex_class h(buffer_mutex);
 				broken = broken2;
 				broken2 = true;
+				for(auto& i : rwx_breakpoints) {
+					auto i2 = i.first;
+					i.second = debug_add_callback(i.first.first, i.first.second,
+						[this, i2](uint64_t addr, uint64_t value) {
+							this->do_rwx_break(addr, value, i2.second);
+						}, [this, i2] {
+							//We need to kill this hook if still active.
+							auto& h = rwx_breakpoints[i2];
+							if(h.handle)
+								debug_remove_callback(i2.first, i2.second, h);
+							h.handle = NULL;
+						});
+				}
 				this->trace_handle = debug_add_trace_callback(cpuid, [this](uint64_t proc,
-					const char* str) {
+					const char* str, bool true_instruction) {
 						if(!this->trace_active)
 							return;
 						//Got tracelog line, send it.
@@ -558,22 +734,31 @@ namespace
 							this->unprocessed_lines = true;
 							runuifun([this]() { this->process_lines(); });
 						}
+						if(this->singlestepping && true_instruction) {
+							debug_request_break();
+							this->singlestepping = false;
+						}
 					}, [this]() {
 						//Dtor!
 						auto tmp = this;
 						if(!tmp->trace_active)
 							return;
 						this->trace_active = false;
-						debug_remove_callback(cpuid, DEBUG_TRACE, this->trace_handle);
+						debug_remove_callback(cpuid, DEBUG_TRACE, trace_handle);
+						tmp->kill_debug_hooks();
 						//We can't use this anymore.
-						runuifun([tmp]() { tmp->enabled->SetValue(false); });
+						runuifun([tmp]() {
+							tmp->enabled->SetValue(false);
+							tmp->m_singlestep->Enable(false);
+						});
 					});
 				this->trace_active = true;
 			} else if(trace_active) {
 				this->trace_active = false;
-				debug_remove_callback(cpuid, DEBUG_TRACE, this->trace_handle);
+				this->kill_debug_hooks();
 			}
 		});
+		m_singlestep->Enable(enable);
 	}
 
 	bool find_match(const std::string& pattern, const std::string& candidate)
@@ -635,8 +820,9 @@ namespace
 				if(r < 0 || (r > 0 && !do_exit_save()))
 					return;
 			}
-			if(trace_active)
-				runemufn([this]() { debug_remove_callback(cpuid, DEBUG_TRACE, trace_handle); });
+			if(trace_active) {
+				runemufn([this]() { this->kill_debug_hooks(); });
+			}
 			trace_active = false;
 			Destroy();
 			return;
@@ -709,6 +895,22 @@ namespace
 				find_line--;
 			}
 			scroll_pane(find_line);
+		} else if(e.GetId() == wxID_SINGLESTEP) {
+			runemufn_async([this]() {
+				this->singlestepping = true;
+				lsnes_cmd.invoke("unpause-emulator");
+			});
+		} else if(e.GetId() == wxID_FRAMEADVANCE) {
+			runemufn_async([this]() { 
+				lsnes_cmd.invoke("+advance-frame"); 
+				lsnes_cmd.invoke("-advance-frame"); 
+			});
+		} else if(e.GetId() == wxID_CONTINUE) {
+			runemufn_async([this]() { lsnes_cmd.invoke("unpause-emulator"); });
+		} else if(e.GetId() == wxID_BREAKPOINTS) {
+			dialog_breakpoints* d = new dialog_breakpoints(this);
+			d->ShowModal();
+			d->Destroy();
 		}
 	}
 
@@ -761,7 +963,7 @@ namespace
 		unsigned offset = r / 2;
 		if(offset > line)
 			scroll->set_position(panel->pos = 0);
-		else if(line + r < panel->rows.size())
+		else if(line + r <= panel->rows.size())
 			scroll->set_position(panel->pos = line - offset);
 		else
 			scroll->set_position(panel->pos = panel->rows.size() - r);
@@ -790,12 +992,52 @@ back:
 		return true;
 	}
 
+	std::set<std::pair<uint64_t, debug_type>> wxwin_tracelog::get_breakpoints()
+	{
+		std::set<std::pair<uint64_t, debug_type>> ret;
+		runemufn([this, &ret]() {
+			for(auto i : rwx_breakpoints)
+				ret.insert(i.first);
+		});
+		return ret;
+	}
+
+	void wxwin_tracelog::add_breakpoint(uint64_t addr, debug_type dtype)
+	{
+		std::pair<uint64_t, debug_type> i2 = std::make_pair(addr, dtype);
+		if(!trace_active) {
+			//We'll register this later.
+			rwx_breakpoints[i2] = debug_handle();
+			return;
+		}
+		rwx_breakpoints[i2] = debug_add_callback(i2.first, i2.second,
+			[this, i2](uint64_t addr, uint64_t value) {
+				this->do_rwx_break(addr, value, i2.second);
+			}, [this, i2] {
+				//We need to kill this hook if still active.
+				auto& h = rwx_breakpoints[i2];
+				if(h.handle)
+					debug_remove_callback(i2.first, i2.second, h);
+				h.handle = NULL;
+			});
+	}
+
+	void wxwin_tracelog::remove_breakpoint(uint64_t addr, debug_type dtype)
+	{
+		std::pair<uint64_t, debug_type> i2 = std::make_pair(addr, dtype);
+		auto& h = rwx_breakpoints[i2];
+		if(h.handle)
+			debug_remove_callback(i2.first, i2.second, h);
+		rwx_breakpoints.erase(i2);
+	}
+
 	wxwin_tracelog::wxwin_tracelog(wxWindow* parent, int _cpuid, const std::string& cpuname)
 		: wxFrame(parent, wxID_ANY, towxstring("lsnes: Tracelog for " + cpuname), wxDefaultPosition,
 			wxDefaultSize, wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX |
 			wxCLIP_CHILDREN)
 	{
 		cpuid = _cpuid;
+		singlestepping = false;
 		find_active = false;
 		find_line = 0;
 		closing = false;
@@ -834,6 +1076,13 @@ back:
 		menu->Append(wxID_FIND, wxT("Find..."));
 		menu->Append(wxID_FIND_NEXT, wxT("Find next\tF3"));
 		menu->Append(wxID_FIND_PREV, wxT("Find previous\tSHIFT+F3"));
+		mb->Append(menu = new wxMenu(), wxT("Debug"));
+		m_singlestep = menu->Append(wxID_SINGLESTEP, towxstring("Singlestep\tF2"));
+		menu->Append(wxID_FRAMEADVANCE, towxstring("Frame advance\tF4"));
+		menu->Append(wxID_CONTINUE, towxstring("Continue\tF5"));
+		menu->AppendSeparator();
+		menu->Append(wxID_BREAKPOINTS, towxstring("Breakpoints"));
+		m_singlestep->Enable(false);
 		Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxwin_tracelog::on_menu),
 			NULL, this);
 		//Very nasty hack.
@@ -1185,23 +1434,27 @@ back:
 		}
 	}
 
+	std::string format_vma_offset(memory_region& region, uint64_t offset)
+	{
+		std::ostringstream y;
+		y << region.name;
+		size_t sizedigits = 0;
+		uint64_t tmp = region.size - 1;
+		while(tmp > 0) {
+			tmp >>= 4;
+			sizedigits++;
+		}
+		y << "+" << std::hex << std::setfill('0') << std::setw(sizedigits) << offset;
+		return y.str();
+	}
+
 	std::string lookup_address(uint64_t raw)
 	{
 		auto g = lsnes_memory.lookup(raw);
 		if(!g.first)
 			return hex::to<uint64_t>(raw);
-		else {
-			std::ostringstream y;
-			y << g.first->name;
-			size_t sizedigits = 0;
-			uint64_t tmp = g.first->size - 1;
-			while(tmp > 0) {
-				tmp >>= 4;
-				sizedigits++;
-			}
-			y << "+" << std::hex << std::setfill('0') << std::setw(sizedigits) << g.second;
-			return y.str();
-		}
+		else
+			return format_vma_offset(*g.first, g.second);
 	}
 
 	inline int sign_compare(uint64_t a, uint64_t b)
@@ -1455,6 +1708,112 @@ back:
 		panel->SetMinSize(tmp);
 		top_s->SetSizeHints(this);
 		SetClientSize(tmp2);
+	}
+
+	dialog_breakpoints::dialog_breakpoints(wxwin_tracelog* parent)
+		: wxDialog(parent, wxID_ANY, "Breakpoints")
+	{
+		pwin = parent;
+		regions = lsnes_memory.get_regions();
+		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
+		SetSizer(top_s);
+		top_s->Add(brklist = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(300, 400)), 1, wxGROW);
+		brklist->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, 
+			wxCommandEventHandler(dialog_breakpoints::on_selchange), NULL, this);
+		populate_breakpoints();
+		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+		pbutton_s->Add(addb = new wxButton(this, wxID_ANY, wxT("Add")), 0, wxGROW);
+		pbutton_s->Add(delb = new wxButton(this, wxID_ANY, wxT("Remove")), 0, wxGROW);
+		pbutton_s->AddStretchSpacer();
+		pbutton_s->Add(ok = new wxButton(this, wxID_ANY, wxT("Close")), 0, wxGROW);
+		delb->Enable(false);
+		addb->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(dialog_breakpoints::on_add), NULL,
+			this);
+		delb->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(dialog_breakpoints::on_delete),
+			NULL, this);
+		ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(dialog_breakpoints::on_ok), NULL,
+			this);
+		top_s->Add(pbutton_s, 0, wxGROW);
+		top_s->SetSizeHints(this);
+		Fit();
+	}
+
+	void dialog_breakpoints::populate_breakpoints()
+	{
+		auto t = pwin->get_breakpoints();
+		for(auto i : t) {
+			std::string line = format_line(i);
+			unsigned insert_pos = get_insert_pos(i);
+			brklist->Insert(towxstring(line), insert_pos);
+			listsyms.insert(listsyms.begin() + insert_pos, i);
+		}
+	}
+
+	void dialog_breakpoints::on_add(wxCommandEvent& e)
+	{
+		uint64_t addr;
+		debug_type dtype;
+		dialog_breakpoint_add* d = new dialog_breakpoint_add(this, regions);
+		if(d->ShowModal() != wxID_OK) {
+			d->Destroy();
+			return;
+		}
+		rpair(addr, dtype) = d->get_result();
+		d->Destroy();
+		runemufn_async([this, addr, dtype]() { pwin->add_breakpoint(addr, dtype); });
+		auto ent = std::make_pair(addr, dtype);
+		std::string line = format_line(ent);
+		unsigned insert_pos = get_insert_pos(ent);
+		brklist->Insert(towxstring(line), insert_pos);
+		listsyms.insert(listsyms.begin() + insert_pos, ent);
+	}
+
+	void dialog_breakpoints::on_delete(wxCommandEvent& e)
+	{
+		int idx = brklist->GetSelection();
+		if(idx == wxNOT_FOUND)
+			return;
+		uint64_t addr;
+		debug_type dtype;
+		addr = listsyms[idx].first;
+		dtype = listsyms[idx].second;
+		runemufn_async([this, addr, dtype]() { pwin->remove_breakpoint(addr, dtype); });
+		brklist->Delete(idx);
+		listsyms.erase(listsyms.begin() + idx);
+	}
+
+	size_t dialog_breakpoints::get_insert_pos(std::pair<uint64_t, debug_type> entry)
+	{
+		size_t i = 0;
+		for(i = 0; i < listsyms.size(); i++)
+			if(entry < listsyms[i])
+				return i;
+		return i;
+	}
+
+	std::string dialog_breakpoints::format_line(std::pair<uint64_t, debug_type> entry)
+	{
+		std::string base = "";
+		for(auto i : regions) {
+			if(entry.first >= i->base && entry.first < i->base + i->size) {
+				base = format_vma_offset(*i, entry.first - i->base);
+				break;
+			}
+		}
+		if(base == "")
+			base = hex::to<uint64_t>(entry.first);
+		if(entry.second == DEBUG_READ)
+			return base + ": Read";
+		if(entry.second == DEBUG_WRITE)
+			return base + ": Write";
+		if(entry.second == DEBUG_EXEC)
+			return base + ": Execute";
+		return base + ": Unknown";
+	}
+
+	void dialog_breakpoints::on_selchange(wxCommandEvent& e)
+	{
+		delb->Enable(brklist->GetSelection() != wxNOT_FOUND);
 	}
 }
 
