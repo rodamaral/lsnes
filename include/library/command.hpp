@@ -55,7 +55,7 @@ public:
 /**
  * Unregister a command.
  */
-	void do_unregister(const std::string& name) throw(std::bad_alloc);
+	void do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc);
 /**
  * Set the output stream.
  */

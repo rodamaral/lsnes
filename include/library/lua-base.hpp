@@ -396,34 +396,13 @@ public:
 			r.push_back(i.second);
 		return r;
 	}
-/**
- * Register a callback.
- */
-	class callback_proxy
-	{
-	public:
-		callback_proxy(state& _L) : parent(_L) {}
-		void do_register(const std::string& name, callback_list& callback)
-		{
-			parent.do_register_cb(name, callback);
-		}
-/**
- * Unregister a callback.
- */
-		void do_unregister(const std::string& name)
-		{
-			parent.do_unregister_cb(name);
-		}
-	private:
-		state& parent;
-	};
 
-	void do_register_cb(const std::string& name, callback_list& callback)
+	void do_register(const std::string& name, callback_list& callback)
 	{
 		callbacks[name] = &callback;
 	}
 
-	void do_unregister_cb(const std::string& name)
+	void do_unregister(const std::string& name, callback_list* dummy)
 	{
 		callbacks.erase(name);
 	}
@@ -481,7 +460,6 @@ public:
 	int isnoneornil(int index) { return lua_isnoneornil(lua_handle, index); }
 	lua_Integer tointeger(int index) { return lua_tointeger(lua_handle, index); }
 	void rawgeti(int index, int n) { lua_rawgeti(lua_handle, index, n); }
-	callback_proxy cbproxy;
 private:
 	static void builtin_oom();
 	static void* builtin_alloc(void* user, void* old, size_t olds, size_t news);

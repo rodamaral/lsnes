@@ -247,7 +247,7 @@ void group::do_register(const std::string& name, base& cmd) throw(std::bad_alloc
 	commands[name] = &cmd;
 }
 
-void group::do_unregister(const std::string& name) throw(std::bad_alloc)
+void group::do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc)
 {
 	umutex_class lock(int_mutex);
 	commands.erase(name);

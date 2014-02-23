@@ -3,13 +3,13 @@
 
 namespace keyboard
 {
-void keyboard::do_register_modifier(const std::string& name, modifier& mod) throw(std::bad_alloc)
+void keyboard::do_register(const std::string& name, modifier& mod) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	modifiers[name] = &mod;
 }
 
-void keyboard::do_unregister_modifier(const std::string& name) throw()
+void keyboard::do_unregister(const std::string& name, modifier* mod) throw()
 {
 	umutex_class u(mutex);
 	modifiers.erase(name);
@@ -40,13 +40,13 @@ std::list<modifier*> keyboard::all_modifiers() throw(std::bad_alloc)
 	return r;
 }
 
-void keyboard::do_register_key(const std::string& name, key& key) throw(std::bad_alloc)
+void keyboard::do_register(const std::string& name, key& key) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	keys[name] = &key;
 }
 
-void keyboard::do_unregister_key(const std::string& name) throw()
+void keyboard::do_unregister(const std::string& name, key* dummy) throw()
 {
 	umutex_class u(mutex);
 	keys.erase(name);
@@ -97,16 +97,15 @@ key* keyboard::get_current_key() throw()
 }
 
 keyboard::keyboard() throw(std::bad_alloc)
-	: modifier_proxy(*this), key_proxy(*this)
 {
-	register_queue<keyboard::_modifier_proxy, modifier>::do_ready(modifier_proxy, true);
-	register_queue<keyboard::_key_proxy, key>::do_ready(key_proxy, true);
+	register_queue<keyboard, modifier>::do_ready(*this, true);
+	register_queue<keyboard, key>::do_ready(*this, true);
 }
 
 keyboard::~keyboard() throw()
 {
-	register_queue<keyboard::_modifier_proxy, modifier>::do_ready(modifier_proxy, false);
-	register_queue<keyboard::_key_proxy, key>::do_ready(key_proxy, false);
+	register_queue<keyboard, modifier>::do_ready(*this, false);
+	register_queue<keyboard, key>::do_ready(*this, false);
 }
 
 void modifier_set::add(modifier& mod, bool really) throw(std::bad_alloc)
@@ -257,7 +256,7 @@ event_listener::~event_listener() throw() {}
 
 key::~key() throw()
 {
-	register_queue<keyboard::_key_proxy, key>::do_unregister(kbd.key_proxy, name);
+	register_queue<keyboard, key>::do_unregister(kbd, name);
 }
 
 event_key::event_key(uint32_t chngmask)
@@ -303,7 +302,7 @@ key::key(keyboard& keyb, const std::string& _name, const std::string& _clazz,
 	:  kbd(keyb), clazz(_clazz), name(_name), type(_type)
 {
 	exclusive_listener = NULL;
-	register_queue<keyboard::_key_proxy, key>::do_register(kbd.key_proxy, name, *this);
+	register_queue<keyboard, key>::do_register(kbd, name, *this);
 }
 
 void key::add_listener(event_listener& listener, bool analog) throw(std::bad_alloc)

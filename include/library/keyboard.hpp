@@ -36,48 +36,6 @@ public:
  */
 	~keyboard() throw();
 /**
- * Registration proxy for modifiers.
- *
- * This proxy is intended to be used together with register_queue.
- *
- * It is safe to use this proxy even in global ctor context.
- */
-	struct _modifier_proxy
-	{
-		_modifier_proxy(keyboard& kbd) : _kbd(kbd) {}
-		void do_register(const std::string& name, modifier& mod)
-		{
-			_kbd.do_register_modifier(name, mod);
-		}
-		void do_unregister(const std::string& name)
-		{
-			_kbd.do_unregister_modifier(name);
-		}
-	private:
-		keyboard& _kbd;
-	} modifier_proxy;
-/**
- * Registration proxy for keys.
- *
- * This proxy is intended to be used together with register_queue.
- *
- * It is safe to use this proxy even in global ctor context.
- */
-	struct _key_proxy
-	{
-		_key_proxy(keyboard& kbd) : _kbd(kbd) {}
-		void do_register(const std::string& name, key& key)
-		{
-			_kbd.do_register_key(name, key);
-		}
-		void do_unregister(const std::string& name)
-		{
-			_kbd.do_unregister_key(name);
-		}
-	private:
-		keyboard& _kbd;
-	} key_proxy;
-/**
  * Lookup modifier by name.
  *
  * Parameter name: The name of the modifier.
@@ -104,13 +62,13 @@ public:
  * Parameter name: The name of the modifier.
  * Parameter mod: The modifier.
  */
-	void do_register_modifier(const std::string& name, modifier& mod) throw(std::bad_alloc);
+	void do_register(const std::string& name, modifier& mod) throw(std::bad_alloc);
 /**
  * Unregister a modifier.
  *
  * Parameter name: The name of the modifier.
  */
-	void do_unregister_modifier(const std::string& name) throw();
+	void do_unregister(const std::string& name, modifier* dummy) throw();
 /**
  * Lookup key by name.
  *
@@ -138,13 +96,13 @@ public:
  * Parameter name: The name of the key.
  * Parameter mod: The key.
  */
-	void do_register_key(const std::string& name, key& mod) throw(std::bad_alloc);
+	void do_register(const std::string& name, key& mod) throw(std::bad_alloc);
 /**
  * Unregister a key.
  *
  * Parameter name: The name of the key.
  */
-	void do_unregister_key(const std::string& name) throw();
+	void do_unregister(const std::string& name, key* dummy) throw();
 /**
  * Set exclusive listener for all keys at once.
  */
@@ -181,8 +139,7 @@ public:
 	modifier(keyboard& keyb, const std::string& _name) throw(std::bad_alloc)
 		: kbd(keyb), name(_name)
 	{
-		register_queue<keyboard::_modifier_proxy, modifier>::do_register(kbd.modifier_proxy, name,
-			*this);
+		register_queue<keyboard, modifier>::do_register(kbd, name, *this);
 	}
 /**
  * Create a linked modifier in group.
@@ -194,15 +151,14 @@ public:
 	modifier(keyboard& keyb, const std::string& _name, const std::string& _link) throw(std::bad_alloc)
 		: kbd(keyb), name(_name), link(_link)
 	{
-		register_queue<keyboard::_modifier_proxy, modifier>::do_register(kbd.modifier_proxy, name,
-			*this);
+		register_queue<keyboard, modifier>::do_register(kbd, name, *this);
 	}
 /**
  * Destructor.
  */
 	~modifier() throw()
 	{
-		register_queue<keyboard::_modifier_proxy, modifier>::do_unregister(kbd.modifier_proxy, name);
+		register_queue<keyboard, modifier>::do_unregister(kbd, name);
 	}
 /**
  * Get associated keyboard.

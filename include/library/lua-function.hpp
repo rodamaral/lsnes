@@ -29,7 +29,7 @@ public:
 /**
  * Drop a function from group.
  */
-	void do_unregister(const std::string& name);
+	void do_unregister(const std::string& name, function* dummy);
 /**
  * Request callbacks on all currently registered functions.
  */

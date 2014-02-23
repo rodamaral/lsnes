@@ -72,7 +72,7 @@ void group::do_register(const std::string& name, base& _setting) throw(std::bad_
 	settings[name] = &_setting;
 }
 
-void group::do_unregister(const std::string& name) throw(std::bad_alloc)
+void group::do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc)
 {
 	umutex_class h(lock);
 	settings.erase(name);

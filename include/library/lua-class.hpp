@@ -30,7 +30,7 @@ public:
 /**
  * Drop a class from group.
  */
-	void do_unregister(const std::string& name);
+	void do_unregister(const std::string& name, class_base* dummy);
 /**
  * Request callbacks on all currently registered functions.
  */

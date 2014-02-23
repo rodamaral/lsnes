@@ -47,13 +47,14 @@ public:
 		umutex_class h(get_mutex());
 		auto& x = get_pending();
 		auto i = x.begin();
+		O* obj = NULL;
 		while(i != x.end()) {
 			auto e = i++;
 			if(&group == e->group && name == e->name)
 				x.erase(e);
 		}
 		if(get_ready().count(&group))
-			group.do_unregister(name);
+			group.do_unregister(name, obj);
 	}
 /**
  * Mark group ready/not ready.

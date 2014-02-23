@@ -255,22 +255,20 @@ namespace
 	}
 
 	typedef register_queue<state, function> regqueue_t;
-	typedef register_queue<state::callback_proxy, state::callback_list> regqueue2_t;
+	typedef register_queue<state, state::callback_list> regqueue2_t;
 	typedef register_queue<function_group, function> regqueue3_t;
 	typedef register_queue<class_group, class_base> regqueue4_t;
 }
 
 state::state() throw(std::bad_alloc)
-	: cbproxy(*this)
 {
 	master = NULL;
 	lua_handle = NULL;
 	oom_handler = builtin_oom;
-	regqueue2_t::do_ready(cbproxy, true);
+	regqueue2_t::do_ready(*this, true);
 }
 
 state::state(state& _master, lua_State* L)
-	: cbproxy(*this)
 {
 	master = &_master;
 	lua_handle = L;
@@ -284,7 +282,7 @@ state::~state() throw()
 		i.first->drop_callback(i.second);
 	for(auto i : class_groups)
 		i.first->drop_callback(i.second);
-	regqueue2_t::do_ready(cbproxy, false);
+	regqueue2_t::do_ready(*this, false);
 	if(lua_handle)
 		lua_close(lua_handle);
 }
@@ -433,12 +431,12 @@ bool state::do_once(void* key)
 state::callback_list::callback_list(state& _L, const std::string& _name, const std::string& fncbname)
 	: L(_L), name(_name), fn_cbname(fncbname)
 {
-	regqueue2_t::do_register(L.cbproxy, name, *this);
+	regqueue2_t::do_register(L, name, *this);
 }
 
 state::callback_list::~callback_list()
 {
-	regqueue2_t::do_unregister(L.cbproxy, name);
+	regqueue2_t::do_unregister(L, name);
 	if(!L.handle())
 		return;
 	for(auto& i : callbacks) {
@@ -518,7 +516,7 @@ void function_group::do_register(const std::string& name, function& fun)
 		i.second(name, &fun);
 }
 
-void function_group::do_unregister(const std::string& name)
+void function_group::do_unregister(const std::string& name, function* dummy)
 {
 	functions.erase(name);
 	for(auto i : callbacks)
@@ -570,7 +568,7 @@ void class_group::do_register(const std::string& name, class_base& fun)
 		i.second(name, &fun);
 }
 
-void class_group::do_unregister(const std::string& name)
+void class_group::do_unregister(const std::string& name, class_base* dummy)
 {
 	classes.erase(name);
 	for(auto i : callbacks)

@@ -103,7 +103,7 @@ ctrlrkey* mapper::get_controllerkey(const std::string& command) throw(std::bad_a
 		return NULL;
 }
 
-void mapper::do_register_inverse(const std::string& name, invbind& ibind) throw(std::bad_alloc)
+void mapper::do_register(const std::string& name, invbind& ibind) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	ibinds[name] = &ibind;
@@ -115,19 +115,19 @@ void mapper::do_register_inverse(const std::string& name, invbind& ibind) throw(
 		}
 }
 
-void mapper::do_unregister_inverse(const std::string& name) throw(std::bad_alloc)
+void mapper::do_unregister(const std::string& name, invbind* dummy) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	ibinds.erase(name);
 }
 
-void mapper::do_register_ckey(const std::string& name, ctrlrkey& ckey) throw(std::bad_alloc)
+void mapper::do_register(const std::string& name, ctrlrkey& ckey) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	ckeys[name] = &ckey;
 }
 
-void mapper::do_unregister_ckey(const std::string& name) throw(std::bad_alloc)
+void mapper::do_unregister(const std::string& name, ctrlrkey* dummy) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	ckeys.erase(name);
@@ -139,16 +139,16 @@ keyboard& mapper::get_keyboard() throw()
 }
 
 mapper::mapper(keyboard& _kbd, command::group& _domain) throw(std::bad_alloc)
-	: inverse_proxy(*this), controllerkey_proxy(*this), kbd(_kbd), domain(_domain)
+	: kbd(_kbd), domain(_domain)
 {
-	register_queue<_inverse_proxy, invbind>::do_ready(inverse_proxy, true);
-	register_queue<_controllerkey_proxy, ctrlrkey>::do_ready(controllerkey_proxy, true);
+	register_queue<mapper, invbind>::do_ready(*this, true);
+	register_queue<mapper, ctrlrkey>::do_ready(*this, true);
 }
 
 mapper::~mapper() throw()
 {
-	register_queue<_inverse_proxy, invbind>::do_ready(inverse_proxy, false);
-	register_queue<_controllerkey_proxy, ctrlrkey>::do_ready(controllerkey_proxy, false);
+	register_queue<mapper, invbind>::do_ready(*this, false);
+	register_queue<mapper, ctrlrkey>::do_ready(*this, false);
 }
 
 mapper::triplet::triplet(modifier_set _mod, modifier_set _mask, key& kkey,
@@ -384,12 +384,12 @@ invbind::invbind(mapper& kmapper, const std::string& _command, const std::string
 	throw(std::bad_alloc)
 	: _mapper(kmapper), cmd(_command), oname(_name)
 {
-	register_queue<mapper::_inverse_proxy, invbind>::do_register(_mapper.inverse_proxy, cmd, *this);
+	register_queue<mapper, invbind>::do_register(_mapper, cmd, *this);
 }
 
 invbind::~invbind() throw()
 {
-	register_queue<mapper::_inverse_proxy, invbind>::do_unregister(_mapper.inverse_proxy, cmd);
+	register_queue<mapper, invbind>::do_unregister(_mapper, cmd);
 }
 
 keyspec invbind::get(unsigned index) throw(std::bad_alloc)
@@ -427,14 +427,13 @@ ctrlrkey::ctrlrkey(mapper& kmapper, const std::string& _command, const std::stri
 	bool _axis) throw(std::bad_alloc)
 	: _mapper(kmapper), cmd(_command), oname(_name)
 {
-	register_queue<mapper::_controllerkey_proxy, ctrlrkey>::do_register(_mapper.controllerkey_proxy,
-		cmd, *this);
+	register_queue<mapper, ctrlrkey>::do_register(_mapper, cmd, *this);
 	axis = _axis;
 }
 
 ctrlrkey::~ctrlrkey() throw()
 {
-	register_queue<mapper::_controllerkey_proxy, ctrlrkey>::do_unregister(_mapper.controllerkey_proxy, cmd);
+	register_queue<mapper, ctrlrkey>::do_unregister(_mapper, cmd);
 }
 
 std::pair<key*, unsigned> ctrlrkey::get(unsigned index) throw()

@@ -156,55 +156,21 @@ public:
  */
 	std::list<ctrlrkey*> get_controllerkeys_kbdkey(key* kbdkey) throw(std::bad_alloc);
 /**
- * Proxy for inverse bind registrations.
- */
-	struct _inverse_proxy
-	{
-		_inverse_proxy(mapper& mapper) : _mapper(mapper) {}
-		void do_register(const std::string& name, invbind& ibind)
-		{
-			_mapper.do_register_inverse(name, ibind);
-		}
-		void do_unregister(const std::string& name)
-		{
-			_mapper.do_unregister_inverse(name);
-		}
-	private:
-		mapper& _mapper;
-	} inverse_proxy;
-/**
- * Proxy for controller key registrations.
- */
-	struct _controllerkey_proxy
-	{
-		_controllerkey_proxy(mapper& mapper) : _mapper(mapper) {}
-		void do_register(const std::string& name, ctrlrkey& ckey)
-		{
-			_mapper.do_register_ckey(name, ckey);
-		}
-		void do_unregister(const std::string& name)
-		{
-			_mapper.do_unregister_ckey(name);
-		}
-	private:
-		mapper& _mapper;
-	} controllerkey_proxy;
-/**
  * Register inverse bind.
  */
-	void do_register_inverse(const std::string& name, invbind& bind) throw(std::bad_alloc);
+	void do_register(const std::string& name, invbind& bind) throw(std::bad_alloc);
 /**
  * Unregister inverse bind.
  */
-	void do_unregister_inverse(const std::string& name) throw(std::bad_alloc);
+	void do_unregister(const std::string& name, invbind* dummy) throw(std::bad_alloc);
 /**
  * Register controller key.
  */
-	void do_register_ckey(const std::string& name, ctrlrkey& ckey) throw(std::bad_alloc);
+	void do_register(const std::string& name, ctrlrkey& ckey) throw(std::bad_alloc);
 /**
  * Unregister inverse bind.
  */
-	void do_unregister_ckey(const std::string& name) throw(std::bad_alloc);
+	void do_unregister(const std::string& name, ctrlrkey* dummy) throw(std::bad_alloc);
 /**
  * Get keyboard.
  */
