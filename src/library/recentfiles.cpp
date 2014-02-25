@@ -38,7 +38,6 @@ bool path::check() const
 		return false;
 	try {
 		return zip::file_exists(pth);
-		return true;
 	} catch(...) {
 		return false;
 	}
@@ -170,6 +169,45 @@ bool multirom::operator==(const multirom& p) const
 	return true;
 }
 
+namedobj::namedobj()
+{
+}
+
+std::string namedobj::serialize() const
+{
+	if(_id == "" && _filename == "" && _display == "") return "";
+	JSON::node output(JSON::object);
+	output["id"] = JSON::string(_id);
+	output["filename"] = JSON::string(_filename);
+	output["display"] = JSON::string(_display);
+	return output.serialize();
+}
+
+namedobj namedobj::deserialize(const std::string& s)
+{
+	namedobj obj;
+	JSON::node d(s);
+	if(d.field_exists("id")) obj._id = d["id"].as_string8();
+	if(d.field_exists("filename")) obj._filename = d["filename"].as_string8();
+	if(d.field_exists("display")) obj._display = d["display"].as_string8();
+	return obj;
+}
+
+bool namedobj::check() const
+{
+	return zip::file_exists(_filename);
+}
+
+std::string namedobj::display() const
+{
+	return _display;
+}
+
+bool namedobj::operator==(const namedobj& p) const
+{
+	return (_id == p._id);
+}
+
 template<class T> set<T>::set(const std::string& _cfgfile, size_t _maxcount)
 {
 	cfgfile = _cfgfile;
@@ -269,5 +307,10 @@ void _dummy_63263632747434353545()
 	eat_argument(&set<multirom>::add_hook);
 	eat_argument(&set<multirom>::remove_hook);
 	eat_argument(&set<multirom>::get);
+	set<namedobj> z("", 0);
+	eat_argument(&set<namedobj>::add);
+	eat_argument(&set<namedobj>::add_hook);
+	eat_argument(&set<namedobj>::remove_hook);
+	eat_argument(&set<namedobj>::get);
 }
 }

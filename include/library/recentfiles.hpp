@@ -41,6 +41,21 @@ public:
 	std::vector<std::string> files;
 };
 
+class namedobj
+{
+public:
+	namedobj();
+	std::string serialize() const;
+	static namedobj deserialize(const std::string& s);
+	bool check() const;
+	std::string display() const;
+	bool operator==(const namedobj& p) const;
+
+	std::string _id;
+	std::string _filename;
+	std::string _display;
+};
+
 struct hook
 {
 	virtual ~hook();
