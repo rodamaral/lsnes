@@ -6,6 +6,7 @@
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/menu_recent.hpp"
 #include "platform/wxwidgets/menu_loadrom.hpp"
+#include "platform/wxwidgets/menu_projects.hpp"
 #include "library/dispatch.hpp"
 #include "library/recentfiles.hpp"
 
@@ -60,6 +61,7 @@ public:
 private:
 	void do_load_rom_image(core_type* t);
 	void handle_menu_click_cancelable(wxCommandEvent& e);
+	void project_selected(const std::string& id);
 	panel* gpanel;
 	wxMenu* current_menu;
 	wxMenuBar* menubar;
@@ -75,6 +77,7 @@ private:
 	void* sounddev1;
 	void* sounddev2;
 	void* dmenu;
+	projects_menu* projects;
 	wxTimer* focus_timer;
 	struct dispatch::target<> corechange;
 	struct dispatch::target<> titlechange;

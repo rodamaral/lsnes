@@ -45,6 +45,8 @@ struct project_info
 	std::map<uint64_t, project_branch_info> branches;
 	uint64_t active_branch;
 	uint64_t next_branch;
+	//Filename this was loaded from.
+	std::string filename;
 	//Stub movie data.
 	std::string gametype;
 	std::map<std::string, std::string> settings;

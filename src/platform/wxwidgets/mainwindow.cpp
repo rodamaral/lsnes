@@ -12,6 +12,7 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/menu_tracelog.hpp"
 #include "platform/wxwidgets/menu_branches.hpp"
+#include "platform/wxwidgets/menu_projects.hpp"
 
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
@@ -115,7 +116,6 @@ enum
 	wxID_MOVIE_EDIT,
 	wxID_TASINPUT,
 	wxID_NEW_PROJECT,
-	wxID_LOAD_PROJECT,
 	wxID_CLOSE_PROJECT,
 	wxID_CLOSE_ROM,
 	wxID_EDIT_MACROS,
@@ -137,6 +137,8 @@ enum
 	wxID_PLUGIN_MANAGER,
 	wxID_BRANCH_FIRST,
 	wxID_BRANCH_LAST = wxID_BRANCH_FIRST + 10240,
+	wxID_PROJECT_FIRST,
+	wxID_PROJECT_LAST = wxID_PROJECT_FIRST + 17,
 	wxID_DISASSEMBLER,
 };
 
@@ -1052,7 +1054,9 @@ wxwin_mainwindow::wxwin_mainwindow(bool fscreen)
 	menu_entry(wxID_LOAD_ROM_IMAGE_FIRST, wxT("ROM..."));
 	menu_special_sub(wxT("Multifile ROM"), loadroms = new loadrom_menu(this, wxID_LOAD_ROM_IMAGE_FIRST + 1,
 		wxID_LOAD_ROM_IMAGE_LAST, [this](core_type* t) { this->do_load_rom_image(t); }));
-	menu_entry(wxID_LOAD_PROJECT, wxT("Project..."));
+	menu_special_sub(wxT("Project"), projects = new projects_menu(this, wxID_PROJECT_FIRST, wxID_PROJECT_LAST,
+		get_config_path() + "/recent-projects.txt", [this](const std::string& id) {
+		this->project_selected(id); }));
 	menu_separator();
 	menu_special_sub(wxT("Recent ROMs"), recent_roms = new recent_menu<recentfiles::multirom>(this,
 		wxID_RROM_FIRST, wxID_RROM_LAST, get_config_path() + "/recent-roms.txt", recent_rom_selected));
@@ -1386,6 +1390,31 @@ namespace
 	struct movie_or_savestate filetype_savestate(true);
 }
 
+void wxwin_mainwindow::project_selected(const std::string& id)
+{
+	std::string filename, displayname;
+	bool load_ok = false;
+	runemufn([id, &filename, &displayname, &load_ok]() -> void {
+		try {
+			auto& p = project_load(id);	//Check.
+			filename = p.filename;
+			displayname = p.name;
+			load_ok = true;
+			delete &p;
+			switch_projects(id);
+		} catch(std::exception& e) {
+			messages << "Failed to change project: " << e.what() << std::endl;
+		}
+	});
+	if(load_ok) {
+		recentfiles::namedobj obj;
+		obj._id = id;
+		obj._filename = filename;
+		obj._display = displayname;
+		projects->add(obj);
+	}
+}
+
 void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 {
 	std::string filename;
@@ -1689,36 +1718,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_NEW_PROJECT:
 		open_new_project_window(this);
 		return;
-	case wxID_LOAD_PROJECT: {
-		auto projects = project_enumerate();
-		std::vector<std::string> a;
-		std::vector<wxString> b;
-		for(auto i : projects) {
-			a.push_back(i.first);
-			b.push_back(towxstring(i.second));
-		}
-		if(a.empty()) {
-			show_message_ok(this, "Load project", "No projects available", wxICON_EXCLAMATION);
-			return;
-		}
-		wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(this, wxT("Select project to switch to:"),
-			wxT("Load project"), b.size(), &b[0]);
-		if(d2->ShowModal() == wxID_CANCEL) {
-			d2->Destroy();
-			throw canceled_exception();
-		}
-		std::string id = a[d2->GetSelection()];
-		runemufn([id]() -> void {
-			try {
-				delete &project_load(id);	//Check.
-				switch_projects(id);
-			} catch(std::exception& e) {
-				messages << "Failed to change project: " << e.what() << std::endl;
-			}
-
-		});
-		return;
-	}
 	case wxID_CLOSE_PROJECT:
 		runemufn([]() -> void { project_set(NULL); });
 		return;

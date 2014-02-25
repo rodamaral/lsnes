@@ -200,6 +200,7 @@ project_info& project_load(const std::string& id)
 	pi.movie_rtc_subsecond = 0;
 	pi.active_branch = 0;
 	pi.next_branch = 0;
+	pi.filename = file;
 	//First line is always project name.
 	std::getline(f, pi.name);
 	if(!f || pi.name == "") {
