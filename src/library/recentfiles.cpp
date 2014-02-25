@@ -185,7 +185,12 @@ template<class T> void set<T>::add(const T& file)
 		std::string f;
 		while(in) {
 			std::getline(in, f);
-			T g = T::deserialize(f);
+			T g;
+			try {
+				g = T::deserialize(f);
+			} catch(...) {
+				continue;
+			}
 			if(g.check())
 				ents.push_back(g);
 		}
@@ -233,7 +238,12 @@ template<class T> std::list<T> set<T>::get()
 		std::string f;
 		while(in) {
 			std::getline(in, f);
-			T g = T::deserialize(f);
+			T g;
+			try {
+				g = T::deserialize(f);
+			} catch(...) {
+				continue;
+			}
 			if(c < maxcount && g.check()) {
 				ents.push_back(g);
 				c++;
