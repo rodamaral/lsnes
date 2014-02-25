@@ -62,8 +62,8 @@ template<class T> void recent_menu<T>::add(const T& file)
 
 void _dummy_3642632773273272787237272723()
 {
-	recent_menu<recentfile_path> x(NULL, 0, 0, "", NULL);
-	recent_menu<recentfile_multirom> y(NULL, 0, 0, "", NULL);
-	eat_argument(&recent_menu<recentfile_path>::add);
-	eat_argument(&recent_menu<recentfile_multirom>::add);
+	recent_menu<recentfiles::path> x(NULL, 0, 0, "", NULL);
+	recent_menu<recentfiles::multirom> y(NULL, 0, 0, "", NULL);
+	eat_argument(&recent_menu<recentfiles::path>::add);
+	eat_argument(&recent_menu<recentfiles::multirom>::add);
 }

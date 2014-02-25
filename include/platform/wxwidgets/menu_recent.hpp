@@ -16,7 +16,7 @@ public:
 	void update();
 	void add(const T& file);
 private:
-	class rhook : public recent_files_hook
+	class rhook : public recentfiles::hook
 	{
 	public:
 		rhook(recent_menu& _pmenu) : pmenu(_pmenu) {}
@@ -25,7 +25,7 @@ private:
 	private:
 		recent_menu& pmenu;
 	} hook;
-	recent_files<T> rfiles;
+	recentfiles::set<T> rfiles;
 	wxWindow* pwin;
 	std::map<int, T> entries;
 	std::map<int, wxMenuItem*> items;

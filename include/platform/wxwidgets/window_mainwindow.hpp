@@ -52,9 +52,9 @@ public:
 	void action_updated();
 	void enter_or_leave_fullscreen(bool fs);
 	void request_rom(rom_request& req);
-	recent_menu<recentfile_multirom>* recent_roms;
-	recent_menu<recentfile_path>* recent_movies;
-	recent_menu<recentfile_path>* recent_scripts;
+	recent_menu<recentfiles::multirom>* recent_roms;
+	recent_menu<recentfiles::path>* recent_movies;
+	recent_menu<recentfiles::path>* recent_scripts;
 	loadrom_menu* loadroms;
 	file_download* download_in_progress;
 private:

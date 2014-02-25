@@ -6,30 +6,32 @@
 #include <list>
 #include <vector>
 
-class recentfile_path
+namespace recentfiles
+{
+class path
 {
 public:
-	recentfile_path();
-	recentfile_path(const std::string& p);
+	path();
+	path(const std::string& p);
 	std::string serialize() const;
-	static recentfile_path deserialize(const std::string& s);
+	static path deserialize(const std::string& s);
 	bool check() const;
 	std::string display() const;
 	std::string get_path() const;
-	bool operator==(const recentfile_path& p) const;
+	bool operator==(const path& p) const;
 private:
-	std::string path;
+	std::string pth;
 };
 
-class recentfile_multirom
+class multirom
 {
 public:
-	recentfile_multirom();
+	multirom();
 	std::string serialize() const;
-	static recentfile_multirom deserialize(const std::string& s);
+	static multirom deserialize(const std::string& s);
 	bool check() const;
 	std::string display() const;
-	bool operator==(const recentfile_multirom& p) const;
+	bool operator==(const multirom& p) const;
 
 	std::string packfile;
 	std::string singlefile;
@@ -39,25 +41,25 @@ public:
 	std::vector<std::string> files;
 };
 
-struct recent_files_hook
+struct hook
 {
-	virtual ~recent_files_hook();
+	virtual ~hook();
 	virtual void operator()() = 0;
 };
 
 template<class T>
-class recent_files
+class set
 {
 public:
-	recent_files(const std::string& cfgfile, size_t maxcount) __attribute__((noinline));
+	set(const std::string& cfgfile, size_t maxcount) __attribute__((noinline));
 	void add(const T& file);
-	void add_hook(recent_files_hook& h);
-	void remove_hook(recent_files_hook& h);
+	void add_hook(hook& h);
+	void remove_hook(hook& h);
 	std::list<T> get();
 private:
 	std::string cfgfile;
 	size_t maxcount;
-	std::list<recent_files_hook*> hooks;
+	std::list<hook*> hooks;
 };
-
+}
 #endif

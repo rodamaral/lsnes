@@ -77,7 +77,7 @@ namespace
 			return;
 		}
 		romload_request req;
-		recentfile_multirom mr;
+		recentfiles::multirom mr;
 		std::string filename = tostdstring(d->GetPath());
 		int findex = d->GetFilterIndex();
 		if(!coreid.count(findex)) {
@@ -319,7 +319,7 @@ namespace
 		std::string region = d->getregion();
 		delete d;
 		romload_request req;
-		recentfile_multirom mr;
+		recentfiles::multirom mr;
 		mr.core = req.core = t.get_core_identifier();
 		mr.system = req.system = t.get_iname();
 		mr.region = req.region = region;

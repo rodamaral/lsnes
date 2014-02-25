@@ -5,59 +5,61 @@
 #include "string.hpp"
 #include <fstream>
 
-recentfile_path::recentfile_path()
+namespace recentfiles
+{
+path::path()
 {
 }
 
-recentfile_path::recentfile_path(const std::string& p)
+path::path(const std::string& p)
 {
-	path = p;
+	pth = p;
 }
 
-std::string recentfile_path::serialize() const
+std::string path::serialize() const
 {
-	return path;
+	return pth;
 }
 
-recentfile_path recentfile_path::deserialize(const std::string& s)
+path path::deserialize(const std::string& s)
 {
-	recentfile_path p(s);
+	path p(s);
 	return p;
 }
 
-std::string recentfile_path::get_path() const
+std::string path::get_path() const
 {
-	return path;
+	return pth;
 }
 
-bool recentfile_path::check() const
+bool path::check() const
 {
-	if(path == "")
+	if(pth == "")
 		return false;
 	try {
-		return zip::file_exists(path);
+		return zip::file_exists(pth);
 		return true;
 	} catch(...) {
 		return false;
 	}
 }
 
-std::string recentfile_path::display() const
+std::string path::display() const
 {
-	return path;
+	return pth;
 }
 
-bool recentfile_path::operator==(const recentfile_path& p) const
+bool path::operator==(const path& p) const
 {
-	return p.path == path;
+	return p.pth == pth;
 }
 
-recentfile_multirom::recentfile_multirom()
+multirom::multirom()
 {
 	//Nothing to do.
 }
 
-std::string recentfile_multirom::serialize() const
+std::string multirom::serialize() const
 {
 	bool any = false;
 	JSON::node output(JSON::object);
@@ -85,9 +87,9 @@ std::string recentfile_multirom::serialize() const
 	return output.serialize();
 }
 
-recentfile_multirom recentfile_multirom::deserialize(const std::string& s)
+multirom multirom::deserialize(const std::string& s)
 {
-	recentfile_multirom r;
+	multirom r;
 	if(s.length() > 0 && s[0] == '{') {
 		//JSON.
 		try {
@@ -118,7 +120,7 @@ recentfile_multirom recentfile_multirom::deserialize(const std::string& s)
 	return r;
 }
 
-bool recentfile_multirom::check() const
+bool multirom::check() const
 {
 	if(packfile == "" && singlefile == "" && core == "" && system == "" && region == "" && files.empty())
 		return false;
@@ -132,7 +134,7 @@ bool recentfile_multirom::check() const
 	return true;
 }
 
-std::string recentfile_multirom::display() const
+std::string multirom::display() const
 {
 	if(packfile != "")
 		return packfile;
@@ -148,7 +150,7 @@ std::string recentfile_multirom::display() const
 	}
 }
 
-bool recentfile_multirom::operator==(const recentfile_multirom& p) const
+bool multirom::operator==(const multirom& p) const
 {
 	if(packfile != p.packfile)
 		return false;
@@ -168,13 +170,13 @@ bool recentfile_multirom::operator==(const recentfile_multirom& p) const
 	return true;
 }
 
-template<class T> recent_files<T>::recent_files(const std::string& _cfgfile, size_t _maxcount)
+template<class T> set<T>::set(const std::string& _cfgfile, size_t _maxcount)
 {
 	cfgfile = _cfgfile;
 	maxcount = _maxcount;
 }
 
-template<class T> void recent_files<T>::add(const T& file)
+template<class T> void set<T>::add(const T& file)
 {
 	std::list<T> ents;
 	//Load the list.
@@ -207,12 +209,12 @@ template<class T> void recent_files<T>::add(const T& file)
 		(*i)();
 }
 
-template<class T> void recent_files<T>::add_hook(recent_files_hook& h)
+template<class T> void set<T>::add_hook(hook& h)
 {
 	hooks.push_back(&h);
 }
 
-template<class T> void recent_files<T>::remove_hook(recent_files_hook& h)
+template<class T> void set<T>::remove_hook(hook& h)
 {
 	for(auto itr = hooks.begin(); itr != hooks.end(); itr++)
 		if(*itr == &h) {
@@ -221,7 +223,7 @@ template<class T> void recent_files<T>::remove_hook(recent_files_hook& h)
 		}
 }
 
-template<class T> std::list<T> recent_files<T>::get()
+template<class T> std::list<T> set<T>::get()
 {
 	size_t c = 0;
 	std::list<T> ents;
@@ -241,20 +243,21 @@ template<class T> std::list<T> recent_files<T>::get()
 	return ents;
 }
 
-recent_files_hook::~recent_files_hook()
+hook::~hook()
 {
 }
 
 void _dummy_63263632747434353545()
 {
-	recent_files<recentfile_path> x("", 0);
-	eat_argument(&recent_files<recentfile_path>::add);
-	eat_argument(&recent_files<recentfile_path>::add_hook);
-	eat_argument(&recent_files<recentfile_path>::remove_hook);
-	eat_argument(&recent_files<recentfile_path>::get);
-	recent_files<recentfile_multirom> y("", 0);
-	eat_argument(&recent_files<recentfile_multirom>::add);
-	eat_argument(&recent_files<recentfile_multirom>::add_hook);
-	eat_argument(&recent_files<recentfile_multirom>::remove_hook);
-	eat_argument(&recent_files<recentfile_multirom>::get);
+	set<path> x("", 0);
+	eat_argument(&set<path>::add);
+	eat_argument(&set<path>::add_hook);
+	eat_argument(&set<path>::remove_hook);
+	eat_argument(&set<path>::get);
+	set<multirom> y("", 0);
+	eat_argument(&set<multirom>::add);
+	eat_argument(&set<multirom>::add_hook);
+	eat_argument(&set<multirom>::remove_hook);
+	eat_argument(&set<multirom>::get);
+}
 }

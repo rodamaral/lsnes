@@ -259,9 +259,9 @@ namespace
 		return std::make_pair("", l);
 	}
 
-	recentfile_multirom loadreq_to_multirom(const romload_request& req)
+	recentfiles::multirom loadreq_to_multirom(const romload_request& req)
 	{
-		recentfile_multirom r;
+		recentfiles::multirom r;
 		r.packfile = req.packfile;
 		r.singlefile = req.singlefile;
 		r.core = req.core;
@@ -527,7 +527,7 @@ namespace
 		return parsed;
 	}
 
-	void recent_rom_selected(const recentfile_multirom& file)
+	void recent_rom_selected(const recentfiles::multirom& file)
 	{
 		romload_request req;
 		req.packfile = file.packfile;
@@ -543,12 +543,12 @@ namespace
 		});
 	}
 
-	void recent_movie_selected(const recentfile_path& file)
+	void recent_movie_selected(const recentfiles::path& file)
 	{
 		platform::queue("load-smart " + file.get_path());
 	}
 
-	void recent_script_selected(const recentfile_path& file)
+	void recent_script_selected(const recentfiles::path& file)
 	{
 		platform::queue("run-lua " + file.get_path());
 	}
@@ -1054,12 +1054,12 @@ wxwin_mainwindow::wxwin_mainwindow(bool fscreen)
 		wxID_LOAD_ROM_IMAGE_LAST, [this](core_type* t) { this->do_load_rom_image(t); }));
 	menu_entry(wxID_LOAD_PROJECT, wxT("Project..."));
 	menu_separator();
-	menu_special_sub(wxT("Recent ROMs"), recent_roms = new recent_menu<recentfile_multirom>(this,
+	menu_special_sub(wxT("Recent ROMs"), recent_roms = new recent_menu<recentfiles::multirom>(this,
 		wxID_RROM_FIRST, wxID_RROM_LAST, get_config_path() + "/recent-roms.txt", recent_rom_selected));
-	menu_special_sub(wxT("Recent Movies"), recent_movies = new recent_menu<recentfile_path>(this,
+	menu_special_sub(wxT("Recent Movies"), recent_movies = new recent_menu<recentfiles::path>(this,
 		wxID_RMOVIE_FIRST, wxID_RMOVIE_LAST, get_config_path() + "/recent-movies.txt",
 		recent_movie_selected));
-	menu_special_sub(wxT("Recent Lua scripts"), recent_scripts = new recent_menu<recentfile_path>(this,
+	menu_special_sub(wxT("Recent Lua scripts"), recent_scripts = new recent_menu<recentfiles::path>(this,
 		wxID_RLUA_FIRST, wxID_RLUA_LAST, get_config_path() + "/recent-scripts.txt",
 		recent_script_selected));
 	menu_separator();
