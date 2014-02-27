@@ -159,7 +159,9 @@ struct core_romimage_info
  */
 struct core_romimage_info_collection
 {
+	core_romimage_info_collection();
 	core_romimage_info_collection(std::initializer_list<core_romimage_info_params> idata);
+	core_romimage_info_collection(std::vector<core_romimage_info_params> idata);
 	std::vector<core_romimage_info> get() const { return data; }
 private:
 	std::vector<core_romimage_info> data;
@@ -177,7 +179,9 @@ struct core_vma_info
 		backing_ram = NULL;
 		readonly = false;
 		volatile_flag = false;
-		iospace_rw = NULL;
+		special = false;
+		read = NULL;
+		write = NULL;
 	}
 /**
  * Name of the VMA.
@@ -200,6 +204,10 @@ struct core_vma_info
  */
 	bool readonly;
 /**
+ * If true, the VMA has special read/write semantics (no consistency assumed).
+ */
+	bool special;
+/**
  * Default endianess. -1 => Little endian, 0 => The same as host system, 1 => Big endian.
  */
 	int endian;
@@ -211,11 +219,16 @@ struct core_vma_info
  * If backing_ram is NULL, this routine is used to access the memory one byte at a time.
  *
  * Parameter offset: The offset into VMA to access.
- * Parameter data: Byte to write. Ignored if write = false.
- * Parameter write: If true, do write, otherwise do read.
- * Returns: The read value. Only valid if write = false.
+ * Returns: The read value.
  */
-	uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write);
+	uint8_t (*read)(uint64_t offset);
+/**
+ * If backing_ram is NULL, this routine is used to access the memory one byte at a time.
+ *
+ * Parameter offset: The offset into VMA to access.
+ * Parameter data: Byte to write.
+ */
+	void (*write)(uint64_t offset, uint8_t data);
 };
 
 /**
@@ -298,6 +311,7 @@ struct core_romimage
 struct core_core
 {
 	core_core(std::initializer_list<port_type*> ports, std::initializer_list<interface_action> actions);
+	core_core(std::vector<port_type*> ports, std::vector<interface_action> actions);
 	~core_core() throw();
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();

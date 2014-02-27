@@ -306,7 +306,7 @@ namespace
 		*(buffer_ptr++) = instance->get_cpureg(gambatte::GB::REG_HF1) ? '1' : '-';
 		*(buffer_ptr++) = instance->get_cpureg(gambatte::GB::REG_HF2) ? '2' : '-';
 		*(buffer_ptr++) = '\0';
-		ecore_callbacks->memory_trace(0, buffer);
+		ecore_callbacks->memory_trace(0, buffer, true);
 	}
 
 	void basic_init()
@@ -413,16 +413,19 @@ namespace
 	}
 
 #ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
-	uint8_t gambatte_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	uint8_t gambatte_bus_read(uint64_t offset)
 	{
-		uint8_t val = 0;
 		disable_breakpoints = true;
-		if(write)
-			instance->bus_write(offset, data);
-		else
-			val = instance->bus_read(offset);
+		uint8_t val = instance->bus_read(offset);
 		disable_breakpoints = false;
 		return val;
+	}
+
+	void gambatte_bus_write(uint64_t offset, uint8_t data)
+	{
+		disable_breakpoints = true;
+		instance->bus_write(offset, data);
+		disable_breakpoints = false;
 	}
 #endif
 
@@ -483,7 +486,9 @@ namespace
 		bus.name = "BUS";
 		bus.base = 0x1000000;
 		bus.size = 0x10000;
-		bus.iospace_rw = gambatte_bus_iospace_rw;
+		bus.backing_ram = NULL;
+		bus.read = gambatte_bus_read;
+		bus.write = gambatte_bus_write;
 		bus.endian = -1;
 		vmas.push_back(bus);
 #endif

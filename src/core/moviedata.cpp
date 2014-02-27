@@ -294,12 +294,8 @@ namespace
 	void populate_volatile_ram(moviefile& mf, std::list<core_vma_info>& vmas)
 	{
 		for(auto i : vmas) {
-			if(!i.volatile_flag)
-				continue;
-			if(i.readonly)
-				continue;
-			//FIXME: The special flag might have to be split.
-			if(i.iospace_rw)
+			//Only regions that are marked as volatile, readwrite not special are initializable.
+			if(!i.volatile_flag || i.readonly || i.special)
 				continue;
 			if(!mf.ramcontent.count(i.name))
 				continue;
@@ -308,7 +304,7 @@ namespace
 				memcpy(i.backing_ram, &mf.ramcontent[i.name][0], csize);
 			else
 				for(uint64_t o = 0; o < csize; o++)
-					i.iospace_rw(o, mf.ramcontent[i.name][o], true);
+					i.write(o, mf.ramcontent[i.name][o]);
 		}
 	}
 

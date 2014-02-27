@@ -1,4 +1,5 @@
 #include "core/loadlib.hpp"
+#include "interface/c-interface.hpp"
 #include "interface/romtype.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
@@ -82,6 +83,11 @@ void with_loaded_library(const loadlib::module& l)
 			opus::load_libopus(l);
 	} catch(...) {
 		//This wasn't libopus.
+	}
+	try {
+		try_init_c_module(l);
+	} catch(...) {
+		//Ignored.
 	}
 }
 

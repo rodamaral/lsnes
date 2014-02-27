@@ -23,6 +23,7 @@
 #include "core/romloader.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/c-interface.hpp"
 #include "interface/callbacks.hpp"
 #include "interface/romtype.hpp"
 #include "library/framebuffer.hpp"
@@ -527,9 +528,9 @@ public:
 		debug_fire_callback_exec(addr, proc);
 	}
 
-	void memory_trace(uint64_t proc, const char* str)
+	void memory_trace(uint64_t proc, const char* str, bool insn)
 	{
-		debug_fire_callback_trace(proc, str);
+		debug_fire_callback_trace(proc, str, insn);
 	}
 };
 
@@ -1184,6 +1185,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	our_rom = rom;
 	lsnes_callbacks lsnes_callbacks_obj;
 	ecore_callbacks = &lsnes_callbacks_obj;
+	initialize_all_builtin_c_cores();
 	core_core::install_all_handlers();
 
 	//Load our given movie.

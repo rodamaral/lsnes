@@ -626,7 +626,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 	return ret;
 }
 
-std::vector<char> loaded_rom::save_core_state(bool nochecksum) throw(std::bad_alloc)
+std::vector<char> loaded_rom::save_core_state(bool nochecksum) throw(std::bad_alloc, std::runtime_error)
 {
 	std::vector<char> ret;
 	rtype->serialize(ret);

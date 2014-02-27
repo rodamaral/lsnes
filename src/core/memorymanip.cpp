@@ -22,22 +22,22 @@ memory_space lsnes_memory;
 
 namespace
 {
-	uint8_t lsnes_mmio_iospace_handler(uint64_t offset, uint8_t data, bool write)
+	uint8_t lsnes_mmio_iospace_read(uint64_t offset)
 	{
 		try {
-			if(offset >= 0 && offset < 8 && !write) {
+			if(offset >= 0 && offset < 8) {
 				//Frame counter.
 				uint64_t x = movb.get_movie().get_current_frame();
 				return x >> (8 * (offset & 7));
-			} else if(offset >= 8 && offset < 16 && !write) {
+			} else if(offset >= 8 && offset < 16) {
 				//Movie length.
 				uint64_t x = movb.get_movie().get_frame_count();
 				return x >> (8 * (offset & 7));
-			} else if(offset >= 16 && offset < 24 && !write) {
+			} else if(offset >= 16 && offset < 24) {
 				//Lag counter.
 				uint64_t x = movb.get_movie().get_lag_frames();
 				return x >> (8 * (offset & 7));
-			} else if(offset >= 24 && offset < 32 && !write) {
+			} else if(offset >= 24 && offset < 32) {
 				//Rerecord counter.
 				uint64_t x = movb.get_rrdata().count();
 				return x >> (8 * (offset & 7));
@@ -48,19 +48,25 @@ namespace
 		}
 	}
 
+	void lsnes_mmio_iospace_write(uint64_t offset, uint8_t data)
+	{
+		//Ignore.
+	}
+
 	class iospace_region : public memory_region
 	{
 	public:
-		iospace_region(const std::string& _name, uint64_t _base, uint64_t _size,
-			uint8_t (*_iospace_rw)(uint64_t offset, uint8_t data, bool write))
+		iospace_region(const std::string& _name, uint64_t _base, uint64_t _size, bool _special,
+			uint8_t (*_read)(uint64_t offset), void (*_write)(uint64_t offset, uint8_t data))
 		{
 			name = _name;
 			base = _base;
 			size = _size;
-			iospace_rw = _iospace_rw;
+			Xread = _read;
+			Xwrite = _write;
 			endian = -1;
-			readonly = false;
-			special = true;
+			readonly = (_write == NULL);
+			special = _special;
 			direct_map = NULL;
 		}
 		~iospace_region() throw() {}
@@ -68,16 +74,17 @@ namespace
 		{
 			uint8_t* _buffer = reinterpret_cast<uint8_t*>(buffer);
 			for(size_t i = 0; i < rsize; i++)
-				_buffer[i] = iospace_rw(offset + i, 0, false);
+				_buffer[i] = Xread(offset + i);
 		}
 		bool write(uint64_t offset, const void* buffer, size_t rsize)
 		{
 			const uint8_t* _buffer = reinterpret_cast<const uint8_t*>(buffer);
 			for(size_t i = 0; i < rsize; i++)
-				iospace_rw(offset + i, _buffer[i], true);
+				Xwrite(offset + i, _buffer[i]);
 			return offset + rsize <= size;
 		}
-		uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write);
+		uint8_t (*Xread)(uint64_t offset);
+		void (*Xwrite)(uint64_t offset, uint8_t data);
 	};
 }
 
@@ -90,12 +97,13 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 	memory_region* tmp = NULL;
 	auto vmalist = our_rom.rtype->vma_list();
 	try {
-		tmp = new iospace_region("LSNESMMIO", 0xFFFFFFFF00000000ULL, 32, lsnes_mmio_iospace_handler);
+		tmp = new iospace_region("LSNESMMIO", 0xFFFFFFFF00000000ULL, 32, true, lsnes_mmio_iospace_read,
+			lsnes_mmio_iospace_write);
 		regions.push_back(tmp);
 		tmp = NULL;
 		for(auto i : vmalist) {
-			if(i.iospace_rw)
-				tmp = new iospace_region(i.name, i.base, i.size, i.iospace_rw);
+			if(!i.backing_ram)
+				tmp = new iospace_region(i.name, i.base, i.size, i.special, i.read, i.write);
 			else
 				tmp = new memory_region_direct(i.name, i.base, i.endian,
 					reinterpret_cast<uint8_t*>(i.backing_ram), i.size, i.readonly);

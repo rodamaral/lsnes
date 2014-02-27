@@ -92,7 +92,7 @@ struct loaded_rom
  * returns: The saved state.
  * throws std::bad_alloc: Not enough memory.
  */
-	std::vector<char> save_core_state(bool nochecksum = false) throw(std::bad_alloc);
+	std::vector<char> save_core_state(bool nochecksum = false) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Loads core state from buffer.

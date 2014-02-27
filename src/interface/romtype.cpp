@@ -382,6 +382,19 @@ core_core::core_core(std::initializer_list<port_type*> ports, std::initializer_l
 	new_core_flag = true;
 }
 
+core_core::core_core(std::vector<port_type*> ports, std::vector<interface_action> x_actions)
+{
+	for(auto i : ports)
+		port_types.push_back(i);
+	for(auto i : x_actions)
+		actions[i._symbol] = i;
+
+	hidden = false;
+	uninitialized_cores_set().insert(this);
+	all_cores_set().insert(this);
+	new_core_flag = true;
+}
+
 core_core::~core_core() throw()
 {
 	all_cores().erase(this);
@@ -566,7 +579,17 @@ emucore_callbacks::~emucore_callbacks() throw()
 {
 }
 
+core_romimage_info_collection::core_romimage_info_collection()
+{
+}
+
 core_romimage_info_collection::core_romimage_info_collection(std::initializer_list<core_romimage_info_params> idata)
+{
+	for(auto i : idata)
+		data.push_back(core_romimage_info(i));
+}
+
+core_romimage_info_collection::core_romimage_info_collection(std::vector<core_romimage_info_params> idata)
 {
 	for(auto i : idata)
 		data.push_back(core_romimage_info(i));

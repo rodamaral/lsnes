@@ -117,6 +117,7 @@ struct core_setting
  */
 struct core_setting_group
 {
+	core_setting_group();
 /**
  * Create a new group of settings.
  */

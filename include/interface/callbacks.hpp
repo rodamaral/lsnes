@@ -70,7 +70,7 @@ public:
 /**
  * Notify trace event.
  */
-	virtual void memory_trace(uint64_t proc, const char* str) = 0;
+	virtual void memory_trace(uint64_t proc, const char* str, bool insn) = 0;
 };
 
 extern struct emucore_callbacks* ecore_callbacks;

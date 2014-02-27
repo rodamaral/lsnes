@@ -41,6 +41,10 @@ bool core_setting::validate(const std::string& value) const
 		return regex_match(regex, value);
 }
 
+core_setting_group::core_setting_group()
+{
+}
+
 core_setting_group::core_setting_group(std::initializer_list<core_setting_param> _settings)
 {
 	for(auto i : _settings)

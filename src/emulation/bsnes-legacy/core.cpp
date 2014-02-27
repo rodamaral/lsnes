@@ -738,7 +738,7 @@ namespace
 		if(trace_cpu_enable) {
 			char buffer[1024];
 			SNES::cpu.disassemble_opcode(buffer, SNES::cpu.regs.pc);
-			ecore_callbacks->memory_trace(0, buffer);
+			ecore_callbacks->memory_trace(0, buffer, true);
 		}
 		return false;
 #endif
@@ -749,7 +749,7 @@ namespace
 		if(trace_smp_enable) {
 			nall::string _disasm = SNES::smp.disassemble_opcode(SNES::smp.regs.pc);
 			std::string disasm(_disasm, _disasm.length());
-			ecore_callbacks->memory_trace(1, disasm.c_str());
+			ecore_callbacks->memory_trace(1, disasm.c_str(), true);
 		}
 		return false;
 #endif
@@ -806,23 +806,26 @@ namespace
 		return id.substr(1);
 	}
 
-	uint8_t snes_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	uint8_t snes_bus_iospace_read(uint64_t offset)
 	{
-		uint8_t val = 0;
 		disable_breakpoints = true;
-		if(write)
-			SNES::bus.write(offset, data);
-		else
 #ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
-			val = SNES::bus.read(offset, false);
+		uint8_t val = SNES::bus.read(offset, false);
 #else
-			val = SNES::bus.read(offset);
+		uint8_t val = SNES::bus.read(offset);
 #endif
 		disable_breakpoints = false;
 		return val;
 	}
 
-	uint8_t ptrtable_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	void snes_bus_iospace_write(uint64_t offset, uint8_t data)
+	{
+		disable_breakpoints = true;
+		SNES::bus.write(offset, data);
+		disable_breakpoints = false;
+	}
+
+	uint8_t ptrtable_iospace_read(uint64_t offset)
 	{
 		uint16_t entry = offset >> 4;
 		if(!ptrmap.count(entry))
@@ -834,7 +837,8 @@ namespace
 	}
 
 	void create_region(std::list<core_vma_info>& inf, const std::string& name, uint64_t base, uint64_t size,
-		uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write)) throw(std::bad_alloc)
+		uint8_t (*readfn)(uint64_t offset), void (*writefn)(uint64_t offset, uint8_t data))
+		throw(std::bad_alloc)
 	{
 		if(size == 0)
 			return;
@@ -843,7 +847,10 @@ namespace
 		i.base = base;
 		i.size = size;
 		i.endian = -1;
-		i.iospace_rw = iospace_rw;
+		i.special = true;
+		i.readonly = (writefn == NULL);
+		i.read = readfn;
+		i.write = writefn;
 		inf.push_back(i);
 	}
 
@@ -1595,8 +1602,8 @@ again2:
 		}
 		create_region(ret, "SRAM", 0x10000000, SNES::cartridge.ram, false);
 		create_region(ret, "ROM", 0x80000000, SNES::cartridge.rom, true);
-		create_region(ret, "BUS", 0x1000000, 0x1000000, snes_bus_iospace_rw);
-		create_region(ret, "PTRTABLE", 0x100000000, 0x100000, ptrtable_iospace_rw);
+		create_region(ret, "BUS", 0x1000000, 0x1000000, snes_bus_iospace_read, snes_bus_iospace_write);
+		create_region(ret, "PTRTABLE", 0x100000000, 0x100000, ptrtable_iospace_read, NULL);
 		map_internal(ret, "CPU_STATE", 0, &SNES::cpu, sizeof(SNES::cpu));
 		map_internal(ret, "PPU_STATE", 1, &SNES::ppu, sizeof(SNES::ppu));
 		map_internal(ret, "SMP_STATE", 2, &SNES::smp, sizeof(SNES::smp));
