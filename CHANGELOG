@@ -1682,3 +1682,29 @@ rr2-β16 [Friday February 14th 2014]
 * Fix parsing of #nnnnnn color notation
 * Lua: Cleanup & fix memory hash / storecmp functions
 * Lua: memory2: More functions corresponding to memory.*
+
+rr2-β17 [Friday February 28th 2014]
+===================================
+* Makefile: platclean: Only clean emulation files
+* Lua: COMPARE_OBJ: Check strided memory block for modifications
+* Some tweaks to Lua docs
+* Show dialog if loading ROM/movie from command line fails
+* Lua: Don't run Lua until the emulator has fully started up
+* Lua: Run startup scripts after amode has been initialized
+* wxwidgets: Allow entering fullscreen mode from commandline
+* bsnes: redump sprite/palette functions
+* Lua: Fix gui.repaint() when paused
+* Lua: Clean up region bounds computation
+* Some cleanup
+* Wxwidgets: --unpause to auto-unpause on start
+* Properly set Read-Only mode if rewinding
+* Memory search: Fix display of unsigned dword and signed qword
+* Tracelogger: Breakpoints
+* Pass dummy object parameter to do_unregister
+* Fix system plugins not getting loaded if user plugin enum failed
+* Move library recentfiles to its own namespace
+* Don't crash if recentfiles line fails to deserialize
+* Recentfiles object: named object
+* New projects menu
+* C interface
+* Fix exact core matching when loading projects
