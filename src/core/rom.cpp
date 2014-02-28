@@ -150,7 +150,7 @@ namespace
 		//Tmpprefer overrides normal preferred core.
 		if(tmpprefer != "")
 			for(auto i : possible)
-				if(i->get_iname() == tmpprefer)
+				if(i->is_known_extension(ext) && i->get_core_identifier() == tmpprefer)
 					preferred = i;
 		for(auto i : possible)
 			if(i->is_known_extension(ext)) {
