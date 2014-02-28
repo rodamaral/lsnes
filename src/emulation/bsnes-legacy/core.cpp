@@ -938,9 +938,9 @@ namespace
 				ecore_callbacks->memory_read(_addr, val);
 		}
 		if(exec)
-			ecore_callbacks->memory_execute(0x1000000 + _addr, 0);
+			ecore_callbacks->memory_execute(0x1000000 + addr, 0);
 		else
-			ecore_callbacks->memory_read(0x1000000 + _addr, val);
+			ecore_callbacks->memory_read(0x1000000 + addr, val);
 	}
 
 	void bsnes_debug_write(uint8_t clazz, unsigned offset, unsigned addr, uint8_t val)
@@ -949,7 +949,7 @@ namespace
 		uint64_t _addr = translate_class_address(clazz, offset);
 		if(_addr != 0xFFFFFFFFFFFFFFFFULL)
 			ecore_callbacks->memory_write(_addr, val);
-		ecore_callbacks->memory_write(0x1000000 + _addr, val);
+		ecore_callbacks->memory_write(0x1000000 + addr, val);
 	}
 
 	void redraw_cover_fbinfo();
