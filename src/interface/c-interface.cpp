@@ -86,6 +86,9 @@ template<> const char* ccore_call_param_map<lsnes_core_get_vma_list>::name = "LS
 
 namespace
 {
+	struct c_core_core;
+	c_core_core* current_core = NULL;
+
 	char* strduplicate(const char* x)
 	{
 		if(!x) return NULL;
@@ -252,8 +255,10 @@ namespace
 		}
 		void c_emulate()
 		{
+			current_core = this;
 			lsnes_core_emulate s;
 			entrypoint(id, s);
+			current_core = NULL;
 		}
 		bool c_get_pflag()
 		{
@@ -657,6 +662,10 @@ failed:
 		{
 			return ports;
 		}
+		void set_internal_pflag()
+		{
+			internal_pflag = true;
+		}
 	private:
 		std::string fullname;
 		std::string shortname;
@@ -777,6 +786,8 @@ failed:
 
 	short callback_get_input(unsigned port, unsigned index, unsigned control)
 	{
+		if(current_core && (port || index || control))
+			current_core->set_internal_pflag();
 		return ecore_callbacks->get_input(port, index, control);
 	}
 
