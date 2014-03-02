@@ -786,9 +786,10 @@ failed:
 
 	short callback_get_input(unsigned port, unsigned index, unsigned control)
 	{
-		if(current_core && (port || index || control))
+		short v = ecore_callbacks->get_input(port, index, control);
+		if(current_core && (port || index || v))
 			current_core->set_internal_pflag();
-		return ecore_callbacks->get_input(port, index, control);
+		return v;
 	}
 
 	void callback_notify_action_update()
