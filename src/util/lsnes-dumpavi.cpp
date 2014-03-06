@@ -334,6 +334,7 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
+	init_main_callbacks();
 	messages << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
 	try {

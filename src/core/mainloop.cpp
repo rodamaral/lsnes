@@ -536,6 +536,8 @@ public:
 
 namespace
 {
+	lsnes_callbacks lsnes_callbacks_obj;
+
 	command::fnptr<const std::string&> test4(lsnes_cmd, "test4", "test", "test",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			std::list<std::string> _args;
@@ -1172,6 +1174,11 @@ nothing_to_do:
 	}
 }
 
+void init_main_callbacks()
+{
+	ecore_callbacks = &lsnes_callbacks_obj;
+}
+
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {
@@ -1183,8 +1190,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	voicethread_task();
 	init_special_screens();
 	our_rom = rom;
-	lsnes_callbacks lsnes_callbacks_obj;
-	ecore_callbacks = &lsnes_callbacks_obj;
+	init_main_callbacks();
 	initialize_all_builtin_c_cores();
 	core_core::install_all_handlers();
 

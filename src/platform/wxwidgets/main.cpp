@@ -473,6 +473,7 @@ bool lsnes_app::OnInit()
 	msg_window = new wxwin_messages();
 	msg_window->Show();
 
+	init_main_callbacks();
 	const std::string movie_file = get_loaded_movie(cmdline);
 	loaded_rom rom;
 	try {
