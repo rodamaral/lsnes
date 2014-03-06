@@ -213,6 +213,7 @@ namespace
 			for(size_t i = 0; i < p.ports.size(); i++)
 				ports[i] = p.ports[i];
 		}
+		~c_core_core() throw();
 		std::string c_core_identifier()
 		{
 			return fullname;
@@ -682,6 +683,10 @@ failed:
 		c_lib_init* plugin;
 	};
 
+	c_core_core::~c_core_core() throw()
+	{
+	}
+
 	struct c_core_type : public core_type
 	{
 		c_core_type(c_lib_init& lib, core_type_params& p, std::map<unsigned, port_type*> _ports,
@@ -689,7 +694,7 @@ failed:
 			: core_type(p), ports(_ports), entrypoint(lib.get_entrypoint()), rcount(_rcount), id(_id)
 		{
 		}
-		~c_core_type()
+		~c_core_type() throw()
 		{
 		}
 		int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
