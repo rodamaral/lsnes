@@ -8,6 +8,7 @@ Configuration::Configuration() {
   expansion_port   = System::ExpansionPortDevice::BSX;
   region           = System::Region::Autodetect;
   random           = true;
+  mouse_speed_fix  = false;
 
   cpu.version         = 2;
   cpu.ntsc_frequency  = 21477272;  //315 / 88 * 6000000

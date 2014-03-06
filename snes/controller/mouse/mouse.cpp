@@ -1,6 +1,10 @@
 #ifdef CONTROLLER_CPP
 
 uint2 Mouse::data() {
+  if(config.mouse_speed_fix && latched) {
+    speed = (speed + 1) % 3;
+    return 0;
+  }
   if(counter >= 32) return 1;
 
   if(counter == 0) {
@@ -31,8 +35,8 @@ uint2 Mouse::data() {
 
   case  8: return interface->inputPoll(port, Input::Device::Mouse, 0, (unsigned)Input::MouseID::Right);
   case  9: return interface->inputPoll(port, Input::Device::Mouse, 0, (unsigned)Input::MouseID::Left);
-  case 10: return 0;  //speed (0 = slow, 1 = normal, 2 = fast, 3 = unused)
-  case 11: return 0;  // ||
+  case 10: return speed >> 1;   //speed (0 = slow, 1 = normal, 2 = fast, 3 = unused)
+  case 11: return speed & 1;    // ||
 
   case 12: return 0;  //signature
   case 13: return 0;  // ||
@@ -75,10 +79,12 @@ void Mouse::serialize(serializer& s) {
   block[3] = (unsigned short)_position_x;
   block[4] = (unsigned short)_position_y >> 8;
   block[5] = (unsigned short)_position_y;
+  block[6] = speed;
   s.array(block, Controller::SaveSize);
   if(s.mode() == nall::serializer::Load) {
     latched = (block[0] != 0);
     counter = block[1];
+    speed = block[6];
     _position_x = (short)(((unsigned short)block[2] << 8) | (unsigned short)block[3]);
     _position_y = (short)(((unsigned short)block[4] << 8) | (unsigned short)block[5]);
   }
@@ -87,6 +93,7 @@ void Mouse::serialize(serializer& s) {
 Mouse::Mouse(bool port) : Controller(port) {
   latched = 0;
   counter = 0;
+  speed = 0;
 }
 
 #endif

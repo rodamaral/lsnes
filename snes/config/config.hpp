@@ -1,9 +1,12 @@
+#define BSNES_SUPPORTS_MOUSE_SPEED_FIX
+
 struct Configuration {
   Input::Device controller_port1;
   Input::Device controller_port2;
   System::ExpansionPortDevice expansion_port;
   System::Region region;
   bool random;
+  bool mouse_speed_fix;
 
   struct CPU {
     unsigned version;

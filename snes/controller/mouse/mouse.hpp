@@ -6,6 +6,7 @@ struct Mouse : Controller {
 private:
   bool latched;
   unsigned counter;
+  unsigned speed;
   int _position_x;
   int _position_y;
 };
