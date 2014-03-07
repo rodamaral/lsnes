@@ -1,0 +1,103 @@
+From 863bde899b53ae31e854096ac5258208c848a293 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Thu, 6 Mar 2014 21:07:54 +0200
+Subject: [PATCH 15/15] Fix mouse speed support
+
+---
+ snes/config/config.cpp          |  1 +
+ snes/config/config.hpp          |  3 +++
+ snes/controller/mouse/mouse.cpp | 11 +++++++++--
+ snes/controller/mouse/mouse.hpp |  1 +
+ 4 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/snes/config/config.cpp b/snes/config/config.cpp
+index 206daae..1983137 100755
+--- a/snes/config/config.cpp
++++ b/snes/config/config.cpp
+@@ -8,6 +8,7 @@ Configuration::Configuration() {
+   expansion_port   = System::ExpansionPortDevice::BSX;
+   region           = System::Region::Autodetect;
+   random           = true;
++  mouse_speed_fix  = false;
+ 
+   cpu.version         = 2;
+   cpu.ntsc_frequency  = 21477272;  //315 / 88 * 6000000
+diff --git a/snes/config/config.hpp b/snes/config/config.hpp
+index dabde59..68fe0bd 100755
+--- a/snes/config/config.hpp
++++ b/snes/config/config.hpp
+@@ -1,9 +1,12 @@
++#define BSNES_SUPPORTS_MOUSE_SPEED_FIX
++
+ struct Configuration {
+   Input::Device controller_port1;
+   Input::Device controller_port2;
+   System::ExpansionPortDevice expansion_port;
+   System::Region region;
+   bool random;
++  bool mouse_speed_fix;
+ 
+   struct CPU {
+     unsigned version;
+diff --git a/snes/controller/mouse/mouse.cpp b/snes/controller/mouse/mouse.cpp
+index 1a066b9..caa7a35 100755
+--- a/snes/controller/mouse/mouse.cpp
++++ b/snes/controller/mouse/mouse.cpp
+@@ -1,6 +1,10 @@
+ #ifdef CONTROLLER_CPP
+ 
+ uint2 Mouse::data() {
++  if(config.mouse_speed_fix && latched) {
++    speed = (speed + 1) % 3;
++    return 0;
++  }
+   if(counter >= 32) return 1;
+ 
+   if(counter == 0) {
+@@ -31,8 +35,8 @@ uint2 Mouse::data() {
+ 
+   case  8: return interface->inputPoll(port, Input::Device::Mouse, 0, (unsigned)Input::MouseID::Right);
+   case  9: return interface->inputPoll(port, Input::Device::Mouse, 0, (unsigned)Input::MouseID::Left);
+-  case 10: return 0;  //speed (0 = slow, 1 = normal, 2 = fast, 3 = unused)
+-  case 11: return 0;  // ||
++  case 10: return speed >> 1;   //speed (0 = slow, 1 = normal, 2 = fast, 3 = unused)
++  case 11: return speed & 1;    // ||
+ 
+   case 12: return 0;  //signature
+   case 13: return 0;  // ||
+@@ -75,10 +79,12 @@ void Mouse::serialize(serializer& s) {
+   block[3] = (unsigned short)_position_x;
+   block[4] = (unsigned short)_position_y >> 8;
+   block[5] = (unsigned short)_position_y;
++  block[6] = speed;
+   s.array(block, Controller::SaveSize);
+   if(s.mode() == nall::serializer::Load) {
+     latched = (block[0] != 0);
+     counter = block[1];
++    speed = block[6];
+     _position_x = (short)(((unsigned short)block[2] << 8) | (unsigned short)block[3]);
+     _position_y = (short)(((unsigned short)block[4] << 8) | (unsigned short)block[5]);
+   }
+@@ -87,6 +93,7 @@ void Mouse::serialize(serializer& s) {
+ Mouse::Mouse(bool port) : Controller(port) {
+   latched = 0;
+   counter = 0;
++  speed = 0;
+ }
+ 
+ #endif
+diff --git a/snes/controller/mouse/mouse.hpp b/snes/controller/mouse/mouse.hpp
+index b07c8ab..13a9313 100755
+--- a/snes/controller/mouse/mouse.hpp
++++ b/snes/controller/mouse/mouse.hpp
+@@ -6,6 +6,7 @@ struct Mouse : Controller {
+ private:
+   bool latched;
+   unsigned counter;
++  unsigned speed;
+   int _position_x;
+   int _position_y;
+ };
+-- 
+1.9.0
+

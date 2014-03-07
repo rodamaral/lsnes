@@ -1,7 +1,7 @@
 From 40c456dadd79cb2c94379fda8b41a4d0ba051ad1 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 7 Dec 2013 23:32:44 +0200
-Subject: [PATCH 14/14] Support alternate (more accurate) poll timings
+Subject: [PATCH 14/15] Support alternate (more accurate) poll timings
 
 ---
  snes/config/config.cpp     |  1 +
@@ -134,5 +134,5 @@ index 37ed1fe..4e3ba64 100755
  namespace SNES {
    namespace Info {
 -- 
-1.8.5.1
+1.9.0
 
