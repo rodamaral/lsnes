@@ -72,12 +72,16 @@ namespace
 	setting_select::setting_select(wxWindow* parent, const core_setting& s)
 		: setting(s)
 	{
-		label = new wxStaticText(parent, wxID_ANY, towxstring(setting.hname));
+		label = NULL;
+		if(!setting.is_boolean())
+			label = new wxStaticText(parent, wxID_ANY, towxstring(setting.hname));
+		else
+			label = new wxStaticText(parent, wxID_ANY, towxstring(""));
 		text = NULL;
 		combo = NULL;
 		check = NULL;
 		if(setting.is_boolean()) {
-			check = new wxCheckBox(parent, wxID_ANY, towxstring(""));
+			check = new wxCheckBox(parent, wxID_ANY, towxstring(setting.hname));
 			check->SetValue(s.dflt != "0");
 		} else if(setting.is_freetext()) {
 			text = new wxTextCtrl(parent, wxID_ANY, towxstring(setting.dflt), wxDefaultPosition,
@@ -401,6 +405,37 @@ no_watch:
 		projdir->SetValue(d->GetPath());
 		d->Destroy();
 	}
+
+	int get_setting_class(const core_setting& a)
+	{
+		if(a.is_boolean())
+			return 0;
+		if(a.is_freetext())
+			return 2;
+		return 1;
+	}
+
+	bool compare_settings(const std::pair<std::string, core_setting*>& a,
+		const std::pair<std::string, core_setting*>& b)
+	{
+		int aclass = get_setting_class(*a.second);
+		int bclass = get_setting_class(*b.second);
+		if(aclass < bclass) return true;
+		if(aclass > bclass) return false;
+		if(a.second->hname < b.second->hname) return true;
+		if(a.second->hname > b.second->hname) return false;
+		return false;
+	}
+
+	std::vector<std::pair<std::string, core_setting*>> sort_settingblock(std::map<std::string,
+		core_setting>& block)
+	{
+		std::vector<std::pair<std::string, core_setting*>> ret;
+		for(auto& i : block)
+			ret.push_back(std::make_pair(i.first, &i.second));
+		std::sort(ret.begin(), ret.end(), compare_settings);
+		return ret;
+	}
 }
 
 class wxwin_project : public wxDialog
@@ -468,12 +503,13 @@ wxwin_project::wxwin_project()
 	wxFlexGridSizer* new_sizer = new wxFlexGridSizer(3, 1, 0, 0);
 	new_panel->SetSizer(new_sizer);
 	//Controllertypes/Gamename/initRTC/SRAMs.
-	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + our_rom.rtype->get_settings().settings.size() +
-		sram_set.size(), 2, 0, 0);
-	for(auto i : our_rom.rtype->get_settings().settings) {
-		settings.insert(std::make_pair(i.second.iname, setting_select(new_panel, i.second)));
-		mainblock->Add(settings.find(i.second.iname)->second.get_label());
-		mainblock->Add(settings.find(i.second.iname)->second.get_control());
+	auto settingblock = our_rom.rtype->get_settings().settings;
+	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + settingblock.size() + sram_set.size(), 2, 0, 0);
+	auto _settingblock = sort_settingblock(settingblock);
+	for(auto i : _settingblock) {
+		settings.insert(std::make_pair(i.second->iname, setting_select(new_panel, *i.second)));
+		mainblock->Add(settings.find(i.second->iname)->second.get_label());
+		mainblock->Add(settings.find(i.second->iname)->second.get_control());
 	}
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
 	wxFlexGridSizer* initrtc = new wxFlexGridSizer(1, 3, 0, 0);
