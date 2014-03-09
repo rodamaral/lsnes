@@ -218,7 +218,6 @@ namespace
 	{
 		if(!check_outdev(dev))
 			return 1;
-		dispose_stream(stream_p);
 		close_output();
 		if(dev == paNoDevice) {
 			messages << "Sound output closed." << std::endl;
