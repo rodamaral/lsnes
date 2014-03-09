@@ -299,6 +299,8 @@ namespace
 			fb[1 * stride + 8] = E(D(num, 1), fg, bg);
 			if(state.offline) {
 				write("Offline", 8, x + 1, y + 2, fg, bg);
+				if(state.disabled)
+					write("Disabled", 8, x + 1, y + 3, fg, bg);
 			} else {
 				std::string r1 = (stringfmt() << state.rawvalue).str();
 				std::string r2 = (stringfmt() << state.value << "%").str();
