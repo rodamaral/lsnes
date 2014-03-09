@@ -113,7 +113,8 @@ namespace
 	}
 
 	wxeditor_esettings2::wxeditor_esettings2(wxWindow* parent, settings_tab_factory* singletab)
-		: wxDialog(parent, wxID_ANY, towxstring(get_title(singletab)), wxDefaultPosition, wxSize(-1, -1))
+		: wxDialog(parent, wxID_ANY, towxstring(get_title(singletab)), wxDefaultPosition, wxSize(-1, -1),
+			wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	{
 		//Grab keys to prevent the joystick driver from running who knows what commands.
 		lsnes_kbd.set_exclusive(&keygrabber);

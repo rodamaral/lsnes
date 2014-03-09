@@ -42,6 +42,7 @@ namespace
 
 		top_s->Add(controls = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
 			wxTR_HIDE_ROOT | wxTR_LINES_AT_ROOT), 1, wxGROW);
+		controls->SetMinSize(wxSize(300, 400));
 		controls->Connect(wxEVT_COMMAND_TREE_SEL_CHANGED,
 			wxCommandEventHandler(wxeditor_esettings_controllers::on_change), NULL, this);
 		controls->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxeditor_esettings_controllers::on_mouse), NULL,

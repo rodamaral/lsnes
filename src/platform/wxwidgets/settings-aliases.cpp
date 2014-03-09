@@ -34,6 +34,7 @@ namespace
 		SetSizer(top_s);
 
 		top_s->Add(select = new wxListBox(this, wxID_ANY), 1, wxGROW);
+		select->SetMinSize(wxSize(300, 400));
 		select->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
 			wxCommandEventHandler(wxeditor_esettings_aliases::on_change), NULL, this);
 		select->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxeditor_esettings_aliases::on_mouse), NULL,
