@@ -150,8 +150,10 @@ void debug_fire_callback_read(uint64_t addr, uint64_t value)
 	requesting_break = false;
 	cb_list* cb1 = read_cb.count(debug_all_addr) ? &read_cb[debug_all_addr] : &dummy_cb;
 	cb_list* cb2 = read_cb.count(addr) ? &read_cb[addr] : &dummy_cb;
-	for(auto& i : *cb1) i.cb(addr, value);
-	for(auto& i : *cb2) i.cb(addr, value);
+	auto _cb1 = *cb1;
+	auto _cb2 = *cb2;
+	for(auto& i : _cb1) i.cb(addr, value);
+	for(auto& i : _cb2) i.cb(addr, value);
 	if(requesting_break)
 		do_break_pause();
 }
@@ -161,8 +163,10 @@ void debug_fire_callback_write(uint64_t addr, uint64_t value)
 	requesting_break = false;
 	cb_list* cb1 = write_cb.count(debug_all_addr) ? &write_cb[debug_all_addr] : &dummy_cb;
 	cb_list* cb2 = write_cb.count(addr) ? &write_cb[addr] : &dummy_cb;
-	for(auto& i : *cb1) i.cb(addr, value);
-	for(auto& i : *cb2) i.cb(addr, value);
+	auto _cb1 = *cb1;
+	auto _cb2 = *cb2;
+	for(auto& i : _cb1) i.cb(addr, value);
+	for(auto& i : _cb2) i.cb(addr, value);
 	if(requesting_break)
 		do_break_pause();
 }
@@ -172,9 +176,11 @@ void debug_fire_callback_exec(uint64_t addr, uint64_t value)
 	requesting_break = false;
 	cb_list* cb1 = exec_cb.count(debug_all_addr) ? &exec_cb[debug_all_addr] : &dummy_cb;
 	cb_list* cb2 = exec_cb.count(addr) ? &exec_cb[addr] : &dummy_cb;
+	auto _cb1 = *cb1;
+	auto _cb2 = *cb2;
 	if(value & xmask)
-		for(auto& i : *cb1) i.cb(addr, value);
-	for(auto& i : *cb2) i.cb(addr, value);
+		for(auto& i : _cb1) i.cb(addr, value);
+	for(auto& i : _cb2) i.cb(addr, value);
 	if(requesting_break)
 		do_break_pause();
 }
@@ -183,7 +189,8 @@ void debug_fire_callback_trace(uint64_t proc, const char* str, bool true_insn)
 {
 	requesting_break = false;
 	cb2_list* cb = trace_cb.count(proc) ? &trace_cb[proc] : &dummy_cb2;
-	for(auto& i : *cb) i.cb(proc, str, true_insn);
+	auto _cb = *cb;
+	for(auto& i : _cb) i.cb(proc, str, true_insn);
 	if(requesting_break)
 		do_break_pause();
 }
