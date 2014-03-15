@@ -5723,6 +5723,18 @@ Return number of frames in movie.
 \end_layout
 
 \begin_layout Subsection
+movie.lagcount: Get current lag count
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.lagcount()
+\end_layout
+
+\begin_layout Standard
+Return number of lag frames recorded so far.
+\end_layout
+
+\begin_layout Subsection
 movie.readonly: Is in readonly mode?
 \end_layout
 

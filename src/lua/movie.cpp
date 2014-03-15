@@ -13,6 +13,13 @@ namespace
 		return 1;
 	}
 
+	int lagcounter(lua::state& L, lua::parameters& P)
+	{
+		auto& m = movb.get_movie();
+		L.pushnumber(m.get_lag_frames());
+		return 1;
+	}
+
 	int framecount(lua::state& L, lua::parameters& P)
 	{
 		auto& m = movb.get_movie();
@@ -127,6 +134,7 @@ namespace
 
 	lua::functions movie_fns(lua_func_misc, "movie", {
 		{"currentframe", currentframe},
+		{"lagcount", lagcounter},
 		{"framecount", framecount},
 		{"rerecords", rerecords},
 		{"readonly", readonly},
