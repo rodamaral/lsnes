@@ -201,10 +201,12 @@ namespace
 				case 'b':
 					o << "$" << hex::to(fetch_le<uint8_t>(fetchpc));
 					break;
-				case 'l':
+				case 'l': {
+					uint16_t offset = fetch_le<uint16_t>(fetchpc);
 					o << "$" << hex::to(fetch_le<uint8_t>(fetchpc));
-					o << hex::to(fetch_le<uint16_t>(fetchpc));
+					o << hex::to(offset);
 					break;
+				}
 				case 'r':
 					o << "$" << hex::to(static_cast<uint16_t>(base + 2 +
 						fetch_le<int8_t>(fetchpc)));
