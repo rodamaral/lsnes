@@ -1,6 +1,8 @@
 #ifdef CPUCORE_CPP
 
 uint8 CPUcore::dreadb(uint32 addr) {
+  if((addr & 0x40fff8) == 0x4218)
+    return bus.read(addr, false);  //Controller registers are safe to read.
   if((addr & 0x40ffff) >= 0x2000 && (addr & 0x40ffff) <= 0x5fff) {
     //$[00-3f|80-bf]:[2000-5fff]
     //do not read MMIO registers within debugger
