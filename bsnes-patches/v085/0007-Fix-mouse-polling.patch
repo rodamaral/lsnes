@@ -1,7 +1,7 @@
 From eeaf6dc52d39ca9c150ff61864c11297d200d968 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 7 Mar 2012 16:57:18 +0200
-Subject: [PATCH 07/15] Fix mouse polling
+Subject: [PATCH 07/16] Fix mouse polling
 
 Don't poll for mouse motion excessive number of times (no need to poll it for
 each bit!)
