@@ -1,0 +1,105 @@
+From de71f12eb59a41899a5c77d797e144e6f0919777 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Mon, 17 Mar 2014 14:22:58 +0200
+Subject: [PATCH 17/17] Fix performance problem with non-bus breakpoints
+
+---
+ snes/memory/memory.cpp | 35 ++++++++++++++++++++++++++---------
+ snes/memory/memory.hpp |  1 +
+ snes/snes.hpp          |  1 +
+ 3 files changed, 28 insertions(+), 9 deletions(-)
+
+diff --git a/snes/memory/memory.cpp b/snes/memory/memory.cpp
+index a9a484a..d22e313 100755
+--- a/snes/memory/memory.cpp
++++ b/snes/memory/memory.cpp
+@@ -43,6 +43,7 @@ void Bus::map(
+ 
+   unsigned offset = 0;
+   for(unsigned bank = bank_lo; bank <= bank_hi; bank++) {
++    region_start.insert((bank << 16) | addr_lo);
+     for(unsigned addr = addr_lo; addr <= addr_hi; addr++) {
+       unsigned destaddr = (bank << 16) | addr;
+       if(mode == MapMode::Linear) destaddr = mirror(base + offset++, length);
+@@ -60,6 +61,7 @@ void Bus::map_reset() {
+ 
+   idcount = 0;
+   map(MapMode::Direct, 0x00, 0xff, 0x0000, 0xffff, 0xFF, reader, writer);
++  region_start.clear();
+ }
+ 
+ void Bus::map_xml() {
+@@ -70,11 +72,21 @@ void Bus::map_xml() {
+ 
+ unsigned Bus::enumerateMirrors(uint8 clazz, uint32 offset, unsigned start)
+ {
+-  unsigned i;
+-  for(i = start; i < 0x1000000; i++)
+-    if((classmap[i] == clazz && target[i] == offset) || (i == offset && clazz == 255))
+-      return i;
+-  return i;
++  if(clazz == 255) {
++    if(start > offset)
++      return 0x1000000;
++    else
++      return start;
++  }
++  //Given region can not contain the same address twice.
++  for(std::set<uint32>::iterator i = region_start.lower_bound(start); i != region_start.end(); i++) {
++    if(classmap[*i] != clazz) continue;
++    if(target[*i] > offset) continue;
++    uint32 wouldbe = offset - target[*i] + *i;
++    if(wouldbe > 0xFFFFFF) continue;
++    if(classmap[wouldbe] == clazz && target[wouldbe] == offset) return wouldbe;
++  }
++  return 0x1000000;
+ }
+ 
+ void Bus::clearDebugFlags()
+@@ -94,10 +106,15 @@ void Bus::debugFlags(uint8 setf, uint8 clrf, uint8 clazz, uint32 offset)
+     setf <<= 3;
+     clrf <<= 3;
+     debugflags[offset] = (debugflags[offset] | setf) & ~clrf;
+-  } else
+-    for(unsigned i = 0; i < 0x1000000; i++)
+-      if(classmap[i] == clazz && target[i] == offset)
+-        debugflags[i] = (debugflags[i] | setf) & ~clrf;
++  } else {
++    uint32 i = 0;
++    while(true) {
++      i = enumerateMirrors(clazz, offset, i);
++      if(i >= 0x1000000) break;
++      debugflags[i] = (debugflags[i] | setf) & ~clrf;
++      i++;
++    }
++  }
+ }
+ 
+ Bus::Bus() {
+diff --git a/snes/memory/memory.hpp b/snes/memory/memory.hpp
+index c20e14d..ee0c0a9 100755
+--- a/snes/memory/memory.hpp
++++ b/snes/memory/memory.hpp
+@@ -52,6 +52,7 @@ struct Bus {
+   uint8 *debugflags;
+   uint8 u_debugflags;
+   uint32 *target;
++  std::set<uint32> region_start;
+ 
+   unsigned idcount;
+   function<uint8 (unsigned)> reader[256];
+diff --git a/snes/snes.hpp b/snes/snes.hpp
+index 4e3ba64..9589db9 100755
+--- a/snes/snes.hpp
++++ b/snes/snes.hpp
+@@ -38,6 +38,7 @@ namespace SNES {
+ #include <nall/varint.hpp>
+ #include <nall/vector.hpp>
+ #include <nall/gameboy/cartridge.hpp>
++#include <set>
+ using namespace nall;
+ 
+ #include <gameboy/gameboy.hpp>
+-- 
+1.9.0
+
