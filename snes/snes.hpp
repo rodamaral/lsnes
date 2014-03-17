@@ -38,6 +38,7 @@ namespace SNES {
 #include <nall/varint.hpp>
 #include <nall/vector.hpp>
 #include <nall/gameboy/cartridge.hpp>
+#include <set>
 using namespace nall;
 
 #include <gameboy/gameboy.hpp>

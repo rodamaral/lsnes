@@ -43,6 +43,7 @@ void Bus::map(
 
   unsigned offset = 0;
   for(unsigned bank = bank_lo; bank <= bank_hi; bank++) {
+    region_start.insert((bank << 16) | addr_lo);
     for(unsigned addr = addr_lo; addr <= addr_hi; addr++) {
       unsigned destaddr = (bank << 16) | addr;
       if(mode == MapMode::Linear) destaddr = mirror(base + offset++, length);
@@ -60,6 +61,7 @@ void Bus::map_reset() {
 
   idcount = 0;
   map(MapMode::Direct, 0x00, 0xff, 0x0000, 0xffff, 0xFF, reader, writer);
+  region_start.clear();
 }
 
 void Bus::map_xml() {
@@ -70,11 +72,21 @@ void Bus::map_xml() {
 
 unsigned Bus::enumerateMirrors(uint8 clazz, uint32 offset, unsigned start)
 {
-  unsigned i;
-  for(i = start; i < 0x1000000; i++)
-    if((classmap[i] == clazz && target[i] == offset) || (i == offset && clazz == 255))
-      return i;
-  return i;
+  if(clazz == 255) {
+    if(start > offset)
+      return 0x1000000;
+    else
+      return start;
+  }
+  //Given region can not contain the same address twice.
+  for(std::set<uint32>::iterator i = region_start.lower_bound(start); i != region_start.end(); i++) {
+    if(classmap[*i] != clazz) continue;
+    if(target[*i] > offset) continue;
+    uint32 wouldbe = offset - target[*i] + *i;
+    if(wouldbe > 0xFFFFFF) continue;
+    if(classmap[wouldbe] == clazz && target[wouldbe] == offset) return wouldbe;
+  }
+  return 0x1000000;
 }
 
 void Bus::clearDebugFlags()
@@ -94,10 +106,15 @@ void Bus::debugFlags(uint8 setf, uint8 clrf, uint8 clazz, uint32 offset)
     setf <<= 3;
     clrf <<= 3;
     debugflags[offset] = (debugflags[offset] | setf) & ~clrf;
-  } else
-    for(unsigned i = 0; i < 0x1000000; i++)
-      if(classmap[i] == clazz && target[i] == offset)
-        debugflags[i] = (debugflags[i] | setf) & ~clrf;
+  } else {
+    uint32 i = 0;
+    while(true) {
+      i = enumerateMirrors(clazz, offset, i);
+      if(i >= 0x1000000) break;
+      debugflags[i] = (debugflags[i] | setf) & ~clrf;
+      i++;
+    }
+  }
 }
 
 Bus::Bus() {

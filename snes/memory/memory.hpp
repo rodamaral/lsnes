@@ -52,6 +52,7 @@ struct Bus {
   uint8 *debugflags;
   uint8 u_debugflags;
   uint32 *target;
+  std::set<uint32> region_start;
 
   unsigned idcount;
   function<uint8 (unsigned)> reader[256];
