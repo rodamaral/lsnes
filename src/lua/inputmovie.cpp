@@ -220,18 +220,7 @@ namespace
 
 		P(n);
 
-		if(!n) {
-			L.pushnumber(-1);
-			return 1;
-		}
-		uint64_t c = 0;
-		uint64_t s = v.size();
-		for(uint64_t i = 0; i < s; i++)
-			if(v[i].sync() && ++c == n) {
-				L.pushnumber(i);
-				return 1;
-			}
-		L.pushnumber(-1);
+		L.pushnumber(v.find_frame(n));
 		return 1;
 	}
 

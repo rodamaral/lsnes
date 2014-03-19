@@ -774,6 +774,29 @@ void controller_frame_vector::swap_data(controller_frame_vector& v) throw()
 		v.call_framecount_notification(voldsize);
 }
 
+int64_t controller_frame_vector::find_frame(uint64_t n)
+{
+	if(!n) return -1;
+	uint64_t pages = get_page_count();
+	uint64_t stride = get_stride();
+	uint64_t pageframes = get_frames_per_page();
+	uint64_t vsize = size();
+	size_t pagenum = 0;
+	while(vsize > 0) {
+		uint64_t count = (vsize > pageframes) ? pageframes : vsize;
+		size_t bytes = count * stride;
+		const unsigned char* content = get_page_buffer(pagenum++);
+		size_t offset = 0;
+		for(unsigned i = 0; i < count; i++) {
+			if(controller_frame::sync(content + offset)) n--;
+			if(n == 0) return (pagenum - 1) * pageframes + i;
+			offset += stride;
+		}
+		vsize -= count;
+	}
+	return -1;
+}
+
 controller_frame::controller_frame() throw()
 {
 	memset(memory, 0, sizeof(memory));

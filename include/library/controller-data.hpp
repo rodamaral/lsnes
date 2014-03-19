@@ -1206,6 +1206,10 @@ public:
  */
 	bool compatible(controller_frame_vector& with, uint64_t frame, const uint32_t* polls);
 /**
+ * Find subframe number corresponding to given frame (1-based).
+ */
+	int64_t find_frame(uint64_t n);
+/**
  * Notify sync flag polarity change.
  *
  * Parameter polarity: 1 if positive edge, -1 if negative edge. 0 is ignored.
