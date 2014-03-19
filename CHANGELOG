@@ -1708,3 +1708,23 @@ rr2-β17 [Friday February 28th 2014]
 * New projects menu
 * C interface
 * Fix exact core matching when loading projects
+
+rr2-β18 [Wednesday March 19th 2014]
+===================================
+* bsnes core: Raise bus breaks against correct address
+* C interface: Fix lag counting without LSNES_CORE_CAP1_PFLAG
+* C interface: Check for value != 0, not for control != 0 for lag check
+* Fix core callbacks being undefined if loading ROM from cmdline
+* Fix compilation on Mac OS X
+* Fix mouse electronics test
+* Tweak new movie dialog layout a bit
+* Add JSON linter utility
+* Force some configuration windows to be larger
+* Correctly show axes as disabled even if offline
+* Don't double-close audio output
+* Fix deleting executing breakpoint
+* Lua: Get lag count function
+* Allow bsnes tracelogger to trace execution in controller registers
+* SNES: Fix disassembly of long offsets
+* Make setting/unsetting non-bus breaks much faster.
+* Optimize movie.find_frame()
