@@ -304,6 +304,11 @@ struct platform
  */
 	static void queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc);
 /**
+ * Set handle to mirror all non-exclusive key events to.
+ */
+	static void set_mirror_fn(std::function<void(keyboard::modifier_set& mods, keyboard::key& key,
+		keyboard::event& event)> fn);
+/**
  * Run all queues.
  */
 	static void run_queues() throw();

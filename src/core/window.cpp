@@ -135,6 +135,34 @@ namespace
 		std::vector<char> stream;
 	};
 
+	class keyboard_monitor : public keyboard::event_listener
+	{
+	public:
+		keyboard_monitor() throw()
+		{
+			active = false;
+		}
+		~keyboard_monitor() throw() {}
+		void on_key_event(keyboard::modifier_set& mods, keyboard::key& key, keyboard::event& event)
+		{
+			if(fn) fn(mods, key, event);
+		}
+		bool active;
+		std::function<void(keyboard::modifier_set& mods, keyboard::key& key, keyboard::event& event)> fn;
+	} keyboard_monitor_cb;
+
+	void monitor_all_keys()
+	{
+		for(auto i : lsnes_kbd.all_keys())
+			i->add_listener(keyboard_monitor_cb, true);
+	}
+
+	void unmonitor_all_keys()
+	{
+		for(auto i : lsnes_kbd.all_keys())
+			i->remove_listener(keyboard_monitor_cb);
+	}
+
 	class msgcallback : public messagebuffer::update_handler
 	{
 	public:
@@ -501,6 +529,24 @@ void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_
 			cv_timed_wait(queue_condition, h, microsec_class(10000));
 			random_mix_timing_entropy();
 		}
+}
+
+void platform::set_mirror_fn(std::function<void(keyboard::modifier_set& mods, keyboard::key& key,
+	keyboard::event& event)> fn)
+{
+	if(fn) {
+		keyboard_monitor_cb.fn = fn;
+		if(!keyboard_monitor_cb.active)
+			for(auto i : lsnes_kbd.all_keys())
+				i->add_listener(keyboard_monitor_cb, true);
+		keyboard_monitor_cb.active = true;
+	} else {
+		if(keyboard_monitor_cb.active)
+			for(auto i : lsnes_kbd.all_keys())
+				i->remove_listener(keyboard_monitor_cb);
+		keyboard_monitor_cb.active = false;
+		keyboard_monitor_cb.fn = fn;
+	}
 }
 
 void platform::run_queues() throw()

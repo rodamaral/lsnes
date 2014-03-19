@@ -259,24 +259,24 @@ key::~key() throw()
 	register_queue<keyboard, key>::do_unregister(kbd, name);
 }
 
-event_key::event_key(uint32_t chngmask)
-	: event(chngmask, keytype::KBD_KEYTYPE_KEY)
+event_key::event_key(uint32_t chngmask, int32_t _raw)
+	: event(chngmask, keytype::KBD_KEYTYPE_KEY, _raw)
 {
 }
 
-event_axis::event_axis(int32_t _state, uint32_t chngmask)
-	: event(chngmask, keytype::KBD_KEYTYPE_AXIS)
+event_axis::event_axis(int32_t _state, uint32_t chngmask, int32_t _raw)
+	: event(chngmask, keytype::KBD_KEYTYPE_AXIS, _raw)
 {
 	state = _state;
 }
 
-event_hat::event_hat(uint32_t chngmask)
-	: event(chngmask, keytype::KBD_KEYTYPE_HAT)
+event_hat::event_hat(uint32_t chngmask, int32_t _raw)
+	: event(chngmask, keytype::KBD_KEYTYPE_HAT, _raw)
 {
 }
 
-event_mouse::event_mouse(int32_t _state, const mouse_calibration& _cal)
-	: event(0, keytype::KBD_KEYTYPE_MOUSE)
+event_mouse::event_mouse(int32_t _state, const mouse_calibration& _cal, int32_t _raw)
+	: event(0, keytype::KBD_KEYTYPE_MOUSE, _raw)
 {
 	state = _state;
 	cal = _cal;
@@ -397,7 +397,7 @@ void key_key::set_state(modifier_set mods, int32_t _state) throw()
 	}
 	mutex.unlock();
 	if(edge) {
-		event_key e(change);
+		event_key e(change, _state);
 		call_listeners(mods, e);
 	}
 }
@@ -441,7 +441,7 @@ void key_hat::set_state(modifier_set mods, int32_t _state) throw()
 	}
 	mutex.unlock();
 	if(edge) {
-		event_hat e(change);
+		event_hat e(change, _state);
 		call_listeners(mods, e);
 	}
 }
@@ -534,7 +534,7 @@ void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 	}
 	mutex.unlock();
 	if(edge) {
-		event_axis e(state, change);
+		event_axis e(state, change, _rawstate);
 		call_listeners(mods, e);
 	}
 }
@@ -589,7 +589,7 @@ void key_mouse::set_state(modifier_set mods, int32_t _rawstate) throw()
 	}
 	mutex.unlock();
 	if(edge) {
-		event_mouse e(state, _cal);
+		event_mouse e(state, _cal, _rawstate);
 		call_listeners(mods, e);
 	}
 }
@@ -599,8 +599,9 @@ void key_mouse::set_calibration(mouse_calibration _cal) throw()
 	mutex.lock();
 	cal = _cal;
 	int32_t state = cal.get_calibrated_value(rawstate);
+	int32_t lraw = rawstate;
 	mutex.unlock();
-	event_mouse e(state, _cal);
+	event_mouse e(state, _cal, lraw);
 	modifier_set mods;
 	call_listeners(mods, e);
 }

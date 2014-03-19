@@ -54,6 +54,7 @@ public:
 	void load(const JSON::node& state);
 	JSON::node save();
 	std::string get_summary();
+	void master_enable(bool state);
 private:
 	struct axis_info
 	{
@@ -109,6 +110,7 @@ private:
 	unsigned next_hat;
 	unsigned jid;
 	mutex_class mutex;
+	bool enabled;
 };
 
 class set
@@ -127,6 +129,7 @@ public:
 	void set_axismode_cb(std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> fn);
 	void set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int type)> fn);
 	std::string get_summary();
+	void master_enable(bool state);
 private:
 	set(const set&);
 	set& operator=(const set&);
@@ -137,6 +140,7 @@ private:
 	std::function<void(unsigned jnum, unsigned num, int type)> newitem_fn;
 	std::vector<pad*> _gamepads;
 	mutex_class mutex;
+	bool enabled;
 };
 }
 

@@ -246,6 +246,10 @@ public:
  */
 	operator std::string() const throw(std::bad_alloc);
 /**
+ * Get internal set.
+ */
+	std::set<modifier*> get_set() const throw(std::bad_alloc) { return set; }
+/**
  * Equality check.
  *
  * parameter m: Another set.
@@ -330,16 +334,22 @@ public:
  *
  * Parameter _chngmask: The change mask.
  * Parameter _type: Type of the event.
+ * Parameter _raw: The raw event value.
  */
-	event(uint32_t _chngmask, keytype _type) throw()
+	event(uint32_t _chngmask, keytype _type, int32_t _raw) throw()
 	{
 		chngmask = _chngmask;
 		type = _type;
+		raw = _raw;
 	}
 /**
  * Destructor.
  */
 	virtual ~event() throw();
+/**
+ * Get original raw state reported.
+ */
+	int32_t get_raw() const throw() { return raw; }
 /**
  * Get analog state. The format is dependent on key type.
  */
@@ -357,6 +367,7 @@ public:
 private:
 	uint32_t chngmask;
 	keytype type;
+	int32_t raw;
 };
 
 /**
@@ -369,8 +380,9 @@ public:
  * Construct a new key event.
  *
  * Parameter chngmask: The change mask.
+ * Parameter _raw: The raw event value.
  */
-	event_key(uint32_t chngmask);
+	event_key(uint32_t chngmask, int32_t _raw);
 /**
  * Destructor.
  */
@@ -397,8 +409,9 @@ public:
  * Parameter state: The analog state.
  * Parameter chngmask: The change mask.
  * Parameter cal: The calibration structure.
+ * Parameter _raw: The raw event value.
  */
-	event_axis(int32_t state, uint32_t chngmask);
+	event_axis(int32_t state, uint32_t chngmask, int32_t _raw);
 /**
  * Destructor.
  */
@@ -424,8 +437,9 @@ public:
  * Construct a new hat event.
  *
  * Parameter chngmask: The change mask to use.
+ * Parameter _raw: The raw event value.
  */
-	event_hat(uint32_t chngmask);
+	event_hat(uint32_t chngmask, int32_t _raw);
 /**
  * Destructor.
  */
@@ -449,8 +463,9 @@ public:
  *
  * Parameter state: The game-relative position to use.
  * Parameter cal: The calibration structure.
+ * Parameter _raw: The raw event value.
  */
-	event_mouse(int32_t state, const mouse_calibration& cal);
+	event_mouse(int32_t state, const mouse_calibration& cal, int32_t _raw);
 /**
  * Destructor.
  */

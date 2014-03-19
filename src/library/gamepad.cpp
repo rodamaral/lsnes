@@ -226,6 +226,10 @@ unsigned pad::add_hat(uint64_t idx, uint64_t idy, int64_t mindev, const std::str
 void pad::report_axis(uint64_t id, int64_t val)
 {
 	mutex.lock();
+	if(!enabled) {
+		mutex.unlock();
+		return;
+	}
 	if(_axes.count(id)) {
 		axis_info& i = _axes[id];
 		int16_t val2 = map_value(val, i.minus, i.zero, i.plus, i.neutral, i.pressure);
@@ -258,6 +262,10 @@ void pad::report_axis(uint64_t id, int64_t val)
 void pad::report_button(uint64_t id, bool val)
 {
 	mutex.lock();
+	if(!enabled) {
+		mutex.unlock();
+		return;
+	}
 	if(!_buttons.count(id)) {
 		mutex.unlock();
 		return;
@@ -275,6 +283,10 @@ void pad::report_button(uint64_t id, bool val)
 void pad::report_hat(uint64_t id, int angle)
 {
 	mutex.lock();
+	if(!enabled) {
+		mutex.unlock();
+		return;
+	}
 	unsigned h = angle_to_bitmask(angle);
 	if(!_hats.count(id)) {
 		mutex.unlock();
@@ -623,8 +635,15 @@ std::string pad::get_summary()
 	return x.str();
 }
 
+void pad::master_enable(bool state)
+{
+	umutex_class H(mutex);
+	enabled = state;
+}
+
 set::set()
 {
+	enabled = true;
 }
 
 set::~set()
@@ -711,6 +730,7 @@ unsigned set::add(const std::string& name)
 		gp->set_axismode_cb(amode_fn);
 		gp->set_newitem_cb(newitem_fn);
 		_gamepads.push_back(gp);
+		gp->master_enable(enabled);
 		return _gamepads.size() - 1;
 	} catch(...) {
 		delete gp;
@@ -765,4 +785,13 @@ std::string set::get_summary()
 		x << i->get_summary();
 	return x.str();
 }
+
+void set::master_enable(bool state)
+{
+	umutex_class h(mutex);
+	enabled = state;
+	for(auto i : _gamepads)
+		i->master_enable(state);
+}
+
 }

@@ -21,6 +21,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
+#include "core/keybroadcast.hpp"
 #include "core/keymapper.hpp"
 #include "interface/romtype.hpp"
 #include "core/loadlib.hpp"
@@ -181,7 +182,7 @@ namespace
 		{
 			was_focused = (wxWindow::FindFocus() != NULL);
 			was_enabled = platform::is_sound_enabled();
-			Start(500);
+			Start(100);
 		}
 		void Notify()
 		{
@@ -196,6 +197,7 @@ namespace
 				if(!background_audio)
 					platform::sound_enable(false);
 			}
+			keybroadcast_notify_foreground(is_focused);
 			was_focused = is_focused;
 		}
 	private:
