@@ -1187,12 +1187,12 @@ again:
 #endif
 again2:
 			SNES::system.run();
+#ifdef BSNES_HAS_DEBUGGER
 			if(SNES::scheduler.exit_reason() == SNES::Scheduler::ExitReason::DebuggerEvent &&
 				SNES::debugger.break_event == SNES::Debugger::BreakEvent::BreakpointHit) {
 				snesdbg_on_break();
 				goto again2;
 			}
-#ifdef BSNES_HAS_DEBUGGER
 			SNES::cpu.step_event = nall::function<bool()>();
 #endif
 			have_saved_this_frame = false;
