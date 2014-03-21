@@ -22,6 +22,8 @@
 #include <wx/combobox.h>
 #include <wx/textctrl.h>
 #include <wx/spinctrl.h>
+#include <wx/statusbr.h>
+#include <wx/dataobj.h>
 #include <wx/sizer.h>
 #include <boost/regex.hpp>
 #include <set>
@@ -70,7 +72,7 @@ namespace
 	};
 
 	dialog_find::dialog_find(wxWindow* parent)
-		: wxDialog(parent, wxID_ANY, "Find")
+		: wxDialog(parent, wxID_ANY, wxT("Find"))
 	{
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
@@ -88,7 +90,7 @@ namespace
 		pbutton_s->AddStretchSpacer();
 		pbutton_s->Add(ok = new wxButton(this, wxID_ANY, wxT("OK")));
 		pbutton_s->Add(cancel = new wxButton(this, wxID_ANY, wxT("Cancel")));
-		text->Connect(wxEVT_TEXT_ENTER, wxCommandEventHandler(dialog_find::on_ok), NULL, this);
+		text->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(dialog_find::on_ok), NULL, this);
 		ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(dialog_find::on_ok), NULL, this);
 		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(dialog_find::on_cancel), NULL,
 			this);
@@ -139,13 +141,13 @@ namespace
 	uint64_t dialog_disassemble::old_dflt_base;
 
 	dialog_disassemble::dialog_disassemble(wxWindow* parent)
-		: wxDialog(parent, wxID_ANY, "Disassemble region")
+		: wxDialog(parent, wxID_ANY, wxT("Disassemble region"))
 	{
 		init(false, 0, "");
 	}
 
 	dialog_disassemble::dialog_disassemble(wxWindow* parent, uint64_t dflt_base, const std::string& dflt_lang)
-		: wxDialog(parent, wxID_ANY, "Disassemble region")
+		: wxDialog(parent, wxID_ANY, wxT("Disassemble region"))
 	{
 		init(true, dflt_base, dflt_lang);
 	}
@@ -404,13 +406,13 @@ namespace
 	};
 
 	dialog_breakpoint_add::dialog_breakpoint_add(wxWindow* parent, std::list<memory_region*> _regions)
-		: wxDialog(parent, wxID_ANY, "Add breakpoint")
+		: wxDialog(parent, wxID_ANY, wxT("Add breakpoint"))
 	{
 		regions = _regions;
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 
-		top_s->Add(new wxStaticText(this, wxID_ANY, "Memory region:"), 0, wxGROW);
+		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Memory region:")), 0, wxGROW);
 		top_s->Add(vmasel = new wxComboBox(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
 			0, NULL, wxCB_READONLY), 1, wxGROW);
 		vmasel->Append(towxstring(""));
@@ -418,11 +420,11 @@ namespace
 			vmasel->Append(towxstring(i->name));
 		vmasel->SetSelection(0);
 
-		top_s->Add(new wxStaticText(this, wxID_ANY, "Offset (hexadecimal):"), 0, wxGROW);
+		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Offset (hexadecimal):")), 0, wxGROW);
 		top_s->Add(address = new wxTextCtrl(this, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize(350, -1)), 0,
 			 wxGROW);
 
-		top_s->Add(new wxStaticText(this, wxID_ANY, "Breakpoint type:"), 0, wxGROW);
+		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Breakpoint type:")), 0, wxGROW);
 		top_s->Add(typesel = new wxComboBox(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
 			0, NULL, wxCB_READONLY), 1, wxGROW);
 		typesel->Append(towxstring("Read"));
@@ -1711,7 +1713,7 @@ back:
 	}
 
 	dialog_breakpoints::dialog_breakpoints(wxwin_tracelog* parent)
-		: wxDialog(parent, wxID_ANY, "Breakpoints")
+		: wxDialog(parent, wxID_ANY, wxT("Breakpoints"))
 	{
 		pwin = parent;
 		regions = lsnes_memory.get_regions();
