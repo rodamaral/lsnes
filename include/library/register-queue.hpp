@@ -93,8 +93,12 @@ private:
 	}
 	static mutex_class& get_mutex()
 	{
-		static mutex_class x;
-		return x;
+		static bool init = false;
+		static mutex_class* x;
+		if(!init)
+			x = new mutex_class;
+		init = true;
+		return *x;
 	}
 	static void run()
 	{
