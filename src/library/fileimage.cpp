@@ -15,8 +15,12 @@ namespace
 
 	mutex_class& global_queue_mutex()
 	{
-		static mutex_class m;
-		return m;
+		static bool init = false;
+		static mutex_class* m;
+		if(!init)
+			m = new mutex_class();
+		init = true;
+		return *m;
 	}
 
 	uint64_t calculate_headersize(uint64_t f, uint64_t h)
