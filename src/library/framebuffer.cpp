@@ -668,20 +668,27 @@ void font::load_hex_glyph(const char* data, size_t size) throw(std::bad_alloc, s
 {
 	char buf2[8];
 	std::string line(data, data + size);
-	regex_results r;
-	if(r = regex("([0-9A-Fa-f]+):([0-9A-Fa-f]{32})", line)) {
-	} else if(r = regex("([0-9A-Fa-f]+):([0-9A-Fa-f]{64})", line)) {
-	} else
-		(stringfmt() << "Invalid line '" << line << "'").throwex();
-	std::string codepoint = r[1];
-	std::string cdata = r[2];
-	if(codepoint.length() > 7)
-		(stringfmt() << "Invalid line '" << line << "'").throwex();
+	size_t linelen = line.length();
+
+	//Check if the line is valid.
+	//Line format is <hex digits>:<32 or 64 hex digits>.
+	size_t splitter = line.find(':');
+	if(splitter >= linelen || !(splitter + 33 == linelen || splitter + 65 == linelen))
+		(stringfmt() << "Invalid line '" << line << "'").throwex();	//No :, or not 32/64 hexes after.
+	if(line.find_first_not_of("0123456789ABCDEFabcdef:") < line.length())
+		(stringfmt() << "Invalid line '" << line << "'").throwex();	//Invalid character.
+	if(line.find(':', splitter + 1) < line.length())
+		(stringfmt() << "Invalid line '" << line << "'").throwex();	//Second :.
+	if(splitter > 7)
+		(stringfmt() << "Invalid line '" << line << "'").throwex();	//Too long codepoint.
+
+	std::string codepoint = line.substr(0, splitter);
+	std::string cdata = line.substr(splitter + 1);
 	strcpy(buf2, codepoint.c_str());
 	char* end2;
 	unsigned long cp = strtoul(buf2, &end2, 16);
 	if(*end2 || cp > 0x10FFFF)
-		(stringfmt() << "Invalid line '" << line << "'").throwex();
+		(stringfmt() << "Invalid line '" << line << "'").throwex();	//Codepoint out of range.
 	glyphs[cp].wide = (cdata.length() == 64);
 	size_t p = memory.size();
 	for(size_t i = 0; i < cdata.length(); i += 8) {
