@@ -84,6 +84,12 @@ pad::pad(const std::string& _xname, unsigned _jnum)
 
 pad::~pad()
 {
+	//Set _axes_hat entries that alias to NULL.
+	for(auto i = _axes_hat.begin(); i != _axes_hat.end(); i++)
+		for(auto j = i; j != _axes_hat.end(); j++)
+			if(i != j && i->second == j->second)
+				j->second = NULL;
+	for(auto i : _axes_hat) delete i.second;
 }
 
 void pad::set_online(bool status)

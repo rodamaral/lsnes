@@ -363,3 +363,21 @@ void initialize_wx_keyboard()
 	}
 	done = true;
 }
+
+void deinitialize_wx_keyboard()
+{
+	modifier_map.clear();
+	key_map.clear();
+	keys_allocated.clear();
+	keys_held.clear();
+	modifier_entry* m = modifiers;
+	while(m->name) {
+		delete m->allocated;
+		m++;
+	}
+	key_entry* k = keys;
+	while(k->name) {
+		delete k->allocated;
+		k++;
+	}
+}

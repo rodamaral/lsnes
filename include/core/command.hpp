@@ -9,5 +9,6 @@
 extern command::group lsnes_cmd;
 
 void refresh_alias_binds();
+void kill_alias_binds();
 
 #endif

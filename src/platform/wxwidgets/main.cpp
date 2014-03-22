@@ -530,6 +530,8 @@ int lsnes_app::OnExit()
 	platform::quit();
 	cleanup_all_keys();
 	cleanup_keymapper();
+	kill_alias_binds();
+	deinitialize_wx_keyboard();
 	return 0;
 }
 

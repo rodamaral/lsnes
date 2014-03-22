@@ -379,6 +379,7 @@ int main(int argc, char** argv)
 	information_dispatch::do_dump_end();
 	quit_lua();
 	movb.release_memory();
+	kill_alias_binds();
 	cleanup_all_keys();
 	return 0;
 }

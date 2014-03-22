@@ -33,3 +33,9 @@ void refresh_alias_binds()
 			alias_binds[i] = new keyboard::invbind(lsnes_mapper, i, "Alias‣" + i);
 	}
 }
+
+void kill_alias_binds()
+{
+	for(auto i : alias_binds) delete i.second;
+	alias_binds.clear();
+}

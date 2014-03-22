@@ -1701,6 +1701,7 @@ void voicethread_task()
 void voicethread_kill()
 {
 	int_task->kill();
+	delete int_task;
 	int_task = NULL;
 }
 

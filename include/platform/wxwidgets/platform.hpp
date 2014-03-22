@@ -35,6 +35,7 @@ void boot_emulator(loaded_rom& rom, moviefile& movie, bool fscreen);
 void handle_wx_keyboard(wxKeyEvent& e, bool polarity);
 std::string map_keycode_to_key(int kcode);
 void initialize_wx_keyboard();
+void deinitialize_wx_keyboard();
 void signal_program_exit();
 void signal_resize_needed();
 void _runuifun_async(void (*fn)(void*), void* arg);

@@ -591,6 +591,7 @@ namespace
 			messages << "FATAL: " << e.what() << std::endl;
 			platform::fatal_error();
 		}
+		delete args;
 		return NULL;
 	}
 
