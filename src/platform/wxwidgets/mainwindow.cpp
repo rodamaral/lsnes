@@ -156,6 +156,7 @@ namespace
 	std::string last_volume_record = "0dB";
 	std::string last_volume_voice = "0dB";
 	unsigned char* screen_buffer;
+	struct SwsContext* sws_ctx;
 	uint32_t* rotate_buffer;
 	uint32_t old_width;
 	uint32_t old_height;
@@ -891,7 +892,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		main_window->enter_or_leave_fullscreen(false);
 	}
 	render_framebuffer();
-	static struct SwsContext* ctx;
+	static 
 	uint8_t* srcp[1];
 	int srcs[1];
 	uint8_t* dstp[1];
@@ -939,8 +940,8 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		uint32_t w = main_screen.get_width();
 		uint32_t h = main_screen.get_height();
 		if(w && h)
-			ctx = sws_getCachedContext(ctx, rotate_enabled ? h : w, rotate_enabled ? w : h, PIX_FMT_RGBA,
-				tw, th, PIX_FMT_BGR24, scaling_flags, NULL, NULL, NULL);
+			sws_ctx = sws_getCachedContext(sws_ctx, rotate_enabled ? h : w, rotate_enabled ? w : h,
+				PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags, NULL, NULL, NULL);
 		tw = max(tw, static_cast<uint32_t>(128));
 		th = max(th, static_cast<uint32_t>(112));
 		screen_buffer = new unsigned char[tw * th * 3];
@@ -990,7 +991,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	dstp[0] = screen_buffer;
 	memset(screen_buffer, 0, tw * th * 3);
 	if(main_screen.get_width() && main_screen.get_height())
-		sws_scale(ctx, srcp, srcs, 0, rotate_enabled ? main_screen.get_width() : main_screen.get_height(),
+		sws_scale(sws_ctx, srcp, srcs, 0, rotate_enabled ? main_screen.get_width() : main_screen.get_height(),
 		dstp, dsts);
 	wxBitmap bmp(wxImage(tw, th, screen_buffer, true));
 	dc.DrawBitmap(bmp, 0, 0, false);
@@ -1193,6 +1194,13 @@ wxwin_mainwindow::wxwin_mainwindow(bool fscreen)
 		wx_escape_count = 0;
 		enter_or_leave_fullscreen(true);
 	}
+}
+
+wxwin_mainwindow::~wxwin_mainwindow()
+{
+	if(sws_ctx) sws_freeContext(sws_ctx);
+	if(screen_buffer) delete[] screen_buffer;
+	if(rotate_buffer) delete[] rotate_buffer;
 }
 
 void wxwin_mainwindow::request_paint()

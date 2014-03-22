@@ -30,6 +30,7 @@ public:
 		void on_mouse(wxMouseEvent& e);
 	};
 	wxwin_mainwindow(bool fscreen);
+	~wxwin_mainwindow();
 	void request_paint();
 	void notify_update() throw();
 	void notify_update_status() throw();
