@@ -217,7 +217,7 @@ private:
 	std::set<key*> listening;
 	keyboard& kbd;
 	command::group& domain;
-	mutex_class mutex;
+	threads::lock mlock;
 };
 
 /**
@@ -273,7 +273,7 @@ private:
 	std::string cmd;
 	std::string oname;
 	std::vector<keyspec> specs;
-	mutex_class mutex;
+	threads::lock mlock;
 };
 
 /**
@@ -337,7 +337,7 @@ private:
 	std::string oname;
 	std::vector<std::pair<key*, unsigned>> keys;
 	bool axis;
-	mutex_class mutex;
+	threads::lock mlock;
 };
 }
 

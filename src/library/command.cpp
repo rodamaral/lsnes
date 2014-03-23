@@ -110,14 +110,14 @@ void group::invoke(const std::string& cmd) throw()
 		std::string cmd2 = strip_CR(cmd);
 		if(cmd2 == "?") {
 			//The special ? command.
-			umutex_class lock(int_mutex);
+			threads::alock lock(int_mutex);
 			for(auto i : commands)
 				(*output) << i.first << ": " << i.second->get_short_help() << std::endl;
 			return;
 		}
 		if(firstchar(cmd2) == '?') {
 			//?command.
-			umutex_class lock(int_mutex);
+			threads::alock lock(int_mutex);
 			std::string rcmd = cmd2.substr(1, min(cmd2.find_first_of(" \t"), cmd2.length()));
 			if(firstchar(rcmd) != '*') {
 				//This may be an alias.
@@ -146,7 +146,7 @@ void group::invoke(const std::string& cmd) throw()
 		if(may_be_alias_expanded) {
 			std::list<std::string> aexp;
 			{
-				umutex_class lock(int_mutex);
+				threads::alock lock(int_mutex);
 				if(!aliases.count(cmd))
 					goto not_alias;
 				aexp = aliases[cmd2];
@@ -162,7 +162,7 @@ not_alias:
 			std::string args = cmd2.substr(min(cmd2.find_first_not_of(" \t", split), cmd2.length()));
 			base* cmdh = NULL;
 			{
-				umutex_class lock(int_mutex);
+				threads::alock lock(int_mutex);
 				if(!commands.count(rcmd)) {
 					(*output) << "Unknown command '" << rcmd << "'" << std::endl;
 					return;
@@ -189,7 +189,7 @@ not_alias:
 
 std::set<std::string> group::get_aliases() throw(std::bad_alloc)
 {
-	umutex_class lock(int_mutex);
+	threads::alock lock(int_mutex);
 	std::set<std::string> r;
 	for(auto i : aliases)
 		r.insert(i.first);
@@ -198,7 +198,7 @@ std::set<std::string> group::get_aliases() throw(std::bad_alloc)
 
 std::string group::get_alias_for(const std::string& aname) throw(std::bad_alloc)
 {
-	umutex_class lock(int_mutex);
+	threads::alock lock(int_mutex);
 	if(!valid_alias_name(aname))
 		return "";
 	if(aliases.count(aname)) {
@@ -212,7 +212,7 @@ std::string group::get_alias_for(const std::string& aname) throw(std::bad_alloc)
 
 void group::set_alias_for(const std::string& aname, const std::string& avalue) throw(std::bad_alloc)
 {
-	umutex_class lock(int_mutex);
+	threads::alock lock(int_mutex);
 	if(!valid_alias_name(aname))
 		return;
 	std::list<std::string> newlist;
@@ -241,7 +241,7 @@ bool group::valid_alias_name(const std::string& aliasname) throw(std::bad_alloc)
 
 void group::do_register(const std::string& name, base& cmd) throw(std::bad_alloc)
 {
-	umutex_class lock(int_mutex);
+	threads::alock lock(int_mutex);
 	if(commands.count(name))
 		std::cerr << "WARNING: Command collision for " << name << "!" << std::endl;
 	commands[name] = &cmd;
@@ -249,7 +249,7 @@ void group::do_register(const std::string& name, base& cmd) throw(std::bad_alloc
 
 void group::do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc)
 {
-	umutex_class lock(int_mutex);
+	threads::alock lock(int_mutex);
 	commands.erase(name);
 }
 

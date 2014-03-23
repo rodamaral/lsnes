@@ -2,9 +2,9 @@
 
 namespace dispatch
 {
-mutex_class& global_init_lock()
+threads::lock& global_init_lock()
 {
-	static mutex_class m;
+	static threads::lock m;
 	return m;
 }
 }

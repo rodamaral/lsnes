@@ -11,8 +11,8 @@ sample_queue::sample_queue()
 
 void sample_queue::push(const int16_t* samples, size_t count)
 {
-	umutex_class(mutex);
-	size_t dsize = available();
+	threads::alock h(mlock);
+	size_t dsize = _available();
 	if(dsize + count > size) {
 		//Expand the buffer.
 		std::vector<int16_t> newbuffer;
@@ -41,7 +41,7 @@ void sample_queue::push(const int16_t* samples, size_t count)
 
 void sample_queue::pull(int16_t* samples, size_t count)
 {
-	umutex_class(mutex);
+	threads::alock h(mlock);
 	while(count) {
 		if(!blank) {
 			*samples = data[rptr++];
@@ -58,7 +58,12 @@ void sample_queue::pull(int16_t* samples, size_t count)
 
 size_t sample_queue::available()
 {
-	umutex_class(mutex);
+	threads::alock h(mlock);
+	return _available();
+}
+
+size_t sample_queue::_available()
+{
 	if(blank)
 		return 0;
 	else if(rptr < wptr)

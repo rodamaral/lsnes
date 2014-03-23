@@ -216,7 +216,7 @@ bool controller_state::is_present(unsigned port, unsigned controller) throw()
 void controller_state::erase_macro(const std::string& macro)
 {
 	{
-		umutex_class h(macro_lock);
+		threads::alock h(macro_lock);
 		if(!all_macros.count(macro))
 			return;
 		auto m = &all_macros[macro];
@@ -238,7 +238,7 @@ void controller_state::erase_macro(const std::string& macro)
 
 std::set<std::string> controller_state::enumerate_macro()
 {
-	umutex_class h(macro_lock);
+	threads::alock h(macro_lock);
 	std::set<std::string> r;
 	for(auto i : all_macros)
 		r.insert(i.first);
@@ -247,7 +247,7 @@ std::set<std::string> controller_state::enumerate_macro()
 
 controller_macro& controller_state::get_macro(const std::string& macro)
 {
-	umutex_class h(macro_lock);
+	threads::alock h(macro_lock);
 	if(!all_macros.count(macro))
 		throw std::runtime_error("No such macro");
 	return all_macros[macro];
@@ -256,7 +256,7 @@ controller_macro& controller_state::get_macro(const std::string& macro)
 void controller_state::set_macro(const std::string& macro, const controller_macro& m)
 {
 	{
-		umutex_class h(macro_lock);
+		threads::alock h(macro_lock);
 		controller_macro* old = NULL;
 		if(all_macros.count(macro))
 			old = &all_macros[macro];
@@ -278,21 +278,21 @@ void controller_state::set_macro(const std::string& macro, const controller_macr
 
 void controller_state::apply_macro(controller_frame& f)
 {
-	umutex_class h(macro_lock);
+	threads::alock h(macro_lock);
 	for(auto i : active_macros)
 		i.second->write(f, i.first);
 }
 
 void controller_state::advance_macros()
 {
-	umutex_class h(macro_lock);
+	threads::alock h(macro_lock);
 	for(auto& i : active_macros)
 		i.first++;
 }
 
 std::map<std::string, uint64_t> controller_state::get_macro_frames()
 {
-	umutex_class h(macro_lock);
+	threads::alock h(macro_lock);
 	std::map<std::string, uint64_t> r;
 	for(auto i : active_macros) {
 		for(auto& j : all_macros)
@@ -305,7 +305,7 @@ std::map<std::string, uint64_t> controller_state::get_macro_frames()
 
 void controller_state::set_macro_frames(const std::map<std::string, uint64_t>& f)
 {
-	umutex_class h(macro_lock);
+	threads::alock h(macro_lock);
 	std::list<std::pair<uint64_t, controller_macro*>> new_active_macros;
 	for(auto i : f)
 		if(all_macros.count(i.first))
@@ -318,7 +318,7 @@ void controller_state::set_macro_frames(const std::map<std::string, uint64_t>& f
 void controller_state::rename_macro(const std::string& old, const std::string& newn)
 {
 	{
-		umutex_class h(macro_lock);
+		threads::alock h(macro_lock);
 		if(!all_macros.count(old))
 			throw std::runtime_error("Old macro doesn't exist");
 		if(all_macros.count(newn))
@@ -345,7 +345,7 @@ void controller_state::rename_macro(const std::string& old, const std::string& n
 
 void controller_state::do_macro(const std::string& a, int mode) {
 	{
-		umutex_class h(macro_lock);
+		threads::alock h(macro_lock);
 		if(!all_macros.count(a)) {
 			if(mode & 1) messages << "No such macro '" << a << "'" << std::endl;
 			return;
@@ -366,7 +366,7 @@ end:
 
 std::set<std::string> controller_state::active_macro_set()
 {
-	umutex_class h(macro_lock);
+	threads::alock h(macro_lock);
 	std::set<std::string> r;
 	for(auto i : active_macros) {
 		for(auto& j : all_macros)

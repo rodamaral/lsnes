@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <set>
 #include "json.hpp"
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
 namespace gamepad
 {
@@ -108,7 +108,7 @@ private:
 	unsigned next_button;
 	unsigned next_hat;
 	unsigned jid;
-	mutex_class mutex;
+	threads::lock mlock;
 };
 
 class set
@@ -136,7 +136,7 @@ private:
 	std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> amode_fn;
 	std::function<void(unsigned jnum, unsigned num, int type)> newitem_fn;
 	std::vector<pad*> _gamepads;
-	mutex_class mutex;
+	threads::lock mlock;
 };
 }
 

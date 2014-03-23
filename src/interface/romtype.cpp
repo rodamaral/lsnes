@@ -548,7 +548,7 @@ unsigned core_core::action_flags(unsigned id)
 
 std::set<const interface_action*> core_core::get_actions()
 {
-	umutex_class h(actions_lock);
+	threads::alock h(actions_lock);
 	std::set<const interface_action*> r;
 	for(auto& i : actions)
 		r.insert(&i.second);

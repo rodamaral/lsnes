@@ -3,7 +3,7 @@
 #include "library/framebuffer.hpp"
 #include "library/png.hpp"
 #include "library/string.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include "library/lua-framebuffer.hpp"
 #include "library/zip.hpp"
 #include "lua/bitmap.hpp"
@@ -33,7 +33,7 @@ namespace
 		tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight);
 		~tilemap()
 		{
-			umutex_class h(mutex);
+			threads::alock h(lock);
 			render_kill_request(this);
 		}
 		static int create(lua::state& L, lua::parameters& P);
@@ -44,7 +44,7 @@ namespace
 
 			P(P.skipped(), x, y);
 
-			umutex_class h(mutex);
+			threads::alock h(lock);
 			if(x >= width || y >= height)
 				return 0;
 			tilemap_entry& e = map[y * width + x];
@@ -65,7 +65,7 @@ namespace
 			P(P.skipped(), x, y);
 			int oidx = P.skip();
 
-			umutex_class h(mutex);
+			threads::alock h(lock);
 			if(x >= width || y >= height)
 				return 0;
 			tilemap_entry& e = map[y * width + x];
@@ -125,7 +125,7 @@ namespace
 			P(P.skipped(), ox, oy, P.optional(x0, 0), P.optional(y0, 0), P.optional(w, width),
 				P.optional(h, height), P.optional(circx, false), P.optional(circy, false));
 
-			umutex_class mh(mutex);
+			threads::alock mh(lock);
 			if(x0 > width || x0 + w > width || x0 + w < x0 || y0 > height || y0 + h > height ||
 				y0 + h < y0)
 				throw std::runtime_error("Scroll window out of range");
@@ -161,7 +161,7 @@ namespace
 		size_t cwidth;
 		size_t cheight;
 		std::vector<tilemap_entry> map;
-		mutex_class mutex;
+		threads::lock lock;
 	};
 
 	struct render_object_tilemap : public framebuffer::object
@@ -179,7 +179,7 @@ namespace
 		template<bool T> void composite_op(struct framebuffer::fb<T>& scr) throw()
 		{
 			tilemap& _map = *map;
-			umutex_class h(_map.mutex);
+			threads::alock h(_map.lock);
 			for(size_t ty = 0; ty < _map.height; ty++) {
 				size_t basey = _map.cheight * ty;
 				for(size_t tx = 0; tx < _map.width; tx++) {

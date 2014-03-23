@@ -4,7 +4,7 @@
 #include "httpauth.hpp"
 #include "string.hpp"
 #include "minmax.hpp"
-#include "threadtypes.hpp"
+#include "threads.hpp"
 #include "streamcompress.hpp"
 #include <curl/curl.h>
 #include <cstring>
@@ -230,7 +230,7 @@ http_async_request::http_async_request()
 
 void http_async_request::get_xfer_status(int64_t& dnow, int64_t& dtotal, int64_t& unow, int64_t& utotal)
 {
-	umutex_class h(m);
+	threads::alock h(m);
 	if(req) {
 		req->get_xfer_status(dnow, dtotal, unow, utotal);
 	} else {
@@ -246,7 +246,7 @@ namespace
 		try {
 			r->req->do_transfer(r->ihandler, r->ohandler);
 		} catch(std::exception& e) {
-			umutex_class h(r->m);
+			threads::alock h(r->m);
 			r->finished_cond.notify_all();
 			r->finished = true;
 			delete r->req;
@@ -255,7 +255,7 @@ namespace
 			return;
 		}
 		int64_t tmp1, tmp2;
-		umutex_class h(r->m);
+		threads::alock h(r->m);
 		r->http_code = r->req->get_http_code();
 		r->req->get_xfer_status(r->final_dl, tmp1, r->final_ul, tmp2);
 		r->finished_cond.notify_all();
@@ -269,13 +269,13 @@ void http_async_request::lauch_async()
 {
 	try {
 		{
-			umutex_class h(m);
+			threads::alock h(m);
 			req = new http_request(verb, url);
 			if(authorization != "") req->set_authorization(authorization);
 		}
-		(new thread_class(async_http_trampoline, this))->detach();
+		(new threads::thread(async_http_trampoline, this))->detach();
 	} catch(std::exception& e) {
-		umutex_class h(m);
+		threads::alock h(m);
 		finished_cond.notify_all();
 		finished = true;
 		delete req;

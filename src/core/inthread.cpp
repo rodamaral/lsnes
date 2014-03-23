@@ -74,7 +74,7 @@ namespace
 	//Last seen rate.
 	double last_rate = 0;
 	//Mutex protecting current_time and time_jump.
-	mutex_class time_mutex;
+	threads::lock time_mutex;
 	//The current time.
 	uint64_t current_time;
 	//Time jump flag. Set if time jump is detected.
@@ -83,13 +83,13 @@ namespace
 	//are started.
 	bool time_jump;
 	//Lock protecting active_playback_streams.
-	mutex_class active_playback_streams_lock;
+	threads::lock active_playback_streams_lock;
 	//List of streams currently playing.
 	std::list<opus_playback_stream*> active_playback_streams;
 	//The collection of streams.
 	stream_collection* current_collection;
 	//Lock protecting current collection.
-	mutex_class current_collection_lock;
+	threads::lock current_collection_lock;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Bitrate tracker.
@@ -275,9 +275,9 @@ namespace
 		//Unlock a stream.
 		void unlock() { locked = false; }
 		//Increment reference count.
-		void get_ref() { umutex_class m(reflock); refcount++; }
+		void get_ref() { threads::alock m(reflock); refcount++; }
 		//Decrement reference count, destroying object if it hits zero.
-		void put_ref() { umutex_class m(reflock); refcount--; if(!refcount) destroy(); }
+		void put_ref() { threads::alock m(reflock); refcount--; if(!refcount) destroy(); }
 		//Add new packet into stream.
 		//Not safe to call simultaneously with packet_length() or packet().
 		//Can throw.
@@ -309,7 +309,7 @@ namespace
 		uint32_t postgap_length;
 		int16_t gain;
 		bool locked;
-		mutex_class reflock;
+		threads::lock reflock;
 		unsigned refcount;
 		bool deleting;
 	};
@@ -970,7 +970,7 @@ out:
 		//Get stream with given index (NULL if not found).
 		opus_stream* get_stream(uint64_t index)
 		{
-			umutex_class m(mutex);
+			threads::alock m(mlock);
 			if(streams.count(index)) {
 				streams[index]->get_ref();
 				return streams[index];
@@ -994,7 +994,7 @@ out:
 		filesystem::ref fs;
 		uint64_t next_index;
 		unsigned next_stream;
-		mutex_class mutex;
+		threads::lock mlock;
 		std::set<uint64_t> free_indices;
 		std::map<uint64_t, uint64_t> entries;
 		std::multimap<uint64_t, uint64_t> streams_by_time;
@@ -1038,7 +1038,7 @@ out:
 
 	stream_collection::~stream_collection()
 	{
-		umutex_class m(mutex);
+		threads::alock m(mlock);
 		for(auto i : streams)
 			i.second->put_ref();
 		streams.clear();
@@ -1046,7 +1046,7 @@ out:
 
 	std::list<uint64_t> stream_collection::streams_at(uint64_t point)
 	{
-		umutex_class m(mutex);
+		threads::alock m(mlock);
 		std::list<uint64_t> s;
 		for(auto i : streams) {
 			uint64_t start = i.second->timebase();
@@ -1063,7 +1063,7 @@ out:
 	{
 		uint64_t idx;
 		try {
-			umutex_class m(mutex);
+			threads::alock m(mlock);
 			//Lock the added stream so it doesn't start playing back immediately.
 			stream.lock();
 			idx = next_index++;
@@ -1096,14 +1096,14 @@ out:
 
 	void stream_collection::unlock_all()
 	{
-		umutex_class m(mutex);
+		threads::alock m(mlock);
 		for(auto i : streams)
 			i.second->unlock();
 	}
 
 	void stream_collection::delete_stream(uint64_t index)
 	{
-		umutex_class m(mutex);
+		threads::alock m(mlock);
 		if(!entries.count(index))
 			return;
 		uint64_t entry_number = entries[index];
@@ -1127,7 +1127,7 @@ out:
 	void stream_collection::alter_stream_timebase(uint64_t index, uint64_t newts)
 	{
 		try {
-			umutex_class m(mutex);
+			threads::alock m(mlock);
 			if(!streams.count(index))
 				return;
 			if(entries.count(index)) {
@@ -1156,7 +1156,7 @@ out:
 	void stream_collection::alter_stream_gain(uint64_t index, uint16_t newgain)
 	{
 		try {
-			umutex_class m(mutex);
+			threads::alock m(mlock);
 			if(!streams.count(index))
 				return;
 			streams[index]->set_gain(newgain);
@@ -1168,7 +1168,7 @@ out:
 
 	std::list<uint64_t> stream_collection::all_streams()
 	{
-		umutex_class m(mutex);
+		threads::alock m(mlock);
 		std::list<uint64_t> s;
 		for(auto i : streams_by_time)
 			s.push_back(i.second);
@@ -1276,16 +1276,16 @@ out:
 	void start_management_stream(opus_stream& s)
 	{
 		opus_playback_stream* p = new opus_playback_stream(s);
-		umutex_class m(active_playback_streams_lock);
+		threads::alock m(active_playback_streams_lock);
 		active_playback_streams.push_back(p);
 	}
 
 	void advance_time(uint64_t newtime)
 	{
-		umutex_class m2(current_collection_lock);
+		threads::alock m2(current_collection_lock);
 		if(!current_collection) {
 			//Clear all.
-			umutex_class m(active_playback_streams_lock);
+			threads::alock m(active_playback_streams_lock);
 			for(auto i : active_playback_streams)
 				delete i;
 			active_playback_streams.clear();
@@ -1297,7 +1297,7 @@ out:
 			if(!i)
 				continue;
 			//Don't play locked streams in order to avoid double playing.
-			umutex_class m(active_playback_streams_lock);
+			threads::alock m(active_playback_streams_lock);
 			try {
 				if(!i->islocked())
 					active_playback_streams.push_back(new opus_playback_stream(*i));
@@ -1310,10 +1310,10 @@ out:
 
 	void jump_time(uint64_t newtime)
 	{
-		umutex_class m2(current_collection_lock);
+		threads::alock m2(current_collection_lock);
 		if(!current_collection) {
 			//Clear all.
-			umutex_class m(active_playback_streams_lock);
+			threads::alock m(active_playback_streams_lock);
 			for(auto i : active_playback_streams)
 				delete i;
 			active_playback_streams.clear();
@@ -1321,7 +1321,7 @@ out:
 		}
 		//Close all currently playing streams.
 		{
-			umutex_class m(active_playback_streams_lock);
+			threads::alock m(active_playback_streams_lock);
 			for(auto i : active_playback_streams)
 				delete i;
 			active_playback_streams.clear();
@@ -1346,7 +1346,7 @@ out:
 			if(!s)
 				continue;
 			s->skip(p);
-			umutex_class m(active_playback_streams_lock);
+			threads::alock m(active_playback_streams_lock);
 			active_playback_streams.push_back(s);
 		}
 	}
@@ -1429,7 +1429,7 @@ out:
 		uint64_t sampletime;
 		bool jumping;
 		{
-			umutex_class m(time_mutex);
+			threads::alock m(time_mutex);
 			sampletime = current_time;
 			jumping = time_jump;
 			time_jump = false;
@@ -1450,7 +1450,7 @@ out:
 		//is held.
 		std::list<opus_playback_stream*> stmp;
 		{
-			umutex_class m(active_playback_streams_lock);
+			threads::alock m(active_playback_streams_lock);
 			stmp = active_playback_streams;
 		}
 		std::set<opus_playback_stream*> toerase;
@@ -1469,7 +1469,7 @@ out:
 				toerase.insert(i);
 		}
 		{
-			umutex_class m(active_playback_streams_lock);
+			threads::alock m(active_playback_streams_lock);
 			for(auto i = active_playback_streams.begin(); i != active_playback_streams.end();) {
 				if(toerase.count(*i)) {
 					auto toerase = i;
@@ -1484,7 +1484,7 @@ out:
 
 	void handle_tangent_positive_edge(opus::encoder& e, opus_stream*& active_stream, bitrate_tracker& brtrack)
 	{
-		umutex_class m2(current_collection_lock);
+		threads::alock m2(current_collection_lock);
 		if(!current_collection)
 			return;
 		try {
@@ -1493,7 +1493,7 @@ out:
 			brtrack.reset();
 			uint64_t ctime;
 			{
-				umutex_class m(time_mutex);
+				threads::alock m(time_mutex);
 				ctime = current_time;
 			}
 			active_stream = NULL;
@@ -1509,7 +1509,7 @@ out:
 
 	void handle_tangent_negative_edge(opus_stream*& active_stream, bitrate_tracker& brtrack)
 	{
-		umutex_class m2(current_collection_lock);
+		threads::alock m2(current_collection_lock);
 		messages << "Tangent disenaged: " << brtrack;
 		try {
 			active_stream->write_trailier();
@@ -1529,7 +1529,7 @@ out:
 		active_stream = NULL;
 	}
 
-	class inthread_th : public worker_thread
+	class inthread_th : public workthread::worker
 	{
 	public:
 		inthread_th()
@@ -1543,7 +1543,7 @@ out:
 		{
 			quit = true;
 			{
-				umutex_class h(lmut);
+				threads::alock h(lmut);
 				lcond.notify_all();
 			}
 			while(!quit_ack)
@@ -1566,11 +1566,11 @@ out:
 		{
 			//Wait for libopus to load...
 			size_t cbh = opus::add_callback([this]() {
-				umutex_class h(this->lmut);
+				threads::alock h(this->lmut);
 				this->lcond.notify_all();
 			});
 			while(true) {
-				umutex_class h(lmut);
+				threads::alock h(lmut);
 				if(opus::libopus_loaded() || quit)
 					break;
 				lcond.wait(h);
@@ -1598,7 +1598,7 @@ out:
 
 			drain_input();
 			while(1) {
-				if(clear_workflag(WORKFLAG_QUIT_REQUEST) & WORKFLAG_QUIT_REQUEST) {
+				if(clear_workflag(workthread::quit_request) & workthread::quit_request) {
 					if(!active_flag && active_stream)
 						handle_tangent_negative_edge(active_stream, brtrack);
 					break;
@@ -1652,7 +1652,7 @@ out:
 				if(ticks_spent < ITERATION_TIME)
 					usleep(ITERATION_TIME - ticks_spent);
 			}
-			umutex_class h(current_collection_lock);
+			threads::alock h(current_collection_lock);
 			delete current_collection;
 			current_collection = NULL;
 		}
@@ -1661,8 +1661,8 @@ out:
 		double position;
 		volatile bool quit;
 		volatile bool quit_ack;
-		mutex_class lmut;
-		cv_class lcond;
+		threads::lock lmut;
+		threads::cv lcond;
 	};
 
 	//The tangent function.
@@ -1685,7 +1685,7 @@ void voice_frame_number(uint64_t newframe, double rate)
 {
 	if(rate == last_rate && last_frame_number == newframe)
 		return;
-	umutex_class m(time_mutex);
+	threads::alock m(time_mutex);
 	current_time = newframe / rate * OPUS_SAMPLERATE;
 	if(fabs(rate - last_rate) > 1e-6 || last_frame_number + 1 != newframe)
 		time_jump = true;
@@ -1717,13 +1717,13 @@ uint64_t voicesub_parse_timebase(const std::string& n)
 
 bool voicesub_collection_loaded()
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	return (current_collection != NULL);
 }
 
 std::list<playback_stream_info> voicesub_get_stream_info()
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	std::list<playback_stream_info> in;
 	if(!current_collection)
 		return in;
@@ -1746,7 +1746,7 @@ std::list<playback_stream_info> voicesub_get_stream_info()
 
 void voicesub_play_stream(uint64_t id)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	opus_stream* s = current_collection->get_stream(id);
@@ -1763,7 +1763,7 @@ void voicesub_play_stream(uint64_t id)
 
 void voicesub_export_stream(uint64_t id, const std::string& filename, external_stream_format fmt)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	opus_stream* st = current_collection->get_stream(id);
@@ -1785,7 +1785,7 @@ void voicesub_export_stream(uint64_t id, const std::string& filename, external_s
 
 uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, external_stream_format fmt)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 
@@ -1807,7 +1807,7 @@ uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, extern
 
 void voicesub_delete_stream(uint64_t id)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	current_collection->delete_stream(id);
@@ -1816,7 +1816,7 @@ void voicesub_delete_stream(uint64_t id)
 
 void voicesub_export_superstream(const std::string& filename)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	std::ofstream s(filename, std::ios_base::out | std::ios_base::binary);
@@ -1827,7 +1827,7 @@ void voicesub_export_superstream(const std::string& filename)
 
 void voicesub_load_collection(const std::string& filename)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	filesystem::ref newfs;
 	stream_collection* newc;
 	newfs = filesystem::ref(filename);
@@ -1840,7 +1840,7 @@ void voicesub_load_collection(const std::string& filename)
 
 void voicesub_unload_collection()
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(current_collection)
 		delete current_collection;
 	current_collection = NULL;
@@ -1849,7 +1849,7 @@ void voicesub_unload_collection()
 
 void voicesub_alter_timebase(uint64_t id, uint64_t ts)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	current_collection->alter_stream_timebase(id, ts);
@@ -1858,7 +1858,7 @@ void voicesub_alter_timebase(uint64_t id, uint64_t ts)
 
 float voicesub_get_gain(uint64_t id)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	return current_collection->get_stream(id)->get_gain() / 256.0;
@@ -1866,7 +1866,7 @@ float voicesub_get_gain(uint64_t id)
 
 void voicesub_set_gain(uint64_t id, float gain)
 {
-	umutex_class m2(current_collection_lock);
+	threads::alock m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	int64_t _gain = gain * 256;

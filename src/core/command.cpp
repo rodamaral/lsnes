@@ -1,7 +1,7 @@
 #include "core/command.hpp"
 #include "core/keymapper.hpp"
 #include "library/globalwrap.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
 
@@ -12,13 +12,13 @@ command::group lsnes_cmd;
 
 namespace
 {
-	mutex_class alias_ibind_mutex;
+	threads::lock alias_ibind_mutex;
 	std::map<std::string, keyboard::invbind*> alias_binds;
 }
 
 void refresh_alias_binds()
 {
-	umutex_class h(alias_ibind_mutex);
+	threads::alock h(alias_ibind_mutex);
 	auto a = lsnes_cmd.get_aliases();
 	for(auto i : alias_binds) {
 		if(!a.count(i.first)) {

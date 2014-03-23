@@ -1,7 +1,7 @@
 #ifndef _library__emustatus__hpp__included__
 #define _library__emustatus__hpp__included__
 
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
 #include <map>
 #include <string>
@@ -92,7 +92,7 @@ public:
 private:
 	emulator_status(const emulator_status&);
 	emulator_status& operator=(const emulator_status&);
-	mutex_class lock;
+	threads::lock lock;
 	std::map<std::string, std::u32string> content;
 };
 

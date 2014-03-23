@@ -291,41 +291,41 @@ filesystem::ref& filesystem::ref::operator=(const filesystem::ref& r)
 	//This is tricky, due to having to lock two objects.
 	size_t A = (size_t)this;
 	size_t B = (size_t)&r;
-	mutex_class* mtodelete = NULL;
+	threads::lock* mtodelete = NULL;
 	if(!refcnt) {
 		//We just have to grab a ref and copy.
-		umutex_class m(*r.mutex);
+		threads::alock m(*r.mlock);
 		++*(r.refcnt);
 		refcnt = r.refcnt;
-		mutex = r.mutex;
+		mlock = r.mlock;
 		fs = r.fs;
 	} else if(A < B) {
 		//Two-object case.
-		umutex_class m1(*mutex);
-		umutex_class m2(*r.mutex);
+		threads::alock m1(*mlock);
+		threads::alock m2(*r.mlock);
 		--*refcnt;
 		if(!*refcnt) {
 			delete fs;
 			delete refcnt;
-			mtodelete = mutex;;
+			mtodelete = mlock;
 		}
 		++*(r.refcnt);
 		refcnt = r.refcnt;
-		mutex = r.mutex;
+		mlock = r.mlock;
 		fs = r.fs;
 	} else {
 		//Two-object case.
-		umutex_class m1(*r.mutex);
-		umutex_class m2(*mutex);
+		threads::alock m1(*r.mlock);
+		threads::alock m2(*mlock);
 		--*refcnt;
 		if(!*refcnt) {
 			delete fs;
 			delete refcnt;
-			mtodelete = mutex;;
+			mtodelete = mlock;
 		}
 		++*(r.refcnt);
 		refcnt = r.refcnt;
-		mutex = r.mutex;
+		mlock = r.mlock;
 		fs = r.fs;
 	}
 	if(mtodelete)

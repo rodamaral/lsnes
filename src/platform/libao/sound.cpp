@@ -36,7 +36,7 @@ namespace
 	bool was_enabled = false;
 	int driver_id = 0;
 
-	class cb_thread : public worker_thread
+	class cb_thread : public workthread::worker
 	{
 	public:
 		cb_thread() { fire(); }

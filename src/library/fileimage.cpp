@@ -13,12 +13,12 @@ namespace
 {
 	std::map<std::string, std::pair<time_t, std::string>> cached_entries;
 
-	mutex_class& global_queue_mutex()
+	threads::lock& global_queue_mutex()
 	{
 		static bool init = false;
-		static mutex_class* m;
+		static threads::lock* m;
 		if(!init)
-			m = new mutex_class();
+			m = new threads::lock();
 		init = true;
 		return *m;
 	}
@@ -120,7 +120,7 @@ hashval::hashval(const std::string& _value, uint64_t _prefix)
 
 hashval::hashval(hash& h, unsigned id)
 {
-	umutex_class h2(global_queue_mutex());
+	threads::alock h2(global_queue_mutex());
 	is_ready = false;
 	cbid = id;
 	prev = next = NULL;
@@ -130,21 +130,21 @@ hashval::hashval(hash& h, unsigned id)
 
 hashval::~hashval()
 {
-	umutex_class h2(global_queue_mutex());
-	umutex_class h(mutex);
+	threads::alock h2(global_queue_mutex());
+	threads::alock h(mlock);
 	if(hasher)
 		hasher->unlink(*this);
 }
 
 bool hashval::ready() const
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	return is_ready;
 }
 
 std::string hashval::read() const
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	while(!is_ready)
 		condition.wait(h);
 	if(error != "")
@@ -154,7 +154,7 @@ std::string hashval::read() const
 
 uint64_t hashval::prefix() const
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	while(!is_ready)
 		condition.wait(h);
 	if(error != "")
@@ -164,8 +164,8 @@ uint64_t hashval::prefix() const
 
 hashval::hashval(const hashval& f)
 {
-	umutex_class h2(global_queue_mutex());
-	umutex_class h(f.mutex);
+	threads::alock h2(global_queue_mutex());
+	threads::alock h(f.mlock);
 	is_ready = f.is_ready;
 	cbid = f.cbid;
 	value = f.value;
@@ -181,13 +181,13 @@ hashval& hashval::operator=(const hashval& f)
 {
 	if(this == &f)
 		return *this;
-	umutex_class h2(global_queue_mutex());
+	threads::alock h2(global_queue_mutex());
 	if((size_t)this < (size_t)&f) {
-		mutex.lock();
-		f.mutex.lock();
+		mlock.lock();
+		f.mlock.lock();
 	} else {
-		f.mutex.lock();
-		mutex.lock();
+		f.mlock.lock();
+		mlock.lock();
 	}
 
 	if(!is_ready && hasher)
@@ -201,13 +201,13 @@ hashval& hashval::operator=(const hashval& f)
 	hasher = f.hasher;
 	if(!is_ready && hasher)
 		hasher->link(*this);
-	mutex.unlock();
-	f.mutex.unlock();
+	mlock.unlock();
+	f.mlock.unlock();
 }
 
 void hashval::resolve(unsigned id, const std::string& hash, uint64_t _prefix)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	hasher->unlink(*this);
 	if(id != cbid)
 		return;
@@ -219,7 +219,7 @@ void hashval::resolve(unsigned id, const std::string& hash, uint64_t _prefix)
 
 void hashval::resolve_error(unsigned id, const std::string& err)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	hasher->unlink(*this);
 	if(id != cbid)
 		return;
@@ -233,7 +233,7 @@ void hash::link(hashval& future)
 {
 	//We assume caller holds global queue lock.
 	{
-		umutex_class h(mutex);
+		threads::alock h(mlock);
 		unsigned cbid = future.cbid;
 		for(auto& i : queue)
 			if(i.cbid == cbid)
@@ -252,7 +252,7 @@ void hash::unlink(hashval& future)
 {
 	//We assume caller holds global queue lock.
 	{
-		umutex_class h(mutex);
+		threads::alock h(mlock);
 		unsigned cbid = future.cbid;
 		for(auto& i : queue)
 			if(i.cbid == cbid)
@@ -278,7 +278,7 @@ hashval hash::operator()(const std::string& filename, uint64_t prefixlen)
 	j.interested = 1;
 	hashval future(*this, j.cbid);
 	queue.push_back(j);
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	total_work += j.size;
 	work_size += j.size;
 	condition.notify_all();
@@ -295,7 +295,7 @@ hashval hash::operator()(const std::string& filename, std::function<uint64_t(uin
 	j.interested = 1;
 	hashval future(*this, j.cbid);
 	queue.push_back(j);
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	total_work += j.size;
 	work_size += j.size;
 	condition.notify_all();
@@ -304,7 +304,7 @@ hashval hash::operator()(const std::string& filename, std::function<uint64_t(uin
 
 void hash::set_callback(std::function<void(uint64_t, uint64_t)> cb)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	progresscb = cb;
 }
 
@@ -317,19 +317,19 @@ hash::hash()
 	total_work = 0;
 	work_size = 0;
 	progresscb = [](uint64_t x, uint64_t y) -> void {};
-	hash_thread = new thread_class(thread_trampoline, this);
+	hash_thread = new threads::thread(thread_trampoline, this);
 }
 
 hash::~hash()
 {
 	{
-		umutex_class h(mutex);
+		threads::alock h(mlock);
 		quitting = true;
 		condition.notify_all();
 	}
 	hash_thread->join();
 	delete hash_thread;
-	umutex_class h2(global_queue_mutex());
+	threads::alock h2(global_queue_mutex());
 	while(first_future)
 		first_future->resolve_error(first_future->cbid, "Hasher deleted");
 }
@@ -340,7 +340,7 @@ void hash::entrypoint()
 	while(true) {
 		//Wait for work or quit signal.
 		{
-			umutex_class h(mutex);
+			threads::alock h(mlock);
 			while(!quitting && queue.empty()) {
 				send_idle();
 				condition.wait(h);
@@ -357,14 +357,14 @@ void hash::entrypoint()
 		fp = NULL;
 		cached_hash = lookup_cache(current_job->filename, current_job->prefix);
 		if(cached_hash != "") {
-			umutex_class h2(global_queue_mutex());
+			threads::alock h2(global_queue_mutex());
 			for(hashval* fut = first_future; fut != NULL; fut = fut->next)
 				fut->resolve(current_job->cbid, cached_hash, current_job->prefix);
 			goto finished;
 		}
 		fp = fopen(current_job->filename.c_str(), "rb");
 		if(!fp) {
-			umutex_class h2(global_queue_mutex());
+			threads::alock h2(global_queue_mutex());
 			for(hashval* fut = first_future; fut != NULL; fut = fut->next)
 				fut->resolve_error(current_job->cbid, "Can't open file");
 		} else {
@@ -372,7 +372,7 @@ void hash::entrypoint()
 			uint64_t toskip = current_job->prefix;
 			while(!feof(fp) && !ferror(fp)) {
 				{
-					umutex_class h(mutex);
+					threads::alock h(mlock);
 					if(!current_job->interested)
 						goto finished; //Aborted.
 				}
@@ -387,12 +387,12 @@ void hash::entrypoint()
 				send_callback(progress);
 			}
 			if(ferror(fp)) {
-				umutex_class h2(global_queue_mutex());
+				threads::alock h2(global_queue_mutex());
 				for(hashval* fut = first_future; fut != NULL; fut = fut->next)
 					fut->resolve_error(current_job->cbid, "Can't read file");
 			} else {
 				std::string hval = hash.read();
-				umutex_class h2(global_queue_mutex());
+				threads::alock h2(global_queue_mutex());
 				for(hashval* fut = first_future; fut != NULL; fut = fut->next)
 					fut->resolve(current_job->cbid, hval, current_job->prefix);
 				store_cache(current_job->filename, current_job->prefix, hval);
@@ -402,7 +402,7 @@ finished:
 		if(fp) fclose(fp);
 		//Okay, this work item is complete.
 		{
-			umutex_class h(mutex);
+			threads::alock h(mlock);
 			total_work -= current_job->size;
 			queue.erase(current_job);
 		}
@@ -414,7 +414,7 @@ void hash::send_callback(uint64_t this_completed)
 {
 	uint64_t amount;
 	{
-		umutex_class h(mutex);
+		threads::alock h(mlock);
 		if(this_completed > total_work)
 			amount = 0;
 		else

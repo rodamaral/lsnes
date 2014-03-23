@@ -1,5 +1,5 @@
 #include "controller-data.hpp"
-#include "threadtypes.hpp"
+#include "threads.hpp"
 #include "minmax.hpp"
 #include "globalwrap.hpp"
 #include "serialization.hpp"

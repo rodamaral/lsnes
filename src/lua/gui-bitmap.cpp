@@ -9,7 +9,7 @@
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include "lua/bitmap.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include <vector>
 #include <sstream>
 
@@ -805,7 +805,7 @@ int lua_palette::set(lua::state& L, lua::parameters& P)
 
 	P(P.skipped(), c, nc);
 
-	//The mutex lock protects only the internals of colors array.
+	//The lock protects only the internals of colors array.
 	if(this->colors.size() <= c) {
 		this->palette_mutex.lock();
 		this->colors.resize(static_cast<uint32_t>(c) + 1);

@@ -8,7 +8,7 @@
 #include "interface/controller.hpp"
 #include "interface/setting.hpp"
 #include "library/framebuffer.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 
 struct core_region;
 struct core_type;
@@ -531,7 +531,7 @@ private:
 	std::vector<port_type*> port_types;
 	bool hidden;
 	std::map<std::string, interface_action> actions;
-	mutex_class actions_lock;
+	threads::lock actions_lock;
 };
 
 struct core_type

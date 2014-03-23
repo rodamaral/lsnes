@@ -34,13 +34,13 @@ namespace
 		"Movie‣Saving‣Compression",  7);
 	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> readonly_load_preserves(lsnes_vset,
 		"preserve_on_readonly_load", "Movie‣Loading‣Preserve on readonly load", true);
-	mutex_class mprefix_lock;
+	threads::lock mprefix_lock;
 	std::string mprefix;
 	bool mprefix_valid;
 
 	std::string get_mprefix()
 	{
-		umutex_class h(mprefix_lock);
+		threads::alock h(mprefix_lock);
 		if(!mprefix_valid)
 			return "movieslot";
 		else
@@ -80,7 +80,7 @@ namespace
 	void set_mprefix(const std::string& pfx)
 	{
 		{
-			umutex_class h(mprefix_lock);
+			threads::alock h(mprefix_lock);
 			mprefix_valid = (pfx != "");
 			mprefix = pfx;
 		}

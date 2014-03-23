@@ -1,6 +1,6 @@
 #include "opus.hpp"
 #include "loadlib.hpp"
-#include "threadtypes.hpp"
+#include "threads.hpp"
 #include <sstream>
 #include <cstring>
 #include <map>
@@ -186,7 +186,7 @@ struct functions dummy_functions = {
 struct functions* opus_functions = &dummy_functions;
 
 std::map<size_t, std::function<void()>> lcbs;
-mutex_class mut;
+threads::lock mut;
 
 template<typename T> void CA(T& d, void* s)
 {
@@ -240,7 +240,7 @@ void load_libopus(const loadlib::module& lib)
 	}
 
 	lfun = tmp;
-	umutex_class h(mut);
+	threads::alock h(mut);
 	opus_functions = &lfun;
 	for(auto i : lcbs)
 		(i.second)();
@@ -248,13 +248,13 @@ void load_libopus(const loadlib::module& lib)
 
 bool libopus_loaded()
 {
-	umutex_class h(mut);
+	threads::alock h(mut);
 	return (opus_functions != &dummy_functions);
 }
 
 size_t add_callback(std::function<void()> fun)
 {
-	umutex_class h(mut);
+	threads::alock h(mut);
 	static size_t var = 0;
 	size_t hd = 0;
 	if(opus_functions != &dummy_functions)
@@ -266,7 +266,7 @@ size_t add_callback(std::function<void()> fun)
 
 void cancel_callback(size_t handle)
 {
-	umutex_class h(mut);
+	threads::alock h(mut);
 	lcbs.erase(handle);
 }
 

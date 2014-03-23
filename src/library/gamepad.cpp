@@ -98,7 +98,7 @@ void pad::set_online(bool status)
 	std::list<unsigned> buttons_off;
 	std::list<unsigned> hats_off;
 	{
-		umutex_class H(mutex);
+		threads::alock H(mlock);
 		if(status)
 			online_flag = status;
 		else {
@@ -134,7 +134,7 @@ unsigned pad::add_axis(uint64_t id, int64_t _min, int64_t _max, bool pressure, c
 {
 	axis_info a;
 	{
-		umutex_class H(mutex);
+		threads::alock H(mlock);
 		if(_axes.count(id)) {
 			_axes[id].name = xname;
 			_axes[id].online = true;
@@ -163,7 +163,7 @@ unsigned pad::add_button(uint64_t id, const std::string& xname)
 {
 	button_info b;
 	{
-		umutex_class H(mutex);
+		threads::alock H(mlock);
 		if(_buttons.count(id)) {
 			_buttons[id].name = xname;
 			_buttons[id].online = true;
@@ -184,7 +184,7 @@ unsigned pad::add_hat(uint64_t id, const std::string& xname)
 {
 	hat_info h;
 	{
-		umutex_class H(mutex);
+		threads::alock H(mlock);
 		if(_hats.count(id)) {
 			_hats[id].name = xname;
 			_hats[id].online = true;
@@ -208,7 +208,7 @@ unsigned pad::add_hat(uint64_t idx, uint64_t idy, int64_t mindev, const std::str
 {
 	hat_info h;
 	{
-		umutex_class H(mutex);
+		threads::alock H(mlock);
 		if(_axes_hat.count(idx)) {
 			_axes_hat[idx]->name = xnamex;
 			_axes_hat[idy]->name2 = xnamey;
@@ -231,7 +231,7 @@ unsigned pad::add_hat(uint64_t idx, uint64_t idy, int64_t mindev, const std::str
 
 void pad::report_axis(uint64_t id, int64_t val)
 {
-	mutex.lock();
+	mlock.lock();
 	if(_axes.count(id)) {
 		axis_info& i = _axes[id];
 		int16_t val2 = map_value(val, i.minus, i.zero, i.plus, i.neutral, i.pressure);
@@ -240,7 +240,7 @@ void pad::report_axis(uint64_t id, int64_t val)
 		i.rstate = val;
 		int16_t nstate = i.state;
 		unsigned inum = i.num;
-		mutex.unlock();
+		mlock.unlock();
 		if(ostate != nstate)
 			axis_fn(jid, inum, nstate);
 	} else if(_axes_hat.count(id)) {
@@ -254,18 +254,18 @@ void pad::report_axis(uint64_t id, int64_t val)
 		if(is_y) { i.state = (val >= i.mindev) ? (i.state | 0x4) : (i.state & 0xB); }
 		int16_t nstate = i.state;
 		unsigned inum = i.num;
-		mutex.unlock();
+		mlock.unlock();
 		if(ostate != nstate)
 			hat_fn(jid, inum, nstate);
 	} else
-		mutex.unlock();
+		mlock.unlock();
 }
 
 void pad::report_button(uint64_t id, bool val)
 {
-	mutex.lock();
+	mlock.lock();
 	if(!_buttons.count(id)) {
-		mutex.unlock();
+		mlock.unlock();
 		return;
 	}
 	button_info& i = _buttons[id];
@@ -273,17 +273,17 @@ void pad::report_button(uint64_t id, bool val)
 	i.state = val;
 	int16_t nstate = i.state;
 	unsigned inum = i.num;
-	mutex.unlock();
+	mlock.unlock();
 	if(ostate != nstate)
 		button_fn(jid, inum, nstate);
 }
 
 void pad::report_hat(uint64_t id, int angle)
 {
-	mutex.lock();
+	mlock.lock();
 	unsigned h = angle_to_bitmask(angle);
 	if(!_hats.count(id)) {
-		mutex.unlock();
+		mlock.unlock();
 		return;
 	}
 	hat_info& i = _hats[id];
@@ -291,14 +291,14 @@ void pad::report_hat(uint64_t id, int angle)
 	i.state = h;
 	int16_t nstate = i.state;
 	unsigned inum = i.num;
-	mutex.unlock();
+	mlock.unlock();
 	if(ostate != nstate)
 		hat_fn(jid, inum, nstate);
 }
 
 std::set<unsigned> pad::online_axes()
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	std::set<unsigned> r;
 	for(auto i : _axes)
 		if(i.second.online) r.insert(i.second.num);
@@ -307,7 +307,7 @@ std::set<unsigned> pad::online_axes()
 
 std::set<unsigned> pad::online_buttons()
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	std::set<unsigned> r;
 	for(auto i : _buttons)
 		if(i.second.online) r.insert(i.second.num);
@@ -316,7 +316,7 @@ std::set<unsigned> pad::online_buttons()
 
 std::set<unsigned> pad::online_hats()
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	std::set<unsigned> r;
 	for(auto i : _hats)
 		if(i.second.online) r.insert(i.second.num);
@@ -329,7 +329,7 @@ void pad::load(const JSON::node& state)
 {
 	std::list<std::pair<unsigned, int>> notify_queue;
 	{
-		umutex_class H(mutex);
+		threads::alock H(mlock);
 		_name = state["name"].as_string8();
 		const JSON::node& hat_data = state["hats"];
 
@@ -409,7 +409,7 @@ void pad::load(const JSON::node& state)
 void pad::calibrate_axis(unsigned num, int64_t minus, int64_t zero, int64_t plus, int64_t neutral,
 	double threshold, bool pressure, bool disabled)
 {
-	mutex.lock();
+	mlock.lock();
 	for(auto& i : _axes) {
 		if(i.second.num != num)
 			continue;
@@ -431,21 +431,21 @@ void pad::calibrate_axis(unsigned num, int64_t minus, int64_t zero, int64_t plus
 			if(a.state != 0)
 				a.state = 0;
 		}
-		mutex.unlock();
+		mlock.unlock();
 		if(oldmode >= 0 && newmode < 0)
 			try { axis_fn(jid, num, 0); } catch(...) {}
 		if(oldmode != newmode || oldtolerance != newtreshold)
 			try { amode_fn(jid, num, newmode, newtreshold); } catch(...) {}
 		return;
 	}
-	mutex.unlock();
+	mlock.unlock();
 	return;
 }
 
 void pad::get_calibration(unsigned num, int64_t& minus, int64_t& zero, int64_t& plus, int64_t& neutral,
 	double& threshold, bool& pressure, bool& disabled)
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	for(auto& i : _axes) {
 		if(i.second.num != num)
 			continue;
@@ -462,7 +462,7 @@ void pad::get_calibration(unsigned num, int64_t& minus, int64_t& zero, int64_t& 
 
 double pad::get_tolerance(unsigned num)
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	for(auto& i : _axes) {
 		if(i.second.num != num)
 			continue;
@@ -473,7 +473,7 @@ double pad::get_tolerance(unsigned num)
 
 int pad::get_mode(unsigned num)
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	for(auto& i : _axes) {
 		if(i.second.num != num)
 			continue;
@@ -484,7 +484,7 @@ int pad::get_mode(unsigned num)
 
 void pad::axis_status(unsigned num, int64_t& raw, int16_t& pct)
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	for(auto& i : _axes) {
 		if(i.second.num != num || !i.second.online)
 			continue;
@@ -501,7 +501,7 @@ void pad::axis_status(unsigned num, int64_t& raw, int16_t& pct)
 
 int pad::button_status(unsigned num)
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	for(auto& i : _buttons) {
 		if(i.second.num != num || !i.second.online)
 			continue;
@@ -512,7 +512,7 @@ int pad::button_status(unsigned num)
 
 int pad::hat_status(unsigned num)
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	for(auto& i : _hats) {
 		if(i.second.num != num || !i.second.online)
 			continue;
@@ -528,7 +528,7 @@ int pad::hat_status(unsigned num)
 
 JSON::node pad::save()
 {
-	umutex_class H(mutex);
+	threads::alock H(mlock);
 	JSON::node r(JSON::object);
 	r.insert("name", JSON::string(_name));
 
@@ -588,7 +588,7 @@ JSON::node pad::save()
 
 std::string pad::get_summary()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	std::ostringstream x;
 	x << "joystick" << jid << ": " << _name << " " << (online_flag ? "" : " [Offline]") << std::endl;
 	for(auto i : _axes) {
@@ -642,7 +642,7 @@ set::~set()
 void set::load(const JSON::node& state)
 {
 	bool locked = true;
-	mutex.lock();
+	mlock.lock();
 	for(auto i : _gamepads)
 		delete i;
 	_gamepads.clear();
@@ -660,23 +660,23 @@ void set::load(const JSON::node& state)
 			gp->set_newitem_cb(newitem_fn);
 			_gamepads.push_back(gp);
 			locked = false;
-			mutex.unlock();
+			mlock.unlock();
 			gp->load(gpn);
-			mutex.lock();
+			mlock.lock();
 			locked = true;
 		} catch(std::runtime_error& e) {
 			std::cerr << "Can't load gamepad #" << i << " configuration: " << e.what() << std::endl;
 			if(!locked)
-				mutex.lock();
+				mlock.lock();
 			delete gp;
 		}
 	}
-	mutex.unlock();
+	mlock.unlock();
 }
 
 JSON::node set::save()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	JSON::node n(JSON::array);
 	for(auto i : _gamepads)
 		n.append(i->save());
@@ -685,13 +685,13 @@ JSON::node set::save()
 
 unsigned set::gamepads()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	return _gamepads.size();
 }
 
 pad& set::operator[](unsigned gpnum)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	if(gpnum >= _gamepads.size())
 		throw std::runtime_error("Invalid gamepad index");
 	return *_gamepads[gpnum];
@@ -699,7 +699,7 @@ pad& set::operator[](unsigned gpnum)
 
 unsigned set::add(const std::string& name)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	for(size_t i = 0; i < _gamepads.size(); i++) {
 		if(!_gamepads[i]->online() && _gamepads[i]->name() == name) {
 			_gamepads[i]->set_online(true);
@@ -725,7 +725,7 @@ unsigned set::add(const std::string& name)
 
 void set::set_axis_cb(std::function<void(unsigned jnum, unsigned num, int16_t val)> fn)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	axis_fn = fn;
 	for(auto i : _gamepads)
 		i->set_axis_cb(axis_fn);
@@ -733,7 +733,7 @@ void set::set_axis_cb(std::function<void(unsigned jnum, unsigned num, int16_t va
 
 void set::set_button_cb(std::function<void(unsigned jnum, unsigned num, bool val)> fn)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	button_fn = fn;
 	for(auto i : _gamepads)
 		i->set_button_cb(button_fn);
@@ -741,7 +741,7 @@ void set::set_button_cb(std::function<void(unsigned jnum, unsigned num, bool val
 
 void set::set_hat_cb(std::function<void(unsigned jnum, unsigned num, unsigned val)> fn)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	hat_fn = fn;
 	for(auto i : _gamepads)
 		i->set_hat_cb(hat_fn);
@@ -749,7 +749,7 @@ void set::set_hat_cb(std::function<void(unsigned jnum, unsigned num, unsigned va
 
 void set::set_axismode_cb(std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> fn)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	amode_fn = fn;
 	for(auto i : _gamepads)
 		i->set_axismode_cb(amode_fn);
@@ -757,7 +757,7 @@ void set::set_axismode_cb(std::function<void(unsigned jnum, unsigned num, int mo
 
 void set::set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int type)> fn)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	newitem_fn = fn;
 	for(auto i : _gamepads)
 		i->set_newitem_cb(newitem_fn);
@@ -765,7 +765,7 @@ void set::set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int typ
 
 std::string set::get_summary()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	std::ostringstream x;
 	for(auto i : _gamepads)
 		x << i->get_summary();

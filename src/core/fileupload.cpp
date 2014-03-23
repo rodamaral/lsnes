@@ -127,7 +127,7 @@ file_upload::~file_upload()
 
 void file_upload::do_async()
 {
-	(new thread_class(file_upload_trampoline, this))->detach();
+	(new threads::thread(file_upload_trampoline, this))->detach();
 }
 
 void file_upload::_do_async()
@@ -138,7 +138,7 @@ void file_upload::_do_async()
 	{
 		http_async_request obtainkey;
 		{
-			umutex_class h(m);
+			threads::alock h(m);
 			req = &obtainkey;
 		}
 		http_request::null_input_handler nullinput;
@@ -154,34 +154,34 @@ void file_upload::_do_async()
 		add_msg("Obtaining short-term credentials...");
 		obtainkey.lauch_async();
 		while(!obtainkey.finished) {
-			umutex_class hx(obtainkey.m);
+			threads::alock hx(obtainkey.m);
 			obtainkey.finished_cond.wait(hx);
 		}
 		if(obtainkey.errormsg != "") {
 			add_msg((stringfmt() << "Failed: " << obtainkey.errormsg).str());
-			{ umutex_class h(m); req = NULL; }
+			{ threads::alock h(m); req = NULL; }
 			finished = true;
 			return;
 		}
 		if(obtainkey.http_code != 401) {
 			add_msg((stringfmt() << "Failed: Expected 401, got " << obtainkey.http_code).str());
-			{ umutex_class h(m); req = NULL; }
+			{ threads::alock h(m); req = NULL; }
 			finished = true;
 			return;
 		}
 		if(!dh25519->is_ready()) {
 			add_msg((stringfmt() << "Failed: Authenticator is not ready!").str());
-			{ umutex_class h(m); req = NULL; }
+			{ threads::alock h(m); req = NULL; }
 			finished = true;
 			return;
 		}
 		add_msg("Got short-term credentials.");
-		{ umutex_class h(m); req = NULL; }
+		{ threads::alock h(m); req = NULL; }
 	}
 	{
 		http_async_request upload;
 		{
-			umutex_class h(m);
+			threads::alock h(m);
 			req = &upload;
 		}
 		property_upload_request input;
@@ -211,39 +211,39 @@ void file_upload::_do_async()
 		add_msg("Uploading file...");
 		upload.lauch_async();
 		while(!upload.finished) {
-			umutex_class hx(upload.m);
+			threads::alock hx(upload.m);
 			upload.finished_cond.wait(hx);
 		}
 		output.flush();
 		if(upload.errormsg != "") {
 			add_msg((stringfmt() << "Failed: " << upload.errormsg).str());
 			finished = true;
-			{ umutex_class h(m); req = NULL; }
+			{ threads::alock h(m); req = NULL; }
 			return;
 		}
 		if(upload.http_code != 201) {
 			add_msg((stringfmt() << "Failed: Expected 201, got " << upload.http_code).str());
 			finished = true;
-			{ umutex_class h(m); req = NULL; }
+			{ threads::alock h(m); req = NULL; }
 			return;
 		}
 		add_msg((stringfmt() << "Sucessful! URL: " << output.get_location()).str());
 		final_url = output.get_location();
 		finished = true;
 		success = true;
-		{ umutex_class h(m); req = NULL; }
+		{ threads::alock h(m); req = NULL; }
 	}
 }
 
 void file_upload::cancel()
 {
-	umutex_class h(m);
+	threads::alock h(m);
 	if(req) req->cancel();
 }
 
 std::list<std::string> file_upload::get_messages()
 {
-	umutex_class h(m);
+	threads::alock h(m);
 	std::list<std::string> x = msgs;
 	msgs.clear();
 	return x;
@@ -251,7 +251,7 @@ std::list<std::string> file_upload::get_messages()
 
 int file_upload::get_progress_ppm()
 {
-	umutex_class h(m);
+	threads::alock h(m);
 	int ppm = -1;
 	if(req) {
 		int64_t dnow, dtotal, unow, utotal;
@@ -264,7 +264,7 @@ int file_upload::get_progress_ppm()
 
 void file_upload::add_msg(const std::string& msg)
 {
-	umutex_class h(m);
+	threads::alock h(m);
 	msgs.push_back(msg);
 }
 

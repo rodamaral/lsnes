@@ -43,7 +43,7 @@ public:
 private:
 	triplebuffer_logic(triplebuffer_logic&);
 	triplebuffer_logic& operator=(triplebuffer_logic&);
-	mutex_class mut;
+	threads::lock mut;
 	unsigned read_active;
 	unsigned write_active;
 	unsigned read_active_slot;

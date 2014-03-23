@@ -2,7 +2,7 @@
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "library/minmax.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include <cstring>
 #include <cmath>
 #include <iostream>
@@ -65,7 +65,7 @@ namespace
 	};
 
 	dummy_cb_proc* dummy_cb_proc_obj;
-	thread_class* dummy_cb_thread;
+	threads::thread* dummy_cb_thread;
 
 
 //  | -1  1 -1  1 | 1  0  0  0 |
@@ -345,7 +345,7 @@ void audioapi_init()
 	dummy_cb_active_record = true;
 	dummy_cb_quit = false;
 	dummy_cb_proc_obj = new dummy_cb_proc;
-	dummy_cb_thread = new thread_class(*dummy_cb_proc_obj);
+	dummy_cb_thread = new threads::thread(*dummy_cb_proc_obj);
 }
 
 void audioapi_quit()

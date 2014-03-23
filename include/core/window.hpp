@@ -178,7 +178,7 @@ struct platform
 /**
  * Get message buffer lock.
  */
-	static mutex_class& msgbuf_lock() throw();
+	static threads::lock& msgbuf_lock() throw();
 /**
  * Adds a messages to mesage queue to be shown.
  *

@@ -9,7 +9,7 @@
 #include "library/lua-class.hpp"
 #include "library/lua-params.hpp"
 #include "library/framebuffer.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include "library/string.hpp"
 
 struct lua_palette
@@ -17,7 +17,7 @@ struct lua_palette
 	std::vector<framebuffer::color> colors;
 	lua_palette(lua::state& L);
 	~lua_palette();
-	mutex_class palette_mutex;
+	threads::lock palette_mutex;
 	std::string print();
 	static int create(lua::state& L, lua::parameters& P);
 	static int load(lua::state& L, lua::parameters& P);

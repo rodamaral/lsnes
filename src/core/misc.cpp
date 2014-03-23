@@ -44,7 +44,7 @@ namespace
 	skein::prng prng;
 	uint64_t rcounter = 0;
 	bool reached_main_flag;
-	mutex_class seed_mutex;
+	threads::lock seed_mutex;
 
 	uint64_t arch_get_tsc()
 	{
@@ -88,7 +88,7 @@ namespace
 		static uint64_t last_reseed = 0;
 		static uint64_t buf[slots + 1];
 		buf[count++] = arch_get_tsc();
-		umutex_class h(seed_mutex);
+		threads::alock h(seed_mutex);
 		if(count == 0) count = 1;  //Shouldn't happen.
 		if(count == slots || buf[count - 1] - last_reseed > 300000000) {
 			last_reseed = buf[count - 1];
@@ -100,7 +100,7 @@ namespace
 
 	std::string get_random_hexstring_64(size_t index)
 	{
-		umutex_class h(seed_mutex);
+		threads::alock h(seed_mutex);
 		uint64_t buf[6];
 		uint8_t out[32];
 		buf[0] = time(NULL);
@@ -199,7 +199,7 @@ void set_random_seed(const std::string& seed) throw(std::bad_alloc)
 {
 	std::vector<char> x(seed.begin(), seed.end());
 	{
-		umutex_class h(seed_mutex);
+		threads::alock h(seed_mutex);
 		prng.write(&x[0], x.size());
 	}
 }

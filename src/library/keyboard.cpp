@@ -5,13 +5,13 @@ namespace keyboard
 {
 void keyboard::do_register(const std::string& name, modifier& mod) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	modifiers[name] = &mod;
 }
 
 void keyboard::do_unregister(const std::string& name, modifier* mod) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	modifiers.erase(name);
 }
 
@@ -25,7 +25,7 @@ modifier& keyboard::lookup_modifier(const std::string& name) throw(std::runtime_
 
 modifier* keyboard::try_lookup_modifier(const std::string& name) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(!modifiers.count(name))
 		return NULL;
 	return modifiers[name];
@@ -33,7 +33,7 @@ modifier* keyboard::try_lookup_modifier(const std::string& name) throw()
 
 std::list<modifier*> keyboard::all_modifiers() throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	std::list<modifier*> r;
 	for(auto i : modifiers)
 		r.push_back(i.second);
@@ -42,13 +42,13 @@ std::list<modifier*> keyboard::all_modifiers() throw(std::bad_alloc)
 
 void keyboard::do_register(const std::string& name, key& key) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	keys[name] = &key;
 }
 
 void keyboard::do_unregister(const std::string& name, key* dummy) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	keys.erase(name);
 }
 
@@ -62,7 +62,7 @@ key& keyboard::lookup_key(const std::string& name) throw(std::runtime_error)
 
 key* keyboard::try_lookup_key(const std::string& name) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(!keys.count(name))
 		return NULL;
 	return keys[name];
@@ -70,7 +70,7 @@ key* keyboard::try_lookup_key(const std::string& name) throw()
 
 std::list<key*> keyboard::all_keys() throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	std::list<key*> r;
 	for(auto i : keys)
 		r.push_back(i.second);
@@ -79,20 +79,20 @@ std::list<key*> keyboard::all_keys() throw(std::bad_alloc)
 
 void keyboard::set_exclusive(event_listener* listener) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	for(auto i : keys)
 		i.second->set_exclusive(listener);
 }
 
 void keyboard::set_current_key(key* key) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	current_key = key;
 }
 
 key* keyboard::get_current_key() throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	return current_key;
 }
 
@@ -323,7 +323,7 @@ void key::remove_listener(event_listener& listener) throw()
 
 void key::set_exclusive(event_listener* listener) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	exclusive_listener = listener;
 }
 
@@ -331,9 +331,9 @@ void key::call_listeners(modifier_set& mods, event& event)
 {
 	kbd.set_current_key(this);
 	bool digital = (event.get_change_mask() & 0xAAAAAAAAUL) != 0;
-	mutex.lock();
+	mlock.lock();
 	if(exclusive_listener) {
-		mutex.unlock();
+		mlock.unlock();
 		exclusive_listener->on_key_event(mods, *this, event);
 		kbd.set_current_key(NULL);
 		return;
@@ -344,9 +344,9 @@ void key::call_listeners(modifier_set& mods, event& event)
 		if(itr2 == digital_listeners.end())
 			break;
 		itr = *itr2;
-		mutex.unlock();
+		mlock.unlock();
 		itr->on_key_event(mods, *this, event);
-		mutex.lock();
+		mlock.lock();
 	}
 	itr = NULL;
 	while(true) {
@@ -354,11 +354,11 @@ void key::call_listeners(modifier_set& mods, event& event)
 		if(itr2 == analog_listeners.end())
 			break;
 		itr = *itr2;
-		mutex.unlock();
+		mlock.unlock();
 		itr->on_key_event(mods, *this, event);
-		mutex.lock();
+		mlock.lock();
 	}
-	mutex.unlock();
+	mlock.unlock();
 	kbd.set_current_key(NULL);
 }
 
@@ -389,13 +389,13 @@ void key_key::set_state(modifier_set mods, int32_t _state) throw()
 {
 	uint32_t change = _state ? 1 : 0;
 	bool edge = false;
-	mutex.lock();
+	mlock.lock();
 	if(state != _state) {
 		state = _state;
 		change |= 2;
 		edge = true;
 	}
-	mutex.unlock();
+	mlock.unlock();
 	if(edge) {
 		event_key e(change);
 		call_listeners(mods, e);
@@ -425,7 +425,7 @@ void key_hat::set_state(modifier_set mods, int32_t _state) throw()
 	state &= 15;
 	uint32_t change = 0;
 	bool edge = false;
-	mutex.lock();
+	mlock.lock();
 	if(state != _state) {
 		int32_t schange = state ^ _state;
 		state = _state;
@@ -439,7 +439,7 @@ void key_hat::set_state(modifier_set mods, int32_t _state) throw()
 		if(schange & 8) change |= 128;
 		edge = true;
 	}
-	mutex.unlock();
+	mlock.unlock();
 	if(edge) {
 		event_hat e(change);
 		call_listeners(mods, e);
@@ -472,13 +472,13 @@ key_axis::~key_axis() throw() {}
 
 int32_t key_axis::get_state() const throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	return rawstate;
 }
 
 int32_t key_axis::get_state_digital() const throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(rawstate <= -32768 * last_tolerance)
 		return -1;
 	if(rawstate >= 32767 * last_tolerance)
@@ -488,13 +488,13 @@ int32_t key_axis::get_state_digital() const throw()
 
 int key_axis::get_mode() const throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	return _mode;
 }
 
 std::vector<std::string> key_axis::get_subkeys() throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	std::vector<std::string> r;
 	if(_mode == 0)
 		r.push_back("");
@@ -511,7 +511,7 @@ void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 	int32_t state, ostate;
 	uint32_t change = 0;
 	int dold = 0, dnew = 0;
-	mutex.lock();
+	mlock.lock();
 	if(rawstate != _rawstate) {
 		ostate = rawstate;
 		dold = digitalstate;
@@ -532,7 +532,7 @@ void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 			change |= 8;
 		edge = true;
 	}
-	mutex.unlock();
+	mlock.unlock();
 	if(edge) {
 		event_axis e(state, change);
 		call_listeners(mods, e);
@@ -541,7 +541,7 @@ void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 
 void key_axis::set_mode(int mode, double tolerance) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	_mode = mode;
 	last_tolerance = tolerance;
 }
@@ -559,7 +559,7 @@ int32_t key_mouse::get_state_digital() const throw() { return 0; }
 
 int32_t key_mouse::get_state() const throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	return cal.get_calibrated_value(rawstate);
 }
 
@@ -570,7 +570,7 @@ std::vector<std::string> key_mouse::get_subkeys() throw(std::bad_alloc)
 
 mouse_calibration key_mouse::get_calibration() const throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	mouse_calibration tmp = cal;
 	return tmp;
 }
@@ -580,14 +580,14 @@ void key_mouse::set_state(modifier_set mods, int32_t _rawstate) throw()
 	bool edge = false;
 	int32_t state;
 	mouse_calibration _cal;
-	mutex.lock();
+	mlock.lock();
 	if(rawstate != _rawstate) {
 		rawstate = _rawstate;
 		state = cal.get_calibrated_value(rawstate);
 		_cal = cal;
 		edge = true;
 	}
-	mutex.unlock();
+	mlock.unlock();
 	if(edge) {
 		event_mouse e(state, _cal);
 		call_listeners(mods, e);
@@ -596,10 +596,10 @@ void key_mouse::set_state(modifier_set mods, int32_t _rawstate) throw()
 
 void key_mouse::set_calibration(mouse_calibration _cal) throw()
 {
-	mutex.lock();
+	mlock.lock();
 	cal = _cal;
 	int32_t state = cal.get_calibrated_value(rawstate);
-	mutex.unlock();
+	mlock.unlock();
 	event_mouse e(state, _cal);
 	modifier_set mods;
 	call_listeners(mods, e);

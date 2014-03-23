@@ -76,7 +76,7 @@ namespace
 	};
 
 	//Our thread.
-	threadid_class emulation_thread;
+	threads::id emulation_thread;
 	//Flags related to repeating advance.
 	bool advanced_once;
 	bool cancel_advance;
@@ -1185,7 +1185,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	platform::system_thread_available(true);
 	//Basic initialization.
 	dispatch_set_error_streams(&messages.getstream());
-	emulation_thread = this_thread_id();
+	emulation_thread = threads::this_id();
 	jukebox_size_listener jlistener;
 	voicethread_task();
 	init_special_screens();

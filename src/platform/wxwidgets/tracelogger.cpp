@@ -550,7 +550,7 @@ namespace
 		bool broken;
 		bool broken2;
 		wxCheckBox* enabled;
-		mutex_class buffer_mutex;
+		threads::lock buffer_mutex;
 		std::list<std::string> lines_waiting;
 		bool unprocessed_lines;
 		bool closing;
@@ -585,7 +585,7 @@ namespace
 	void wxwin_tracelog::kill_debug_hooks()
 	{
 		debug_remove_callback(cpuid, DEBUG_TRACE, trace_handle);
-		umutex_class h(buffer_mutex);
+		threads::alock h(buffer_mutex);
 		for(auto& i : rwx_breakpoints) {
 			if(!i.second.handle)
 				continue;
@@ -682,7 +682,7 @@ namespace
 
 	void wxwin_tracelog::process_lines()
 	{
-		umutex_class h(this->buffer_mutex);
+		threads::alock h(this->buffer_mutex);
 		size_t osize = panel->rows.size();
 		if(broken) {
 			panel->rows.push_back(std::string(120, '-'));
@@ -709,7 +709,7 @@ namespace
 		bool enable = enabled->GetValue();
 		runemufn([this, enable]() {
 			if(enable) {
-				umutex_class h(buffer_mutex);
+				threads::alock h(buffer_mutex);
 				broken = broken2;
 				broken2 = true;
 				for(auto& i : rwx_breakpoints) {
@@ -730,7 +730,7 @@ namespace
 						if(!this->trace_active)
 							return;
 						//Got tracelog line, send it.
-						umutex_class h(this->buffer_mutex);
+						threads::alock h(this->buffer_mutex);
 						lines_waiting.push_back(str);
 						if(!this->unprocessed_lines) {
 							this->unprocessed_lines = true;

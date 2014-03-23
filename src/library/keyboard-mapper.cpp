@@ -69,7 +69,7 @@ bool keyspec::operator!=(const keyspec& keyspec)
 
 std::set<invbind*> mapper::get_inverses() throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	std::set<invbind*> r;
 	for(auto i : ibinds)
 		r.insert(i.second);
@@ -78,7 +78,7 @@ std::set<invbind*> mapper::get_inverses() throw(std::bad_alloc)
 
 invbind* mapper::get_inverse(const std::string& command) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(ibinds.count(command))
 		return ibinds[command];
 	else
@@ -87,7 +87,7 @@ invbind* mapper::get_inverse(const std::string& command) throw(std::bad_alloc)
 
 std::set<ctrlrkey*> mapper::get_controller_keys() throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	std::set<ctrlrkey*> r;
 	for(auto i : ckeys)
 		r.insert(i.second);
@@ -96,7 +96,7 @@ std::set<ctrlrkey*> mapper::get_controller_keys() throw(std::bad_alloc)
 
 ctrlrkey* mapper::get_controllerkey(const std::string& command) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(ckeys.count(command))
 		return ckeys[command];
 	else
@@ -105,31 +105,31 @@ ctrlrkey* mapper::get_controllerkey(const std::string& command) throw(std::bad_a
 
 void mapper::do_register(const std::string& name, invbind& ibind) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	ibinds[name] = &ibind;
 	//Search for matches.
 	for(auto i : bindings)
 		if(i.second == ibind.cmd) {
-			umutex_class u2(ibind.mutex);
+			threads::alock u2(ibind.mlock);
 			ibind.specs.push_back(i.first.as_keyspec());
 		}
 }
 
 void mapper::do_unregister(const std::string& name, invbind* dummy) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	ibinds.erase(name);
 }
 
 void mapper::do_register(const std::string& name, ctrlrkey& ckey) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	ckeys[name] = &ckey;
 }
 
 void mapper::do_unregister(const std::string& name, ctrlrkey* dummy) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	ckeys.erase(name);
 }
 
@@ -223,7 +223,7 @@ keyspec mapper::triplet::as_keyspec() const throw(std::bad_alloc)
 
 std::list<keyspec> mapper::get_bindings() throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	std::list<keyspec> r;
 	for(auto i : bindings)
 		r.push_back(i.first.as_keyspec());
@@ -243,7 +243,7 @@ void mapper::bind(std::string mod, std::string modmask, std::string keyname, std
 	spec.mask = modmask;
 	spec.key = keyname;
 	triplet t(kbd, spec);
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(bindings.count(t))
 		throw std::runtime_error("Key is already bound");
 	if(!listening.count(t._key)) {
@@ -265,7 +265,7 @@ void mapper::unbind(std::string mod, std::string modmask, std::string keyname) t
 	spec.mask = modmask;
 	spec.key = keyname;
 	triplet t(kbd, spec);
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(!bindings.count(t))
 		throw std::runtime_error("Key is not bound");
 	//No harm at leaving listeners listening.
@@ -279,7 +279,7 @@ void mapper::unbind(std::string mod, std::string modmask, std::string keyname) t
 std::string mapper::get(const keyspec& keyspec) throw(std::bad_alloc)
 {
 	triplet t(kbd, keyspec);
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(!bindings.count(t))
 		return "";
 	return bindings[t];
@@ -290,18 +290,18 @@ void mapper::change_command(const keyspec& spec, const std::string& old, const s
 	if(old != "" && ibinds.count(old)) {
 		auto& i = ibinds[old];
 		{
-			umutex_class u2(i->mutex);
+			threads::alock u2(i->mlock);
 			i->specs.clear();
 		}
 		for(auto j : bindings)
 			if(j.second == i->cmd && j.first.as_keyspec() != spec) {
-				umutex_class u2(i->mutex);
+				threads::alock u2(i->mlock);
 				i->specs.push_back(j.first.as_keyspec());
 			}
 	}
 	if(newc != "" && ibinds.count(newc)) {
 		auto& i = ibinds[newc];
-		umutex_class u2(i->mutex);
+		threads::alock u2(i->mlock);
 		i->specs.push_back(spec);
 	}
 }
@@ -310,7 +310,7 @@ void mapper::set(const keyspec& keyspec, const std::string& cmd) throw(std::bad_
 	std::runtime_error)
 {
 	triplet t(kbd, keyspec);
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(!listening.count(t._key)) {
 		t._key->add_listener(*this, false);
 		listening.insert(t._key);
@@ -366,7 +366,7 @@ mapper::triplet::triplet(keyboard& k, const keyspec& spec)
 std::list<ctrlrkey*> mapper::get_controllerkeys_kbdkey(key* kbdkey)
 	throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	std::list<ctrlrkey*> r;
 	for(auto i : ckeys) {
 		for(unsigned j = 0;; j++) {
@@ -394,7 +394,7 @@ invbind::~invbind() throw()
 
 keyspec invbind::get(unsigned index) throw(std::bad_alloc)
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(index >= specs.size())
 		return keyspec();
 	return specs[index];
@@ -404,7 +404,7 @@ void invbind::clear(unsigned index) throw(std::bad_alloc)
 {
 	keyspec unbind;
 	{
-		umutex_class u(mutex);
+		threads::alock u(mlock);
 		if(index >= specs.size())
 			return;
 		unbind = specs[index];
@@ -438,7 +438,7 @@ ctrlrkey::~ctrlrkey() throw()
 
 std::pair<key*, unsigned> ctrlrkey::get(unsigned index) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	if(index >= keys.size())
 		return std::make_pair(reinterpret_cast<key*>(NULL), 0);
 	return keys[index];
@@ -457,7 +457,7 @@ std::string ctrlrkey::get_string(unsigned index) throw(std::bad_alloc)
 
 void ctrlrkey::append(key* _key, unsigned _subkey) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	//Search for duplicates.
 	std::pair<key*, unsigned> mkey = std::make_pair(_key, _subkey);
 	for(auto i : keys)
@@ -470,7 +470,7 @@ void ctrlrkey::append(key* _key, unsigned _subkey) throw()
 
 void ctrlrkey::remove(key* _key, unsigned _subkey) throw()
 {
-	umutex_class u(mutex);
+	threads::alock u(mlock);
 	std::pair<key*, unsigned> mkey = std::make_pair(_key, _subkey);
 	for(auto i = keys.begin(); i != keys.end(); i++) {
 		if(*i == mkey) {

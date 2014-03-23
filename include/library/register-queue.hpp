@@ -1,7 +1,7 @@
 #ifndef _library__register_queue__hpp__included__
 #define _library__register_queue__hpp__included__
 
-#include "threadtypes.hpp"
+#include "threads.hpp"
 #include <string>
 #include <list>
 #include <set>
@@ -23,7 +23,7 @@ public:
 	static void do_register(G& group, const std::string& name, O& object)
 	{
 		{
-			umutex_class h(get_mutex());
+			threads::alock h(get_mutex());
 			if(get_ready().count(&group)) {
 				group.do_register(name, object);
 				return;
@@ -44,7 +44,7 @@ public:
  */
 	static void do_unregister(G& group, const std::string& name)
 	{
-		umutex_class h(get_mutex());
+		threads::alock h(get_mutex());
 		auto& x = get_pending();
 		auto i = x.begin();
 		O* obj = NULL;
@@ -65,7 +65,7 @@ public:
 	static void do_ready(G& group, bool ready)
 	{
 		{
-			umutex_class h(get_mutex());
+			threads::alock h(get_mutex());
 			if(ready)
 				get_ready().insert(&group);
 			else
@@ -91,18 +91,18 @@ private:
 		static std::list<queue_entry<G, O>> x;
 		return x;
 	}
-	static mutex_class& get_mutex()
+	static threads::lock& get_mutex()
 	{
 		static bool init = false;
-		static mutex_class* x;
+		static threads::lock* x;
 		if(!init)
-			x = new mutex_class;
+			x = new threads::lock;
 		init = true;
 		return *x;
 	}
 	static void run()
 	{
-		umutex_class h(get_mutex());
+		threads::alock h(get_mutex());
 		auto& x = get_pending();
 		auto i = x.begin();
 		while(i != x.end()) {

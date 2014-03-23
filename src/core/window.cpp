@@ -11,7 +11,7 @@
 #include "library/framebuffer.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -235,7 +235,7 @@ messagebuffer platform::msgbuf(MAXMESSAGES, INIT_WIN_SIZE);
 
 void platform::message(const std::string& msg) throw(std::bad_alloc)
 {
-	umutex_class h(msgbuf_lock());
+	threads::alock h(msgbuf_lock());
 	for(auto& forlog : token_iterator_foreach(msg, {"\n"})) {
 		msgbuf.add_message(forlog);
 		if(system_log)
@@ -259,8 +259,8 @@ void platform::fatal_error() throw()
 
 namespace
 {
-	mutex_class queue_lock;
-	cv_class queue_condition;
+	threads::lock queue_lock;
+	threads::cv queue_condition;
 	std::deque<keypress> keypresses;
 	std::deque<std::string> commands;
 	std::deque<std::pair<void(*)(void*), void*>> functions;
@@ -338,9 +338,9 @@ void platform::dummy_event_loop() throw()
 {
 	init_threading();
 	while(!do_exit_dummy_event_loop) {
-		umutex_class h(queue_lock);
+		threads::alock h(queue_lock);
 		internal_run_queues(true);
-		cv_timed_wait(queue_condition, h, microsec_class(MAXWAIT));
+		threads::cv_timed_wait(queue_condition, h, threads::ustime(MAXWAIT));
 		random_mix_timing_entropy();
 	}
 }
@@ -349,7 +349,7 @@ void platform::exit_dummy_event_loop() throw()
 {
 	init_threading();
 	do_exit_dummy_event_loop = true;
-	umutex_class h(queue_lock);
+	threads::alock h(queue_lock);
 	queue_condition.notify_all();
 	usleep(200000);
 }
@@ -373,7 +373,7 @@ void platform::flush_command_queue() throw()
 			reload_lua_timers();
 			run_idle = false;
 		}
-		umutex_class h(queue_lock);
+		threads::alock h(queue_lock);
 		internal_run_queues(true);
 		if(!pausing_allowed)
 			break;
@@ -394,7 +394,7 @@ void platform::flush_command_queue() throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				cv_timed_wait(queue_condition, h, microsec_class(waitleft));
+				threads::cv_timed_wait(queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -427,7 +427,7 @@ void platform::wait(uint64_t usec) throw()
 			run_idle = false;
 			reload_lua_timers();
 		}
-		umutex_class h(queue_lock);
+		threads::alock h(queue_lock);
 		internal_run_queues(true);
 		if(queue_function_run)
 			reload_lua_timers();
@@ -448,7 +448,7 @@ void platform::wait(uint64_t usec) throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				cv_timed_wait(queue_condition, h, microsec_class(waitleft));
+				threads::cv_timed_wait(queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -460,7 +460,7 @@ void platform::cancel_wait() throw()
 {
 	init_threading();
 	continue_time = 0;
-	umutex_class h(queue_lock);
+	threads::alock h(queue_lock);
 	queue_condition.notify_all();
 }
 
@@ -472,7 +472,7 @@ void platform::set_modal_pause(bool enable) throw()
 void platform::queue(const keypress& k) throw(std::bad_alloc)
 {
 	init_threading();
-	umutex_class h(queue_lock);
+	threads::alock h(queue_lock);
 	keypresses.push_back(k);
 	queue_condition.notify_all();
 }
@@ -480,7 +480,7 @@ void platform::queue(const keypress& k) throw(std::bad_alloc)
 void platform::queue(const std::string& c) throw(std::bad_alloc)
 {
 	init_threading();
-	umutex_class h(queue_lock);
+	threads::alock h(queue_lock);
 	commands.push_back(c);
 	queue_condition.notify_all();
 }
@@ -492,13 +492,13 @@ void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_
 		return;
 	}
 	init_threading();
-	umutex_class h(queue_lock);
+	threads::alock h(queue_lock);
 	++next_function;
 	functions.push_back(std::make_pair(f, arg));
 	queue_condition.notify_all();
 	if(sync)
 		while(functions_executed < next_function && _system_thread_available) {
-			cv_timed_wait(queue_condition, h, microsec_class(10000));
+			threads::cv_timed_wait(queue_condition, h, threads::ustime(10000));
 			random_mix_timing_entropy();
 		}
 }
@@ -515,7 +515,7 @@ void platform::system_thread_available(bool av) throw()
 
 namespace
 {
-	mutex_class _msgbuf_lock;
+	threads::lock _msgbuf_lock;
 	framebuffer::fb<false>* our_screen;
 
 	struct painter_listener
@@ -533,7 +533,7 @@ namespace
 	} x;
 }
 
-mutex_class& platform::msgbuf_lock() throw()
+threads::lock& platform::msgbuf_lock() throw()
 {
 	return _msgbuf_lock;
 }

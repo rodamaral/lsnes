@@ -2,7 +2,7 @@
 #define _library__keyboard__hpp__included__
 
 #include "register-queue.hpp"
-#include "threadtypes.hpp"
+#include "threads.hpp"
 #include <map>
 #include <set>
 #include <string>
@@ -120,7 +120,7 @@ private:
 	keyboard& operator=(const keyboard&);
 	std::map<std::string, modifier*> modifiers;
 	std::map<std::string, key*> keys;
-	mutex_class mutex;
+	threads::lock mlock;
 	key* current_key;
 };
 
@@ -583,7 +583,7 @@ protected:
 /**
  * Mutex protecting state.
  */
-	mutable mutex_class mutex;
+	mutable threads::lock mlock;
 private:
 	key(key&);
 	key& operator=(key&);

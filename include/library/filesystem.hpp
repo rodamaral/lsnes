@@ -5,7 +5,7 @@
 #include <map>
 #include <string>
 #include <fstream>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
 #define CLUSTER_SIZE 8192
 #define CLUSTERS_PER_SUPER (CLUSTER_SIZE / 4)
@@ -88,7 +88,7 @@ public:
 		ref()
 		{
 			refcnt = NULL;
-			mutex = NULL;
+			mlock = NULL;
 			fs = NULL;
 		}
 /**
@@ -99,14 +99,14 @@ public:
 		ref(const std::string& backingfile)
 		{
 			refcnt = NULL;
-			mutex = NULL;
+			mlock = NULL;
 			try {
 				refcnt = new unsigned;
-				mutex = new mutex_class;
+				mlock = new threads::lock;
 				fs = new filesystem(backingfile);
 			} catch(...) {
 				delete refcnt;
-				delete mutex;
+				delete mlock;
 				throw;
 			}
 			*refcnt = 1;
@@ -116,16 +116,16 @@ public:
  */
 		~ref()
 		{
-			mutex_class* mtodelete = NULL;
-			if(!mutex)
+			threads::lock* mtodelete = NULL;
+			if(!mlock)
 				return;
 			{
-				umutex_class m(*mutex);
+				threads::alock m(*mlock);
 				--*refcnt;
 				if(!*refcnt) {
 					delete fs;
 					delete refcnt;
-					mtodelete = mutex;
+					mtodelete = mlock;
 				}
 			}
 			if(mtodelete)
@@ -136,10 +136,10 @@ public:
  */
 		ref(const ref& r)
 		{
-			umutex_class m(*r.mutex);
+			threads::alock m(*r.mlock);
 			++*(r.refcnt);
 			refcnt = r.refcnt;
-			mutex = r.mutex;
+			mlock = r.mlock;
 			fs = r.fs;
 		}
 /**
@@ -153,7 +153,7 @@ public:
  */
 		uint32_t allocate_cluster()
 		{
-			umutex_class m(*mutex);
+			threads::alock m(*mlock);
 			return fs->allocate_cluster();
 		}
 /**
@@ -163,7 +163,7 @@ public:
  */
 		void free_cluster_chain(uint32_t cluster)
 		{
-			umutex_class m(*mutex);
+			threads::alock m(*mlock);
 			fs->free_cluster_chain(cluster);
 		}
 /**
@@ -173,7 +173,7 @@ public:
  */
 		size_t skip_data(uint32_t& cluster, uint32_t& ptr, uint32_t length)
 		{
-			umutex_class m(*mutex);
+			threads::alock m(*mlock);
 			return fs->skip_data(cluster, ptr, length);
 		}
 /**
@@ -183,7 +183,7 @@ public:
  */
 		size_t read_data(uint32_t& cluster, uint32_t& ptr, void* data, uint32_t length)
 		{
-			umutex_class m(*mutex);
+			threads::alock m(*mlock);
 			return fs->read_data(cluster, ptr, data, length);
 		}
 /**
@@ -194,13 +194,13 @@ public:
 		void write_data(uint32_t& cluster, uint32_t& ptr, const void* data, uint32_t length,
 			uint32_t& real_cluster, uint32_t& real_ptr)
 		{
-			umutex_class m(*mutex);
+			threads::alock m(*mlock);
 			fs->write_data(cluster, ptr, data, length, real_cluster, real_ptr);
 		}
 	private:
 		filesystem* fs;
 		unsigned* refcnt;
-		mutex_class* mutex;
+		threads::lock* mlock;
 	};
 private:
 	filesystem(const filesystem&);

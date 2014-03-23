@@ -102,7 +102,7 @@ bool memory_region::write(uint64_t offset, const void* buffer, size_t tsize)
 
 std::pair<memory_region*, uint64_t> memory_space::lookup(uint64_t address)
 {
-	umutex_class m(mutex);
+	threads::alock m(mlock);
 	size_t lb = 0;
 	size_t ub = u_regions.size();
 	while(lb < ub) {
@@ -122,7 +122,7 @@ std::pair<memory_region*, uint64_t> memory_space::lookup(uint64_t address)
 
 std::pair<memory_region*, uint64_t> memory_space::lookup_linear(uint64_t linear)
 {
-	umutex_class m(mutex);
+	threads::alock m(mlock);
 	if(linear >= linear_size)
 		return std::make_pair(reinterpret_cast<memory_region*>(NULL), 0);
 	size_t lb = 0;
@@ -245,7 +245,7 @@ bool memory_space::write_range_linear(uint64_t address, const void* buffer, size
 
 memory_region* memory_space::lookup_n(size_t n)
 {
-	umutex_class m(mutex);
+	threads::alock m(mlock);
 	if(n >= u_regions.size())
 		return NULL;
 	return u_regions[n];
@@ -254,7 +254,7 @@ memory_region* memory_space::lookup_n(size_t n)
 
 std::list<memory_region*> memory_space::get_regions()
 {
-	umutex_class m(mutex);
+	threads::alock m(mlock);
 	std::list<memory_region*> r;
 	for(auto i : u_regions)
 		r.push_back(i);
@@ -278,7 +278,7 @@ char* memory_space::get_physical_mapping(uint64_t base, uint64_t size)
 
 void memory_space::set_regions(const std::list<memory_region*>& regions)
 {
-	umutex_class m(mutex);
+	threads::alock m(mlock);
 	std::vector<memory_region*> n_regions;
 	std::vector<memory_region*> n_lregions;
 	std::vector<uint64_t> n_linear_bases;

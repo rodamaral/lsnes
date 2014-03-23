@@ -1,7 +1,7 @@
 #ifndef _fileupload__hpp__included__
 #define _fileupload__hpp__included__
 
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include "library/httpreq.hpp"
 #include "library/httpauth.hpp"
 #include <string>
@@ -35,7 +35,7 @@ struct file_upload
 	dh25519_http_auth* dh25519;
 	http_async_request* req;
 	std::list<std::string> msgs;
-	mutex_class m;
+	threads::lock m;
 	void add_msg(const std::string& msg);
 };
 

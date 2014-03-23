@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <map>
 #include <string>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
 class http_request
 {
@@ -147,9 +147,9 @@ struct http_async_request
 	std::string errormsg;				//Final error (OUTPUT).
 	long http_code;					//HTTP error code (OUTPUT).
 	volatile bool finished;				//Finished flag (semi-transient).
-	cv_class finished_cond;				//This condition variable is fired on finish.
+	threads::cv finished_cond;				//This condition variable is fired on finish.
 	http_request* req;				//The HTTP request object (TRANSIENT).
-	mutex_class m;					//Lock protecting the object (TRANSIENT).
+	threads::lock m;					//Lock protecting the object (TRANSIENT).
 	void get_xfer_status(int64_t& dnow, int64_t& dtotal, int64_t& unow, int64_t& utotal);
 	void lauch_async();				//Lauch asynchronous request.
 	void cancel();					//Cancel request in flight.

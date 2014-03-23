@@ -16,7 +16,7 @@
 #include <map>
 #include <list>
 #include "library/controller-data.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 
 /**
  * Controllers state.
@@ -227,7 +227,7 @@ private:
 	controller_frame _committed;
 	std::map<std::string, controller_macro> all_macros;
 	std::list<std::pair<uint64_t, controller_macro*>> active_macros;
-	mutex_class macro_lock;
+	threads::lock macro_lock;
 };
 
 /**

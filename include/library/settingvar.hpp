@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <set>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 #include "string.hpp"
 #include <string>
 
@@ -74,7 +74,7 @@ public:
 private:
 	std::map<std::string, class base*> settings;
 	std::set<struct listener*> listeners;
-	mutex_class lock;
+	threads::lock lock;
 };
 
 /**
@@ -126,7 +126,7 @@ public:
 		std::runtime_error);
 private:
 	group& grp;
-	mutex_class lock;
+	threads::lock lock;
 	std::map<std::string, std::string> badcache;
 };
 
@@ -211,7 +211,7 @@ protected:
 	group& sgroup;
 	std::string iname;
 	std::string hname;
-	mutable mutex_class lock;
+	mutable threads::lock lock;
 };
 
 /**
@@ -244,7 +244,7 @@ public:
 	void str(const std::string& val) throw(std::runtime_error, std::bad_alloc)
 	{
 		{
-			umutex_class h(lock);
+			threads::alock h(lock);
 			value = model::read(val);
 		}
 		sgroup.fire_listener(*this);
@@ -254,7 +254,7 @@ public:
  */
 	std::string str() const throw(std::runtime_error, std::bad_alloc)
 	{
-		umutex_class h(lock);
+		threads::alock h(lock);
 		return model::write(value);
 	}
 /**
@@ -263,7 +263,7 @@ public:
 	void set(valtype_t _value) throw(std::runtime_error, std::bad_alloc)
 	{
 		{
-			umutex_class h(lock);
+			threads::alock h(lock);
 			if(!model::valid(value))
 				throw std::runtime_error("Invalid value");
 			value = _value;
@@ -275,7 +275,7 @@ public:
  */
 	valtype_t get() throw(std::bad_alloc)
 	{
-		umutex_class h(lock);
+		threads::alock h(lock);
 		return model::transform(value);
 	}
 /**

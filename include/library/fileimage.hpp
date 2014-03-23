@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <list>
 #include <vector>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
 namespace fileimage
 {
@@ -61,8 +61,8 @@ private:
 	void resolve_error(unsigned id, const std::string& err);
 
 	friend class hash;
-	mutable mutex_class mutex;
-	mutable cv_class condition;
+	mutable threads::lock mlock;
+	mutable threads::cv condition;
 	bool is_ready;
 	unsigned cbid;
 	uint64_t prefixv;
@@ -120,9 +120,9 @@ private:
 	};
 	hash(const hash&);
 	hash& operator=(const hash&);
-	thread_class* hash_thread;
-	mutex_class mutex;
-	cv_class condition;
+	threads::thread* hash_thread;
+	threads::lock mlock;
+	threads::cv condition;
 	std::list<queue_job> queue;
 	std::list<queue_job>::iterator current_job;
 	hashval* first_future;

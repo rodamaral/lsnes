@@ -274,7 +274,7 @@ triplebuffer_logic::~triplebuffer_logic() throw()
 
 unsigned triplebuffer_logic::start_write() throw()
 {
-	umutex_class h(mut);
+	threads::alock h(mut);
 	if(!write_active) {
 		//We need to avoid hitting last complete slot or slot that is active for read.
 		if(last_complete_slot != 0 && read_active_slot != 0)
@@ -290,14 +290,14 @@ unsigned triplebuffer_logic::start_write() throw()
 
 void triplebuffer_logic::end_write() throw()
 {
-	umutex_class h(mut);
+	threads::alock h(mut);
 	if(!--write_active)
 		last_complete_slot = write_active_slot;
 }
 
 unsigned triplebuffer_logic::start_read() throw()
 {
-	umutex_class h(mut);
+	threads::alock h(mut);
 	if(!read_active)
 		read_active_slot = last_complete_slot;
 	read_active++;
@@ -306,7 +306,7 @@ unsigned triplebuffer_logic::start_read() throw()
 
 void triplebuffer_logic::end_read() throw()
 {
-	umutex_class h(mut);
+	threads::alock h(mut);
 	read_active--;
 }
 

@@ -17,7 +17,7 @@ bool multitrack_edit::is_enabled()
 void multitrack_edit::enable(bool state)
 {
 	{
-		umutex_class h(mutex);
+		threads::alock h(mlock);
 		enabled = state;
 		controllerstate.clear();
 	}
@@ -27,7 +27,7 @@ void multitrack_edit::enable(bool state)
 void multitrack_edit::set(unsigned port, unsigned controller, state s)
 {
 	{
-		umutex_class h(mutex);
+		threads::alock h(mlock);
 		controllerstate[std::make_pair(port, controller)] = s;
 	}
 	update_movie_state();
@@ -75,7 +75,7 @@ void multitrack_edit::rotate(bool forward)
 
 multitrack_edit::state multitrack_edit::get(unsigned port, unsigned controller)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	auto key = std::make_pair(port, controller);
 	if(controllerstate.count(key))
 		return controllerstate[key];
@@ -84,7 +84,7 @@ multitrack_edit::state multitrack_edit::get(unsigned port, unsigned controller)
 
 void multitrack_edit::config_altered()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	controllerstate.clear();
 }
 
@@ -92,7 +92,7 @@ void multitrack_edit::process_frame(controller_frame& input)
 {
 	if(!movb || !movb.get_movie().readonly_mode())
 		return;
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	bool any_need = false;
 	if(!enabled)
 		return;
@@ -154,7 +154,7 @@ bool multitrack_edit::any_records()
 {
 	if(!movb || !movb.get_movie().readonly_mode())
 		return true;
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	bool any_need = false;
 	for(auto i : controllerstate)
 		any_need = any_need || (i.second != MT_PRESERVE);

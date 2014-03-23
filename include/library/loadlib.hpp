@@ -4,7 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <map>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -12,7 +12,7 @@
 
 namespace loadlib
 {
-mutex_class& global_mutex();
+threads::lock& global_mutex();
 
 /**
  * A loaded library.
@@ -43,7 +43,7 @@ public:
  */
 	~library() throw()
 	{
-		umutex_class h(global_mutex());
+		threads::alock h(global_mutex());
 		if(lib && !--lib->refs)
 			delete lib;
 	}
@@ -57,7 +57,7 @@ public:
  */
 	void* operator[](const std::string& symbol) const throw(std::bad_alloc, std::runtime_error)
 	{
-		umutex_class h(global_mutex());
+		threads::alock h(global_mutex());
 		if(!lib) throw std::runtime_error("Symbol '" + symbol + "' not found");
 		return (*lib)[symbol];
 	}
@@ -78,7 +78,7 @@ public:
  */
 	library(const library& r)
 	{
-		umutex_class h(global_mutex());
+		threads::alock h(global_mutex());
 		lib = r.lib;
 		if(lib) ++lib->refs;
 	}
@@ -86,7 +86,7 @@ public:
 	{
 		if(lib == r.lib)
 			return *this;
-		umutex_class h(global_mutex());
+		threads::alock h(global_mutex());
 		if(lib && !--lib->refs)
 			delete lib;
 		lib = r.lib;

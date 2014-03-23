@@ -1,6 +1,11 @@
 #include "workthread.hpp"
 #include <stdexcept>
 #include <sys/time.h>
+#include <iostream>
+
+namespace workthread
+{
+const uint32_t quit_request = 0x80000000U;
 
 namespace
 {
@@ -12,16 +17,16 @@ namespace
 	}
 }
 
-struct worker_thread_reflector
+struct reflector
 {
-	int operator()(worker_thread* x)
+	int operator()(worker* x)
 	{
 		(*x)(42);
 		return 0;
 	}
 };
 
-worker_thread::worker_thread()
+worker::worker()
 {
 	thread = NULL;
 	reflector = NULL;
@@ -34,44 +39,44 @@ worker_thread::worker_thread()
 	joined = false;
 }
 
-worker_thread::~worker_thread()
+worker::~worker()
 {
-	set_workflag(WORKFLAG_QUIT_REQUEST);
+	set_workflag(quit_request);
 	if(!joined && thread)
 		thread->join();
 	delete thread;
 	delete reflector;
 }
 
-void worker_thread::request_quit()
+void worker::request_quit()
 {
 	{
 		//If the thread isn't there yet, wait for it.
-		umutex_class h(mutex);
+		threads::alock h(mlock);
 		if(!thread)
 			condition.wait(h);
 	}
-	set_workflag(WORKFLAG_QUIT_REQUEST);
+	set_workflag(quit_request);
 	if(!joined)
 		thread->join();
 	joined = true;
 }
 
-void worker_thread::set_busy()
+void worker::set_busy()
 {
 	busy = true;
 }
 
-void worker_thread::clear_busy()
+void worker::clear_busy()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	busy = false;
 	condition.notify_all();
 }
 
-void worker_thread::wait_busy()
+void worker::wait_busy()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	if(busy) {
 		uint64_t tmp = ticks();
 		while(busy)
@@ -80,7 +85,7 @@ void worker_thread::wait_busy()
 	}
 }
 
-void worker_thread::rethrow()
+void worker::rethrow()
 {
 	if(exception_caught) {
 		if(exception_oom)
@@ -90,24 +95,24 @@ void worker_thread::rethrow()
 	}
 }
 
-void worker_thread::set_workflag(uint32_t flag)
+void worker::set_workflag(uint32_t flag)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	workflag |= flag;
 	condition.notify_all();
 }
 
-uint32_t worker_thread::clear_workflag(uint32_t flag)
+uint32_t worker::clear_workflag(uint32_t flag)
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	uint32_t tmp = workflag;
 	workflag &= ~flag;
 	return tmp;
 }
 
-uint32_t worker_thread::wait_workflag()
+uint32_t worker::wait_workflag()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	if(!workflag) {
 		uint64_t tmp = ticks();
 		while(!workflag)
@@ -117,13 +122,13 @@ uint32_t worker_thread::wait_workflag()
 	return workflag;
 }
 
-std::pair<uint64_t, uint64_t> worker_thread::get_wait_count()
+std::pair<uint64_t, uint64_t> worker::get_wait_count()
 {
-	umutex_class h(mutex);
+	threads::alock h(mlock);
 	return std::make_pair(waitamt_busy, waitamt_work);
 }
 
-int worker_thread::operator()(int dummy)
+int worker::operator()(int dummy)
 {
 	try {
 		entry();
@@ -139,8 +144,9 @@ int worker_thread::operator()(int dummy)
 	return 0;
 }
 
-void worker_thread::fire()
+void worker::fire()
 {
-	reflector = new worker_thread_reflector;
-	thread = new thread_class(*reflector, this);
+	reflector = new workthread::reflector;
+	thread = new threads::thread(*reflector, this);
+}
 }

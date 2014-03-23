@@ -1,6 +1,6 @@
 #include "string.hpp"
 #include "minmax.hpp"
-#include "threadtypes.hpp"
+#include "threads.hpp"
 #include "eatarg.hpp"
 #include <cctype>
 #include <boost/regex.hpp>
@@ -86,8 +86,8 @@ std::pair<size_t, size_t> regex_results::match(size_t i) const
 regex_results regex(const std::string& regexp, const std::string& str, const char* ex) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	static mutex_class m;
-	umutex_class h(m);
+	static threads::lock m;
+	threads::alock h(m);
 	static std::map<std::string, map_pointer<boost::regex>> regexps;
 	if(!regexps.count(regexp)) {
 		boost::regex* y = NULL;

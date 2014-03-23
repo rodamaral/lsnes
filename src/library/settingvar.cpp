@@ -24,7 +24,7 @@ group::~group() throw()
 
 std::set<std::string> group::get_settings_set() throw(std::bad_alloc)
 {
-	umutex_class(lock);
+	threads::alock(lock);
 	std::set<std::string> x;
 	for(auto i : settings)
 		x.insert(i.first);
@@ -33,7 +33,7 @@ std::set<std::string> group::get_settings_set() throw(std::bad_alloc)
 
 base& group::operator[](const std::string& name)
 {
-	umutex_class(lock);
+	threads::alock(lock);
 	if(!settings.count(name))
 		throw std::runtime_error("No such setting");
 	return *settings[name];
@@ -43,7 +43,7 @@ void group::fire_listener(base& var) throw()
 {
 	std::set<listener*> l;
 	{
-		umutex_class h(lock);
+		threads::alock h(lock);
 		for(auto i : listeners)
 			l.insert(i);
 	}
@@ -56,25 +56,25 @@ void group::fire_listener(base& var) throw()
 
 void group::add_listener(struct listener& listener) throw(std::bad_alloc)
 {
-	umutex_class(lock);
+	threads::alock(lock);
 	listeners.insert(&listener);
 }
 
 void group::remove_listener(struct listener& listener) throw(std::bad_alloc)
 {
-	umutex_class(lock);
+	threads::alock(lock);
 	listeners.erase(&listener);
 }
 
 void group::do_register(const std::string& name, base& _setting) throw(std::bad_alloc)
 {
-	umutex_class h(lock);
+	threads::alock h(lock);
 	settings[name] = &_setting;
 }
 
 void group::do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc)
 {
-	umutex_class h(lock);
+	threads::alock h(lock);
 	settings.erase(name);
 }
 
@@ -116,13 +116,13 @@ void cache::set(const std::string& name, const std::string& value, bool allow_in
 {
 	try {
 		grp[name].str(value);
-		umutex_class h(lock);
+		threads::alock h(lock);
 		badcache.erase(name);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
 		if(allow_invalid) {
-			umutex_class h(lock);
+			threads::alock h(lock);
 			badcache[name] = value;
 		} else
 			throw;

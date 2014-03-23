@@ -133,7 +133,7 @@ namespace
 		uint32_t max_frames;
 	};
 
-	struct resample_worker : public worker_thread
+	struct resample_worker : public workthread::worker
 	{
 		resample_worker(double _ratio, uint32_t _nch);
 		~resample_worker();
@@ -151,7 +151,7 @@ namespace
 		void* resampler;
 	};
 
-	struct avi_worker : public worker_thread
+	struct avi_worker : public workthread::worker
 	{
 		avi_worker(const struct avi_info& info);
 		~avi_worker();
@@ -216,7 +216,7 @@ namespace
 	{
 		while(1) {
 			wait_workflag();
-			uint32_t work = clear_workflag(~WORKFLAG_QUIT_REQUEST);
+			uint32_t work = clear_workflag(~workthread::quit_request);
 			//Flush the queue first in order to provode backpressure.
 			if(work & WORKFLAG_FLUSH) {
 				clear_workflag(WORKFLAG_FLUSH);
@@ -256,7 +256,7 @@ namespace
 				clear_workflag(WORKFLAG_END | WORKFLAG_FLUSH | WORKFLAG_QUEUE_FRAME);
 			}
 			//If signaled to quit and no more work, do so.
-			if(work == WORKFLAG_QUIT_REQUEST) {
+			if(work == workthread::quit_request) {
 				if(!closed)
 					aviout.close();
 				closed = true;
@@ -551,7 +551,7 @@ again:
 	{
 		while(1) {
 			wait_workflag();
-			uint32_t work = clear_workflag(~WORKFLAG_QUIT_REQUEST);
+			uint32_t work = clear_workflag(~workthread::quit_request);
 			if(work & (WORKFLAG_QUEUE_FRAME | WORKFLAG_END)) {
 #ifdef WITH_SECRET_RABBIT_CODE
 again:
@@ -583,7 +583,7 @@ again:
 				if(work & WORKFLAG_END)
 					return;
 			}
-			if(work == WORKFLAG_QUIT_REQUEST)
+			if(work == workthread::quit_request)
 				break;
 		}
 	}

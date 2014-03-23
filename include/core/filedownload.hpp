@@ -1,7 +1,7 @@
 #ifndef _filedownload__hpp__included__
 #define _filedownload__hpp__included__
 
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include "library/httpreq.hpp"
 #include <string>
 #include <list>
@@ -23,8 +23,8 @@ struct file_download
 	std::string errormsg;
 	http_async_request req;
 	std::string statusmsg();
-	cv_class cond;
-	mutex_class m;
+	threads::cv cond;
+	threads::lock m;
 	//Internal.
 	void _do_async();
 	std::string tempname;

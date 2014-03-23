@@ -170,7 +170,7 @@ namespace
 	uint64_t hashing_left = 0;
 	uint64_t hashing_total = 0;
 	int64_t last_update = 0;
-	thread_class* emulation_thread;
+	threads::thread* emulation_thread;
 
 	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(lsnes_vset,
 		"background-audio", "GUI‣Enable background audio", true);
@@ -775,7 +775,7 @@ void boot_emulator(loaded_rom& rom, moviefile& movie, bool fscreen)
 		a->initial = &movie;
 		a->load_has_to_succeed = false;
 		modal_pause_holder hld;
-		emulation_thread = new thread_class(emulator_main, a);
+		emulation_thread = new threads::thread(emulator_main, a);
 		main_window = new wxwin_mainwindow(fscreen);
 		main_window->Show();
 	} catch(std::bad_alloc& e) {

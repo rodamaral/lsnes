@@ -29,7 +29,7 @@ namespace
 	//Framerate.
 	double nominal_framerate = 60;
 	double multiplier_framerate = 1;
-	mutex_class framerate_lock;
+	threads::lock framerate_lock;
 	bool turboed = false;
 
 	uint64_t get_time(uint64_t curtime, bool update)
@@ -64,7 +64,7 @@ namespace
 	{
 		double n, m;
 		{
-			umutex_class h(framerate_lock);
+			threads::alock h(framerate_lock);
 			n = nominal_framerate;
 			m = multiplier_framerate;
 		}
@@ -100,14 +100,14 @@ namespace
 //Set the speed multiplier. Note that INFINITE is a valid multiplier.
 void set_speed_multiplier(double multiplier) throw()
 {
-	umutex_class h(framerate_lock);
+	threads::alock h(framerate_lock);
 	multiplier_framerate = multiplier;
 }
 
 //Get the speed multiplier. Note that this may be INFINITE.
 double get_speed_multiplier() throw()
 {
-	umutex_class h(framerate_lock);
+	threads::alock h(framerate_lock);
 	return multiplier_framerate;
 }
 
@@ -126,13 +126,13 @@ void unfreeze_time(uint64_t curtime)
 
 void set_nominal_framerate(double fps) throw()
 {
-	umutex_class h(framerate_lock);
+	threads::alock h(framerate_lock);
 	nominal_framerate = fps;
 }
 
 double get_realized_multiplier() throw()
 {
-	umutex_class h(framerate_lock);
+	threads::alock h(framerate_lock);
 	return get_realized_fps() / nominal_framerate;
 }
 

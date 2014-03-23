@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstdlib>
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 
 /**
  * Sample queue.
@@ -42,12 +42,13 @@ public:
  */
 	size_t available();
 private:
+	size_t _available();
 	std::vector<int16_t> data;
 	bool blank;
 	size_t rptr;
 	size_t wptr;
 	size_t size;
-	mutex_class lock;
+	threads::lock mlock;
 };
 
 struct frame_object

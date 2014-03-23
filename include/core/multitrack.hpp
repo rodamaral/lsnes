@@ -2,7 +2,7 @@
 #define _multitrack__hpp__included__
 
 #include <map>
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include "library/controller-data.hpp"
 
 class multitrack_edit
@@ -25,7 +25,7 @@ public:
 	void process_frame(controller_frame& input);
 	bool any_records();
 private:
-	mutex_class mutex;
+	threads::lock mlock;
 	bool enabled;
 	std::map<std::pair<unsigned, unsigned>, state> controllerstate;
 };

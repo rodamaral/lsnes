@@ -6,7 +6,7 @@
 #include <vector>
 #include <cstdint>
 #include <cstring>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 #include "arch-detect.hpp"
 
 /**
@@ -243,7 +243,7 @@ public:
  */
 	void read_all_linear_memory(uint8_t* buffer);
 private:
-	mutex_class mutex;
+	threads::lock mlock;
 	std::vector<memory_region*> u_regions;
 	std::vector<memory_region*> u_lregions;
 	std::vector<uint64_t> linear_bases;

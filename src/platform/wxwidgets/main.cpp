@@ -20,7 +20,7 @@
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
-#include "library/threadtypes.hpp"
+#include "library/threads.hpp"
 #include "library/utf8.hpp"
 #include "library/zip.hpp"
 
@@ -59,14 +59,14 @@ bool wxwidgets_exiting = false;
 
 namespace
 {
-	threadid_class ui_thread;
+	threads::id ui_thread;
 	volatile bool panic_ack = false;
 	std::string error_message_text;
 	volatile bool modal_dialog_confirm;
 	volatile bool modal_dialog_active;
-	mutex_class ui_mutex;
-	cv_class ui_condition;
-	thread_class* joystick_thread_handle;
+	threads::lock ui_mutex;
+	threads::cv ui_condition;
+	threads::thread* joystick_thread_handle;
 
 	void* joystick_thread(int _args)
 	{
@@ -139,7 +139,7 @@ namespace
 			queue_synchronous_fn_warning = true;
 back:
 			{
-				umutex_class h(ui_mutex);
+				threads::alock h(ui_mutex);
 				if(ui_queue.empty())
 					goto end;
 				i = ui_queue.begin();
@@ -428,7 +428,7 @@ bool lsnes_app::OnInit()
 
 	ui_services = new ui_services_type();
 
-	ui_thread = this_thread_id();
+	ui_thread = threads::this_id();
 	platform::init();
 
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
@@ -456,8 +456,8 @@ bool lsnes_app::OnInit()
 	if(settings_mode) {
 		//We got to boot this up quite a bit to get the joystick driver working.
 		//In practicular, we need joystick thread and emulator thread in pause.
-		joystick_thread_handle = new thread_class(joystick_thread, 6);
-		thread_class* dummy_loop = new thread_class(eloop_helper, 8);
+		joystick_thread_handle = new threads::thread(joystick_thread, 6);
+		threads::thread* dummy_loop = new threads::thread(eloop_helper, 8);
 		display_settings_dialog(NULL, NULL);
 		platform::exit_dummy_event_loop();
 		joystick_driver_signal();
@@ -468,7 +468,7 @@ bool lsnes_app::OnInit()
 	}
 	init_lua();
 
-	joystick_thread_handle = new thread_class(joystick_thread, 7);
+	joystick_thread_handle = new threads::thread(joystick_thread, 7);
 
 	msg_window = new wxwin_messages();
 	msg_window->Show();
@@ -560,7 +560,7 @@ namespace
 		},
 		.fatal_error = []() -> void {
 			//Fun: This can be called from any thread!
-			if(ui_thread == this_thread_id()) {
+			if(ui_thread == threads::this_id()) {
 				//UI thread.
 				platform::set_modal_pause(true);
 				wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"),
@@ -579,17 +579,17 @@ namespace
 		.request_rom = [](rom_request& req)
 		{
 			rom_request* _req = &req;
-			mutex_class lock;
-			cv_class cv;
+			threads::lock lock;
+			threads::cv cv;
 			bool done = false;
-			umutex_class h(lock);
+			threads::alock h(lock);
 			runuifun([_req, &lock, &cv, &done]() -> void {
 				try {
 					main_window->request_rom(*_req);
 				} catch(...) {
 					_req->canceled = true;
 				}
-				umutex_class h(lock);
+				threads::alock h(lock);
 				done = true;
 				cv.notify_all();
 			});
@@ -607,7 +607,7 @@ void signal_core_change()
 
 void _runuifun_async(void (*fn)(void*), void* arg)
 {
-	umutex_class h(ui_mutex);
+	threads::alock h(ui_mutex);
 	ui_queue_entry e;
 	e.fn = fn;
 	e.arg = arg;

@@ -2,28 +2,30 @@
 #define _library_workthread__hpp__included__
 
 #include <cstdint>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
-#define WORKFLAG_QUIT_REQUEST 0x80000000U
+namespace workthread
+{
+class reflector;
 
-class worker_thread_reflector;
+extern const uint32_t quit_request;
 
 /**
  * A worker thread.
  *
  * Note: All methods (except entrypoints) are thread-safe.
  */
-class worker_thread
+class worker
 {
 public:
 /**
  * Constructor.
  */
-	worker_thread();
+	worker();
 /**
  * Destructor.
  */
-	virtual ~worker_thread();
+	virtual ~worker();
 /**
  * Request quit. Sets quit request workflag.
  */
@@ -89,10 +91,10 @@ protected:
  */
 	void fire();
 private:
-	thread_class* thread;
-	worker_thread_reflector* reflector;
-	cv_class condition;
-	mutex_class mutex;
+	threads::thread* thread;
+	workthread::reflector* reflector;
+	threads::cv condition;
+	threads::lock mlock;
 	volatile bool joined;
 	volatile uint32_t workflag;
 	volatile bool busy;
@@ -102,5 +104,6 @@ private:
 	volatile uint64_t waitamt_work;
 	std::string exception_text;
 };
+}
 
 #endif

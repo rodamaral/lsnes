@@ -67,10 +67,10 @@ void file_download::do_async()
 	req.url = url;
 	try {
 		req.lauch_async();
-		(new thread_class(file_download_thread_trampoline, this))->detach();
+		(new threads::thread(file_download_thread_trampoline, this))->detach();
 	} catch(std::exception& e) {
 		req.cancel();
-		umutex_class h(m);
+		threads::alock h(m);
 		errormsg = e.what();
 		finished = true;
 		cond.notify_all();
@@ -96,13 +96,13 @@ std::string file_download::statusmsg()
 void file_download::_do_async()
 {
 	while(!req.finished) {
-		umutex_class h(req.m);
+		threads::alock h(req.m);
 		req.finished_cond.wait(h);
 		if(!req.finished)
 			continue;
 		if(req.errormsg != "") {
 			remove(tempname.c_str());
-			umutex_class h(m);
+			threads::alock h(m);
 			errormsg = req.errormsg;
 			finished = true;
 			cond.notify_all();
@@ -112,7 +112,7 @@ void file_download::_do_async()
 	delete req.ohandler;
 	req.ohandler = NULL;
 	if(req.http_code > 299) {
-		umutex_class h(m);
+		threads::alock h(m);
 		errormsg = (stringfmt() << "Got HTTP error " << req.http_code).str();
 		finished = true;
 		cond.notify_all();
@@ -162,14 +162,14 @@ void file_download::_do_async()
 		remove(tempname2.c_str());
 	} catch(std::exception& e) {
 		remove(tempname2.c_str());
-		umutex_class h(m);
+		threads::alock h(m);
 		errormsg = e.what();
 		finished = true;
 		cond.notify_all();
 		return;
 	}
 	//We are done!
-	umutex_class h(m);
+	threads::alock h(m);
 	finished = true;
 	cond.notify_all();
 }

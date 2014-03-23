@@ -6,11 +6,11 @@
 #include <set>
 #include <list>
 #include <functional>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
 namespace dispatch
 {
-mutex_class& global_init_lock();
+threads::lock& global_init_lock();
 
 template<typename... T> struct source;
 
@@ -107,7 +107,7 @@ template<typename... T> struct source
 	void connect(target<T...>& target)
 	{
 		init();
-		umutex_class h(*lck);
+		threads::alock h(*lck);
 		targets()[next_cbseq++] = &target;
 		target.set_source(this);
 	}
@@ -121,7 +121,7 @@ template<typename... T> struct source
 		init();
 		if(!lck)
 			return;
-		umutex_class h(*lck);
+		threads::alock h(*lck);
 		for(auto i = targets().begin(); i != targets().end(); i++)
 			if(i->second == &target) {
 				targets().erase(i);
@@ -143,17 +143,17 @@ private:
 	{
 		if(inited)
 			return;
-		umutex_class h(global_init_lock());
+		threads::alock h(global_init_lock());
 		if(inited)
 			return;
 		errstrm = &std::cerr;
 		next_cbseq = 0;
 		name = "(unknown)";
 		_targets = NULL;
-		lck = new mutex_class;
+		lck = new threads::lock;
 		inited = true;
 	}
-	mutex_class* lck;
+	threads::lock* lck;
 	std::map<uint64_t, target<T...>*>& targets()
 	{
 		if(!_targets) _targets = new std::map<uint64_t, target<T...>*>;

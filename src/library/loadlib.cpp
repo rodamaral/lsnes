@@ -9,9 +9,9 @@
 
 namespace loadlib
 {
-mutex_class& global_mutex()
+threads::lock& global_mutex()
 {
-	static mutex_class m;
+	static threads::lock m;
 	return m;
 }
 
@@ -134,7 +134,7 @@ module::module(std::initializer_list<symbol> _symbols, std::function<void(const 
 		symbols[i.name] = i.address;
 	init = init_fn;
 	if(init) {
-		umutex_class h(global_mutex());
+		threads::alock h(global_mutex());
 		module_queue().push_back(this);
 	}
 }
@@ -147,7 +147,7 @@ module::module(library _lib)
 
 module::~module()
 {
-	umutex_class h(global_mutex());
+	threads::alock h(global_mutex());
 	for(auto i = module_queue().begin(); i != module_queue().end(); i++) {
 		if(*i == this) {
 			module_queue().erase(i);
@@ -163,7 +163,7 @@ module::module(const module& mod)
 	symbols = mod.symbols;
 	init = mod.init;
 	if(init) {
-		umutex_class h(global_mutex());
+		threads::alock h(global_mutex());
 		module_queue().push_back(this);
 	}
 }

@@ -6,7 +6,7 @@
 #include <set>
 #include <map>
 #include <list>
-#include "threadtypes.hpp"
+#include "threads.hpp"
 
 namespace command
 {
@@ -68,7 +68,7 @@ private:
 	std::map<std::string, base*> commands;
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
-	mutex_class int_mutex;
+	threads::lock int_mutex;
 	std::ostream* output;
 	void (*oom_panic_routine)();
 	base* builtin[1];
