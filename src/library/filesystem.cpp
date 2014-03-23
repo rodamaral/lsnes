@@ -299,24 +299,9 @@ filesystem::ref& filesystem::ref::operator=(const filesystem::ref& r)
 		refcnt = r.refcnt;
 		mlock = r.mlock;
 		fs = r.fs;
-	} else if(A < B) {
-		//Two-object case.
-		threads::alock m1(*mlock);
-		threads::alock m2(*r.mlock);
-		--*refcnt;
-		if(!*refcnt) {
-			delete fs;
-			delete refcnt;
-			mtodelete = mlock;
-		}
-		++*(r.refcnt);
-		refcnt = r.refcnt;
-		mlock = r.mlock;
-		fs = r.fs;
 	} else {
 		//Two-object case.
-		threads::alock m1(*r.mlock);
-		threads::alock m2(*mlock);
+		threads::alock_multiple ms({r.mlock, mlock});
 		--*refcnt;
 		if(!*refcnt) {
 			delete fs;

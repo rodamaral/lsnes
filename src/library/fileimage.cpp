@@ -182,13 +182,7 @@ hashval& hashval::operator=(const hashval& f)
 	if(this == &f)
 		return *this;
 	threads::alock h2(global_queue_mutex());
-	if((size_t)this < (size_t)&f) {
-		mlock.lock();
-		f.mlock.lock();
-	} else {
-		f.mlock.lock();
-		mlock.lock();
-	}
+	threads::alock_multiple({&mlock, &f.mlock});
 
 	if(!is_ready && hasher)
 		hasher->unlink(*this);
@@ -201,8 +195,6 @@ hashval& hashval::operator=(const hashval& f)
 	hasher = f.hasher;
 	if(!is_ready && hasher)
 		hasher->link(*this);
-	mlock.unlock();
-	f.mlock.unlock();
 }
 
 void hashval::resolve(unsigned id, const std::string& hash, uint64_t _prefix)

@@ -2,6 +2,7 @@
 #define _library_threads__hpp__included__
 
 #include <cstdint>
+#include <vector>
 
 #ifdef NATIVE_THREADS
 #include <thread>
@@ -45,6 +46,36 @@ inline id this_id()
 	return boost::this_thread::get_id();
 }
 #endif
+
+/**
+ * Lock multiple locks.
+ *
+ * The locks are always locked in address order. Duplicate locks are only locked once.
+ */
+void lock_multiple(std::initializer_list<lock*> locks);
+/**
+ * Unlock multiple locks.
+ *
+ * Duplicate locks are only unlocked once.
+ */
+void unlock_multiple(std::initializer_list<lock*> locks);
+void unlock_multiple(std::vector<lock*> locks);
+
+class alock_multiple
+{
+public:
+	alock_multiple(std::initializer_list<lock*> locks)
+	{
+		_locks = std::vector<lock*>(locks);
+		lock_multiple(locks);
+	}
+	~alock_multiple()
+	{
+		unlock_multiple(_locks);
+	}
+private:
+	std::vector<lock*> _locks;
+};
 }
 
 #endif
