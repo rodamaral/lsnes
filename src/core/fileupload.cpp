@@ -66,17 +66,17 @@ namespace
 
 	void compress(std::vector<char>& buf, std::string& output, std::string& compression)
 	{
-		stream_compressor_base* X = NULL;
+		streamcompress::base* X = NULL;
 		try {
 			if(!X) {
-				X = stream_compressor_base::create_compressor("xz", "level=7,extreme=true");
+				X = streamcompress::base::create_compressor("xz", "level=7,extreme=true");
 				compression = "xz";
 			}
 		} catch(...) {
 		}
 		try {
 			if(!X) {
-				X = stream_compressor_base::create_compressor("gzip", "level=7");
+				X = streamcompress::base::create_compressor("gzip", "level=7");
 				compression = "gzip";
 			}
 		} catch(...) {
@@ -84,7 +84,7 @@ namespace
 
 		std::vector<char> out;
 		boost::iostreams::filtering_istream* s = new boost::iostreams::filtering_istream();
-		if(X) s->push(iostream_compressor(X));
+		if(X) s->push(streamcompress::iostream(X));
 		s->push(boost::iostreams::array_source(&buf[0], buf.size()));
 		boost::iostreams::back_insert_device<std::vector<char>> rd(out);
 		boost::iostreams::copy(*s, rd);

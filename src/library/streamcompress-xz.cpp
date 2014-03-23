@@ -23,9 +23,9 @@ namespace
 		lzma_options_lzma lzmaopts;
 	};
 
-	struct stream_compressor_lzma : public stream_compressor_base
+	struct lzma : public streamcompress::base
 	{
-		stream_compressor_lzma(lzma_options& opts)
+		lzma(lzma_options& opts)
 		{
 			memset(&strm, 0, sizeof(strm));
 			lzma_ret r;
@@ -45,7 +45,7 @@ namespace
 				throw std::runtime_error("Unknown error");
 			}
 		}
-		~stream_compressor_lzma()
+		~lzma()
 		{
 			lzma_end(&strm);
 		}
@@ -79,10 +79,9 @@ namespace
 
 	struct foo {
 		foo() {
-			stream_compressor_base::do_register("lzma", [](const std::string& v) ->
-				stream_compressor_base* {
+			streamcompress::base::do_register("lzma", [](const std::string& v) -> streamcompress::base* {
 				lzma_options opts;
-				auto a = stream_compressor_parse_attributes(v);
+				auto a = streamcompress::parse_attributes(v);
 				unsigned level = 7;
 				bool extreme = false;
 				if(a.count("level")) level = parse_value<unsigned>(a["level"]);
@@ -90,12 +89,11 @@ namespace
 				if(a.count("extreme")) extreme  = parse_value<bool>(a["level"]);
 				opts.xz = false;
 				lzma_lzma_preset(&opts.lzmaopts, level | (extreme ? LZMA_PRESET_EXTREME : 0));
-				return new stream_compressor_lzma(opts);
+				return new lzma(opts);
 			});
-			stream_compressor_base::do_register("xz", [](const std::string& v) ->
-				stream_compressor_base* {
+			streamcompress::base::do_register("xz", [](const std::string& v) -> streamcompress::base* {
 				lzma_options opts;
-				auto a = stream_compressor_parse_attributes(v);
+				auto a = streamcompress::parse_attributes(v);
 				unsigned level = 7;
 				bool extreme = false;
 				lzma_options_lzma opt_lzma2;
@@ -110,12 +108,12 @@ namespace
 				opts.fchain = filterchain;
 				opts.check = LZMA_CHECK_CRC64;
 				opts.xz = true;
-				return new stream_compressor_lzma(opts);
+				return new lzma(opts);
 			});
 		}
 		~foo() {
-			stream_compressor_base::do_unregister("lzma");
-			stream_compressor_base::do_unregister("xz");
+			streamcompress::base::do_unregister("lzma");
+			streamcompress::base::do_unregister("xz");
 		}
 	} _foo;
 
@@ -153,9 +151,9 @@ namespace
 int main()
 {
 	std::vector<char> out;
-	stream_compressor_base* X = stream_compressor_base::create_compressor("xz", "level=7,extreme=true");
+	streamcompress::base* X = streamcompress::base::create_compressor("xz", "level=7,extreme=true");
 	boost::iostreams::filtering_istream* s = new boost::iostreams::filtering_istream();
-	s->push(iostream_compressor(X));
+	s->push(streamcompress::iostream(X));
 	s->push(stdin_input());
 	boost::iostreams::back_insert_device<std::vector<char>> rd(out);
 	boost::iostreams::copy(*s, rd);

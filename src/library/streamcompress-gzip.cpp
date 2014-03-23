@@ -24,9 +24,9 @@ namespace
 		free(ptr);
 	}
 
-	struct stream_compressor_gzip : public stream_compressor_base
+	struct gzip : public streamcompress::base
 	{
-		stream_compressor_gzip(unsigned level)
+		gzip(unsigned level)
 		{
 			memset(&strm, 0, sizeof(z_stream));
 			strm.zalloc = zalloc;
@@ -39,7 +39,7 @@ namespace
 			trl = 0;
 			data_output = false;
 		}
-		~stream_compressor_gzip()
+		~gzip()
 		{
 			deflateEnd(&strm);
 		}
@@ -96,16 +96,16 @@ namespace
 
 	struct foo {
 		foo() {
-			stream_compressor_base::do_register("gzip", [](const std::string& v) ->
-				stream_compressor_base* {
-				auto a = stream_compressor_parse_attributes(v);
+			streamcompress::base::do_register("gzip", [](const std::string& v) ->
+				streamcompress::base* {
+				auto a = streamcompress::parse_attributes(v);
 				unsigned compression = 7;
 				if(a.count("level")) compression = parse_value<unsigned>(a["level"]);
-				return new stream_compressor_gzip(compression);
+				return new gzip(compression);
 			});
 		}
 		~foo() {
-			stream_compressor_base::do_unregister("gzip");
+			streamcompress::base::do_unregister("gzip");
 		}
 	} _foo;
 
@@ -143,9 +143,9 @@ namespace
 int main()
 {
 	std::vector<char> out;
-	stream_compressor_base* X = stream_compressor_base::create_compressor("gzip", "level=7");
+	streamcompress::base* X = streamcompress::base::create_compressor("gzip", "level=7");
 	boost::iostreams::filtering_istream* s = new boost::iostreams::filtering_istream();
-	s->push(iostream_compressor(X));
+	s->push(streamcompress::iostream(X));
 	s->push(stdin_input());
 	boost::iostreams::back_insert_device<std::vector<char>> rd(out);
 	boost::iostreams::copy(*s, rd);

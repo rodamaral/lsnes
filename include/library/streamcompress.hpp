@@ -11,12 +11,14 @@
 #include "minmax.hpp"
 #include <cstring>
 
-std::map<std::string, std::string> stream_compressor_parse_attributes(const std::string& val);
+namespace streamcompress
+{
+std::map<std::string, std::string> parse_attributes(const std::string& val);
 
-class stream_compressor_base
+class base
 {
 public:
-	virtual ~stream_compressor_base();
+	virtual ~base();
 /**
  * Compress data.
  *
@@ -30,13 +32,13 @@ public:
 	virtual bool process(uint8_t*& in, size_t& insize, uint8_t*& out, size_t& outsize, bool final) = 0;
 
 	static std::set<std::string> get_compressors();
-	static stream_compressor_base* create_compressor(const std::string& name, const std::string& args);
+	static base* create_compressor(const std::string& name, const std::string& args);
 	static void do_register(const std::string& name,
-		std::function<stream_compressor_base*(const std::string&)> ctor);
+		std::function<base*(const std::string&)> ctor);
 	static void do_unregister(const std::string& name);
 };
 
-class iostream_compressor
+class iostream
 {
 public:
 	typedef char char_type;
@@ -44,7 +46,7 @@ public:
 /**
  * Createa a new compressing stream.
  */
-	iostream_compressor(stream_compressor_base* _compressor)
+	iostream(base* _compressor)
 	{
 		compressor = _compressor;
 		inbuf_use = 0;
@@ -103,7 +105,7 @@ public:
 	{
 	}
 private:
-	stream_compressor_base* compressor;
+	base* compressor;
 	uint8_t inbuffer[4096];
 	uint8_t outbuffer[4096];
 	size_t inbuf_use;
@@ -112,5 +114,6 @@ private:
 	bool oeof_flag;
 	size_t emitted;
 };
+}
 
 #endif
