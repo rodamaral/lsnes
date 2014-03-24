@@ -1,0 +1,109 @@
+From 24df3ca0d17d37bb3192b0ddf28cc16d9b4f8fa5 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Mon, 24 Mar 2014 14:01:29 +0200
+Subject: [PATCH 6/6] Fix read/write of A, PC and CycleCounter when executing
+
+---
+ libgambatte/src/cpu.cpp      |  9 +++++++++
+ libgambatte/src/cpu.h        |  3 +++
+ libgambatte/src/gambatte.cpp | 10 +++++-----
+ 3 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/libgambatte/src/cpu.cpp b/libgambatte/src/cpu.cpp
+index 037fff2..7f10986 100644
+--- a/libgambatte/src/cpu.cpp
++++ b/libgambatte/src/cpu.cpp
+@@ -44,6 +44,9 @@ CPU::CPU(time_t (**_getCurrentTime)())
+ , l(0x4D)
+ , skip_(false)
+ , emuflags(0)
++, pcptr(&pc_)
++, aptr(&a_)
++, cyclecountptr(&cycleCounter_)
+ {
+ }
+ 
+@@ -514,10 +517,13 @@ void CPU::process(unsigned const cycles) {
+ 	mem_.setEndtime(cycleCounter_, cycles);
+ 
+ 	unsigned char a = a_;
++	aptr = &a;
+ 	unsigned cycleCounter = cycleCounter_;
++	cyclecountptr = &cycleCounter;
+ 
+ 	while (mem_.isActive()) {
+ 		unsigned short pc = pc_;
++		pcptr = &pc;
+ 
+ 		if (mem_.halted()) {
+ 			if (cycleCounter < mem_.nextEventTime()) {
+@@ -2020,11 +2026,14 @@ void CPU::process(unsigned const cycles) {
+ 		}
+ 
+ 		pc_ = pc;
++		pcptr = &pc_;
+ 		cycleCounter = mem_.event(cycleCounter);
+ 	}
+ 
+ 	a_ = a;
++	aptr = &a_;
+ 	cycleCounter_ = cycleCounter;
++	cyclecountptr = &cycleCounter_;
+ }
+ 
+ }
+diff --git a/libgambatte/src/cpu.h b/libgambatte/src/cpu.h
+index c2a340b..4df0958 100644
+--- a/libgambatte/src/cpu.h
++++ b/libgambatte/src/cpu.h
+@@ -101,6 +101,9 @@ public:
+ 	unsigned short sp;
+ 	unsigned hf1, hf2, zf, cf;
+ 	unsigned char a_, b, c, d, e, /*f,*/ h, l;
++	unsigned char* aptr;
++	unsigned short* pcptr;
++	unsigned* cyclecountptr;
+ private:
+ 	Memory mem_;
+ 	bool skip_;
+diff --git a/libgambatte/src/gambatte.cpp b/libgambatte/src/gambatte.cpp
+index f2310ed..d54f5df 100644
+--- a/libgambatte/src/gambatte.cpp
++++ b/libgambatte/src/gambatte.cpp
+@@ -301,14 +301,14 @@ std::string GB::version()
+ uint32_t GB::get_cpureg(enum cpu_register _reg)
+ {
+ 	switch(_reg) {
+-		case REG_CYCLECOUNTER:	return p_->cpu.cycleCounter_;
+-		case REG_PC:		return p_->cpu.pc_;
++		case REG_CYCLECOUNTER:	return *p_->cpu.cyclecountptr;
++		case REG_PC:		return *p_->cpu.pcptr;
+ 		case REG_SP:		return p_->cpu.sp;
+ 		case REG_HF1:		return p_->cpu.hf1;
+ 		case REG_HF2:		return p_->cpu.hf2;
+ 		case REG_ZF:		return p_->cpu.zf;
+ 		case REG_CF:		return p_->cpu.cf;
+-		case REG_A:		return p_->cpu.a_;
++		case REG_A:		return *p_->cpu.aptr;
+ 		case REG_B:		return p_->cpu.b;
+ 		case REG_C:		return p_->cpu.c;
+ 		case REG_D:		return p_->cpu.d;
+@@ -325,13 +325,13 @@ uint32_t GB::get_cpureg(enum cpu_register _reg)
+ void GB::set_cpureg(enum cpu_register _reg, uint32_t val)
+ {
+ 	switch(_reg) {
+-		case REG_PC:		p_->cpu.pc_ = val; break;
++		case REG_PC:		*p_->cpu.pcptr = val; break;
+ 		case REG_SP:		p_->cpu.sp = val; break;
+ 		case REG_HF1:		p_->cpu.hf1 = val; break;
+ 		case REG_HF2:		p_->cpu.hf2 = val; break;
+ 		case REG_ZF:		p_->cpu.zf = val; break;
+ 		case REG_CF:		p_->cpu.cf = val; break;
+-		case REG_A:		p_->cpu.a_ = val; break;
++		case REG_A:		*p_->cpu.aptr = val; break;
+ 		case REG_B:		p_->cpu.b = val; break;
+ 		case REG_C:		p_->cpu.c = val; break;
+ 		case REG_D:		p_->cpu.d = val; break;
+-- 
+1.9.1
+
