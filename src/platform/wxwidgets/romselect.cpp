@@ -260,6 +260,8 @@ namespace
 		pinfo.movie_rtc_second = m.movie_rtc_second;
 		pinfo.movie_rtc_subsecond = m.movie_rtc_subsecond;
 		pinfo.projectid = m.projectid;
+		pinfo.active_branch = 0;
+		pinfo.next_branch = 0;
 		project_copy_watches(pinfo);
 		project_copy_macros(pinfo, controls);
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
