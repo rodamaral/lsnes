@@ -257,7 +257,7 @@ namespace
 #ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
 			disable_breakpoints = true;
 			v = instance->bus_read(addr);
-			disable_breakpoints = true;
+			disable_breakpoints = false;
 #endif
 			buffer_h8(buffer_ptr, v);
 			return v;
