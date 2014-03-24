@@ -372,7 +372,11 @@ bool project_set(project_info* p, bool current)
 skip_rom_movie:
 		active_project = p;
 		switched = true;
-		for(auto i : lsnes_memorywatch.enumerate())
+		//Calculate union of old and new.
+		std::set<std::string> _watches = lsnes_memorywatch.enumerate();
+		for(auto i : p->watches) _watches.insert(i.first);
+
+		for(auto i : _watches)
 			try {
 				if(p->watches.count(i))
 					lsnes_memorywatch.set(i, p->watches[i]);
