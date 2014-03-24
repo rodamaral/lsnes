@@ -101,6 +101,9 @@ public:
 	unsigned short sp;
 	unsigned hf1, hf2, zf, cf;
 	unsigned char a_, b, c, d, e, /*f,*/ h, l;
+	unsigned char* aptr;
+	unsigned short* pcptr;
+	unsigned* cyclecountptr;
 private:
 	Memory mem_;
 	bool skip_;

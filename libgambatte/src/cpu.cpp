@@ -44,6 +44,9 @@ CPU::CPU(time_t (**_getCurrentTime)())
 , l(0x4D)
 , skip_(false)
 , emuflags(0)
+, pcptr(&pc_)
+, aptr(&a_)
+, cyclecountptr(&cycleCounter_)
 {
 }
 
@@ -514,10 +517,13 @@ void CPU::process(unsigned const cycles) {
 	mem_.setEndtime(cycleCounter_, cycles);
 
 	unsigned char a = a_;
+	aptr = &a;
 	unsigned cycleCounter = cycleCounter_;
+	cyclecountptr = &cycleCounter;
 
 	while (mem_.isActive()) {
 		unsigned short pc = pc_;
+		pcptr = &pc;
 
 		if (mem_.halted()) {
 			if (cycleCounter < mem_.nextEventTime()) {
@@ -2020,11 +2026,14 @@ void CPU::process(unsigned const cycles) {
 		}
 
 		pc_ = pc;
+		pcptr = &pc_;
 		cycleCounter = mem_.event(cycleCounter);
 	}
 
 	a_ = a;
+	aptr = &a_;
 	cycleCounter_ = cycleCounter;
+	cyclecountptr = &cycleCounter_;
 }
 
 }

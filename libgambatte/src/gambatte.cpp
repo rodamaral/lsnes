@@ -301,14 +301,14 @@ std::string GB::version()
 uint32_t GB::get_cpureg(enum cpu_register _reg)
 {
 	switch(_reg) {
-		case REG_CYCLECOUNTER:	return p_->cpu.cycleCounter_;
-		case REG_PC:		return p_->cpu.pc_;
+		case REG_CYCLECOUNTER:	return *p_->cpu.cyclecountptr;
+		case REG_PC:		return *p_->cpu.pcptr;
 		case REG_SP:		return p_->cpu.sp;
 		case REG_HF1:		return p_->cpu.hf1;
 		case REG_HF2:		return p_->cpu.hf2;
 		case REG_ZF:		return p_->cpu.zf;
 		case REG_CF:		return p_->cpu.cf;
-		case REG_A:		return p_->cpu.a_;
+		case REG_A:		return *p_->cpu.aptr;
 		case REG_B:		return p_->cpu.b;
 		case REG_C:		return p_->cpu.c;
 		case REG_D:		return p_->cpu.d;
@@ -325,13 +325,13 @@ uint32_t GB::get_cpureg(enum cpu_register _reg)
 void GB::set_cpureg(enum cpu_register _reg, uint32_t val)
 {
 	switch(_reg) {
-		case REG_PC:		p_->cpu.pc_ = val; break;
+		case REG_PC:		*p_->cpu.pcptr = val; break;
 		case REG_SP:		p_->cpu.sp = val; break;
 		case REG_HF1:		p_->cpu.hf1 = val; break;
 		case REG_HF2:		p_->cpu.hf2 = val; break;
 		case REG_ZF:		p_->cpu.zf = val; break;
 		case REG_CF:		p_->cpu.cf = val; break;
-		case REG_A:		p_->cpu.a_ = val; break;
+		case REG_A:		*p_->cpu.aptr = val; break;
 		case REG_B:		p_->cpu.b = val; break;
 		case REG_C:		p_->cpu.c = val; break;
 		case REG_D:		p_->cpu.d = val; break;
