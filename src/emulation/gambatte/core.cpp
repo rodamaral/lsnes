@@ -490,6 +490,7 @@ namespace
 		bus.read = gambatte_bus_read;
 		bus.write = gambatte_bus_write;
 		bus.endian = -1;
+		bus.special = true;
 		vmas.push_back(bus);
 #endif
 		return vmas;
