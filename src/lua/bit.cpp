@@ -280,6 +280,24 @@ namespace
 		return 1;
 	}
 
+	int bit_multidiv(lua::state& L, lua::parameters& P)
+	{
+		double v;
+		unsigned values = L.gettop();
+
+		P(v);
+
+		for(unsigned i = 1; i < values; i++) {
+			int64_t q;
+			P(q);
+			int64_t qx = v / q;
+			L.pushnumber(qx);
+			v -= qx * q;
+		}
+		L.pushnumber(v);
+		return values;
+	};
+
 	lua::functions bitops(lua_func_bit, "bit", {
 		{"flagdecode", flagdecode_core<false>},
 		{"rflagdecode", flagdecode_core<true>},
@@ -313,6 +331,7 @@ namespace
 		{"crshift", bit_cshift<true>},
 		{"compose", bit_compose},
 		{"quotent", bit_quotent},
+		{"multidiv", bit_multidiv},
 		{"binary_ld_u8be", bit_ldbinarynumber<uint8_t, false>},
 		{"binary_ld_s8be", bit_ldbinarynumber<int8_t, false>},
 		{"binary_ld_u16be", bit_ldbinarynumber<uint16_t, false>},

@@ -4303,6 +4303,26 @@ Syntax: number bit.quotent(number a, number b)
 Calculate quotent a/b.
 \end_layout
 
+\begin_layout Subsection
+bit.multidiv: Divide and split among multiple divisiors
+\end_layout
+
+\begin_layout Itemize
+Syntax: number...
+ bit.multidiv(number v, number q...)
+\end_layout
+
+\begin_layout Standard
+Returns remainder of <v> divided by each previous <q> divided by each <q>
+ in turn plus final remainder.
+ <v> may be floating point, <q>s are integers.
+\end_layout
+
+\begin_layout Itemize
+E.g.
+ bit.multidiv(time, 3600, 60) splits time into hours, minutes and seconds.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
