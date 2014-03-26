@@ -36,7 +36,7 @@ void logic::put_read() throw(std::logic_error)
 
 unsigned logic::get_write() throw()
 {
-	const unsigned magic = 0x1099;
+	const unsigned magic = 0x010219;
 	threads::alock h(lock);
 	if(count_write > 0) {
 		//We already are writing => The same as previously.
@@ -45,7 +45,7 @@ unsigned logic::get_write() throw()
 	} else {
 		//We are beginning a new write => Pick one that isn't last_complete nor current_read.
 		count_write++;
-		unsigned tmp = 6 * last_complete + 2 * current_read;
+		unsigned tmp = ((last_complete << 2) | current_read) << 1;
 		current_write = (magic >> tmp) & 3;
 		return current_write;
 	}
