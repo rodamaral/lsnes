@@ -3892,6 +3892,10 @@ Get names of all classes available.
 \end_layout
 
 \begin_layout Subsection
+
+\end_layout
+
+\begin_layout Subsection
 icnov: Class ICONV
 \end_layout
 
@@ -7477,6 +7481,23 @@ Syntax: number...
 \begin_layout Standard
 Like string.byte(), but works in terms of Unicode codepoints.
  The input string <str> is assumed UTF-8.
+\end_layout
+
+\begin_layout Subsection
+string.regex: Match string against regular expression
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean/string...
+ string.regex(string regexp, string against)
+\end_layout
+
+\begin_layout Standard
+Match POSIX-extended regular expression <regexp> against string <against>.
+ If no match, false is returned.
+ Otherwise if string has no subcaptures, true is returned.
+ Otherwise each subcapture is returned as a string (in order of starting
+ position).
 \end_layout
 
 \begin_layout Section
