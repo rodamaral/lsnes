@@ -14,6 +14,7 @@
 #include "library/framebuffer.hpp"
 #include "library/framebuffer-pixfmt-lrgb.hpp"
 #include "library/minmax.hpp"
+#include "library/triplebuffer.hpp"
 
 framebuffer::raw screen_corrupt;
 
@@ -31,40 +32,10 @@ namespace
 		uint32_t bgap;
 	};
 
-	triplebuffer_logic buffering;
 	render_info buffer1;
 	render_info buffer2;
 	render_info buffer3;
-
-	render_info& get_write_buffer()
-	{
-		unsigned i = buffering.start_write();
-		switch(i) {
-		case 0:
-			return buffer1;
-		case 1:
-			return buffer2;
-		case 2:
-			return buffer3;
-		default:
-			return buffer1;
-		};
-	}
-
-	render_info& get_read_buffer()
-	{
-		unsigned i = buffering.start_read();
-		switch(i) {
-		case 0:
-			return buffer1;
-		case 1:
-			return buffer2;
-		case 2:
-			return buffer3;
-		default:
-			return buffer1;
-		};
-	}
+	triplebuffer::triplebuffer<render_info> buffering(buffer1, buffer2, buffer3);
 
 	struct render_list_entry
 	{
@@ -147,9 +118,9 @@ framebuffer::fb<false> main_screen;
 
 void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {
-	render_info& ri = get_read_buffer();
+	render_info& ri = buffering.get_read();
 	ri.fbuf.save_png(file);
-	buffering.end_read();
+	buffering.put_read();
 }
 
 
@@ -180,7 +151,7 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	auto g = our_rom.rtype->get_scale_factors(todraw.get_width(), todraw.get_height());
 	hscl = g.first;
 	vscl = g.second;
-	render_info& ri = get_write_buffer();
+	render_info& ri = buffering.get_write();
 	ri.rq.clear();
 	struct lua_render_context lrc;
 	lrc.left_gap = 0;
@@ -202,24 +173,23 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	ri.tgap = max(lrc.top_gap, (unsigned)dtb);
 	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb);
 	lsnes_memorywatch.watch(ri.rq);
-	buffering.end_write();
+	buffering.put_write();
 	notify_screen_update();
 	last_redraw_no_lua = no_lua;
 }
 
 void redraw_framebuffer()
 {
-	render_info& ri = get_read_buffer();
+	render_info& ri = buffering.get_read();
 	framebuffer::raw copy = ri.fbuf;
-	buffering.end_read();
+	buffering.put_read();
 	//Redraws are never spontaneous
 	redraw_framebuffer(copy, last_redraw_no_lua, false);
 }
 
-
 void render_framebuffer()
 {
-	render_info& ri = get_read_buffer();
+	render_info& ri = buffering.get_read();
 	main_screen.reallocate(ri.fbuf.get_width() * ri.hscl + ri.lgap + ri.rgap, ri.fbuf.get_height() * ri.vscl +
 		ri.tgap + ri.bgap);
 	main_screen.set_origin(ri.lgap, ri.tgap);
@@ -237,77 +207,25 @@ void render_framebuffer()
 		mouse_x->cast_mouse()->set_calibration(xcal);
 	if(mouse_y && mouse_y->get_type() == keyboard::KBD_KEYTYPE_MOUSE)
 		mouse_y->cast_mouse()->set_calibration(ycal);
-	buffering.end_read();
+	buffering.put_read();
 }
 
 std::pair<uint32_t, uint32_t> get_framebuffer_size()
 {
 	uint32_t v, h;
-	render_info& ri = get_read_buffer();
+	render_info& ri = buffering.get_read();
 	v = ri.fbuf.get_width();
 	h = ri.fbuf.get_height();
-	buffering.end_read();
+	buffering.put_read();
 	return std::make_pair(h, v);
 }
 
 framebuffer::raw get_framebuffer() throw(std::bad_alloc)
 {
-	render_info& ri = get_read_buffer();
+	render_info& ri = buffering.get_read();
 	framebuffer::raw copy = ri.fbuf;
-	buffering.end_read();
+	buffering.put_read();
 	return copy;
-}
-
-
-triplebuffer_logic::triplebuffer_logic() throw(std::bad_alloc)
-{
-	last_complete_slot = 0;
-	read_active = false;
-	write_active = false;
-	read_active_slot = 0;
-	write_active_slot = 0;
-}
-
-triplebuffer_logic::~triplebuffer_logic() throw()
-{
-}
-
-unsigned triplebuffer_logic::start_write() throw()
-{
-	threads::alock h(mut);
-	if(!write_active) {
-		//We need to avoid hitting last complete slot or slot that is active for read.
-		if(last_complete_slot != 0 && read_active_slot != 0)
-			write_active_slot = 0;
-		else if(last_complete_slot != 1 && read_active_slot != 1)
-			write_active_slot = 1;
-		else
-			write_active_slot = 2;
-	}
-	write_active++;
-	return write_active_slot;
-}
-
-void triplebuffer_logic::end_write() throw()
-{
-	threads::alock h(mut);
-	if(!--write_active)
-		last_complete_slot = write_active_slot;
-}
-
-unsigned triplebuffer_logic::start_read() throw()
-{
-	threads::alock h(mut);
-	if(!read_active)
-		read_active_slot = last_complete_slot;
-	read_active++;
-	return read_active_slot;
-}
-
-void triplebuffer_logic::end_read() throw()
-{
-	threads::alock h(mut);
-	read_active--;
 }
 
 void render_kill_request(void* obj)
@@ -319,10 +237,10 @@ void render_kill_request(void* obj)
 
 framebuffer::raw& render_get_latest_screen()
 {
-	return get_read_buffer().fbuf;
+	return buffering.get_read().fbuf;
 }
 
 void render_get_latest_screen_end()
 {
-	buffering.end_read();
+	buffering.put_read();
 }
