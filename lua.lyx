@@ -4313,14 +4313,45 @@ Syntax: number...
 \end_layout
 
 \begin_layout Standard
-Returns remainder of <v> divided by each previous <q> divided by each <q>
- in turn plus final remainder.
+Does the following steps:
+\end_layout
+
+\begin_layout Enumerate
+Set v' to <v>.
+\end_layout
+
+\begin_layout Enumerate
+For each <q> q:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Calculate quotent(v'/q) and add that to numbers returned.
+\end_layout
+
+\begin_layout Enumerate
+v' <- remainder(v'/q)
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Add v' to numbers returned.
+\end_layout
+
+\begin_layout Standard
+That is, it successively divides <v> by <q>s, and reduces <v> modulo <q>
+ at each step.
  <v> may be floating point, <q>s are integers.
 \end_layout
 
 \begin_layout Itemize
 E.g.
  bit.multidiv(time, 3600, 60) splits time into hours, minutes and seconds.
+\end_layout
+
+\begin_layout Itemize
+E.g.
+ bit.multidiv(a, b) calculates quotent and remainder of a/b.
 \end_layout
 
 \begin_layout Standard
