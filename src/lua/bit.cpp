@@ -149,6 +149,18 @@ namespace
 		return 1;
 	}
 
+	template<bool complement>
+	int bit_test2(lua::state& L, lua::parameters& P)
+	{
+		uint64_t a, b;
+
+		P(a, b);
+
+		uint64_t t = a & (1ULL << b);
+		L.pushboolean((t != 0) != complement);
+		return 1;
+	}
+
 	int poptable[] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
 
 	int popcount(uint64_t x)
@@ -326,6 +338,8 @@ namespace
 		{"value", bit_value},
 		{"test_any", bit_test<false>},
 		{"test_all", bit_test<true>},
+		{"test", bit_test2<false>},
+		{"testn", bit_test2<true>},
 		{"popcount", bit_popcount},
 		{"clshift", bit_cshift<false>},
 		{"crshift", bit_cshift<true>},

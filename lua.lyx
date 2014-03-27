@@ -4098,6 +4098,32 @@ Returns bitwise OR of 1 left shifted by <bit1> places, 1 left shifted by
 \end_layout
 
 \begin_layout Subsection
+bit.test: Test if bit is set
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean bit.test(number a, number bit)
+\end_layout
+
+\begin_layout Standard
+Tests if bit <bit> is set in <a>.
+ If it is set, returns true, otherwise false.
+\end_layout
+
+\begin_layout Subsection
+bit.testn: Test if bit is clear
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean bit.testn(number a, number bit)
+\end_layout
+
+\begin_layout Standard
+Tests if bit <bit> is set in <a>.
+ If it is clear, returns true, otherwise false.
+\end_layout
+
+\begin_layout Subsection
 bit.test_any: Test if any bit is set
 \end_layout
 
@@ -7549,6 +7575,44 @@ Match POSIX-extended regular expression <regexp> against string <against>.
  Otherwise if string has no subcaptures, true is returned.
  Otherwise each subcapture is returned as a string (in order of starting
  position).
+\end_layout
+
+\begin_layout Subsection
+string.hex: Transform integer into hex string
+\end_layout
+
+\begin_layout Itemize
+Syntax: string string.hex(number n, [number digits])
+\end_layout
+
+\begin_layout Standard
+Returns hexadecimal string representation of <n>, optionally padded with
+ zeroes to <digits> digits (default is not to pad).
+\end_layout
+
+\begin_layout Subsection
+string.lpad: Pad string with spaces from left
+\end_layout
+
+\begin_layout Itemize
+Syntax: string string.lpad(string x, number n)
+\end_layout
+
+\begin_layout Standard
+Pad string <x> to <n> bytes by inserting spaces at start and return the
+ result.
+\end_layout
+
+\begin_layout Subsection
+string.rpad: Pad string with spaces from right
+\end_layout
+
+\begin_layout Itemize
+Syntax: string string.rpad(string x, number n)
+\end_layout
+
+\begin_layout Standard
+Pad string <x> to <n> bytes by inserting spaces at end and return the result.
 \end_layout
 
 \begin_layout Section

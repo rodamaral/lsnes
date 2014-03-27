@@ -27,6 +27,9 @@ end;
 string.byteU=_lsnes_string_byteU;
 string.charU=_lsnes_string_charU;
 string.regex=_lsnes_string_regex;
+string.hex=_lsnes_string_hex;
+string.lpad=_lsnes_string_lpad;
+string.rpad=_lsnes_string_rpad;
 
 local _lookup_class = lookup_class;
 local _all_classes = all_classes;
