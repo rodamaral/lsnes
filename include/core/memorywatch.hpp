@@ -167,9 +167,17 @@ struct lsnes_memorywatch_set
  * Parameter rq: The render queue to use.
  */
 	void watch(struct framebuffer::queue& rq);
+/**
+ * Get memory watch vars that go to window.
+ */
+	const std::map<std::string, std::u32string>& get_window_vars() { return window_vars; }
 private:
 	void rebuild(std::map<std::string, lsnes_memorywatch_item>& nitems);
 	std::map<std::string, lsnes_memorywatch_item> items;
+	std::map<std::string, std::u32string> window_vars;
+	std::map<std::string, bool> used_memorywatches;
+	void erase_unused_watches();
+	void memorywatch_output(const std::string& name, const std::string& value);
 	memorywatch_set watch_set;
 };
 

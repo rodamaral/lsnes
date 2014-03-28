@@ -27,6 +27,7 @@
 namespace
 {
 	std::map<std::string, std::pair<framebuffer::font2*, size_t>> fonts_in_use;
+	std::map<std::string, std::u32string> memorywatch_vars;
 
 	framebuffer::font2& get_builtin_font2()
 	{
@@ -72,24 +73,6 @@ namespace
 		}
 	}
 
-	std::map<std::string, bool> used_memorywatches;
-	void memorywatch_output_fn(const std::string& name, const std::string& value)
-	{
-		auto& status = platform::get_emustatus();
-		used_memorywatches[name] = true;
-		status.set("M[" + name + "]", value);
-	}
-
-	void erase_unused_watches()
-	{
-		auto& status = platform::get_emustatus();
-		for(auto& i : used_memorywatches) {
-			if(!i.second)
-				status.erase("M[" + i.first + "]");
-			i.second = false;
-		}
-	}
-
 	std::string json_string_default(const JSON::node& node, const std::string& pointer, const std::string& dflt)
 	{
 		return (node.type_of(pointer) == JSON::string) ? node[pointer].as_string8() : dflt;
@@ -109,6 +92,8 @@ namespace
 	{
 		return (node.type_of(pointer) == JSON::boolean) ? node[pointer].as_bool() : dflt;
 	}
+
+	void dummy_target_fn(const std::string& n, const std::string& v) {}
 }
 
 lsnes_memorywatch_printer::lsnes_memorywatch_printer()
@@ -193,7 +178,7 @@ gcroot_pointer<memorywatch_item_printer> lsnes_memorywatch_printer::get_printer_
 		} catch(std::exception& e) {
 			(stringfmt() << "Error while parsing conditional: " << e.what()).throwex();
 		}
-		l->set_output(memorywatch_output_fn);
+		l->set_output(dummy_target_fn);
 		break;
 	case PC_ONSCREEN:
 		ptr = gcroot_pointer<memorywatch_item_printer>(new memorywatch_output_fb);
@@ -530,6 +515,14 @@ void lsnes_memorywatch_set::rebuild(std::map<std::string, lsnes_memorywatch_item
 					memread_oper = NULL;
 				}
 				rt_printer = i.second.printer.get_printer_obj(vars_fn);
+
+				//Set final callback for list objects (since it wasn't known on creation).
+				auto list_obj = dynamic_cast<memorywatch_output_list*>(rt_printer.as_pointer());
+				if(list_obj)
+					list_obj->set_output([this](const std::string& n, const std::string& v) {
+						this->memorywatch_output(n, v);
+					});
+
 				memorywatch_item it(*expression_value());
 				*vars_fn(i.first) = *rt_expr;
 				it.expr = vars_fn(i.first);
@@ -544,6 +537,21 @@ void lsnes_memorywatch_set::rebuild(std::map<std::string, lsnes_memorywatch_item
 		watch_set.swap(new_set);
 	}
 	garbage_collectable::do_gc();
+}
+
+void lsnes_memorywatch_set::memorywatch_output(const std::string& name, const std::string& value)
+{
+	used_memorywatches[name] = true;
+	window_vars[name] = utf8::to32(value);
+}
+
+void lsnes_memorywatch_set::erase_unused_watches()
+{
+	for(auto& i : used_memorywatches) {
+		if(!i.second)
+			window_vars.erase(i.first);
+		i.second = false;
+	}
 }
 
 lsnes_memorywatch_set lsnes_memorywatch;

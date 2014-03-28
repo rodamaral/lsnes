@@ -426,6 +426,29 @@ void update_movie_state()
 		}
 		_status.set((stringfmt() << "P" << (i + 1)).str(), _buffer);
 	}
+	//Lua variables.
+	{
+		static std::map<std::string, std::u32string> old_luavars;
+		auto& lvars = get_lua_watch_vars();
+		for(auto i : old_luavars)
+			if(!lvars.count(i.first))
+				_status.erase("L[" + i.first + "]");
+		for(auto i : lvars)
+			_status.set("L[" + i.first + "]", i.second);
+		old_luavars = lvars;
+	}
+	//Memory watches.
+	{
+		static std::map<std::string, std::u32string> old_memvars;
+		auto& mvars = lsnes_memorywatch.get_window_vars();
+		for(auto i : old_memvars)
+			if(!mvars.count(i.first))
+				_status.erase("M[" + i.first + "]");
+		for(auto i : mvars)
+			_status.set("M[" + i.first + "]", i.second);
+		old_memvars = mvars;
+	}
+	
 	notify_status_update();
 }
 

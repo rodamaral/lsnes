@@ -2,8 +2,12 @@
 #include "core/window.hpp"
 #include "library/minmax.hpp"
 
+void update_movie_state();
+
 namespace
 {
+	std::map<std::string, std::u32string> lua_watch_vars;
+
 	template<uint32_t lua_render_context::*gap, bool delta>
 	int lua_gui_set_gap(lua::state& L, lua::parameters& P)
 	{
@@ -70,11 +74,11 @@ namespace
 
 		P(name, value);
 
-		auto& w = platform::get_emustatus();
 		if(value == "")
-			w.erase("L[" + name + "]");
+			lua_watch_vars.erase(name);
 		else
-			w.set("L[" + name + "]", value);
+			lua_watch_vars[name] = utf8::to32(value);
+		update_movie_state();
 		return 1;
 	}
 
@@ -129,4 +133,9 @@ namespace
 		{"kill_frame", kill_frame},
 		{"set_video_scale", set_video_scale},
 	});
+}
+
+const std::map<std::string, std::u32string>& get_lua_watch_vars()
+{
+	return lua_watch_vars;
 }

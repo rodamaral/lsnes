@@ -1,6 +1,8 @@
 #ifndef _lua__hpp__included__
 #define _lua__hpp__included__
 
+#include <string>
+#include <map>
 #include "core/controllerframe.hpp"
 #include "library/movie.hpp"
 #include "library/framebuffer.hpp"
@@ -35,10 +37,12 @@ void lua_callback_do_latch(std::list<std::string>& args);
 void lua_run_startup_scripts();
 void lua_add_startup_script(const std::string& file);
 
+
 #define LUA_TIMED_HOOK_IDLE 0
 #define LUA_TIMED_HOOK_TIMER 1
 
 uint64_t lua_timed_hook(int timer) throw();
+const std::map<std::string, std::u32string>& get_lua_watch_vars();
 
 extern bool lua_requests_repaint;
 extern bool lua_requests_subframe_paint;
