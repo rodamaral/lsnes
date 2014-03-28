@@ -500,7 +500,6 @@ public:
 	{
 		lua_callback_do_frame_emulated();
 		location_special = SPECIAL_FRAME_VIDEO;
-		update_movie_state();
 		redraw_framebuffer(screen, false, true);
 		uint32_t g = gcd(fps_n, fps_d);
 		fps_n /= g;
@@ -1216,7 +1215,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			throw;
 		}
 		system_corrupt = true;
-		update_movie_state();
 		redraw_framebuffer(screen_corrupt);
 	}
 

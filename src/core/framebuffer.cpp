@@ -17,6 +17,7 @@
 #include "library/triplebuffer.hpp"
 
 framebuffer::raw screen_corrupt;
+void update_movie_state();
 
 namespace
 {
@@ -176,6 +177,7 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	buffering.put_write();
 	notify_screen_update();
 	last_redraw_no_lua = no_lua;
+	update_movie_state();
 }
 
 void redraw_framebuffer()

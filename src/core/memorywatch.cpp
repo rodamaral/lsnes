@@ -24,8 +24,6 @@
 #include <sstream>
 #include <map>
 
-void update_movie_state();
-
 namespace
 {
 	std::map<std::string, std::pair<framebuffer::font2*, size_t>> fonts_in_use;
@@ -437,7 +435,6 @@ bool lsnes_memorywatch_set::rename(const std::string& oldname, const std::string
 	rebuild(nitems);
 	std::swap(items, nitems);
 	redraw_framebuffer();
-	update_movie_state();
 	return true;
 }
 
@@ -453,7 +450,6 @@ void lsnes_memorywatch_set::set(const std::string& name, lsnes_memorywatch_item&
 		pr->flush();
 	}
 	redraw_framebuffer();
-	update_movie_state();
 }
 
 std::string lsnes_memorywatch_set::get_value(const std::string& name)
@@ -475,7 +471,6 @@ void lsnes_memorywatch_set::set_multi(std::list<std::pair<std::string, lsnes_mem
 		pr->flush();
 	}
 	redraw_framebuffer();
-	update_movie_state();
 }
 
 void lsnes_memorywatch_set::set_multi(std::list<std::pair<std::string, std::string>>& list)
@@ -503,7 +498,6 @@ void lsnes_memorywatch_set::clear_multi(const std::set<std::string>& names)
 		pr->flush();
 	}
 	redraw_framebuffer();
-	update_movie_state();
 }
 
 void lsnes_memorywatch_set::rebuild(std::map<std::string, lsnes_memorywatch_item>& nitems)
