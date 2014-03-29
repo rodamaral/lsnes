@@ -781,6 +781,8 @@ void try_request_rom(const std::string& moviefile)
 		}
 		idx++;
 	}
+	if(req.cores.empty())
+		throw std::runtime_error("No known core can load movie of type '" + info.sysregion + "'");
 	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 		req.guessed[i] = false;
 		req.has_slot[i] = (info.hash[i] != "");
