@@ -31,12 +31,12 @@ namespace
 				int dx = _dx[direction & 7];
 				int dy = _dy[direction & 7];
 				auto drange = drawrange(o);
-				for(unsigned d = drange.first; d < drange.second; d++) {
+				for(signed d = drange.first; d < drange.second; d++) {
 					int32_t xc = bpx + dx * d;
 					int32_t yc = bpy + dy * d;
-					if(xc < 0 || xc >= scr.get_width())
+					if(xc < 0 || xc >= (ssize_t)scr.get_width())
 						continue;
-					if(yc < 0 || yc >= scr.get_height())
+					if(yc < 0 || yc >= (ssize_t)scr.get_height())
 						continue;
 					color.apply(scr.rowptr(yc)[xc]);
 				}

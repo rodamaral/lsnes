@@ -105,8 +105,9 @@ const char* error::what() const throw()
 	if(state == PARSE_NOT_PARSING)
 		return error_desc[code];
 	else {
-		sprintf(buffer, "%s (while expecting %s) at byte %llu", error_desc[code], state_desc[state],
-			(unsigned long long)position);
+		//Windows is crap.
+		sprintf(buffer, "%s (while expecting %s) at byte %u", error_desc[code], state_desc[state],
+			(unsigned)position);
 		return buffer;
 	}
 }
@@ -131,7 +132,7 @@ std::string error::extended_error(const std::string& doc)
 			if(p >= doc.length())
 				break;
 			if(doc[p] < 32) {
-				sample << "<" << asciinames[doc[p++]] << ">";
+				sample << "<" << asciinames[(unsigned char)doc[p++]] << ">";
 			} else if(doc[p] < 127)
 				sample << doc[p++];
 			else if(doc[p] < 128)
@@ -547,7 +548,6 @@ namespace
 
 errorcode node::follow_soft(const std::u32string& pointer, const node*& current) const throw(std::bad_alloc)
 {
-	errorcode e;
 	current = this;
 	size_t ptr = 0;
 	while(ptr < pointer.length()) {
@@ -578,7 +578,6 @@ errorcode node::follow_soft(const std::u32string& pointer, const node*& current)
 errorcode node::follow_soft(const std::u32string& pointer, node*& current) throw(std::bad_alloc)
 {
 	current = this;
-	errorcode e;
 	size_t ptr = 0;
 	while(ptr < pointer.length()) {
 		size_t p = pointer.find_first_of(U"/", ptr);
@@ -1799,6 +1798,7 @@ std::string printer_indenting::array_begin()
 		state = S_START;
 		return linestart(depth++) + "[";
 	}
+	return "<WTF?>";  //NOTREACHED.
 }
 
 std::string printer_indenting::array_separator()
@@ -1831,6 +1831,7 @@ std::string printer_indenting::array_end()
 		--depth;
 		return std::string("]") + (depth ? "" : "\n");
 	}
+	return "<WTF?>";  //NOTREACHED.
 }
 
 std::string printer_indenting::object_begin()
@@ -1853,6 +1854,7 @@ std::string printer_indenting::object_begin()
 		state = S_START;
 		return linestart(depth++) + "{";
 	}
+	return "<WTF?>"; //NOTREACHED.
 }
 
 std::string printer_indenting::object_key(const std::u32string& s)
@@ -1869,6 +1871,7 @@ std::string printer_indenting::object_key(const std::u32string& s)
 		state = S_NORMAL;
 		return json_string_escape(s) + ":";
 	}
+	return "<WTF?>";  //NOTREACHED.
 }
 
 std::string printer_indenting::object_separator()
@@ -1901,6 +1904,7 @@ std::string printer_indenting::object_end()
 		--depth;
 		return "}";
 	}
+	return "<WTF?>"; //NOTREACHED.
 }
 
 }

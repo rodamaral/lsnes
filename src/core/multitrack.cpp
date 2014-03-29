@@ -114,7 +114,7 @@ void multitrack_edit::process_frame(controller_frame& input)
 			input.axis3(t.port, t.controller, t.control, v);
 		} else {
 			int16_t v = movb.get_movie().read_subframe_at_index(pc, t.port, t.controller, t.control);
-			auto m = controllerstate[key];
+			controllerstate[key];
 			const port_type& pt = portset.port_type(t.port);
 			auto pci = pt.controller_info->get(t.controller);
 			auto pb = pci ? pci->get(t.control) : NULL;

@@ -555,7 +555,7 @@ badtype:
 	{
 	public:
 		png_pixel_decoder(png_filterbank& _filter, uint8_t _type, uint8_t _depth, size_t _width)
-			: filter(_filter), type(_type), depth(_depth), width(_width)
+			: width(_width), type(_type), depth(_depth), filter(_filter)
 		{
 			tmp.resize((png_filterbank::get_bits(type, depth) * width + 7) / 8);
 		}

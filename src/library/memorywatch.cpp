@@ -4,6 +4,14 @@
 #include <sstream>
 #include "string.hpp"
 
+namespace
+{
+	template<typename T> T* pointer_cast(char* ptr)
+	{
+		return reinterpret_cast<T*>(ptr);
+	}
+}
+
 memorywatch_memread_oper::memorywatch_memread_oper()
 	: mathexpr_operinfo("(readmemory)")
 {
@@ -41,41 +49,41 @@ void memorywatch_memread_oper::evaluate(mathexpr_value target, std::vector<std::
 		if(float_flag)
 			throw mathexpr_error(mathexpr_error::SIZE, "1 byte floats not supported");
 		else if(signed_flag)
-			target.type->parse_s(target.value, *(int8_t*)buf);
+			target.type->parse_s(target.value, *(const int8_t*)buf);
 		else
-			target.type->parse_u(target.value, *(uint8_t*)buf);
+			target.type->parse_u(target.value, *(const uint8_t*)buf);
 		break;
 	case 2:
 		if(float_flag)
 			throw mathexpr_error(mathexpr_error::SIZE, "2 byte floats not supported");
 		else if(signed_flag)
-			target.type->parse_s(target.value, *(int16_t*)buf);
+			target.type->parse_s(target.value, *pointer_cast<int16_t>(buf));
 		else
-			target.type->parse_u(target.value, *(uint16_t*)buf);
+			target.type->parse_u(target.value, *pointer_cast<uint16_t>(buf));
 		break;
 	case 3:
 		if(float_flag)
 			throw mathexpr_error(mathexpr_error::SIZE, "3 byte floats not supported");
 		else if(signed_flag)
-			target.type->parse_s(target.value, *(ss_int24_t*)buf);
+			target.type->parse_s(target.value, *pointer_cast<ss_int24_t>(buf));
 		else
-			target.type->parse_u(target.value, *(ss_uint24_t*)buf);
+			target.type->parse_u(target.value, *pointer_cast<ss_uint24_t>(buf));
 		break;
 	case 4:
 		if(float_flag)
-			target.type->parse_f(target.value, *(float*)buf);
+			target.type->parse_f(target.value, *pointer_cast<float>(buf));
 		else if(signed_flag)
-			target.type->parse_s(target.value, *(int32_t*)buf);
+			target.type->parse_s(target.value, *pointer_cast<int32_t>(buf));
 		else
-			target.type->parse_u(target.value, *(uint32_t*)buf);
+			target.type->parse_u(target.value, *pointer_cast<uint32_t>(buf));
 		break;
 	case 8:
 		if(float_flag)
-			target.type->parse_f(target.value, *(double*)buf);
+			target.type->parse_f(target.value, *pointer_cast<double>(buf));
 		else if(signed_flag)
-			target.type->parse_s(target.value, *(int64_t*)buf);
+			target.type->parse_s(target.value, *pointer_cast<int64_t>(buf));
 		else
-			target.type->parse_u(target.value, *(uint64_t*)buf);
+			target.type->parse_u(target.value, *pointer_cast<uint64_t>(buf));
 		break;
 	default:
 		throw mathexpr_error(mathexpr_error::SIZE, "Memory address size not supported");

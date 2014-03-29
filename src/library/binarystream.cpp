@@ -176,12 +176,12 @@ void input::blob_implicit(std::vector<char>& blob)
 }
 
 input::input(std::istream& s)
-	: strm(s), left(0), parent(NULL)
+	: parent(NULL), strm(s), left(0)
 {
 }
 
 input::input(input& s, uint64_t len)
-	: strm(s.strm), left(len), parent(&s)
+	: parent(&s), strm(s.strm), left(len)
 {
 	if(parent->parent && left > parent->left)
 		throw std::runtime_error("Substream length greater than its parent");

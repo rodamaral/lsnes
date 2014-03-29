@@ -7,7 +7,7 @@ __all__.files: $(OBJECTS)
 	echo >__all__.ldflags
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
-	$(REALCC) -c -o $@ $< -I../../../include -I. $(CFLAGS)
+	$(REALCC) -c -o $@ $< -I../../../include -I. $(CFLAGS) -Wall -Werror
 
 forcelook:
 	@true

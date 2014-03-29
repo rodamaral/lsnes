@@ -155,7 +155,6 @@ void mbranch_export(const std::string& filename, const std::string& branchname, 
 	if(!file)
 		(stringfmt() << "Can't open '" << filename << "' for writing.").throwex();
 	if(binary) {
-		uint64_t pages = v.get_page_count();
 		uint64_t stride = v.get_stride();
 		uint64_t pageframes = v.get_frames_per_page();
 		uint64_t vsize = v.size();

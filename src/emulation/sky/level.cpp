@@ -94,8 +94,6 @@ namespace sky
 
 	bool level::collides(uint32_t lpos, uint16_t hpos, int16_t vpos)
 	{
-		bool debug = (lpos == 1248904);
-		uint16_t ltile = lpos / 65536;
 		tile a = at(lpos, hpos - 1792);
 		tile b = at(lpos, hpos + 1792);
 		//Floor collision check.

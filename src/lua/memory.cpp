@@ -445,8 +445,6 @@ namespace
 		return write ? 0 : 1;
 	}
 
-	const char* hexes = "0123456789ABCDEF";
-
 #define BLOCKSIZE 256
 
 	int vma_count(lua::state& L, lua::parameters& P)
@@ -507,7 +505,6 @@ namespace
 
 	int hash_state(lua::state& L, lua::parameters& P)
 	{
-		char hash[64];
 		auto x = our_rom.save_core_state();
 		size_t offset = x.size() - 32;
 		L.pushlstring(hex::b_to((uint8_t*)&x[offset], 32));

@@ -105,6 +105,7 @@ namespace
 				w = b->width;
 				h = b->height;
 			} else {
+				palette = NULL; //Won't be accessed.
 				w = b2->width;
 				h = b2->height;
 			}
@@ -320,6 +321,7 @@ namespace
 		if(oper == "Clear") return PD_CLEAR;
 		if(oper == "Xor") return PD_XOR;
 		(stringfmt() << "Bad Porter-Duff operator '" << oper << "'").throwex();
+		return PD_SRC; //NOTREACHED
 	}
 
 	template<porterduff_oper oper, class _src, class _dest> struct srcdest_porterduff
@@ -512,7 +514,6 @@ namespace
 
 	int bitmap_load_fn(lua::state& L, std::function<lua_loaded_bitmap()> src)
 	{
-		uint32_t w, h;
 		auto bitmap = src();
 		if(bitmap.d) {
 			lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, bitmap.w, bitmap.h);
@@ -665,7 +666,6 @@ namespace
 				cg = parse_value<uint8_t>(r[2]);
 				cb = parse_value<uint8_t>(r[3]);
 				ca = 256 - parse_value<uint16_t>(r[4]);
-				int64_t clr;
 				if(ca == 256)
 					p->colors.push_back(framebuffer::color(-1));
 				else
@@ -999,7 +999,7 @@ int lua_bitmap::save_png(lua::state& L, lua::parameters& P)
 	bool was_filename;
 
 	P(P.skipped());
-	if(was_filename = P.is_string()) P(name);
+	if((was_filename = P.is_string())) P(name);
 	if(P.is_string()) P(name2);
 	P(p);
 
@@ -1163,7 +1163,7 @@ template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, lua:
 			xblit_pduff<scaled>(dest, src, dx, dy, sx, sy, w, h, hscl, vscl, pd_oper);
 		else
 			xblit_dir<scaled>(dest, src, ckx, dx, dy, sx, sy, w, h, hscl, vscl);
-	} else {
+	} else if(src_p) {
 		operand_bitmap_pal src(*P.arg<lua_bitmap*>(sidx), *P.arg<lua_palette*>(spal));
 		if(porterduff)
 			xblit_pduff<scaled>(dest, src, dx, dy, sx, sy, w, h, hscl, vscl, pd_oper);
@@ -1176,11 +1176,10 @@ template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, lua:
 int lua_dbitmap::save_png(lua::state& L, lua::parameters& P)
 {
 	std::string name, name2;
-	lua_palette* p;
 	bool was_filename;
 
 	P(P.skipped());
-	if(was_filename = P.is_string()) P(name);
+	if((was_filename = P.is_string())) P(name);
 	if(P.is_string()) P(name2);
 
 	auto buf = this->save_png();

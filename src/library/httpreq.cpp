@@ -349,7 +349,6 @@ void property_upload_request::len_helper(size_t len, char*& target, size_t& maxr
 size_t property_upload_request::read(char* target, size_t maxread)
 {
 	size_t x = 0;
-	size_t y;
 	while(maxread > 0) {
 		switch(state) {
 		case 0:

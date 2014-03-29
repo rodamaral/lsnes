@@ -90,7 +90,6 @@ namespace sky
 
 		uint8_t pending_byte = 0;
 		uint8_t pending_bits = 0;
-		int pending_mode = 0;
 		size_t output = 0;
 		size_t copy_remaining = 0;
 		size_t copy_backward = 0;

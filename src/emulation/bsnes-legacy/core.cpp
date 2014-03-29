@@ -1276,6 +1276,7 @@ again2:
 				return SNES::ppu.layer_enabled[y][id % 4] ? 3 : 1;
 			}
 #endif
+			return 0; //WTF?
 		}
 		int c_reset_action(bool hard)
 		{
@@ -1831,6 +1832,7 @@ again2:
 			return 0;
 		} else
 			P.expected("table or nil");
+		return 0; //NOTREACHED.
 	}
 
 	int setstep(lua::state& L, lua::parameters& P)
@@ -1856,6 +1858,7 @@ again2:
 		P(r);
 
 		lsnes_cmd.invoke("tracelog cpu " + r);
+		return 0;
 	}
 
 	command::fnptr<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",

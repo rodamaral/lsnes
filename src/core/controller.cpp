@@ -389,7 +389,8 @@ namespace
 			return;
 		int rmin = x.bind.rmin;
 		int rmax = x.bind.rmax;
-		bool centered = x.bind.centered;
+		//FIXME: Do something with this?
+		//bool centered = x.bind.centered;
 		int64_t pvalue = value + 32768;
 		_value = pvalue * (rmax - rmin) / 65535 + rmin;
 		controls.analog(x.port, x.controller, x.bind.control1, _value);

@@ -153,7 +153,7 @@ namespace
 	{
 		controller_frame_vector& v = framevector(L, P);
 
-		lua_inputmovie* m = lua::_class<lua_inputmovie>::create(L, v);
+		lua::_class<lua_inputmovie>::create(L, v);
 		return 1;
 	}
 
@@ -167,7 +167,7 @@ namespace
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
 		controller_frame _f = v[n];
-		lua_inputframe* f = lua::_class<lua_inputframe>::create(L, _f);
+		lua::_class<lua_inputframe>::create(L, _f);
 		return 1;
 	}
 
@@ -197,7 +197,6 @@ namespace
 
 	int _get_size(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
 		controller_frame_vector& v = framevector(L, P);
 
 		L.pushnumber(v.size());
@@ -206,7 +205,6 @@ namespace
 
 	int _count_frames(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
 		controller_frame_vector& v = framevector(L, P);
 
 		L.pushnumber(v.count_frames());
@@ -226,11 +224,10 @@ namespace
 
 	int _blank_frame(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
 		controller_frame_vector& v = framevector(L, P);
 
 		controller_frame _f = v.blank_frame(true);
-		lua_inputframe* f = lua::_class<lua_inputframe>::create(L, _f);
+		lua::_class<lua_inputframe>::create(L, _f);
 		return 1;
 	}
 
@@ -308,7 +305,6 @@ namespace
 		else
 			P.expected("number or boolean");
 
-		movie& m = movb.get_movie();
 		if(&v == movb.get_mfile().input)
 			check_can_edit(port, controller, button, frame);
 		v[frame].axis3(port, controller, button, value);
@@ -337,7 +333,6 @@ namespace
 		if(dst > dstv.size() || dst + count < dst)
 			throw std::runtime_error("Destination index out of movie");
 
-		movie& m = movb.get_movie();
 		if(&dstv == movb.get_mfile().input)
 			check_can_edit(0, 0, 0, dst, true);
 
@@ -370,7 +365,6 @@ namespace
 		if(!file)
 			throw std::runtime_error("Can't open file to write output to");
 		if(binary) {
-			uint64_t pages = v.get_page_count();
 			uint64_t stride = v.get_stride();
 			uint64_t pageframes = v.get_frames_per_page();
 			uint64_t vsize = v.size();

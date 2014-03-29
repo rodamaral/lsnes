@@ -30,7 +30,7 @@ base* base::create_compressor(const std::string& name,
 {
 	if(!compressors().count(name))
 		throw std::runtime_error("No such compressor");
-	compressors()[name](args);
+	return compressors()[name](args);
 }
 
 void base::do_register(const std::string& name,

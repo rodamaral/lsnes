@@ -691,6 +691,7 @@ template<typename T> T generic_ctl(encoder& e, int32_t ctl)
 template<typename T> T generic_ctl(encoder& e, int32_t ctl, T val)
 {
 	throwex(opus_encoder_ctl(E(e), ctl, val));
+	return val;
 }
 
 template<typename T> T generic_ctl(decoder& d, int32_t ctl)
@@ -703,16 +704,19 @@ template<typename T> T generic_ctl(decoder& d, int32_t ctl)
 template<typename T> T generic_ctl(decoder& d, int32_t ctl, T val)
 {
 	throwex(opus_decoder_ctl(D(d), ctl, val));
+	return val;
 }
 
 template<typename T> T generic_ctl(multistream_encoder& e, int32_t ctl, T val)
 {
 	throwex(opus_multistream_encoder_ctl(ME(e), ctl, val));
+	return val;
 }
 
 template<typename T> T generic_ctl(surround_encoder& e, int32_t ctl, T val)
 {
 	throwex(opus_multistream_encoder_ctl(ME(e), ctl, val));
+	return val;
 }
 
 template<typename T> T generic_ctl(multistream_encoder& e, int32_t ctl)
@@ -733,6 +737,7 @@ template<typename T> T generic_ctl(surround_encoder& e, int32_t ctl)
 template<typename T> T generic_ctl(multistream_decoder& d, int32_t ctl, T val)
 {
 	throwex(opus_multistream_decoder_ctl(MD(d), ctl, val));
+	return val;
 }
 
 template<typename T> T generic_ctl(multistream_decoder& d, int32_t ctl)
@@ -1588,7 +1593,7 @@ void multistream_decoder::init_structures(unsigned _channels, unsigned _streams,
 	streams = _streams;
 	coupled = _coupled;
 	opussize = opus_multistream_decoder_get_size(streams, coupled);
-	for(int32_t i = 0; i < (size_t)streams; i++) {
+	for(uint32_t i = 0; i < (size_t)streams; i++) {
 		OpusDecoder* d;
 		opus_multistream_decoder_ctl(MD(*this), OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST, (int)i, &d);
 		new(substream(i)) decoder(d, i < coupled);
@@ -1683,5 +1688,6 @@ uint8_t packet_tick_count(const uint8_t* packet, size_t packetsize)
 	case 2:		return x << 1;
 	case 3:		return (z <= 48) ? z : 0;
 	};
+	return 0; //NOTREACHED.
 }
 }

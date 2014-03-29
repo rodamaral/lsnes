@@ -42,7 +42,7 @@ namespace
 		}
 		hashing_in_progress = true;
 		hashing_left = left;
-		uint64_t this_update = get_utime();
+		int64_t this_update = get_utime();
 		if(this_update < last_update - 1000000 || this_update > last_update + 1000000) {
 			std::cout << ((hashing_left + 524288) >> 20) << "..." << std::flush;
 			last_update = this_update;

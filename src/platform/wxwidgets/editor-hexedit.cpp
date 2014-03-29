@@ -549,7 +549,7 @@ public:
 				size = j->size;
 			}
 		}
-		if(ent.sel >= size || ent.scroll >= (size + 15) / 16)
+		if(ent.sel >= size || ent.scroll >= (ssize_t)((size + 15) / 16))
 			goto invalid_bookmark;
 		current_vma = r;
 		regionmenu->FindItem(wxID_REGIONS_FIRST + current_vma)->Check();
@@ -674,7 +674,7 @@ invalid_bookmark:
 		std::string vma = "(none)";
 		if(it) vma = tostdstring(it->GetItemLabelText());
 		unsigned addrlen = 1;
-		while(hpanel->vmasize > (1 << (4 * addrlen)))
+		while(hpanel->vmasize > (1ULL << (4 * addrlen)))
 			addrlen++;
 		std::string addr = (stringfmt() << std::hex << std::setw(addrlen) << std::setfill('0') <<
 			hpanel->seloff).str();
@@ -788,7 +788,7 @@ invalid_bookmark:
 			runemufn([_vmabase, _vmasize, paint_offset, _seloff, _value, _lines, this]() {
 				memory_search* memsearch = wxwindow_memorysearch_active();
 				//Paint the stuff
-				for(size_t j = 0; j < _lines; j++) {
+				for(ssize_t j = 0; j < _lines; j++) {
 					uint64_t addr = paint_offset + j * 16;
 					if(addr >= _vmasize) {
 						//Past-the-end.
@@ -811,7 +811,7 @@ invalid_bookmark:
 						uint32_t fg = 0;
 						uint32_t bg = 0xFFFFFF;
 						bool candidate = (memsearch && memsearch->is_candidate(laddr + i));
-						if(candidate) bg = bg & 0xC0C0C0 | 0x3F0000;
+						if(candidate) bg = (bg & 0xC0C0C0) | 0x3F0000;
 						if(addr + i == _seloff)
 							std::swap(fg, bg);
 						uint8_t b = lsnes_memory.read<uint8_t>(laddr + i);
@@ -923,4 +923,5 @@ bool wxeditor_hexeditor_jumpto(uint64_t addr)
 {
 	if(editor)
 		editor->jumpto(addr);
+	return editor;
 }

@@ -166,7 +166,6 @@ namespace sky
 	size_t port_serialize(const port_type* _this, const unsigned char* buffer, char* textbuf)
 	{
 		size_t ptr = 0;
-		short tmp;
 		textbuf[ptr++] = (buffer[0] & 1) ? 'F' : '.';
 		textbuf[ptr++] = '|';
 		textbuf[ptr++] = (buffer[0] & 2) ? 'L' : '.';
@@ -183,7 +182,6 @@ namespace sky
 	{
 		memset(buffer, 0, 2);
 		size_t ptr = 0;
-		short tmp;
 		if(read_button_value(textbuf, ptr)) buffer[0] |= 1;
 		skip_rest_of_field(textbuf, ptr, true);
 		if(read_button_value(textbuf, ptr)) buffer[0] |= 2;
@@ -194,6 +192,7 @@ namespace sky
 		if(read_button_value(textbuf, ptr)) buffer[0] |= 64;
 		if(read_button_value(textbuf, ptr)) buffer[0] |= 128;
 		skip_rest_of_field(textbuf, ptr, false);
+		return ptr;
 	};
 
 	struct _psystem : public port_type

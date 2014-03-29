@@ -383,13 +383,11 @@ namespace sky
 
 	void draw_quad_z_pipefront(struct instance& inst, double z, int x, uint32_t color)
 	{
-		struct pipe_cache& p = inst.pipecache[x + 3];
 		auto p5 = point_project_b(x - 0.5, 0, z);
 		auto p6 = point_project_b(x, 1, z);
 		auto p7 = point_project_b(x + 0.5, 0, z);
 		double ymind = p6.y;
 		double ymaxd = p5.y;
-		int16_t ymin = floor(ymind);
 		int16_t ymax = ceil(ymaxd);
 		if(ymaxd - ymind < 0.1)
 			return;
@@ -503,7 +501,7 @@ namespace sky
 			p.colors[x] = mix_color(c, c2);
 		}
 		for(unsigned i = 0; i < 256; i++) {
-			if(p.colors[i] == 0xFFFFFFFF)
+			if(p.colors[i] == 0xFFFFFFFF) {
 				if(i == 0) {
 					for(unsigned j = 0; j < 255; j++)
 						if(p.colors[j] != 0xFFFFFFFF) {
@@ -512,6 +510,7 @@ namespace sky
 						}
 				} else
 					p.colors[i] = p.colors[i - 1];
+			}
 		}
 		//for(unsigned i = 0; i < 256; i++)
 		//	p.colors[i] = 0xFF8000 + i;
@@ -547,9 +546,7 @@ namespace sky
 			return;
 		if(p4.y - p2.y < 0.1)
 			return;
-		double ymind = p6.y;
 		double ymaxd = p5.y;
-		int16_t ymin = floor(ymind);
 		int16_t ymax = ceil(ymaxd);
 		double sl1 = (p3.x - p1.x) / (p3.y - p1.y);
 		double sl2 = (p4.x - p2.x) / (p4.y - p2.y);
@@ -588,7 +585,8 @@ namespace sky
 				}
 			else
 				for(signed i = dstart; i < dend; i++) {
-					framebuffer_blend2(inst.framebuffer[base + i], fcolor | p.colors[color >> 16]);
+					framebuffer_blend2(inst.framebuffer[base + i], fcolor |
+						p.colors[color >> 16]);
 					color += cstep;
 				}
 		}
@@ -655,7 +653,7 @@ namespace sky
 					if(x > 0)
 						dend = min((int16_t)dend, cend);
 				} else {
-					uint16_t dist;
+					uint16_t dist = 0;
 					if(x < 0)
 						dist = cstart - dstart;
 					if(x > 0)

@@ -70,7 +70,6 @@ namespace
 void push_keygroup_parameters(lua::state& L, keyboard::key& p)
 {
 	keyboard::mouse_calibration p2;
-	keyboard::axis_calibration p3;
 	int mode;
 	L.newtable();
 	switch(p.get_type()) {

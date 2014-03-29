@@ -430,6 +430,7 @@ bool wxeditor_macro::do_edit(const std::string& mname, controller_macro& m)
 		if(ret)
 			m = editor->get_macro();
 	} catch(...) {
+		return false;
 	}
 	editor->Destroy();
 	return ret;
@@ -443,6 +444,7 @@ void wxeditor_macro_display(wxWindow* parent)
 		editor = new wxeditor_macro(parent);
 		editor->ShowModal();
 	} catch(...) {
+		return;
 	}
 	editor->Destroy();
 }

@@ -15,7 +15,7 @@ namespace sky
 		image(const std::vector<char>& data);
 		uint16_t width;
 		uint16_t height;
-		uint8_t colors;
+		unsigned colors;
 		uint16_t unknown1;
 		std::vector<uint8_t> decode;
 		uint32_t operator[](size_t ptr) { return palette[decode[ptr]]; }

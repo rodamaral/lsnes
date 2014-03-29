@@ -165,7 +165,6 @@ void wxeditor_multitrack::update_controls()
 		controller_frame model = controls.get_blank();
 		const port_type_set& pts = model.porttypes();
 		typeset = &pts;
-		unsigned pcnt = pts.ports();
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
 			auto pcid = controls.lcid_to_pcid(i);
@@ -173,7 +172,7 @@ void wxeditor_multitrack::update_controls()
 				break;
 			const port_type& pt = pts.port_type(pcid.first);
 			const port_controller_set& pci = *(pt.controller_info);
-			if(pci.controllers.size() <= pcid.second)
+			if((ssize_t)pci.controllers.size() <= pcid.second)
 				continue;
 			const port_controller& pc = pci.controllers[pcid.second];
 			//First check that this has non-hidden stuff.

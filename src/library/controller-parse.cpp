@@ -129,6 +129,7 @@ namespace
 			return pcb_axis(root, ptr, type);
 		else
 			(stringfmt() << "Unknown type '" << type << "' for '" << ptr << "'").throwex();
+		return pcb_null(root, ptr); //NOTREACHED.
 	}
 
 	struct port_controller pcs_parse_controller(const JSON::node& root, JSON::pointer ptr)
@@ -362,12 +363,9 @@ struct port_controller_set* pcs_from_json(const JSON::node& root, const std::str
 
 std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tmp_idx)
 {
-	size_t buttonidx = 0;
-	size_t axisidx = 0;
 	std::ostringstream s;
 	write_portdata(s, pset, tmp_idx);
 	unsigned pidx = tmp_idx - 1;
-	size_t aoffset = get_aoffset(pset);
 	auto repr = get_ser_instructions(pset);
 	auto idxr = get_idx_instructions(pset);
 	s << "struct _" << pset.symbol << " : public port_type\n";
@@ -415,8 +413,6 @@ std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tm
 	s << "\t\t};\n";
 	s << "\t\tread = [](const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl) -> "
 		<< "short {\n";
-	buttonidx = 0;
-	axisidx = 0;
 	s << "\t\t\tswitch(idx) {\n";
 	last_controller = -1;
 	for(auto i : idxr) {
@@ -448,6 +444,7 @@ std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tm
 	}
 	s << "\t\t\treturn 0;\n";
 	s << "\t\t\t}\n";
+	s << "\t\t\treturn 0;\n";
 	s << "\t\t};\n";
 	s << "\t\tserialize = [](const port_type* _this, const unsigned char* buffer, char* textbuf) -> size_t {\n";
 	s << "\t\t\tsize_t ptr = 0;\n";
@@ -587,6 +584,7 @@ short port_type_generic::_read(const port_type* _this, const unsigned char* buff
 	case 2:
 		return (short)((unsigned short)buffer[ii.offset] + ((unsigned short)buffer[ii.offset+1] << 8));
 	}
+	return 0; //NOTREACHED
 }
 
 size_t port_type_generic::_serialize(const port_type* _this, const unsigned char* buffer, char* textbuf)
@@ -688,7 +686,6 @@ port_type_generic::port_type_generic(const JSON::node& root, const std::string& 
 		indexbase[ii++] = ibase;
 		ibase += i.buttons.size();
 	}
-	size_t aoffset = get_aoffset(*controller_info);
 	serialize_instructions = get_ser_instructions(*controller_info);
 	indexinfo = get_idx_instructions(*controller_info);
 	_serialize(this, NULL, NULL);

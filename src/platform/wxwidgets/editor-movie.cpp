@@ -595,6 +595,7 @@ namespace
 			int32_t cc2 = (dim - 1 - cc);
 			return (val * (int64_t)cc2 + (rmax / 2)) / rmax + cc;
 		}
+		return 0; //NOTREACHED.
 	}
 
 	int32_t coordinate_to_value(int32_t rmin, int32_t rmax, int32_t val, int32_t dim)
@@ -616,6 +617,7 @@ namespace
 			uint32_t cc2 = (dim - 1 - cc);
 			return ((rmax - center) * (int64_t)(val - cc) + cc2 / 2) / cc2 + center;
 		}
+		return 0; //NOTREACHED.
 	}
 
 	std::string windowname(control_info X, control_info Y)
@@ -1490,7 +1492,7 @@ void wxeditor_movie::_moviepanel::do_scroll_to_frame()
 		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
 		return;
 	}
-	uint64_t wouldbe;
+	uint64_t wouldbe = 0;
 	uint64_t low = 0;
 	uint64_t high = max_subframe;
 	while(low < high) {
@@ -1913,7 +1915,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		enable_cut_frame = (!not_editable && press_line >= econtroller_low && press_line < linecount
 			&& rpress_line >= econtroller_low && rpress_line < linecount && !click_zero);
 	else
-		enable_cut_frame = (!not_editable && press_line >= eframe_low & press_line < linecount
+		enable_cut_frame = (!not_editable && press_line >= eframe_low && press_line < linecount
 			&& rpress_line >= eframe_low && rpress_line < linecount);
 	if(clicked_button && clipboard_get_data_type() == 0) {
 		enable_paste_append = (!not_editable && linecount >= eframe_low);
@@ -1921,7 +1923,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 			&& rpress_line >= econtroller_low && rpress_line < linecount && !click_zero);
 	} else if(clipboard_get_data_type() == 1) {
 		enable_paste_append = (!not_editable && linecount >= econtroller_low);
-		enable_paste_frame = (!not_editable && press_line >= eframe_low & press_line < linecount
+		enable_paste_frame = (!not_editable && press_line >= eframe_low && press_line < linecount
 			&& rpress_line >= eframe_low && rpress_line < linecount);
 	}
 	//Copy frames is enabled if range exists.

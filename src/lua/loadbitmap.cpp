@@ -68,6 +68,7 @@ struct lua_loaded_bitmap lua_loaded_bitmap::load(std::istream& file)
 	}
 	if(!file)
 		throw std::runtime_error("Bitmap load: Error reading bitmap");
+	return b;
 }
 
 struct lua_loaded_bitmap lua_loaded_bitmap::load(const std::string& name)

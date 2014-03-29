@@ -354,7 +354,7 @@ namespace
 		if(mov_core == rom_core)
 			return;
 		std::ostringstream x;
-		x << loadstate ? "Error: " : "Warning: ";
+		x << (loadstate ? "Error: " : "Warning: ");
 		x << "Emulator core version mismatch!" << std::endl
 			<< "\tCrurrent: " << rom_core << std::endl
 			<< "\tMovie:    " << mov_core << std::endl;
@@ -769,11 +769,11 @@ void try_request_rom(const std::string& moviefile)
 	rom_request req;
 	req.selected = 0;
 	size_t idx = 0;
-	bool has_bios = false;
 	req.core_guessed = false;
 	for(auto i : sysregs) {
-		if(i->get_type().get_biosname() != "" && info.hash[1] != "")
-			has_bios = true;
+		//FIXME: Do something with this?
+		//if(i->get_type().get_biosname() != "" && info.hash[1] != "")
+		//	has_bios = true;
 		req.cores.push_back(&i->get_type());
 		if(i->get_type().get_core_identifier() == info.corename) {
 			req.selected = idx;

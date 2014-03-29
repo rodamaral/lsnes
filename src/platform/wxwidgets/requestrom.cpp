@@ -269,7 +269,7 @@ namespace
 			}
 			//TODO: Handle files inside ZIP files.
 			hashfutures[i] = lsnes_image_hasher(filename, fileimage::std_headersize_fn(header));
-			if(hash_ready[i] = hashfutures[i].ready())
+			if((hash_ready[i] = hashfutures[i].ready()))
 				try {
 					hashes[i]->SetLabel(towxstring("Hash: " + hashfutures[i].read()));
 				} catch(std::runtime_error& e) {

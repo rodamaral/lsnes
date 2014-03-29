@@ -95,9 +95,8 @@ void moviefile::binary_io(std::ostream& _stream, rrdata_set& rrd) throw(std::bad
 	}
 
 	out.extension(TAG_RRDATA, [this, &rrd](binarystream::output& s) {
-		uint64_t count;
 		std::vector<char> _rrd;
-		count = rrd.write(_rrd);
+		rrd.write(_rrd);
 		s.blob_implicit(_rrd);
 	});
 

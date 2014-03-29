@@ -46,6 +46,7 @@ namespace sky
 		for(auto i : candidates)
 			if(!(r--))
 				return i;
+		return 0;
 	}
 
 	void fill_msc_downmix_family0(struct multistream_characteristics& c, unsigned chan)
@@ -266,7 +267,7 @@ namespace sky
 				parse_ogg_page(p, psids[psid]);
 			} else
 				for(auto& i : psids)
-					if(parse_ogg_page(p, i.second) && p.get_eos())
+					if(parse_ogg_page(p, i.second) && p.get_eos()) {
 						if(i.second.pts <= i.second.pregap) {
 							//Invalid or blank stream.
 							messages << "Warning: " << p.stream_debug_id() << " has "
@@ -277,6 +278,7 @@ namespace sky
 							break;
 						} else
 							i.second.eos_seen = true;
+					}
 		for(auto& i : psids)
 			if(!i.second.eos_seen)
 				messages << "Warning: No EOS on stream " << hex::to(i.second.oggid, true)
@@ -443,7 +445,7 @@ namespace sky
 			}
 		}
 		//Make sure substream 0 exits.
-		auto dummy = register_lsid((stringfmt() << "PSID" << ctx.psid).str(), ctx.psid);
+		register_lsid((stringfmt() << "PSID" << ctx.psid).str(), ctx.psid);
 	}
 
 	void song_buffer::parse_ogg_data(ogg::packet& p, subsong_context& ctx, const ogg::page& debug)

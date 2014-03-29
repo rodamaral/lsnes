@@ -529,7 +529,6 @@ out:
 	void opus_stream::import_stream_sox(std::ifstream& data)
 	{
 		bitrate_tracker brtrack;
-		int err;
 		unsigned char tmpi[65536];
 		float tmp[OPUS_MAX_OUT];
 		char header[260];
@@ -676,7 +675,6 @@ out:
 
 	void opus_stream::export_stream_sox(std::ofstream& data)
 	{
-		int err;
 		opus::decoder dec(opus::samplerate::r48k, false);
 		std::vector<unsigned char> p;
 		float tmp[OPUS_MAX_OUT];
@@ -697,7 +695,7 @@ out:
 				uint32_t postgap_throw = 0;
 				std::vector<unsigned char> p = packet(i);
 				uint32_t len = packet_length(i);
-				size_t r = dec.decode(&p[0], p.size(), tmp, OPUS_MAX_OUT);
+				dec.decode(&p[0], p.size(), tmp, OPUS_MAX_OUT);
 				bool is_last = (i == packets.size() - 1);
 				if(lookahead_thrown < pregap_length) {
 					//We haven't yet thrown the full pregap. Throw some.
@@ -816,7 +814,6 @@ out:
 	opus_playback_stream::opus_playback_stream(opus_stream& data)
 		: stream(data)
 	{
-		int err;
 		stream.get_ref();
 		stream.lock();
 		next_block = 0;
@@ -1341,6 +1338,7 @@ out:
 				s = new opus_playback_stream(*i);
 			} catch(std::exception& e) {
 				messages << "Can't start stream: " << e.what() << std::endl;
+				return;
 			}
 			i->put_ref();
 			if(!s)
@@ -1579,7 +1577,6 @@ out:
 			if(quit)
 				return;
 
-			int err;
 			opus::encoder oenc(opus::samplerate::r48k, false, opus::application::voice);
 			oenc.ctl(opus::bitrate(opus_bitrate.get()));
 			audioapi_resampler rin;

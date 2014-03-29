@@ -38,7 +38,6 @@ namespace
 	{
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
-		wxString empty[1];
 
 		top_s->Add(controls = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
 			wxTR_HIDE_ROOT | wxTR_LINES_AT_ROOT), 1, wxGROW);

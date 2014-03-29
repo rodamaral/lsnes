@@ -38,7 +38,7 @@ namespace
 				if(bad)
 					throw std::runtime_error("String does not satisfy constraints.");
 			} else if(r = regex("int:([0-9]+),([0-9]+)", i.model)) {
-				int64_t low, high, v;
+				int64_t low, high;
 				try {
 					low = parse_value<int64_t>(r[1]);
 					high = parse_value<int64_t>(r[2]);

@@ -169,7 +169,7 @@ int lua_inverse_bind::create(lua::state& L, lua::parameters& P)
 
 	P(name, command);
 
-	lua_inverse_bind* b = lua::_class<lua_inverse_bind>::create(L, name, command);
+	lua::_class<lua_inverse_bind>::create(L, name, command);
 	return 1;
 }
 
@@ -183,6 +183,6 @@ int lua_command_bind::create(lua::state& L, lua::parameters& P)
 		lfn2 = P.skip();
 	else
 		P.expected("function or nil");
-	lua_command_bind* b = lua::_class<lua_command_bind>::create(L.get_master(), name, lfn1, lfn2);
+	lua::_class<lua_command_bind>::create(L.get_master(), name, lfn1, lfn2);
 	return 1;
 }

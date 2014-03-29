@@ -732,7 +732,7 @@ void wxwindow_memorysearch::panel::prepare_paint()
 		}
 		if(addr_count <= CANDIDATE_LIMIT) {
 			std::list<uint64_t> addrs2 = ms->get_candidates();
-			long j = 0;
+			unsigned long j = 0;
 			for(auto i : addrs2) {
 				std::string row = hex::to(i) + " ";
 				row += (_parent->*displays[_parent->typecode])(i, _parent->hexmode, false);
@@ -802,7 +802,6 @@ void wxwindow_memorysearch::dump_candidates_text()
 		auto ms = msearch;
 		runemufn([ms, this, &out]() {
 			std::list<uint64_t> addrs2 = ms->get_candidates();
-			long j = 0;
 			for(auto i : addrs2) {
 				std::string row = hex::to(i) + " ";
 				row += (this->*displays[this->typecode])(i, this->hexmode, false);
@@ -1011,7 +1010,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			start = act_line;
 			end = act_line + 1;
 		}
-		for(long r = start; r < end; r++) {
+		for(uint64_t r = start; r < end; r++) {
 			if(!addresses.count(r))
 				continue;
 			uint64_t addr = addresses[r];
@@ -1048,7 +1047,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			end = act_line + 1;
 		}
 		push_undo();
-		for(long r = start; r < end; r++) {
+		for(uint64_t r = start; r < end; r++) {
 			if(!addresses.count(r))
 				return;
 			uint64_t addr = addresses[r];
@@ -1078,7 +1077,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			start = act_line;
 			end = act_line + 1;
 		}
-		for(long r = start; r < end; r++) {
+		for(uint64_t r = start; r < end; r++) {
 			if(!addresses.count(r))
 				continue;
 			uint64_t addr = addresses[r];
@@ -1095,13 +1094,14 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			start = act_line;
 			end = act_line + 1;
 		}
-		for(long r = start; r < end; r++) {
+		for(uint64_t r = start; r < end; r++) {
 			if(!addresses.count(r))
 				continue;
 			wxeditor_hexeditor_jumpto(addresses[r]);
 			return;
 		}
-	} else if(id >= wxID_BUTTONS_BASE && id < wxID_BUTTONS_BASE + (sizeof(searchtbl)/sizeof(searchtbl[0]))) {
+	} else if(id >= wxID_BUTTONS_BASE && id < wxID_BUTTONS_BASE +
+			(ssize_t)(sizeof(searchtbl)/sizeof(searchtbl[0]))) {
 		int button = id - wxID_BUTTONS_BASE;
 		push_undo();
 		uint64_t old_count = msearch->get_candidate_count();

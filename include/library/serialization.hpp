@@ -194,7 +194,6 @@ template<typename T> T read_endian(const void* value, int endian)
 
 template<typename T> void write_endian(void* value, const T& val, int endian)
 {
-	T val2;
 	memcpy(value, &val, sizeof(T));
 	swap_endian(*reinterpret_cast<T*>(value), endian);
 }

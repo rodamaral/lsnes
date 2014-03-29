@@ -309,7 +309,6 @@ namespace
 		std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t width, uint32_t height)
 		{
 			lsnes_core_compute_scale s;
-			bool r = -1;
 			uint32_t hscale, vscale;
 			if(width >= 360) hscale = 1;
 			else hscale = 360 / width + 1;
@@ -410,7 +409,6 @@ namespace
 		void c_serialize(std::vector<char>& out)
 		{
 			lsnes_core_savestate s;
-			const char* err;
 			entrypoint(id, s, [](const char* name, const char* err) {
 				throw std::runtime_error("Savestate failed: " + std::string(err));
 			});
@@ -753,7 +751,6 @@ failed:
 			std::map<std::string, std::string>& settings)
 		{
 			size_t asize = 0;
-			lsnes_core_get_controllerconfig r;
 			for(auto i : settings)
 				asize += i.first.length() + i.second.length() + 2;
 			tmpmem.resize(asize);

@@ -182,11 +182,12 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 			romid = std::string("ROM ") + j;
 		}
 		regex_results r = get_argument(cmdline, optregex);
-		if(i >= ctype->get_image_count())
+		if(i >= ctype->get_image_count()) {
 			if(r)
 				throw std::runtime_error("This ROM type has no " + romid);
 			else
 				continue;
+		}
 		if(info.hash[i] == "" && have_movie && r)
 			throw std::runtime_error("This movie has no " + romid);
 

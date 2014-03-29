@@ -12,6 +12,7 @@ framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string&
 	else
 		(stringfmt() << "Expected argument #" << index << " to " << fname
 			<< " be string or number").throwex();
+	return 0; //NOTREACHED
 }
 
 framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string& fname, int64_t dflt)
@@ -26,4 +27,5 @@ framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string&
 	else
 		(stringfmt() << "Expected argument #" << index << " to " << fname
 			<< " be string, number or nil").throwex();
+	return 0; //NOTREACHED
 }

@@ -279,7 +279,7 @@ namespace
 			case 'b':	endian->SetSelection(3); break;
 			}
 		} else {
-			int j = 0;
+			unsigned j = 0;
 			//Set default disasm.
 			for(auto& i : disasms) {
 				if(i == dflt_lang)
@@ -312,7 +312,7 @@ namespace
 
 	std::string dialog_disassemble::get_disassembler()
 	{
-		if(type->GetSelection() >= code_types && type->GetSelection() < type->GetCount()) {
+		if(type->GetSelection() >= (ssize_t)code_types && type->GetSelection() < (ssize_t)type->GetCount()) {
 			int _endian = endian->GetSelection();
 			int dtsel = type->GetSelection() - code_types;
 			std::string _vma = tostdstring(vma->GetStringSelection());
@@ -345,7 +345,6 @@ namespace
 
 	uint64_t dialog_disassemble::get_address()
 	{
-		bool found;
 		uint64_t base = 0;
 		if(vma->GetSelection() && vma->GetSelection() != wxNOT_FOUND) {
 			std::string _vma = tostdstring(vma->GetStringSelection());
@@ -379,7 +378,8 @@ namespace
 		}
 		is_ok = is_ok && (type->GetSelection() != wxNOT_FOUND);
 		is_ok = is_ok && (vma->GetSelection() != wxNOT_FOUND);
-		endian->Enable(type->GetSelection() >= code_types && type->GetSelection() < type->GetCount());
+		endian->Enable(type->GetSelection() >= (ssize_t)code_types && type->GetSelection() <
+			(ssize_t)type->GetCount());
 		is_ok = is_ok && (!endian->IsEnabled() || endian->GetSelection() != wxNOT_FOUND);
 		//If VMA is global, ensure there is valid endian.
 		is_ok = is_ok && (vma->GetSelection() != 0 || !endian->IsEnabled() || endian->GetSelection() != 0);
@@ -1272,7 +1272,7 @@ back:
 				std::string to = pick_text(this, "Goto", "Enter address to go to:", "");
 				runemufn_async([this, to]() {
 					uint64_t addr;
-					uint64_t base;
+					uint64_t base = 0;
 					std::string vma;
 					std::string offset;
 					std::string _to = to;
@@ -1312,7 +1312,7 @@ back:
 					}
 					addr += base;
 					runuifun([this, addr]() {
-						uint64_t nrow;
+						uint64_t nrow = 0;
 						uint64_t low = 0;
 						uint64_t high = this->panel->rows.size();
 						while(low < high && low < high - 1) {
@@ -1337,7 +1337,7 @@ back:
 		//Binary search for the element to remove.
 		size_t low = 0;
 		size_t high = v.size();
-		size_t mid;
+		size_t mid = 0;
 		while(low < high) {
 			mid = (low + high) / 2;
 			if(v[mid] < e)
@@ -1471,7 +1471,7 @@ back:
 		//Binary search for the gap to insert to.
 		size_t low = 0;
 		size_t high = v.size();
-		size_t mid;
+		size_t mid = 0;
 		while(low < high) {
 			mid = (low + high) / 2;
 			int s1 = sign_compare(v[mid], e);

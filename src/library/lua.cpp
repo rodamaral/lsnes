@@ -81,11 +81,13 @@ namespace
 			lua_pushstring(L, err.c_str());
 			lua_error(L);
 		}
+		return 0; //NOTREACHED
 	}
 	int class_info::newindex(lua_State* L)
 	{
 		lua_pushstring(L, "Writing into class table not allowed");
 		lua_error(L);
+		return 0; //NOTREACHED
 	}
 
 	int class_info::pairs(lua_State* _xL)
@@ -94,7 +96,6 @@ namespace
 
 		lua::state* _L = (lua::state*)lua_touserdata(_xL, lua_upvalueindex(1));
 		state L(*_L, _xL);
-		class_base* obj = ((class_info*)L.touserdata(1))->obj;
 
 		L.pushvalue(lua_upvalueindex(1));
 		L.pushcclosure(class_info::pairs_next, 1);	//Next

@@ -169,5 +169,6 @@ uint32_t ogg_tags::serialize(std::function<void(const ogg::page& p)> output,
 			break;
 		written = ptr - &contents[0];
 	}
+	return next_page;
 }
 }

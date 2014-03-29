@@ -212,7 +212,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			newauthors.push_back(split_author(l));
 	}
 	if(luascripts)
-		for(int i = 0; i < luascripts->GetCount(); i++)
+		for(unsigned i = 0; i < luascripts->GetCount(); i++)
 			luascriptlist.push_back(tostdstring(luascripts->GetString(i)));
 	bool run_new = autorunlua ? autorunlua->GetValue() : false;
 
@@ -334,6 +334,7 @@ void wxeditor_authors_display(wxWindow* parent)
 		editor = new wxeditor_authors(parent);
 		editor->ShowModal();
 	} catch(...) {
+		return;
 	}
 	editor->Destroy();
 }

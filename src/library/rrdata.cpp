@@ -21,7 +21,7 @@ rrdata_set::instance::instance(const std::string& id) throw()
 {
 	memset(bytes, 0, RRDATA_BYTES);
 	for(unsigned i = 0; i < id.length() && i < 2 * RRDATA_BYTES; i++) {
-		unsigned h;
+		unsigned h = 0;
 		char ch = id[i];
 		if(ch >= '0' && ch <= '9')
 			h = ch - '0';
@@ -233,7 +233,6 @@ uint64_t rrdata_set::emerg_action(struct rrdata_set::esave_state& state, char* b
 {
 	uint64_t rsize = 0;
 	size_t lbytes;
-	unsigned encode_count = 0;
 	state.init(data);
 	while(!state.finished() || state.segptr != state.segend) {
 		if(state.segptr == state.segend) {
@@ -358,6 +357,7 @@ uint64_t rrdata_set::count() throw()
 std::ostream& operator<<(std::ostream& os, const struct rrdata_set::instance& j)
 {
 	os << hex::b_to(j.bytes, 32, true);
+	return os;
 }
 
 bool rrdata_set::_add(const instance& b)

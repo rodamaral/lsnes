@@ -197,6 +197,7 @@ namespace
 				return 1;
 			} else
 				P.expected("number or nil");
+			return 0; //NOTREACHED
 		}
 		int lines(lua::state& L, lua::parameters& P)
 		{
@@ -222,7 +223,8 @@ namespace
 		}
 		static int lines_helper2(lua_State* L)
 		{
-			reinterpret_cast<lua_file_reader*>(lua_touserdata(L, lua_upvalueindex(1)))->lines_helper(L);
+			return reinterpret_cast<lua_file_reader*>(lua_touserdata(L, lua_upvalueindex(1)))->
+				lines_helper(L);
 		}
 	private:
 		std::istream& s;

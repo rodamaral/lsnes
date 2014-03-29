@@ -86,12 +86,14 @@ public:
  */
 	lambda_output_iterator<T>& operator++() throw()
 	{
+		return *this;
 	}
 /**
  * Increment.
  */
 	lambda_output_iterator<T> operator++(int) throw()
 	{
+		return *this;
 	}
 private:
 	helper<T> h;
@@ -258,7 +260,6 @@ template<typename T> inline T parse_value(const std::string& value) throw(std::b
 			if(value[idx] == '-' || value[idx] == '+')
 				idx++;
 			bool sign = (value[0] == '-');
-			T mult = sign ? -1 : 1;
 			T bound = sign ? std::numeric_limits<T>::min() : std::numeric_limits<T>::max();
 			T val = 0;
 			if(value.length() > idx + 2 && value[idx] == '0' && value[idx + 1] == 'x') {

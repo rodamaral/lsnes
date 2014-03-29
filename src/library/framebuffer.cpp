@@ -913,7 +913,6 @@ color::color(const std::string& clr) throw(std::bad_alloc, std::runtime_error)
 
 std::string color::stringify(int64_t number)
 {
-	auto& cspecs = colornames();
 	for(auto& i : colornames()) {
 		int64_t col = -1;
 		if(i.second.second)

@@ -141,7 +141,7 @@ namespace
 	{
 	public:
 		joystick_panel(wxWindow* parent, unsigned jid, gamepad::pad& gp)
-			: text_framebuffer_panel(parent, 60, 32, -1, NULL), _gp(gp), _jid(jid)
+			: text_framebuffer_panel(parent, 60, 32, -1, NULL), _jid(jid), _gp(gp)
 		{
 			const unsigned pwidth = 80;
 			const unsigned b_perrow = 8;

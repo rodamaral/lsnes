@@ -35,15 +35,14 @@ std::list<settings_tab_factory*> settings_tab_factory::factories()
 settings_menu::settings_menu(wxWindow* win, int id)
 {
 	parent = win;
-	wxMenuItem* n;
 	items[id] = NULL;
-	n = Append(id, towxstring("All as tabs..."));
+	Append(id, towxstring("All as tabs..."));
 	win->Connect(id++, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(settings_menu::on_selected), NULL,
 		this);
 	AppendSeparator();
 	for(auto i : settings_tab_factory::factories()) {
 		items[id] = i;
-		n = Append(id, towxstring(i->get_name() + "..."));
+		Append(id, towxstring(i->get_name() + "..."));
 		win->Connect(id++, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(settings_menu::on_selected),
 			NULL, this);
 	}
@@ -210,6 +209,7 @@ void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
 		}
 		editor->ShowModal();
 	} catch(...) {
+		return;
 	}
 	dlg = NULL;
 	editor->Destroy();

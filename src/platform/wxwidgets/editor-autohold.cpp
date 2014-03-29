@@ -174,7 +174,6 @@ void wxeditor_autohold::update_controls()
 		std::map<std::string, unsigned> next_in_class;
 		controller_frame model = controls.get_blank();
 		const port_type_set& pts = model.porttypes();
-		unsigned pcnt = pts.ports();
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
 			auto pcid = controls.lcid_to_pcid(i);
@@ -182,7 +181,7 @@ void wxeditor_autohold::update_controls()
 				break;
 			const port_type& pt = pts.port_type(pcid.first);
 			const port_controller_set& pci = *(pt.controller_info);
-			if(pci.controllers.size() <= pcid.second)
+			if((ssize_t)pci.controllers.size() <= pcid.second)
 				continue;
 			const port_controller& pc = pci.controllers[pcid.second];
 			//First check that this has non-hidden buttons.
@@ -219,8 +218,8 @@ void wxeditor_autohold::update_controls()
 	});
 	int next_id = wxID_HIGHEST + 1;
 	unsigned last_logical = 0xFFFFFFFFUL;
-	wxSizer* current;
-	wxPanel* current_p;
+	wxSizer* current = NULL;
+	wxPanel* current_p = NULL;
 	wxSizer* current_t = NULL;
 	for(auto i : _autoholds) {
 		if(i.logical != last_logical) {

@@ -41,7 +41,6 @@
 
 namespace
 {
-	const char* null_chars = "F";
 	uint16_t null_cover_fbmem[512 * 448];
 
 	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> savestate_no_check(lsnes_vset,
@@ -55,8 +54,6 @@ namespace
 		512, 448, 1024,			//Logical size.
 		0, 0				//Offset.
 	};
-
-	port_index_triple sync_triple = {true, 0, 0, 0 };
 
 	struct interface_device_reg null_registers[] = {
 		{NULL, NULL, NULL}

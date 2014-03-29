@@ -44,7 +44,7 @@ namespace
 			left_unlimited = true;
 		}
 
-		file_input(std::ifstream& _stream, uint32_t size, size_t* _refcnt)
+		file_input(std::ifstream& _stream, uint64_t size, size_t* _refcnt)
 			: stream(_stream), stream_refcnt(*_refcnt)
 		{
 			stream_refcnt++;
@@ -65,7 +65,7 @@ namespace
 				throw std::runtime_error("Can't seek ZIP file");
 			if(!left_unlimited && left == 0)
 				return -1;
-			if(!left_unlimited && n > left)
+			if(!left_unlimited && n > (int64_t)left)
 				n = left;
 			stream.read(s, n);
 			std::streamsize r = stream.gcount();
@@ -99,7 +99,7 @@ namespace
 		size_t& stream_refcnt;
 		std::streamoff position;
 		bool left_unlimited;
-		uint32_t left;
+		uint64_t left;
 	private:
 		file_input& operator=(const file_input& f);
 	};
@@ -385,6 +385,7 @@ bool reader::read_linefile(const std::string& member, std::string& out, bool con
 		delete &m;
 		throw;
 	}
+	return true;
 }
 
 void reader::read_raw_file(const std::string& member, std::vector<char>& out) throw(std::bad_alloc,

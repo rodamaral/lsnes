@@ -19,7 +19,7 @@ ports.inc: ports.json ../make-ports.exe
 	../make-ports.exe <$< >$@
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep ports.inc
-	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS)
+	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS) -Werror=return-type
 
 else
 

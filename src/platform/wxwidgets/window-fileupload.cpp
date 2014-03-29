@@ -104,7 +104,6 @@ public:
 		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxwin_gameselect::on_cancel), NULL, this);
 		top_s->Add(pbutton_s, 0, wxGROW);
-			wxBoxSizer* button_s = new wxBoxSizer(wxHORIZONTAL);
 
 		auto dsplit = split_name(dflt);
 		bool wrong_default = (dflt != NO_GAME_NAME && system != "" && dsplit.first != system);
@@ -515,7 +514,7 @@ void wxeditor_uploadtargets::refresh()
 				x = i.first;
 		if(x != wxNOT_FOUND)
 			list->SetSelection(x);
-	} else if(sel < list->GetCount())
+	} else if(sel < (signed)list->GetCount())
 		list->SetSelection(sel);
 }
 

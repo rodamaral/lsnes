@@ -508,12 +508,11 @@ std::vector<std::string> key_axis::get_subkeys() throw(std::bad_alloc)
 void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 {
 	bool edge = false;
-	int32_t state, ostate;
+	int32_t state;
 	uint32_t change = 0;
 	int dold = 0, dnew = 0;
 	mlock.lock();
 	if(rawstate != _rawstate) {
-		ostate = rawstate;
 		dold = digitalstate;
 		rawstate = _rawstate;
 		state = rawstate;

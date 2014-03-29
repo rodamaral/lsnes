@@ -42,7 +42,6 @@
 namespace
 {
 	skein::prng prng;
-	uint64_t rcounter = 0;
 	bool reached_main_flag;
 	threads::lock seed_mutex;
 
@@ -78,12 +77,12 @@ namespace
 		tmp[1025] = tsc >> 32;
 		for(unsigned i = 0; i < 1024; i++)
 			tmp[i] = arch_get_random();
-		sha256::hash(buf, reinterpret_cast<uint8_t*>(buf), sizeof(buf));
+		sha256::hash(buf, reinterpret_cast<uint8_t*>(tmp), sizeof(tmp));
 	}
 
 	void do_mix_tsc()
 	{
-		const int slots = 32;
+		const unsigned slots = 32;
 		static unsigned count = 0;
 		static uint64_t last_reseed = 0;
 		static uint64_t buf[slots + 1];

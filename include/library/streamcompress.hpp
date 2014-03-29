@@ -90,7 +90,6 @@ public:
 				size_t insize = inbuf_use;
 				uint8_t* out = outbuffer + outbuf_use;
 				size_t outsize = sizeof(outbuffer) - outbuf_use;
-				size_t tmp = outbuf_use;
 				oeof_flag = compressor->process(in, insize, out, outsize, ieof_flag);
 				outbuf_use = sizeof(outbuffer) - outsize;
 				size_t in_r = inbuf_use - insize;

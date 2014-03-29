@@ -65,7 +65,6 @@ again:
 			out += std::string(1, expsep);
 			out += (stringfmt() << exponent).str();
 		} else {
-			double vint = floor(v);
 			//TODO: Print whole part.
 			double tail = v - floor(v);
 			if(fmt.precision < 0) {
@@ -79,10 +78,11 @@ again:
 				out += print_decimals(tail, base, fmt.precision, false, fmt.uppercasehex);
 			}
 		}
-		if(!exponential && out.length() > fmt.width) {
+		if(!exponential && (ssize_t)out.length() > fmt.width) {
 			exponential = true;
 			goto again;
 		}
+		return out;
 	}
 
 	std::string format_float_10(double v, mathexpr_format fmt)
@@ -134,6 +134,10 @@ std::string math_format_unsigned(uint64_t v, mathexpr_format fmt)
 		if(fmt.uppercasehex) _out << std::uppercase;
 		_out << std::hex << v;
 		break;
+	case mathexpr_format::BOOLEAN:
+	case mathexpr_format::STRING:
+	case mathexpr_format::DEFAULT:
+		;
 	}
 	std::string out = _out.str();
 	if(fmt.showsign)
@@ -172,6 +176,10 @@ std::string math_format_signed(int64_t v, mathexpr_format fmt)
 		if(fmt.uppercasehex) _out << std::uppercase;
 		_out << std::hex << std::abs(v);
 		break;
+	case mathexpr_format::BOOLEAN:
+	case mathexpr_format::STRING:
+	case mathexpr_format::DEFAULT:
+		;
 	}
 	std::string out = _out.str();
 	if(fmt.showsign && v >= 0)
@@ -210,6 +218,10 @@ std::string math_format_float(double v, mathexpr_format fmt)
 		//out = format_float_base(v, fmt, 16);
 		//break;
 		return "<#Badbase>";
+	case mathexpr_format::BOOLEAN:
+	case mathexpr_format::STRING:
+	case mathexpr_format::DEFAULT:
+		;
 	}
 	return pad(out, fmt.width, fmt.fillzeros, false);
 }
@@ -238,7 +250,7 @@ std::string math_format_string(std::string v, mathexpr_format fmt)
 		return pad((v != "") ? "true" : "false", fmt.width, false, true);
 	if(fmt.type != mathexpr_format::STRING)
 		return "<#Badformat>";
-	if(fmt.precision > 0 && v.length() > fmt.precision)
+	if(fmt.precision > 0 && (ssize_t)v.length() > fmt.precision)
 		v = v.substr(0, fmt.precision);
 	return pad(v, fmt.width, false, true);
 }

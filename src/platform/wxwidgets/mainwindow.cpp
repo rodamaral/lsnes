@@ -247,7 +247,7 @@ namespace
 		hashing_in_progress = true;
 		hashing_left = left;
 		hashing_total = total;
-		uint64_t this_update = get_utime();
+		int64_t this_update = get_utime();
 		if(this_update < last_update - 1000000 || this_update > last_update + 1000000) {
 			runuifun([mwin]() { if(mwin) mwin->notify_update_status(); });
 			last_update = this_update;

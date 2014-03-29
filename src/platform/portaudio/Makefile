@@ -14,7 +14,7 @@ __all__.files: $(OBJECTS)
 	echo $(PA_LDFLAGS) >__all__.ldflags
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
-	$(REALCC) -c -o $@ $< -I../../../include $(CFLAGS) $(PA_CFLAGS)
+	$(REALCC) -c -o $@ $< -I../../../include $(CFLAGS) $(PA_CFLAGS) -Wall -Werror
 
 precheck:
 	../../../buildaux/mkdeps.exe ../../../include -- *.cpp

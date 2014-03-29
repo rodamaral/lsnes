@@ -186,6 +186,7 @@ namespace
 			if(i->name == vma)
 				return handle_push_vma(L, *i);
 		(stringfmt() << P.get_fname() << ": Stale region").throwex();
+		return 0; //NOTREACHED
 	}
 
 	template<class T, bool _bswap> int lua_vma::rw(lua::state& L, lua::parameters& P)
@@ -213,6 +214,7 @@ namespace
 			return 0;
 		} else
 			P.expected("number or nil");
+		return 0; //NOTREACHED
 	}
 
 	template<bool write, bool sign> int lua_vma::scattergather(lua::state& L, lua::parameters& P)
@@ -250,7 +252,6 @@ namespace
 	template<class T> int lua_vma::hash(lua::state& L, lua::parameters& P)
 	{
 		uint64_t addr, size, rows, stride = 0;
-		bool equals = true;
 
 		P(P.skipped(), addr, size, P.optional(rows, 1));
 		if(rows > 1) P(stride);
@@ -353,6 +354,7 @@ namespace
 				L.pop(1);
 			}
 		}
+		return 0;
 	}
 
 	template<bool cmp> int lua_vma::storecmp(lua::state& L, lua::parameters& P)
@@ -475,6 +477,7 @@ namespace
 				return 1;
 			}
 		(stringfmt() << P.get_fname() << ": No such VMA").throwex();
+		return 0; //NOTREACHED
 	}
 
 	int lua_vma_list::newindex(lua::state& L, lua::parameters& P)

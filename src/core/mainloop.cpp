@@ -94,9 +94,6 @@ namespace
 	size_t save_jukebox_pointer;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
-	//Last frame params.
-	bool last_hires = false;
-	bool last_interlace = false;
 	//Unsafe rewind.
 	bool do_unsafe_rewind = false;
 	void* unsafe_rewind_obj = NULL;
@@ -291,7 +288,7 @@ namespace
 		void on_setting_change(settingvar::group& grp, const settingvar::base& val)
 		{
 			if(val.get_iname() == "jukebox-size") {
-				if(save_jukebox_pointer >= jukebox_size)
+				if(save_jukebox_pointer >= (size_t)jukebox_size)
 					save_jukebox_pointer = 0;
 			}
 			update_movie_state();
@@ -618,7 +615,7 @@ namespace
 				save_jukebox_pointer = jukebox_size - 1;
 			else
 				save_jukebox_pointer--;
-			if(save_jukebox_pointer >= jukebox_size)
+			if(save_jukebox_pointer >= (size_t)jukebox_size)
 				save_jukebox_pointer = 0;
 			update_movie_state();
 		});
@@ -628,11 +625,11 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size == 0)
 				return;
-			if(save_jukebox_pointer >= jukebox_size - 1)
+			if(save_jukebox_pointer + 1 >= (size_t)jukebox_size)
 				save_jukebox_pointer = 0;
 			else
 				save_jukebox_pointer++;
-			if(save_jukebox_pointer >= jukebox_size)
+			if(save_jukebox_pointer >= (size_t)jukebox_size)
 				save_jukebox_pointer = 0;
 			update_movie_state();
 		});
@@ -643,7 +640,7 @@ namespace
 			if(!regex_match("[1-9][0-9]{0,8}", args))
 				throw std::runtime_error("Bad slot number");
 			uint32_t slot = parse_value<uint32_t>(args);
-			if(slot >= jukebox_size)
+			if(slot >= (size_t)jukebox_size)
 				throw std::runtime_error("Bad slot number");
 			save_jukebox_pointer = slot - 1;
 			update_movie_state();

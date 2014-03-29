@@ -23,7 +23,7 @@ namespace
 		struct listener : public settingvar::listener
 		{
 			listener(settingvar::group& group, wxeditor_esettings_advanced& _obj)
-				: grp(group), obj(_obj)
+				: obj(_obj), grp(group)
 			{
 				group.add_listener(*this);
 			}
@@ -188,7 +188,6 @@ namespace
 			d->Destroy();
 		}
 		void on_button(wxCommandEvent& e) {
-			wxDirDialog* d;
 			switch(e.GetId()) {
 			case wxID_OK:
 			case wxID_CANCEL:
@@ -353,7 +352,8 @@ namespace
 		for(auto i : settings)
 			sort.insert(std::make_pair(names[i], i));
 		for(auto i : sort) {
-			auto description = lsnes_vsetc.get_description(i.second);
+			//FIXME: Do something with this?
+			//auto description = lsnes_vsetc.get_description(i.second);
 			strings.push_back(towxstring(names[i.second] + " (Value: " + values[i.second] + ")"));
 			selections[k++] = i.second;
 		}

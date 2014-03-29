@@ -159,6 +159,7 @@ namespace
 			}
 		}
 		font.add(utf8::to32(text), glyph);
+		return 0;
 	}
 
 	int lua_customfont::create(lua::state& L, lua::parameters& P)

@@ -137,7 +137,7 @@ void wxeditor_plugins::reload_plugins()
 {
 	int sel = plugins->GetSelection();
 	std::string name;
-	if(sel == wxNOT_FOUND || sel >= pluginstbl.size())
+	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size())
 		name = "";
 	else
 		name = pluginstbl[sel].first;
@@ -165,7 +165,6 @@ void wxeditor_plugins::reload_plugins()
 		plugins->Append(towxstring(r1 + attributes));
 	}
 
-	bool found = false;
 	for(size_t i = 0; i < pluginstbl.size(); i++) {
 		if(pluginstbl[i].first == name)
 			plugins->SetSelection(i);
@@ -177,7 +176,7 @@ void wxeditor_plugins::reload_plugins()
 void wxeditor_plugins::on_selection_change(wxCommandEvent& e)
 {
 	int sel = plugins->GetSelection();
-	if(sel == wxNOT_FOUND || sel >= pluginstbl.size()) {
+	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size()) {
 		renamebutton->Enable(false);
 		enablebutton->Enable(false);
 		deletebutton->Enable(false);
@@ -276,7 +275,7 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 void wxeditor_plugins::on_rename(wxCommandEvent& e)
 {
 	int sel = plugins->GetSelection();
-	if(sel == wxNOT_FOUND || sel >= pluginstbl.size())
+	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size())
 		return;
 	std::string name = pluginstbl[sel].first;
 	std::string name2;
@@ -303,7 +302,7 @@ void wxeditor_plugins::on_rename(wxCommandEvent& e)
 void wxeditor_plugins::on_enable(wxCommandEvent& e)
 {
 	int sel = plugins->GetSelection();
-	if(sel == wxNOT_FOUND || sel >= pluginstbl.size())
+	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size())
 		return;
 	try {
 		if(pluginstbl[sel].second)
@@ -323,7 +322,7 @@ void wxeditor_plugins::on_enable(wxCommandEvent& e)
 void wxeditor_plugins::on_delete(wxCommandEvent& e)
 {
 	int sel = plugins->GetSelection();
-	if(sel == wxNOT_FOUND || sel >= pluginstbl.size())
+	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size())
 		return;
 	std::string oname = pathpfx + "/" + pluginstbl[sel].first + "." + extension;
 	if(remove(oname.c_str()) < 0) {
@@ -368,6 +367,7 @@ bool wxeditor_plugin_manager_display(wxWindow* parent)
 			editor = new wxeditor_plugins(parent);
 			r = editor->ShowModal();
 		} catch(...) {
+			return false;
 		}
 		editor->Destroy();
 		if(hld) delete hld;

@@ -154,6 +154,7 @@ void show_conflictwindow(wxWindow* parent)
 		editor = new wxeditor_conflict(parent);
 		editor->ShowModal();
 	} catch(...) {
+		return;
 	}
 	editor->Destroy();
 }

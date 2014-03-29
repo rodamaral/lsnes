@@ -77,7 +77,6 @@ namespace
 	}
 	void emerg_write_movie(int handle, const controller_frame_vector& v, uint32_t tag)
 	{
-		uint64_t pages = v.get_page_count();
 		uint64_t stride = v.get_stride();
 		uint64_t pageframes = v.get_frames_per_page();
 		uint64_t vsize = v.size();
@@ -104,6 +103,7 @@ namespace
 			n /= 10;
 		}
 		ptr[digits] = 0;
+		return digits;
 	}
 	template<typename T>
 	uint64_t map_index(const std::map<std::string, T>& b, const std::string& n)

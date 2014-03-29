@@ -357,6 +357,7 @@ lsnes_memorywatch_printer::position_category wxeditor_memorywatch::get_poscatego
 	if(position->GetSelection() == 0) return lsnes_memorywatch_printer::PC_DISABLED;
 	if(position->GetSelection() == 1) return lsnes_memorywatch_printer::PC_MEMORYWATCH;
 	if(position->GetSelection() == 2) return lsnes_memorywatch_printer::PC_ONSCREEN;
+	return lsnes_memorywatch_printer::PC_DISABLED; //NOTREACHED.
 }
 
 void wxeditor_memorywatch::enable_for_pos(lsnes_memorywatch_printer::position_category p)
@@ -686,6 +687,7 @@ void wxeditor_memorywatches_display(wxWindow* parent)
 		editor = new wxeditor_memorywatches(parent);
 		editor->ShowModal();
 	} catch(...) {
+		return;
 	}
 	editor->Destroy();
 }

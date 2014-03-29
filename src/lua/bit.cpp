@@ -253,8 +253,6 @@ namespace
 	template<typename T, bool littleendian>
 	int bit_ldbinarynumber(lua::state& L, lua::parameters& P)
 	{
-		T val;
-		char buffer[sizeof(T)];
 		size_t pos;
 		const char* str;
 		size_t len;

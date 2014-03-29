@@ -53,7 +53,7 @@ namespace
 			rangesize = (width - 1) * stride1 + (height - 1) * stride2 + 32;
 		}
 
-		char* mem = lsnes_memory.get_physical_mapping(rangebase, rangesize);
+		char* mem = map ? lsnes_memory.get_physical_mapping(rangebase, rangesize) : NULL;
 		if(mem) {
 			for(unsigned j = 0; j < height; j++)
 				for(unsigned i = 0; i < width; i++) {

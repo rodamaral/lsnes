@@ -406,7 +406,7 @@ namespace
 			auto pcid = controls.lcid_to_pcid(i);
 			if(pcid.first < 0)
 				continue;
-			if(pcid.first == port && pcid.second == controller) {
+			if(pcid.first == (int)port && pcid.second == (int)controller) {
 				lcid = i + 1;
 				break;
 			}

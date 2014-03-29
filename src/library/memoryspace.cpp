@@ -8,7 +8,6 @@ namespace
 {
 	template<typename T, bool linear> inline T internal_read(memory_space& m, uint64_t addr)
 	{
-		const int system_endian = memory_space::get_system_endian();
 		std::pair<memory_region*, uint64_t> g;
 		if(linear)
 			g = m.lookup_linear(addr);
@@ -27,7 +26,6 @@ namespace
 
 	template<typename T, bool linear> inline bool internal_write(memory_space& m, uint64_t addr, T value)
 	{
-		const int system_endian = memory_space::get_system_endian();
 		std::pair<memory_region*, uint64_t> g;
 		if(linear)
 			g = m.lookup_linear(addr);

@@ -247,7 +247,7 @@ void pad::report_axis(uint64_t id, int64_t val)
 		hat_info& i = *_axes_hat[id];
 		bool is_x = (id == i.id);
 		bool is_y = (id == i.id2);
-		unsigned ostate = i.state;
+		signed ostate = i.state;
 		if(is_x) { i.state = (val <= -i.mindev) ? (i.state | 0x8) : (i.state & 0x7); }
 		if(is_x) { i.state = (val >= i.mindev) ? (i.state | 0x2) : (i.state & 0xD); }
 		if(is_y) { i.state = (val <= -i.mindev) ? (i.state | 0x1) : (i.state & 0xE); }
@@ -287,7 +287,7 @@ void pad::report_hat(uint64_t id, int angle)
 		return;
 	}
 	hat_info& i = _hats[id];
-	unsigned ostate = i.state;
+	signed ostate = i.state;
 	i.state = h;
 	int16_t nstate = i.state;
 	unsigned inum = i.num;
@@ -720,6 +720,7 @@ unsigned set::add(const std::string& name)
 		return _gamepads.size() - 1;
 	} catch(...) {
 		delete gp;
+		throw;
 	}
 }
 

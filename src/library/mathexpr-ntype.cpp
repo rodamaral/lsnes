@@ -481,6 +481,7 @@ namespace
 					return expr_val_numeric(unsigned_tag(), _a);
 			} else
 				throw_domain("Bit operations are only for integers");
+			return expr_val_numeric(unsigned_tag(), 0); //NOTREACHED
 		}
 		static expr_val_numeric op_pi()
 		{
@@ -582,6 +583,7 @@ namespace
 			case T_FLOAT:		return expr_val_numeric(unsigned_tag(), a.v_float);
 			default:		throw_domain("Can't convert non-real into unsigned");
 			}
+			return expr_val_numeric(unsigned_tag(), 0); //NOTREACHED.
 		}
 		static expr_val_numeric x_signed(expr_val_numeric a)
 		{
@@ -591,6 +593,7 @@ namespace
 			case T_FLOAT:		return expr_val_numeric(signed_tag(), a.v_float);
 			default:		throw_domain("Can't convert non-real into signed");
 			}
+			return expr_val_numeric(signed_tag(), 0); //NOTREACHED.
 		}
 		static expr_val_numeric x_float(expr_val_numeric a)
 		{
@@ -600,6 +603,7 @@ namespace
 			case T_FLOAT:		return expr_val_numeric(float_tag(), a.v_float);
 			default:		throw_domain("Can't convert non-real into float");
 			}
+			return expr_val_numeric(float_tag(), 0); //NOTREACHED.
 		}
 		expr_val_numeric re() const
 		{

@@ -232,6 +232,7 @@ template<class T> class _class : public class_base
 			lua_pushlstring(LS, err.c_str(), err.length());
 			lua_error(LS);
 		}
+		return 0; //NOTREACHED
 	}
 
 	T* _get(state& _state, int arg, const std::string& fname, bool optional = false)

@@ -101,6 +101,7 @@ namespace
 	{
 		if(lua_kill_frame)
 			*lua_kill_frame = true;
+		return 0;
 	}
 
 	int set_video_scale(lua::state& L, lua::parameters& P)
@@ -113,6 +114,7 @@ namespace
 			*lua_hscl = h;
 			*lua_vscl = v;
 		}
+		return 0;
 	}
 
 	lua::functions guicore_fns(lua_func_misc, "gui", {

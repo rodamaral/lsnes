@@ -38,7 +38,8 @@ void filelist::add(const std::string& filename)
 void filelist::remove(const std::string& filename)
 {
 	auto contents = readfile();
-	int64_t ts = file_get_mtime(directory + "/" + filename);
+	//FIXME: Do something with this?
+	//int64_t ts = file_get_mtime(directory + "/" + filename);
 	contents.erase(filename);
 	writeback(contents);
 }

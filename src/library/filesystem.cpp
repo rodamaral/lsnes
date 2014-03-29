@@ -289,8 +289,6 @@ filesystem::ref& filesystem::ref::operator=(const filesystem::ref& r)
 	if(this == &r)
 		return *this;
 	//This is tricky, due to having to lock two objects.
-	size_t A = (size_t)this;
-	size_t B = (size_t)&r;
 	threads::lock* mtodelete = NULL;
 	if(!refcnt) {
 		//We just have to grab a ref and copy.

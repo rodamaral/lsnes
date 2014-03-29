@@ -190,7 +190,7 @@ namespace
 		c2_s->Add(new wxStaticText(this, wxID_ANY, wxT("Memory watch:")), 0, wxGROW);
 		c2_s->Add(memwatch = new wxTextCtrl(this, wxID_ANY, wxT(""),
 			wxDefaultPosition, wxSize(350, -1)), 1, wxGROW);
-		wxButton* pdir;
+
 		c2_s->Add(swatch = new wxButton(this, wxID_ANY, wxT("...")), 1, wxGROW);
 		swatch->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxwin_newproject::on_memorywatch_select), NULL, this);

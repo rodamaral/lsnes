@@ -61,7 +61,6 @@ namespace
 		for(size_t i = 0; i < sizeof(orientations)/sizeof(orientations[0]); i++)
 			orients.push_back(towxstring(orientations[i]));
 
-		wxButton* tmp;
 		top_s = new wxFlexGridSizer(4, 2, 0, 0);
 		SetSizer(top_s);
 		top_s->Add(new wxStaticText(this, -1, wxT("Scale %: ")), 0, wxGROW);
@@ -98,7 +97,6 @@ namespace
 	{
 		std::vector<std::string> sa_choices;
 		std::string v;
-		int newflags = 1;
 		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
 			sa_choices.push_back(scalealgo_choices[i]);
 		std::string name;

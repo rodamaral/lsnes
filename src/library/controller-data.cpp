@@ -724,7 +724,6 @@ uint64_t controller_frame_vector::binary_size() const throw()
 
 void controller_frame_vector::save_binary(binarystream::output& stream) const throw(std::runtime_error)
 {
-	uint64_t pages = get_page_count();
 	uint64_t stride = get_stride();
 	uint64_t pageframes = get_frames_per_page();
 	uint64_t vsize = size();
@@ -777,14 +776,12 @@ void controller_frame_vector::swap_data(controller_frame_vector& v) throw()
 int64_t controller_frame_vector::find_frame(uint64_t n)
 {
 	if(!n) return -1;
-	uint64_t pages = get_page_count();
 	uint64_t stride = get_stride();
 	uint64_t pageframes = get_frames_per_page();
 	uint64_t vsize = size();
 	size_t pagenum = 0;
 	while(vsize > 0) {
 		uint64_t count = (vsize > pageframes) ? pageframes : vsize;
-		size_t bytes = count * stride;
 		const unsigned char* content = get_page_buffer(pagenum++);
 		size_t offset = 0;
 		for(unsigned i = 0; i < count; i++) {
@@ -820,6 +817,9 @@ unsigned port_controller::analog_actions() const
 		case port_controller_button::TYPE_TAXIS:
 			s++;
 			break;
+		case port_controller_button::TYPE_NULL:
+		case port_controller_button::TYPE_BUTTON:
+			;
 		};
 	}
 	return (r + 1)/ 2 + s;
@@ -861,6 +861,9 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 			}
 			r++;
 			break;
+		case port_controller_button::TYPE_NULL:
+		case port_controller_button::TYPE_BUTTON:
+			;
 		};
 	}
 out:
@@ -1175,7 +1178,7 @@ void controller_macro_data::write(controller_frame& frame, unsigned port, unsign
 {
 	if(!enabled)
 		return;
-	if(autoterminate && (nframe < 0 || nframe >= get_frames()))
+	if(autoterminate && (nframe < 0 || nframe >= (int64_t)get_frames()))
 		return;
 	if(nframe < 0)
 		nframe += ((-nframe / get_frames()) + 3) * get_frames();
@@ -1200,6 +1203,9 @@ void controller_macro_data::write(controller_frame& frame, unsigned port, unsign
 			case AM_OVERWRITE:
 				frame.axis3(port, controller, lb, 0);
 				break;
+			case AM_OR:
+			case AM_XOR:
+				;
 			}
 	}
 	const port_controller* _ctrl = frame.porttypes().port_type(port).controller_info->get(controller);

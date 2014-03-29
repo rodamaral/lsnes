@@ -59,7 +59,7 @@ namespace sky
 		bool hipri() { return (_hipri > 0); }
 		void hipri(bool hi) { _hipri = hi ? 1 : 0; }
 	private:
-		uint8_t access(const struct sounds& snds, uint32_t addr) { snds.access(addr); }
+		uint8_t access(const struct sounds& snds, uint32_t addr) { return snds.access(addr); }
 		int64_t left;
 		uint32_t pointer;
 		uint32_t subsample;

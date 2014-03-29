@@ -296,7 +296,7 @@ namespace
 
 		P(w, h, px, py);
 
-		tilemap* t = lua::_class<tilemap>::create(L, w, h, px, py);
+		lua::_class<tilemap>::create(L, w, h, px, py);
 		return 1;
 	}
 

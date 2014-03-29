@@ -56,6 +56,7 @@ namespace
 			ptr->bottom_gap = std::numeric_limits<uint32_t>::max();
 			ptr->left_gap = std::numeric_limits<uint32_t>::max();
 			ptr->queue->clear();
+			return 0;
 		}
 		int set(lua::state& L, lua::parameters& P)
 		{
@@ -68,6 +69,7 @@ namespace
 				saved = lua_render_ctx;
 			lua_render_ctx = last = ptr;
 			redirect = true;
+			return 0;
 		}
 		int render(lua::state& L, lua::parameters& P)
 		{
@@ -80,10 +82,10 @@ namespace
 			fb.set_origin(xoff, yoff);
 			rqueue.run(fb);
 			lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, rwidth, rheight);
-			for(auto y = 0; y < rheight; y++) {
+			for(auto y = 0U; y < rheight; y++) {
 				const uint32_t* rowp = fb.rowptr(y);
 				auto rowt = &b->pixels[y * rwidth];
-				for(auto x = 0; x < rwidth; x++) {
+				for(auto x = 0U; x < rwidth; x++) {
 					uint32_t v = rowp[x];
 					uint64_t c = -1;
 					if(v >> 24)

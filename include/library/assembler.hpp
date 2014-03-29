@@ -63,6 +63,7 @@ public:
 		case L_GLOBAL: return addr;
 		case L_RELATIVE: return base->resolve(localbase) + offset;
 		}
+		throw std::runtime_error("Unknown relocation type");
 	}
 private:
 	enum _kind { L_LOCAL_U, L_LOCAL_R, L_GLOBAL, L_RELATIVE } kind;

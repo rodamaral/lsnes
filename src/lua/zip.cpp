@@ -34,6 +34,7 @@ namespace
 			w->commit();
 			delete w;
 			w = NULL;
+			return 0;
 		}
 		int rollback(lua::state& L, lua::parameters& P)
 		{
@@ -41,6 +42,7 @@ namespace
 
 			delete w;
 			w = NULL;
+			return 0;
 		}
 		int close_file(lua::state& L, lua::parameters& P)
 		{
@@ -49,6 +51,7 @@ namespace
 
 			w->close_file();
 			file_open = NULL;
+			return 0;
 		}
 		int create_file(lua::state& L, lua::parameters& P)
 		{
@@ -63,6 +66,7 @@ namespace
 				file_open = NULL;
 			}
 			file_open = &w->create_file(filename);
+			return 0;
 		}
 		int write(lua::state& L, lua::parameters& P)
 		{
@@ -76,6 +80,7 @@ namespace
 			std::vector<char> data(_data.length());
 			std::copy(_data.begin(), _data.end(), data.begin());
 			file_open->write(&data[0], data.size());
+			return 0;
 		}
 		std::string print()
 		{

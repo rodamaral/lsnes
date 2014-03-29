@@ -98,7 +98,6 @@ bool controller_state::autofire_info::eval_at(uint64_t frame)
 		uint64_t diff = first_frame - frame;
 		frame += ((diff / cyclelen) + 1) * cyclelen;
 	}
-	uint64_t diff2 = frame - first_frame;
 	return frame % cyclelen < duty;
 }
 

@@ -195,6 +195,7 @@ hashval& hashval::operator=(const hashval& f)
 	hasher = f.hasher;
 	if(!is_ready && hasher)
 		hasher->link(*this);
+	return *this;
 }
 
 void hashval::resolve(unsigned id, const std::string& hash, uint64_t _prefix)

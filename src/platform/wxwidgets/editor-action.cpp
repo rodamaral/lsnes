@@ -46,14 +46,15 @@ wxeditor_action::wxeditor_action(wxWindow* parent, const std::string& label,
 		if(r = regex("string(:(.*))?", i.model)) {
 			wxBoxSizer* tmp1 = new wxBoxSizer(wxHORIZONTAL);
 			tmp1->Add(new wxStaticText(this, wxID_ANY, towxstring(i.name)), 0, wxGROW);
-			wxTextCtrl* tmp2 = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(200, -1));
+			wxTextCtrl* tmp2 = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition,
+				wxSize(200, -1));
 			controls.push_back(tmp2);
 			tmp1->Add(tmp2, 1, wxGROW);
 			tmp2->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 				wxCommandEventHandler(wxeditor_action::on_change), NULL, this);
 			top_s->Add(tmp1, 0, wxGROW);
 		} else if(r = regex("int:(-?[0-9]+),(-?[0-9]+)", i.model)) {
-			int64_t low, high, v;
+			int64_t low, high;
 			try {
 				low = parse_value<int64_t>(r[1]);
 				high = parse_value<int64_t>(r[2]);

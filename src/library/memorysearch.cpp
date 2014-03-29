@@ -398,7 +398,6 @@ template<typename T> T memory_search::v_readold(uint64_t addr) throw()
 
 template<typename T> void memorysearch_pull_type(memory_search& s)
 {
-	T val;
 	eat_argument(&memory_search::s_value<T>);
 	eat_argument(&memory_search::s_difference<T>);
 	eat_argument(&memory_search::s_lt<T>);
@@ -418,7 +417,6 @@ template<typename T> void memorysearch_pull_type(memory_search& s)
 
 template<typename T> void memorysearch_pull_type2(memory_search& s)
 {
-	T val;
 	eat_argument(&memory_search::s_value<T>);
 	eat_argument(&memory_search::s_difference<T>);
 	eat_argument(&memory_search::s_lt<T>);
@@ -487,7 +485,6 @@ bool memory_search::is_candidate(uint64_t addr) throw()
 		if(i >= previous_content.size())
 			return false;
 		uint64_t rsize = t.first->size;
-		uint64_t switch_at = i + rsize - t.second;	//The smallest i not in this region.
 		rsize = min(rsize, previous_content.size() - i);
 		if(addr >= t.first->base + t.second && addr < t.first->base + rsize) {
 			uint64_t adv = addr - (t.first->base + t.second);
@@ -513,13 +510,13 @@ uint64_t memory_search::cycle_candidate_vma(uint64_t addr, bool next) throw()
 		if(i >= previous_content.size())
 			return addr;
 		uint64_t rsize = t.first->size;
-		uint64_t switch_at = i + rsize - t.second;	//The smallest i not in this region.
+		int64_t switch_at = i + rsize - t.second;	//The smallest i not in this region.
 		rsize = min(rsize, previous_content.size() - i);
 		if(addr >= t.first->base + t.second && addr < t.first->base + rsize) {
 			uint64_t baseaddr = t.first->base + t.second;
 			int64_t tryoff = addr - baseaddr + i;
-			uint64_t finoff = tryoff;
-			uint64_t warp = i;
+			int64_t finoff = tryoff;
+			int64_t warp = i;
 			bool warped = false;
 			if(next) {
 				//Cycle forwards.
