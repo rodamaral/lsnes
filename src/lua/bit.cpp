@@ -308,6 +308,19 @@ namespace
 		return values;
 	};
 
+	int bit_mul32(lua::state& L, lua::parameters& P)
+	{
+		uint32_t a, b;
+		uint64_t c;
+
+		P(a, b);
+
+		c = (uint64_t)a * b;
+		L.pushnumber(c & 0xFFFFFFFFU);
+		L.pushnumber(c >> 32);
+		return 2;
+	}
+
 	lua::functions bitops(lua_func_bit, "bit", {
 		{"flagdecode", flagdecode_core<false>},
 		{"rflagdecode", flagdecode_core<true>},
@@ -344,6 +357,7 @@ namespace
 		{"compose", bit_compose},
 		{"quotent", bit_quotent},
 		{"multidiv", bit_multidiv},
+		{"mul32", bit_mul32},
 		{"binary_ld_u8be", bit_ldbinarynumber<uint8_t, false>},
 		{"binary_ld_s8be", bit_ldbinarynumber<int8_t, false>},
 		{"binary_ld_u16be", bit_ldbinarynumber<uint16_t, false>},

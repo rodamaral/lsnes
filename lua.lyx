@@ -4380,6 +4380,20 @@ E.g.
  bit.multidiv(a, b) calculates quotent and remainder of a/b.
 \end_layout
 
+\begin_layout Subsection
+bit.mul32: 32-bit multiply
+\end_layout
+
+\begin_layout Itemize
+Syntax: number, number bit.mul32(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Multiply 32-bit numbers <a> and <b>.
+ The first return value is low 32 bits of result, the second is high 32
+ bits.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
