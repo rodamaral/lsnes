@@ -285,7 +285,8 @@ namespace
 	write_command<uint16_t, -32768, 0xFFFF, &memory_space::write<uint16_t>> w2("write-word");
 	write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>> w3("write-hword");
 	write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL, &memory_space::write<uint32_t>> w4("write-dword");
-	write_command<uint64_t, -9223372036854775808LL, 0xFFFFFFFFFFFFFFFFULL, &memory_space::write<uint64_t>>
+	//Just straight writing the constant would cause a warning.
+	write_command<uint64_t, -9223372036854775807LL-1, 0xFFFFFFFFFFFFFFFFULL, &memory_space::write<uint64_t>>
 		w8("write-qword");
 	writef_command<float, &memory_space::write<float>> wf4("write-float");
 	writef_command<double, &memory_space::write<double>> wf8("write-double");
