@@ -76,7 +76,7 @@ public:
  *
  * returns: The number of frames.
  */
-	uint64_t get_frame_count() throw() { movie_data->count_frames(); }
+	uint64_t get_frame_count() throw() { return movie_data->count_frames(); }
 
 /**
  * Get number of current frame in movie
