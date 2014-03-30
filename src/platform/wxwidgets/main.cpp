@@ -222,7 +222,8 @@ end:
 	void save_configuration()
 	{
 		std::string cfg = get_config_path() + "/lsneswxw.cfg";
-		std::ofstream cfgfile(cfg.c_str());
+		std::string cfgtmp = cfg + ".tmp";
+		std::ofstream cfgfile(cfgtmp.c_str());
 		//Settings.
 		for(auto i : lsnes_vsetc.get_all())
 			cfgfile << "SET " << i.first << " " << i.second << std::endl;
@@ -257,6 +258,13 @@ end:
 		for(auto i : core_selections)
 			if(i.second != "")
 				cfgfile << "PREFER " << i.first << " " << i.second << std::endl;
+		if(!cfgfile) {
+			show_message_ok(NULL, "Error Saving configuration", "Error saving configuration",
+				wxICON_EXCLAMATION);
+			return;
+		}
+		cfgfile.close();
+		zip::rename_overwrite(cfgtmp.c_str(), cfg.c_str());
 		//Last save.
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
 		lsave << last_save;
@@ -533,6 +541,11 @@ int lsnes_app::OnExit()
 	kill_alias_binds();
 	deinitialize_wx_keyboard();
 	return 0;
+}
+
+void do_save_configuration()
+{
+	save_configuration();
 }
 
 namespace

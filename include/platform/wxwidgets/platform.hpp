@@ -41,6 +41,7 @@ void signal_resize_needed();
 void _runuifun_async(void (*fn)(void*), void* arg);
 void show_projectwindow(wxWindow* modwin);
 void signal_core_change();
+void do_save_configuration();
 
 std::vector<interface_action_paramval> prompt_action_params(wxWindow* parent, const std::string& label,
 	const std::list<interface_action_param>& params);

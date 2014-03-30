@@ -157,6 +157,7 @@ void show_conflictwindow(wxWindow* parent)
 		return;
 	}
 	editor->Destroy();
+	do_save_configuration();
 }
 
 std::map<std::string, std::string> core_selections;

@@ -213,6 +213,7 @@ void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
 	}
 	dlg = NULL;
 	editor->Destroy();
+	do_save_configuration();
 }
 
 void settings_activate_keygrab(std::function<void(std::string key)> callback)
