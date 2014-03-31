@@ -663,7 +663,7 @@ namespace
 				messages << "MSU main data file: " << x << std::endl;
 				return x.c_str();
 			}
-			if(r = regex("(track)?(-([0-9])+\\.pcm)", _hint2)) {
+			if(r = regex("(track)?(-([0-9]+)\\.pcm)", _hint2)) {
 				//MSU track.
 				std::string x = msubase + r[2];
 				messages << "MSU track " << r[3] << "': " << x << std::endl;
