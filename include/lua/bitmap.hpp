@@ -41,7 +41,7 @@ struct lua_bitmap
 {
 	lua_bitmap(lua::state& L, uint32_t w, uint32_t h);
 	static size_t overcommit(uint32_t w, uint32_t h) {
-		return lua::overcommit_std_align + sizeof(uint16_t) * w * h;
+		return lua::overcommit_std_align + sizeof(uint16_t) * (size_t)w * h;
 	}
 	~lua_bitmap();
 	size_t width;
@@ -65,7 +65,7 @@ struct lua_dbitmap
 {
 	lua_dbitmap(lua::state& L, uint32_t w, uint32_t h);
 	static size_t overcommit(uint32_t w, uint32_t h) {
-		return lua::overcommit_std_align + sizeof(framebuffer::color) * w * h;
+		return lua::overcommit_std_align + sizeof(framebuffer::color) * (size_t)w * h;
 	}
 	~lua_dbitmap();
 	size_t width;

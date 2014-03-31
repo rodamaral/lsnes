@@ -32,7 +32,7 @@ namespace
 	{
 		tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight);
 		static size_t overcommit(size_t _width, size_t _height, size_t _cwidth, size_t _cheight) {
-			return lua::overcommit_std_align + 2 * sizeof(tilemap_entry) * _width * _height;
+			return lua::overcommit_std_align + 2 * sizeof(tilemap_entry) * (size_t)_width * _height;
 		}
 		~tilemap()
 		{
@@ -317,8 +317,9 @@ namespace
 	tilemap::tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight)
 		: width(_width), height(_height), cwidth(_cwidth), cheight(_cheight)
 	{
-		if(width * height / height != width)
+		if(overcommit(width, height, cwidth, cheight) / height / sizeof(tilemap_entry) < width)
 			throw std::bad_alloc();
+
 		map = lua::align_overcommit<tilemap, tilemap_entry>(this);
 		tmpmap = &map[width * height];
 		//Initialize the map!

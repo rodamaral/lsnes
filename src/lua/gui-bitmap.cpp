@@ -887,6 +887,7 @@ void lua_palette::push_back(const framebuffer::color& cx)
 /** BITMAP **/
 lua_bitmap::lua_bitmap(lua::state& L, uint32_t w, uint32_t h)
 {
+	if(overcommit(w, h) / h / sizeof(uint16_t) < w) throw std::bad_alloc();
 	width = w;
 	height = h;
 	pixels = lua::align_overcommit<lua_bitmap, uint16_t>(this);
@@ -1051,12 +1052,13 @@ int lua_bitmap::save_png(lua::state& L, lua::parameters& P)
 /** DBITMAP **/
 lua_dbitmap::lua_dbitmap(lua::state& L, uint32_t w, uint32_t h)
 {
+	if(overcommit(w, h) / h / sizeof(framebuffer::color) < w) throw std::bad_alloc();
 	width = w;
 	height = h;
 	pixels = lua::align_overcommit<lua_dbitmap, framebuffer::color>(this);
 	//Initialize the bitmap data.
 	framebuffer::color transparent(-1);
-	for(size_t i = 0; i < width * height; i++)
+	for(size_t i = 0; i < (size_t)width * height; i++)
 		new(pixels + i) framebuffer::color(transparent);
 }
 
