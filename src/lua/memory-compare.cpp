@@ -25,7 +25,10 @@ namespace
 	{
 	public:
 		compare_obj(lua::state& L, uint64_t addr, uint64_t size, uint64_t rows, uint64_t stride);
-		static size_t overcommit(uint64_t addr, uint64_t size, uint64_t rows, uint64_t stride) { return 0; }
+		static size_t overcommit(uint64_t addr, uint64_t size, uint64_t rows, uint64_t stride)
+		{
+			return lua::overcommit_std_align + (size_t)size * rows;
+		}
 		static int create(lua::state& L, lua::parameters& P);
 		int call(lua::state& L, lua::parameters& P);
 		std::string print()
@@ -36,7 +39,7 @@ namespace
 			return x.str();
 		}
 	private:
-		std::vector<uint8_t> prev;
+		uint8_t* prev;
 		bool try_map;
 		uint64_t addr;
 		uint64_t minaddr;
@@ -57,6 +60,7 @@ namespace
 			rows = 0;
 			size = 1;
 			stride = 0;
+			prev = NULL;
 			return;
 		} else {
 			addr = _addr;
@@ -65,9 +69,10 @@ namespace
 			stride = _stride;
 			rpair(minaddr, maxaddr) = memoryspace_row_bounds(addr, size, rows, stride);
 			try_map = (minaddr <= maxaddr && (maxaddr - minaddr + 1));
-			if((size_t)(size * rows) / rows != size)
+			if((((size_t)size * rows) + lua::overcommit_std_align) / rows < size)
 				throw std::runtime_error("Size to monitor too large");
-			prev.resize(size * rows);
+			prev = lua::align_overcommit<compare_obj, uint8_t>(this);
+			memset(prev, 0, (size_t)size * rows);
 		}
 	}
 
