@@ -16,6 +16,7 @@ struct lua_palette
 {
 	std::vector<framebuffer::color> colors;
 	lua_palette(lua::state& L);
+	static size_t overcommit() { return 0; }
 	~lua_palette();
 	threads::lock palette_mutex;
 	std::string print();
@@ -31,6 +32,7 @@ struct lua_palette
 struct lua_bitmap
 {
 	lua_bitmap(lua::state& L, uint32_t w, uint32_t h);
+	static size_t overcommit(uint32_t w, uint32_t h) { return 0; }
 	~lua_bitmap();
 	size_t width;
 	size_t height;
@@ -52,6 +54,7 @@ struct lua_bitmap
 struct lua_dbitmap
 {
 	lua_dbitmap(lua::state& L, uint32_t w, uint32_t h);
+	static size_t overcommit(uint32_t w, uint32_t h) { return 0; }
 	~lua_dbitmap();
 	size_t width;
 	size_t height;

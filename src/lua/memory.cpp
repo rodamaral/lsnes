@@ -65,6 +65,7 @@ class lua_mmap_struct
 {
 public:
 	lua_mmap_struct(lua::state& L);
+	static size_t overcommit() { return 0; }
 
 	~lua_mmap_struct()
 	{

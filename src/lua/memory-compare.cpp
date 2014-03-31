@@ -25,6 +25,7 @@ namespace
 	{
 	public:
 		compare_obj(lua::state& L, uint64_t addr, uint64_t size, uint64_t rows, uint64_t stride);
+		static size_t overcommit(uint64_t addr, uint64_t size, uint64_t rows, uint64_t stride) { return 0; }
 		static int create(lua::state& L, lua::parameters& P);
 		int call(lua::state& L, lua::parameters& P);
 	private:

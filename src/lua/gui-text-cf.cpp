@@ -19,6 +19,9 @@ namespace
 		lua_customfont(lua::state& L, const std::string& filename, const std::string& filename2);
 		lua_customfont(lua::state& L);
 		lua_customfont(lua::state& L, empty_font_tag tag);
+		static size_t overcommit() { return 0; }
+		static size_t overcommit(const std::string& filename, const std::string& filename2) { return 0; }
+		static size_t overcommit(empty_font_tag tag) { return 0; }
 		~lua_customfont() throw();
 		static int create(lua::state& L, lua::parameters& P);
 		static int load(lua::state& L, lua::parameters& P);

@@ -17,6 +17,7 @@ namespace
 		friend class lua_inputmovie;
 	public:
 		lua_inputframe(lua::state& L, controller_frame _f);
+		static size_t overcommit(controller_frame _f) { return 0; }
 		int get_button(lua::state& L, lua::parameters& P)
 		{
 			unsigned port, controller, button;
@@ -391,6 +392,8 @@ namespace
 	public:
 		lua_inputmovie(lua::state& L, const controller_frame_vector& _v);
 		lua_inputmovie(lua::state& L, controller_frame& _f);
+		static size_t overcommit(const controller_frame_vector& _v) { return 0; }
+		static size_t overcommit(controller_frame& _f) { return 0; }
 		int copy_movie(lua::state& L, lua::parameters& P)
 		{
 			return _copy_movie(L, P);

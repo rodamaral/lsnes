@@ -31,6 +31,7 @@ namespace
 	struct tilemap
 	{
 		tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight);
+		static size_t overcommit(size_t _width, size_t _height, size_t _cwidth, size_t _cheight) { return 0; }
 		~tilemap()
 		{
 			threads::alock h(lock);

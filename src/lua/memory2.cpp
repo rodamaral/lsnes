@@ -52,6 +52,7 @@ namespace
 	{
 	public:
 		lua_vma(lua::state& L, memory_region* r);
+		static size_t overcommit(memory_region* r) { return 0; }
 		int info(lua::state& L, lua::parameters& P);
 		template<class T, bool _bswap> int rw(lua::state& L, lua::parameters& P);
 		template<bool write, bool sign> int scattergather(lua::state& L, lua::parameters& P);
@@ -76,6 +77,7 @@ namespace
 	{
 	public:
 		lua_vma_list(lua::state& L);
+		static size_t overcommit() { return 0; }
 		static int create(lua::state& L, lua::parameters& P);
 		int index(lua::state& L, lua::parameters& P);
 		int newindex(lua::state& L, lua::parameters& P);

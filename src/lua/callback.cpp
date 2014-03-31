@@ -8,6 +8,7 @@ namespace
 	{
 	public:
 		lua_callbacks_list(lua::state& L);
+		static size_t overcommit() { return 0; }
 		static int create(lua::state& L, lua::parameters& P);
 		int index(lua::state& L, lua::parameters& P);
 		int newindex(lua::state& L, lua::parameters& P);
@@ -17,6 +18,7 @@ namespace
 	{
 	public:
 		lua_callback_obj(lua::state& L, const std::string& name);
+		static size_t overcommit(const std::string& name) { return 0; }
 		int _register(lua::state& L, lua::parameters& P);
 		int _unregister(lua::state& L, lua::parameters& P);
 		int _call(lua::state& L, lua::parameters& P);

@@ -7,6 +7,7 @@
 struct lua_unsaferewind
 {
 	lua_unsaferewind(lua::state& L);
+	static size_t overcommit() { return 0; }
 	std::vector<char> state;
 	uint64_t frame;
 	uint64_t lag;

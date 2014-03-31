@@ -150,6 +150,7 @@ namespace
 	{
 	public:
 		lua_file_reader(lua::state& L, std::istream* strm);
+		static size_t overcommit(std::istream* strm) { return 0; }
 		~lua_file_reader()
 		{
 			delete &s;

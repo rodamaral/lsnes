@@ -7,6 +7,7 @@ class lua_inverse_bind
 {
 public:
 	lua_inverse_bind(lua::state& L, const std::string& name, const std::string& cmd);
+	static size_t overcommit(const std::string& name, const std::string& cmd) { return 0; }
 	std::string print()
 	{
 		return ikey.getname();
@@ -53,6 +54,7 @@ class lua_command_bind
 {
 public:
 	lua_command_bind(lua::state& L, const std::string& cmd, int idx1, int idx2);
+	static size_t overcommit(const std::string& cmd, int idx1, int idx2) { return 0; }
 	~lua_command_bind();
 	std::string print()
 	{

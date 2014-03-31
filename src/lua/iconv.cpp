@@ -58,6 +58,7 @@ namespace
 	{
 	public:
 		lua_iconv(lua::state& L, const char* from, const char* to);
+		static size_t overcommit(const char* from, const char* to) { return 0; }
 		~lua_iconv() throw();
 		int call(lua::state& L, lua::parameters& P);
 		static int create(lua::state& L, lua::parameters& P);

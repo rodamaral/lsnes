@@ -8,6 +8,7 @@ namespace
 	{
 	public:
 		lua_zip_writer(lua::state& L, const std::string& filename, unsigned compression);
+		static size_t overcommit(const std::string& filename, unsigned compression) { return 0; }
 		~lua_zip_writer()
 		{
 			if(w) delete w;

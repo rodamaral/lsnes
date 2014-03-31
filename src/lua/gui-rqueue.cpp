@@ -12,6 +12,7 @@ namespace
 	struct lua_renderqueue
 	{
 		lua_renderqueue(lua::state& L, uint32_t width, uint32_t height) throw();
+		static size_t overcommit(uint32_t width, uint32_t height) { return 0; }
 		~lua_renderqueue() throw() {}
 		lua_render_context* get() { return &lctx; }
 		std::string print()

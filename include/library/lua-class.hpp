@@ -211,7 +211,8 @@ template<class T> class _class : public class_base
 {
 	template<typename... U> T* _create(state& _state, U... args)
 	{
-		void* obj = _state.newuserdata(sizeof(T));
+		size_t overcommit = T::overcommit(args...);
+		void* obj = _state.newuserdata(sizeof(T) + overcommit);
 		load_metatable(_state);
 		_state.setmetatable(-2);
 		T* _obj = reinterpret_cast<T*>(obj);
