@@ -3459,7 +3459,7 @@ Syntax: handle classes.COMPARE_OBJ.new([marea], offset, size, [rows, stride])
 \end_layout
 
 \begin_layout Itemize
-Syntax: handle open_file([marea], offset, size, rows, stride)
+Syntax: handle memory.compare_new([marea], offset, size, rows, stride)
 \end_layout
 
 \begin_layout Standard

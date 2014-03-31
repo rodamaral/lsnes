@@ -66,11 +66,11 @@ namespace
 
 	int compare_obj::create(lua::state& L, lua::parameters& P)
 	{
-		uint64_t addr, daddr, size;
+		uint64_t addr, size;
 		uint64_t stride = 0, rows = 1;
 
 		addr = get_read_address(P);
-		P(daddr, size, P.optional(rows, 1));
+		P(size, P.optional(rows, 1));
 		if(rows > 1)
 			P(stride);
 
