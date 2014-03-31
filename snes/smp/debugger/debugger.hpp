@@ -14,7 +14,7 @@ public:
   bool opcode_edge;
 
   void op_step();
-  uint8 op_read(uint16 addr);
+  uint8 op_read(uint16 addr, bool exec);
   void op_write(uint16 addr, uint8 data);
 
   SMPDebugger();

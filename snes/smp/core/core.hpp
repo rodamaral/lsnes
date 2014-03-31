@@ -1,6 +1,6 @@
 struct SMPcore {
   virtual void op_io() = 0;
-  virtual uint8 op_read(uint16 addr) = 0;
+  virtual uint8 op_read(uint16 addr, bool exec) = 0;
   virtual void op_write(uint16 addr, uint8 data) = 0;
   virtual void op_step();
 

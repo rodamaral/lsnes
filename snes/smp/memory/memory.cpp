@@ -19,61 +19,83 @@ void SMP::port_write(uint2 port, uint8 data) {
   apuram[0xf4 + port] = data;
 }
 
-alwaysinline uint8 SMP::op_busread(uint16 addr) {
+alwaysinline uint8 SMP::op_busread(uint16 addr, bool exec) {
   unsigned result;
+  uint8 data;
 
   switch(addr) {
   case 0xf0:  //TEST -- write-only register
-    return 0x00;
+    data = 0x00;
+    break;
 
   case 0xf1:  //CONTROL -- write-only register
-    return 0x00;
+    data = 0x00;
+    break;
 
   case 0xf2:  //DSPADDR
-    return status.dsp_addr;
+    data = status.dsp_addr;
+    break;
 
   case 0xf3:  //DSPDATA
     //0x80-0xff are read-only mirrors of 0x00-0x7f
-    return dsp.read(status.dsp_addr & 0x7f);
+    data = dsp.read(status.dsp_addr & 0x7f);
+    break;
 
   case 0xf4:  //CPUIO0
   case 0xf5:  //CPUIO1
   case 0xf6:  //CPUIO2
   case 0xf7:  //CPUIO3
     synchronize_cpu();
-    return cpu.port_read(addr);
+    data = cpu.port_read(addr);
+    break;
 
   case 0xf8:  //RAM0
-    return status.ram00f8;
+    data = status.ram00f8;
+    break;
 
   case 0xf9:  //RAM1
-    return status.ram00f9;
+    data = status.ram00f9;
+    break;
 
   case 0xfa:  //T0TARGET
   case 0xfb:  //T1TARGET
   case 0xfc:  //T2TARGET -- write-only registers
-    return 0x00;
+    data = 0x00;
+    break;
 
   case 0xfd:  //T0OUT -- 4-bit counter value
     result = timer0.stage3_ticks;
     timer0.stage3_ticks = 0;
-    return result;
+    data = result;
+    break;
 
   case 0xfe:  //T1OUT -- 4-bit counter value
     result = timer1.stage3_ticks;
     timer1.stage3_ticks = 0;
-    return result;
+    data = result;
+    break;
 
   case 0xff:  //T2OUT -- 4-bit counter value
     result = timer2.stage3_ticks;
     timer2.stage3_ticks = 0;
-    return result;
+    data = result;
+    break;
+  default:
+    data = ram_read(addr);
+    break;
   }
-
-  return ram_read(addr);
+  uint8 flag = exec ? 0x04 : 0x01;
+  if(__builtin_expect(debugflags[addr] & flag, 0)) {
+    debug_read(16, addr, data, exec);
+  }
+  return data;
 }
 
 alwaysinline void SMP::op_buswrite(uint16 addr, uint8 data) {
+  if(__builtin_expect(debugflags[addr] & 0x2, 0)) {
+    debug_write(16, addr, data);
+  }
+
   switch(addr) {
   case 0xf0:  //TEST
     if(regs.p.p) break;  //writes only valid when P flag is clear
@@ -180,9 +202,9 @@ void SMP::op_io() {
   cycle_edge();
 }
 
-uint8 SMP::op_read(uint16 addr) {
+uint8 SMP::op_read(uint16 addr, bool exec) {
   add_clocks(12);
-  uint8 r = op_busread(addr);
+  uint8 r = op_busread(addr, exec);
   add_clocks(12);
   cycle_edge();
   return r;

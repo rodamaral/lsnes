@@ -11,7 +11,7 @@ template<uint8 (SMPcore::*op)(uint8)>
 void SMPcore::op_adjust_addr() {
   dp.l = op_readpc();
   dp.h = op_readpc();
-  rd = op_read(dp);
+  rd = op_read(dp, false);
   rd = call(rd);
   op_write(dp, rd);
 }
@@ -78,7 +78,7 @@ template<uint8 (SMPcore::*op)(uint8, uint8)>
 void SMPcore::op_read_addr(uint8 &r) {
   dp.l = op_readpc();
   dp.h = op_readpc();
-  rd = op_read(dp);
+  rd = op_read(dp, false);
   r = call(r, rd);
 }
 
@@ -87,7 +87,7 @@ void SMPcore::op_read_addri(uint8 &r) {
   dp.l = op_readpc();
   dp.h = op_readpc();
   op_io();
-  rd = op_read(dp + r);
+  rd = op_read(dp + r, false);
   regs.a = call(regs.a, rd);
 }
 
@@ -127,7 +127,7 @@ void SMPcore::op_read_idpx() {
   op_io();
   sp.l = op_readdp(dp++);
   sp.h = op_readdp(dp++);
-  rd = op_read(sp);
+  rd = op_read(sp, false);
   regs.a = call(regs.a, rd);
 }
 
@@ -137,7 +137,7 @@ void SMPcore::op_read_idpy() {
   op_io();
   sp.l = op_readdp(dp++);
   sp.h = op_readdp(dp++);
-  rd = op_read(sp + regs.y);
+  rd = op_read(sp + regs.y, false);
   regs.a = call(regs.a, rd);
 }
 
@@ -153,7 +153,7 @@ void SMPcore::op_set_addr_bit() {
   dp.h = op_readpc();
   bit = dp >> 13;
   dp &= 0x1fff;
-  rd = op_read(dp);
+  rd = op_read(dp, false);
   switch(opcode >> 5) {
   case 0:  //orc  addr:bit
   case 1:  //orc !addr:bit
@@ -198,10 +198,10 @@ void SMPcore::op_set_flag(bool &flag, bool data) {
 void SMPcore::op_test_addr(bool set) {
   dp.l = op_readpc();
   dp.h = op_readpc();
-  rd = op_read(dp);
+  rd = op_read(dp, false);
   regs.p.n = (regs.a - rd) & 0x80;
   regs.p.z = (regs.a - rd) == 0;
-  op_read(dp);
+  op_read(dp, false);
   op_write(dp, set ? rd | regs.a : rd & ~regs.a);
 }
 
@@ -216,7 +216,7 @@ void SMPcore::op_transfer(uint8 &from, uint8 &to) {
 void SMPcore::op_write_addr(uint8 &r) {
   dp.l = op_readpc();
   dp.h = op_readpc();
-  op_read(dp);
+  op_read(dp, false);
   op_write(dp, r);
 }
 
@@ -225,7 +225,7 @@ void SMPcore::op_write_addri(uint8 &i) {
   dp.h = op_readpc();
   op_io();
   dp += i;
-  op_read(dp);
+  op_read(dp, false);
   op_write(dp, regs.a);
 }
 
@@ -317,8 +317,8 @@ void SMPcore::op_bne_ydec() {
 }
 
 void SMPcore::op_brk() {
-  rd.l = op_read(0xffde);
-  rd.h = op_read(0xffdf);
+  rd.l = op_read(0xffde, false);
+  rd.h = op_read(0xffdf, false);
   op_io();
   op_io();
   op_writesp(regs.pc.h);
@@ -411,8 +411,8 @@ void SMPcore::op_jmp_iaddrx() {
   dp.h = op_readpc();
   op_io();
   dp += regs.x;
-  rd.l = op_read(dp++);
-  rd.h = op_read(dp++);
+  rd.l = op_read(dp++, false);
+  rd.h = op_read(dp++, false);
   regs.pc = rd;
 }
 
@@ -438,8 +438,8 @@ void SMPcore::op_jsr_addr() {
 
 void SMPcore::op_jst() {
   dp = 0xffde - ((opcode >> 4) << 1);
-  rd.l = op_read(dp++);
-  rd.h = op_read(dp++);
+  rd.l = op_read(dp++, false);
+  rd.h = op_read(dp++, false);
   op_io();
   op_io();
   op_io();
@@ -505,7 +505,7 @@ void SMPcore::op_sta_idpx() {
   op_io();
   dp.l = op_readdp(sp++);
   dp.h = op_readdp(sp++);
-  op_read(dp);
+  op_read(dp, false);
   op_write(dp, regs.a);
 }
 
@@ -515,7 +515,7 @@ void SMPcore::op_sta_idpy() {
   dp.h = op_readdp(sp++);
   op_io();
   dp += regs.y;
-  op_read(dp);
+  op_read(dp, false);
   op_write(dp, regs.a);
 }
 

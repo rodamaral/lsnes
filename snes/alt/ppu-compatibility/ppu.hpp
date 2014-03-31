@@ -3,6 +3,12 @@ public:
   uint8 vram[128 * 1024];
   uint8 oam[544];
   uint8 cgram[512];
+  //4 is read, 2 is write.
+  uint8 vram_debugflags[128 * 1024];
+  uint8 oam_debugflags[544];
+  uint8 cgram_debugflags[512];
+  function<void (uint8, unsigned, uint8)> debug_read;
+  function<void (uint8, unsigned, uint8)> debug_write;
 
   enum : bool { Threaded = true };
   alwaysinline void step(unsigned clocks);

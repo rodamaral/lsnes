@@ -18,8 +18,8 @@ void SMPDebugger::op_step() {
   synchronize_cpu();
 }
 
-uint8 SMPDebugger::op_read(uint16 addr) {
-  uint8 data = SMP::op_read(addr);
+uint8 SMPDebugger::op_read(uint16 addr, bool exec) {
+  uint8 data = SMP::op_read(addr, exec);
   usage[addr] |= UsageRead;
   debugger.breakpoint_test(Debugger::Breakpoint::Source::APURAM, Debugger::Breakpoint::Mode::Read, addr, data);
   return data;

@@ -1,6 +1,10 @@
 struct SMP : public Processor, public SMPcore {
   static const uint8 iplrom[64];
   uint8 apuram[64 * 1024];
+  uint8 debugflags[64 * 1024];
+
+  function<void (uint8, unsigned, uint8, bool)> debug_read;
+  function<void (uint8, unsigned, uint8)> debug_write;
 
   enum : bool { Threaded = true };
   alwaysinline void step(unsigned clocks);

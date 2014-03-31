@@ -47,20 +47,31 @@ uint8 PPU::vram_mmio_read(uint16 addr) {
       data = vram[addr];
     }
   }
-
+  if(__builtin_expect(vram_debugflags[addr] & 0x1, 0)) {
+    debug_read(13, addr, data);
+  }
   return data;
 }
 
 void PPU::vram_mmio_write(uint16 addr, uint8 data) {
   if(regs.display_disabled == true) {
+    if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
+      debug_write(13, addr, data);
+    }
     vram[addr] = data;
   } else {
     uint16 v = cpu.vcounter();
     uint16 h = cpu.hcounter();
     if(v == 0) {
       if(h <= 4) {
+        if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
+          debug_write(13, addr, data);
+        }
         vram[addr] = data;
       } else if(h == 6) {
+        if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
+          debug_write(13, addr, cpu.regs.mdr);
+        }
         vram[addr] = cpu.regs.mdr;
       } else {
         //no write
@@ -71,9 +82,15 @@ void PPU::vram_mmio_write(uint16 addr, uint8 data) {
       if(h <= 4) {
         //no write
       } else {
+        if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
+          debug_write(13, addr, data);
+        }
         vram[addr] = data;
       }
     } else {
+      if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
+        debug_write(13, addr, data);
+      }
       vram[addr] = data;
     }
   }
@@ -93,7 +110,9 @@ uint8 PPU::oam_mmio_read(uint16 addr) {
       data = oam[addr];
     }
   }
-
+  if(__builtin_expect(oam_debugflags[addr] & 0x1, 0)) {
+    debug_read(14, addr, data);
+  }
   return data;
 }
 
@@ -104,13 +123,22 @@ void PPU::oam_mmio_write(uint16 addr, uint8 data) {
   sprite_list_valid = false;
 
   if(regs.display_disabled == true) {
+    if(__builtin_expect(oam_debugflags[addr] & 0x2, 0)) {
+      debug_write(14, addr, data);
+    }
     oam[addr] = data;
     update_sprite_list(addr, data);
   } else {
     if(cpu.vcounter() < (!overscan() ? 225 : 240)) {
+      if(__builtin_expect(oam_debugflags[regs.ioamaddr] & 0x2, 0)) {
+        debug_write(14, regs.ioamaddr, data);
+      }
       oam[regs.ioamaddr] = data;
       update_sprite_list(regs.ioamaddr, data);
     } else {
+      if(__builtin_expect(oam_debugflags[addr] & 0x2, 0)) {
+        debug_write(14, addr, data);
+      }
       oam[addr] = data;
       update_sprite_list(addr, data);
     }
@@ -134,6 +162,9 @@ uint8 PPU::cgram_mmio_read(uint16 addr) {
   }
 
   if(addr & 1) data &= 0x7f;
+  if(__builtin_expect(cgram_debugflags[addr] & 0x1, 0)) {
+    debug_read(15, addr, data);
+  }
   return data;
 }
 
@@ -142,13 +173,22 @@ void PPU::cgram_mmio_write(uint16 addr, uint8 data) {
   if(addr & 1) data &= 0x7f;
 
   if(1 || regs.display_disabled == true) {
+    if(__builtin_expect(cgram_debugflags[addr] & 0x2, 0)) {
+      debug_write(15, addr, data);
+    }
     cgram[addr] = data;
   } else {
     uint16 v = cpu.vcounter();
     uint16 h = cpu.hcounter();
     if(v < (!overscan() ? 225 : 240) && h >= 128 && h < 1096) {
+      if(__builtin_expect(cgram_debugflags[regs.icgramaddr] & 0x2, 0)) {
+        debug_write(15, regs.icgramaddr, data & 0x7f);
+      }
       cgram[regs.icgramaddr] = data & 0x7f;
     } else {
+      if(__builtin_expect(cgram_debugflags[addr] & 0x2, 0)) {
+        debug_write(15, addr, data);
+      }
       cgram[addr] = data;
     }
   }

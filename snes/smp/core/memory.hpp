@@ -1,9 +1,9 @@
 alwaysinline uint8 op_readpc() {
-  return op_read(regs.pc++);
+  return op_read(regs.pc++, true);
 }
 
 alwaysinline uint8 op_readsp() {
-  return op_read(0x0100 | ++regs.s);
+  return op_read(0x0100 | ++regs.s, false);
 }
 
 alwaysinline void op_writesp(uint8 data) {
@@ -11,7 +11,7 @@ alwaysinline void op_writesp(uint8 data) {
 }
 
 alwaysinline uint8 op_readdp(uint8 addr) {
-  return op_read((regs.p.p << 8) + addr);
+  return op_read((regs.p.p << 8) + addr, false);
 }
 
 alwaysinline void op_writedp(uint8 addr, uint8 data) {

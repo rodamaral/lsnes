@@ -26,6 +26,10 @@ struct Cartridge : property<Cartridge> {
     SUFAMITURBO_RAMA = 10,
     SUFAMITURBO_RAMB = 11,
     BSXFLASH = 12,
+    VRAM = 13,
+    OAM = 14,
+    CGRAM = 15,
+    APURAM = 16,
   };
 
   enum class Slot : unsigned {
