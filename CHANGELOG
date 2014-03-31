@@ -1729,7 +1729,7 @@ rr2-β18 [Wednesday March 19th 2014]
 * Make setting/unsetting non-bus breaks much faster.
 * Optimize movie.find_frame()
 
-rr2-β19 [Monday March 31th 2014]
+rr2-β19 [Monday March 31st 2014]
 ================================
 * Move one #ifdef BSNES_HAS_DEBUGGER to the proper place
 * Some missing string conversions and headers
