@@ -109,7 +109,7 @@ namespace
 
 		if(!create) {
 			P(p);
-			size_t ccount = p->colors.size();
+			size_t ccount = p->color_count;
 			if(ccount != 16 && ccount != 256)
 				throw std::runtime_error("Palette to read must be 16 or 256 colors");
 			full = (ccount == 256);
@@ -127,7 +127,7 @@ namespace
 		size_t ps = full ? 256 : 16;
 		if(create) {
 			p = lua::_class<lua_palette>::create(L);
-			p->colors.resize(ps);
+			p->adjust_palette_size(ps);
 		}
 		uint8_t* mem = reinterpret_cast<uint8_t*>(lsnes_memory.get_physical_mapping(addr, 2 * ps));
 		if(mem) {

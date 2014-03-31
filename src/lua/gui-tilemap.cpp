@@ -31,7 +31,9 @@ namespace
 	struct tilemap
 	{
 		tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight);
-		static size_t overcommit(size_t _width, size_t _height, size_t _cwidth, size_t _cheight) { return 0; }
+		static size_t overcommit(size_t _width, size_t _height, size_t _cwidth, size_t _cheight) {
+			return lua::overcommit_std_align + 2 * sizeof(tilemap_entry) * _width * _height;
+		}
 		~tilemap()
 		{
 			threads::alock h(lock);
@@ -131,8 +133,7 @@ namespace
 				y0 + h < y0)
 				throw std::runtime_error("Scroll window out of range");
 			if(!ox && !oy) return 0;
-			std::vector<tilemap_entry> tmp;
-			tmp.resize(w * h);
+			tilemap_entry* tmp = tmpmap;
 			for(size_t _y = 0; _y < h; _y++) {
 				size_t y = _y + y0;
 				size_t sy = calcshift(y, oy, h, y0, circy);
@@ -161,7 +162,8 @@ namespace
 		size_t height;
 		size_t cwidth;
 		size_t cheight;
-		std::vector<tilemap_entry> map;
+		tilemap_entry* map;
+		tilemap_entry* tmpmap;
 		threads::lock lock;
 	};
 
@@ -208,8 +210,8 @@ namespace
 		{
 			if(xmin >= xmax || ymin >= ymax) return;
 			p.palette_mutex.lock();
-			framebuffer::color* palette = &p.colors[0];
-			size_t pallim = p.colors.size();
+			framebuffer::color* palette = p.colors;
+			size_t pallim = p.color_count;
 
 			for(int32_t r = ymin; r < ymax; r++) {
 				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
@@ -317,6 +319,10 @@ namespace
 	{
 		if(width * height / height != width)
 			throw std::bad_alloc();
-		map.resize(width * height);
+		map = lua::align_overcommit<tilemap, tilemap_entry>(this);
+		tmpmap = &map[width * height];
+		//Initialize the map!
+		for(size_t i = 0; i < 2 * width * height; i++)
+			new(map + i) tilemap_entry();
 	}
 }

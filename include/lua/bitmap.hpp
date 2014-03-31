@@ -14,9 +14,15 @@
 
 struct lua_palette
 {
-	std::vector<framebuffer::color> colors;
+	std::vector<framebuffer::color> lcolors;
+	framebuffer::color* colors;
+	framebuffer::color* scolors;
 	lua_palette(lua::state& L);
-	static size_t overcommit() { return 0; }
+	size_t color_count;
+	const static size_t reserved_colors = 32;
+	static size_t overcommit() {
+		return lua::overcommit_std_align + reserved_colors * sizeof(framebuffer::color);
+	}
 	~lua_palette();
 	threads::lock palette_mutex;
 	std::string print();
@@ -27,16 +33,20 @@ struct lua_palette
 	int hash(lua::state& L, lua::parameters& P);
 	int debug(lua::state& L, lua::parameters& P);
 	int adjust_transparency(lua::state& L, lua::parameters& P);
+	void adjust_palette_size(size_t newsize);
+	void push_back(const framebuffer::color& c);
 };
 
 struct lua_bitmap
 {
 	lua_bitmap(lua::state& L, uint32_t w, uint32_t h);
-	static size_t overcommit(uint32_t w, uint32_t h) { return 0; }
+	static size_t overcommit(uint32_t w, uint32_t h) {
+		return lua::overcommit_std_align + sizeof(uint16_t) * w * h;
+	}
 	~lua_bitmap();
 	size_t width;
 	size_t height;
-	std::vector<uint16_t> pixels;
+	uint16_t* pixels;
 	std::vector<char> save_png(const lua_palette& pal) const;
 	std::string print();
 	static int create(lua::state& L, lua::parameters& P);
@@ -54,11 +64,13 @@ struct lua_bitmap
 struct lua_dbitmap
 {
 	lua_dbitmap(lua::state& L, uint32_t w, uint32_t h);
-	static size_t overcommit(uint32_t w, uint32_t h) { return 0; }
+	static size_t overcommit(uint32_t w, uint32_t h) {
+		return lua::overcommit_std_align + sizeof(framebuffer::color) * w * h;
+	}
 	~lua_dbitmap();
 	size_t width;
 	size_t height;
-	std::vector<framebuffer::color> pixels;
+	framebuffer::color* pixels;
 	std::vector<char> save_png() const;
 	std::string print();
 	static int create(lua::state& L, lua::parameters& P);

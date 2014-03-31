@@ -204,6 +204,17 @@ private:
 	bool registered;
 };
 
+static const size_t overcommit_std_align = 32;
+
+/**
+ * Align a overcommit pointer.
+ */
+template<typename T, typename U> U* align_overcommit(T* th)
+{
+	size_t ptr = reinterpret_cast<size_t>(th) + sizeof(T);
+	return reinterpret_cast<U*>(ptr + (overcommit_std_align - ptr % overcommit_std_align) % overcommit_std_align);
+}
+
 /**
  * The type of Lua classes.
  */

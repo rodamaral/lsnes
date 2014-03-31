@@ -41,11 +41,11 @@ std::vector<char> lua_bitmap::save_png(const lua_palette& pal) const
 	img.has_palette = true;
 	img.has_alpha = false;
 	img.data.resize(width * height);
-	img.palette.resize(pal.colors.size());
+	img.palette.resize(pal.color_count);
 	for(size_t i = 0; i < width * height; i++) {
 		img.data[i] = pixels[i];
 	}
-	for(size_t i = 0; i < pal.colors.size(); i++) {
+	for(size_t i = 0; i < pal.color_count; i++) {
 		const framebuffer::color& c = pal.colors[i];
 		if(c.origa != 256)
 			img.has_alpha = true;
@@ -100,8 +100,8 @@ namespace
 			size_t w, h;
 			framebuffer::color* palette;
 			if(b) {
-				palette = &p->colors[0];
-				pallim = p->colors.size();
+				palette = p->colors;
+				pallim = p->color_count;
 				w = b->width;
 				h = b->height;
 			} else {
@@ -150,7 +150,7 @@ namespace
 		operand_dbitmap(lua_dbitmap& _bitmap)
 			: bitmap(_bitmap), _transparent(-1)
 		{
-			pixels = &bitmap.pixels[0];
+			pixels = bitmap.pixels;
 		}
 		size_t get_width() { return bitmap.width; }
 		size_t get_height() { return bitmap.height; }
@@ -172,7 +172,7 @@ namespace
 		operand_bitmap(lua_bitmap& _bitmap)
 			: bitmap(_bitmap)
 		{
-			pixels = &bitmap.pixels[0];
+			pixels = bitmap.pixels;
 		}
 		size_t get_width() { return bitmap.width; }
 		size_t get_height() { return bitmap.height; }
@@ -193,9 +193,9 @@ namespace
 		operand_bitmap_pal(lua_bitmap& _bitmap, lua_palette& _palette)
 			: bitmap(_bitmap), palette(_palette), _transparent(-1)
 		{
-			pixels = &bitmap.pixels[0];
-			limit = palette.colors.size();
-			pal = &palette.colors[0];
+			pixels = bitmap.pixels;
+			limit = palette.color_count;
+			pal = palette.colors;
 		}
 		size_t get_width() { return bitmap.width; }
 		size_t get_height() { return bitmap.height; }
@@ -271,8 +271,8 @@ namespace
 	{
 		srcdest_priority(lua_bitmap& dest, lua_bitmap& src)
 		{
-			darray = &dest.pixels[0];
-			sarray = &src.pixels[0];
+			darray = dest.pixels;
+			sarray = src.pixels;
 			swidth = src.width;
 			sheight = src.height;
 			dwidth = dest.width;
@@ -525,7 +525,7 @@ namespace
 			lua_palette* p = lua::_class<lua_palette>::create(L);
 			for(size_t i = 0; i < bitmap.w * bitmap.h; i++)
 				b->pixels[i] = bitmap.bitmap[i];
-			p->colors.resize(bitmap.palette.size());
+			p->adjust_palette_size(bitmap.palette.size());
 			for(size_t i = 0; i < bitmap.palette.size(); i++)
 				p->colors[i] = framebuffer::color(bitmap.palette[i]);
 			return 2;
@@ -638,7 +638,7 @@ namespace
 			lua_palette* p = lua::_class<lua_palette>::create(L);
 			for(size_t i = 0; i < img.width * img.height; i++)
 				b->pixels[i] = img.data[i];
-			p->colors.resize(img.palette.size());
+			p->adjust_palette_size(img.palette.size());
 			for(size_t i = 0; i < img.palette.size(); i++)
 				p->colors[i] = framebuffer::color(mangle_color(img.palette[i]));
 			return 2;
@@ -667,18 +667,18 @@ namespace
 				cb = parse_value<uint8_t>(r[3]);
 				ca = 256 - parse_value<uint16_t>(r[4]);
 				if(ca == 256)
-					p->colors.push_back(framebuffer::color(-1));
+					p->push_back(framebuffer::color(-1));
 				else
-					p->colors.push_back(framebuffer::color((ca << 24) | (cr << 16)
+					p->push_back(framebuffer::color((ca << 24) | (cr << 16)
 						| (cg << 8) | cb));
 			} else if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
 				int64_t cr, cg, cb;
 				cr = parse_value<uint8_t>(r[1]);
 				cg = parse_value<uint8_t>(r[2]);
 				cb = parse_value<uint8_t>(r[3]);
-				p->colors.push_back(framebuffer::color((cr << 16) | (cg << 8) | cb));
+				p->push_back(framebuffer::color((cr << 16) | (cg << 8) | cb));
 			} else if(r = regex("[ \t]*([^ \t]|[^ \t].*[^ \t])[ \t]*", line)) {
-				p->colors.push_back(framebuffer::color(r[1]));
+				p->push_back(framebuffer::color(r[1]));
 			} else
 				throw std::runtime_error("Invalid line format (" + line + ")");
 		}
@@ -753,6 +753,10 @@ namespace
 /** Palette **/
 lua_palette::lua_palette(lua::state& L)
 {
+	color_count = 0;
+	scolors = colors = lua::align_overcommit<lua_palette, framebuffer::color>(this);
+	for(unsigned i = 0; i < reserved_colors; i++)
+		scolors[i] = framebuffer::color(-1);
 }
 
 lua_palette::~lua_palette()
@@ -761,7 +765,7 @@ lua_palette::~lua_palette()
 
 std::string lua_palette::print()
 {
-	size_t s = colors.size();
+	size_t s = color_count;
 	return (stringfmt() << s << " " << ((s != 1) ? "colors" : "color")).str();
 }
 
@@ -805,11 +809,8 @@ int lua_palette::set(lua::state& L, lua::parameters& P)
 
 	P(P.skipped(), c, nc);
 
-	//The lock protects only the internals of colors array.
-	if(this->colors.size() <= c) {
-		this->palette_mutex.lock();
-		this->colors.resize(static_cast<uint32_t>(c) + 1);
-		this->palette_mutex.unlock();
+	if(this->color_count <= c) {
+		this->adjust_palette_size(static_cast<uint32_t>(c) + 1);
 	}
 	this->colors[c] = nc;
 	return 0;
@@ -822,7 +823,7 @@ int lua_palette::hash(lua::state& L, lua::parameters& P)
 	int bufferuse = 0;
 	char buf[buffersize];
 	unsigned realsize = 0;
-	for(unsigned i = 0; i < this->colors.size(); i++)
+	for(unsigned i = 0; i < this->color_count; i++)
 		if(this->colors[i].origa) realsize = i + 1;
 	for(unsigned i = 0; i < realsize; i++) {
 		if(bufferuse + 6 > buffersize) {
@@ -840,9 +841,8 @@ int lua_palette::hash(lua::state& L, lua::parameters& P)
 
 int lua_palette::debug(lua::state& L, lua::parameters& P)
 {
-	size_t i = 0;
-	for(auto c : this->colors)
-		messages << "Color #" << (i++) << ": " << c.orig << ":" << c.origa << std::endl;
+	for(size_t i = 0; i < color_count; i++)
+		messages << "Color #" << i << ": " << colors[i].orig << ":" << colors[i].origa << std::endl;
 	return 0;
 }
 
@@ -852,9 +852,36 @@ int lua_palette::adjust_transparency(lua::state& L, lua::parameters& P)
 
 	P(P.skipped(), tadj);
 
-	for(auto& c : this->colors)
-		c = tadjust(c, tadj);
+	for(size_t i = 0; i < color_count; i++)
+		colors[i] = tadjust(colors[i], tadj);
 	return 0;
+}
+
+void lua_palette::adjust_palette_size(size_t newsize)
+{
+	threads::alock h(palette_mutex);
+	if(newsize > reserved_colors) {
+		lcolors.resize(newsize);
+		if(color_count <= reserved_colors) {
+			for(unsigned i = 0; i < color_count; i++)
+				lcolors[i] = colors[i];
+		}
+		colors = &lcolors[0];
+	} else {
+		if(color_count > reserved_colors) {
+			for(unsigned i = 0; i < color_count; i++)
+				scolors[i] = lcolors[i];
+		}
+		colors = scolors;
+	}
+	color_count = newsize;
+}
+
+void lua_palette::push_back(const framebuffer::color& cx)
+{
+	size_t c = color_count; 
+	adjust_palette_size(c + 1);
+	colors[c] = cx;
 }
 
 /** BITMAP **/
@@ -862,8 +889,8 @@ lua_bitmap::lua_bitmap(lua::state& L, uint32_t w, uint32_t h)
 {
 	width = w;
 	height = h;
-	pixels.resize(width * height);
-	memset(&pixels[0], 0, width * height);
+	pixels = lua::align_overcommit<lua_bitmap, uint16_t>(this);
+	memset(pixels, 0, 2 * width * height);
 }
 
 lua_bitmap::~lua_bitmap()
@@ -1026,7 +1053,11 @@ lua_dbitmap::lua_dbitmap(lua::state& L, uint32_t w, uint32_t h)
 {
 	width = w;
 	height = h;
-	pixels.resize(width * height);
+	pixels = lua::align_overcommit<lua_dbitmap, framebuffer::color>(this);
+	//Initialize the bitmap data.
+	framebuffer::color transparent(-1);
+	for(size_t i = 0; i < width * height; i++)
+		new(pixels + i) framebuffer::color(transparent);
 }
 
 lua_dbitmap::~lua_dbitmap()
@@ -1206,8 +1237,8 @@ int lua_dbitmap::adjust_transparency(lua::state& L, lua::parameters& P)
 
 	P(P.skipped(), tadj);
 
-	for(auto& c : this->pixels)
-		c = tadjust(c, tadj);
+	for(size_t i = 0; i < width * height; i++)
+		pixels[i] = tadjust(pixels[i], tadj);
 	return 0;
 }
 
