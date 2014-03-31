@@ -1,3 +1,4 @@
+#include "core/emustatus.hpp"
 #include "core/window.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_status.hpp"
@@ -43,83 +44,92 @@ wxwin_status::~wxwin_status()
 {
 }
 
+namespace
+{
+	void register_entry(size_t& count, size_t& width, const std::string& text)
+	{
+		width = max(width, text_framebuffer::text_width(text));
+		count++;
+	}
+
+	void show_entry(text_framebuffer_panel& tp, bool& sofar, size_t& line, size_t width, const std::string& name,
+		const std::u32string& text)
+	{
+		size_t n = tp.write(name, width + 1, 0, line, 0, 0xFFFFFF);
+		tp.write(text, 0, n, line++, 0, 0xFFFFFF);
+		sofar = true;
+	}
+
+	void draw_split(text_framebuffer_panel& tp, size_t& line)
+	{
+		auto s = tp.get_characters();
+		for(unsigned i = 0; i < s.first; i++)
+			tp.write(U"\u2500", 0, i, line, 0, 0xFFFFFF);
+		line++;
+	}
+
+	int num_nonzeroes() { return 0; }
+	template<typename T, typename... U> int num_nonzeroes(T hd, U... tl) {
+		return (hd ? 1 : 0) + num_nonzeroes(tl...);
+	}
+	template<typename... T> bool one_nonzero(T... args) { return (num_nonzeroes(args...) == 1); }
+}
+
 void wxwin_status::panel::prepare_paint()
 {
-	//Quickly copy the status area.
-	auto& s = platform::get_emustatus();
-	std::map<std::string, std::u32string> newstatus;
-	emulator_status::iterator i = s.first();
-	while(s.next(i))
-		newstatus[i.key] = i.value;
-
 	clear();
 
-	size_t mem_width = 0;
-	size_t oth_width = 0;
-	size_t mem_count = 0;
-	size_t oth_count = 0;
-	bool single = false;
-	for(auto i : newstatus) {
-		if(i.first.length() > 0 && i.first[0] == '!')
-			continue;
-		bool x = regex_match("M\\[.*\\]", i.first);
-		if(x) {
-			mem_width = max(mem_width, text_framebuffer::text_width(i.first) - 3);
-			mem_count++;
-		} else {
-			oth_width = max(oth_width, text_framebuffer::text_width(i.first));
-			oth_count++;
+	auto& newstatus = lsnes_status.get_read();
+	try {
+		bool entry_so_far = false;
+		size_t mem_width = 0;
+		size_t oth_width = 0;
+		size_t lua_width = 0;
+		size_t mem_count = 0;
+		size_t oth_count = 0;
+		size_t lua_count = 0;
+		bool single = false;
+		for(auto& i : newstatus.mvars) register_entry(mem_count, mem_width, i.first);
+		if(newstatus.rtc_valid) register_entry(oth_count, oth_width, "RTC");
+		for(size_t j = 0; j < newstatus.inputs.size(); j++)
+			register_entry(oth_count, oth_width, (stringfmt() << "P" << (j + 1)).str());
+		for(auto& i : newstatus.lvars) register_entry(lua_count, lua_width, i.first);
+
+		if(watch_flag < 0) {
+			oth_count = 0;
+			lua_count = 0;
 		}
-	}
-	if(watch_flag < 0)
-		oth_count = 0;
-	if(watch_flag > 0)
-		mem_count = 0;
-	if(!oth_count || !mem_count)
-		single = true;
+		if(watch_flag > 0)
+			mem_count = 0;
+		single = one_nonzero(mem_count, oth_count, lua_count);
 
-	regex_results r;
-	size_t p = 0;
-	if(mem_count) {
-		if(!single)
-			write("Memory watches:", 0, 0, p++, 0, 0xFFFFFF);
-		for(auto i : newstatus) {
-			if(i.first.length() > 0 && i.first[0] == '!')
-				continue;
-			if(r = regex("M\\[(.*)\\]", i.first)) {
-				size_t n = write(r[1], mem_width + 1, 0, p, 0, 0xFFFFFF);
-				write(i.second, 0, n, p++, 0, 0xFFFFFF);
-			}
+		regex_results r;
+		size_t p = 0;
+		if(mem_count) {
+			if(entry_so_far) draw_split(*this, p);
+			if(!single) write("Memory watches:", 0, 0, p++, 0, 0xFFFFFF);
+			for(auto i : newstatus.mvars) show_entry(*this, entry_so_far, p, mem_width, i.first,
+				i.second);
 		}
-	}
-	if(mem_count && oth_count) {
-		auto s = get_characters();
-		for(unsigned i = 0; i < s.first; i++)
-			write(U"\u2500", 0, i, p, 0, 0xFFFFFF);
-		p++;
-	}
 
-	if(oth_count) {
-		if(!single)
-			write("Status:", 0, 0, p++, 0, 0xFFFFFF);
-		for(auto i : newstatus) {
-			if(i.first.length() > 0 && i.first[0] == '!')
-				continue;
-			if(regex_match("M\\[.*\\]", i.first))
-				continue;
-			size_t n = write(i.first, oth_width + 1, 0, p, 0, 0xFFFFFF);
-			write(i.second, 0, n, p++, 0, 0xFFFFFF);
+		if(oth_count) {
+			if(entry_so_far) draw_split(*this, p);
+			if(!single) write("Status:", 0, 0, p++, 0, 0xFFFFFF);
+			if(newstatus.rtc_valid) show_entry(*this, entry_so_far, p, oth_width, "RTC", newstatus.rtc);
+			for(size_t j = 0; j < newstatus.inputs.size(); j++)
+				show_entry(*this, entry_so_far, p, oth_width, (stringfmt() << "P" << (j + 1)).str(),
+					newstatus.inputs[j]);
 		}
-	}
 
-	{
-		std::map<std::string, std::u32string> specials;
-		for(auto i : newstatus)
-			if(i.first.length() > 0 && i.first[0] == '!')
-				specials[i.first] = i.second;
-		main_window->update_statusbar(specials);
+		if(lua_count) {
+			if(entry_so_far) draw_split(*this, p);
+			if(!single) write("From Lua:", 0, 0, p++, 0, 0xFFFFFF);
+			for(auto i : newstatus.lvars) show_entry(*this, entry_so_far, p, lua_width, i.first,
+				i.second);
+		}
+	} catch(...) {
 	}
-
+	lsnes_status.put_read();
 }
 
 void wxwin_status::notify_update() throw()

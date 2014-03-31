@@ -50,7 +50,7 @@ public:
 	void menu_enable(int id, bool newstate);
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
-	void update_statusbar(const std::map<std::string, std::u32string>& vars);
+	void update_statusbar();
 	void action_updated();
 	void enter_or_leave_fullscreen(bool fs);
 	void request_rom(rom_request& req);

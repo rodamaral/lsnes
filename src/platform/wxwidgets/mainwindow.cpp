@@ -19,6 +19,7 @@
 #include "core/controller.hpp"
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
+#include "core/emustatus.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
@@ -215,7 +216,7 @@ namespace
 		void Notify()
 		{
 			if(w->download_in_progress->finished) {
-				w->update_statusbar(std::map<std::string, std::u32string>());
+				w->update_statusbar();
 				auto old = w->download_in_progress;
 				w->download_in_progress = NULL;
 				if(old->errormsg != "") {
@@ -228,7 +229,7 @@ namespace
 				Stop();
 				delete this;
 			} else {
-				w->update_statusbar(std::map<std::string, std::u32string>());
+				w->update_statusbar();
 			}
 		}
 	private:
@@ -1235,6 +1236,7 @@ void wxwin_mainwindow::notify_update_status() throw()
 	spanel->request_paint();
 	if(mwindow)
 		mwindow->notify_update();
+	update_statusbar();
 }
 
 void wxwin_mainwindow::notify_exit() throw()
@@ -1244,14 +1246,14 @@ void wxwin_mainwindow::notify_exit() throw()
 	Destroy();
 }
 
-std::u32string read_variable_map(const std::map<std::string, std::u32string>& vars, const std::string& key)
+std::string read_variable_map(const std::map<std::string, std::u32string>& vars, const std::string& key)
 {
 	if(!vars.count(key))
-		return U"";
-	return vars.find(key)->second;
+		return "";
+	return utf8::to8(vars.find(key)->second);
 }
 
-void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32string>& vars)
+void wxwin_mainwindow::update_statusbar()
 {
 	if(download_in_progress) {
 		statusbar->SetStatusText(towxstring(download_in_progress->statusmsg()));
@@ -1265,52 +1267,62 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 		statusbar->SetStatusText(towxstring(s.str()));
 		return;
 	}
-	if(vars.empty())
+	auto& vars = lsnes_status.get_read();
+	if(!vars.valid) {
+		lsnes_status.put_read();
 		return;
+	}
 	try {
-		std::basic_ostringstream<char32_t> s;
-		bool recording = (read_variable_map(vars, "!mode") == U"R");
-		if(recording)
-			s << U"Frame: " << read_variable_map(vars, "!frame");
-		else
-			s << U"Frame: " << read_variable_map(vars, "!frame") << U"/" <<
-				read_variable_map(vars, "!length");
-		s << U"  Lag: " << read_variable_map(vars, "!lag");
-		s << U"  Subframe: " << read_variable_map(vars, "!subframe");
-		if(vars.count("!saveslot")) {
-			s << U"  Slot: ";
-			if(vars.count("!branch")) s << read_variable_map(vars, "!branch") << U"→";
-			s << read_variable_map(vars, "!saveslot");
+		std::ostringstream s;
+		bool recording = (vars.mode == 'R');
+		if(vars.movie_valid) {
+			if(recording)
+				s << "Frame: " << vars.curframe;
+			else
+				s << "Frame: " << vars.curframe << "/" << vars.length;
+			s << "  Lag: " << vars.lag;
+			if(vars.subframe == _lsnes_status::subframe_savepoint)
+				s << "  Subframe: S";
+			else if(vars.subframe == _lsnes_status::subframe_video)
+				s << "  Subframe: V";
+			else
+				s << "  Subframe: " << vars.subframe;
+		} else {
+			s << "Frame: N/A  Lag: N/A  Subframe: N/A";
 		}
-		if(vars.count("!saveslotinfo"))
-			s << U" [" << read_variable_map(vars, "!saveslotinfo") << U"]";
-		s << U"  Speed: " << read_variable_map(vars, "!speed") << U"%";
-		s << U" ";
-		if(read_variable_map(vars, "!pause") == U"B")
-			s << U" Breakpoint";
-		else if(read_variable_map(vars, "!pause") == U"P")
-			s << U" Paused";
-		if(read_variable_map(vars, "!dumping") != U"")
-			s << U" Dumping";
-		if(read_variable_map(vars, "!mode") == U"C")
-			s << U" Corrupt";
-		else if(read_variable_map(vars, "!mode") == U"R")
-			s << U" Recording";
-		else if(read_variable_map(vars, "!mode") == U"P")
-			s << U" Playback";
-		else if(read_variable_map(vars, "!mode") == U"F")
-			s << U" Finished";
+		if(vars.saveslot_valid) {
+			s << "  Slot: ";
+			if(vars.branch_valid) s << utf8::to8(vars.branch) << "→";
+			s << vars.saveslot;
+			s << " [" << utf8::to8(vars.slotinfo) << "]";
+		}
+		s << "  Speed: " << vars.speed << "% ";
+		if(vars.pause == _lsnes_status::pause_break)
+			s << " Breakpoint";
+		else if(vars.pause == _lsnes_status::pause_normal)
+			s << " Paused";
+		if(vars.dumping)
+			s << " Dumping";
+		if(vars.mode == 'C')
+			s << " Corrupt";
+		else if(vars.mode == 'R')
+			s << " Recording";
+		else if(vars.mode == 'P')
+			s << " Playback";
+		else if(vars.mode == 'F')
+			s << " Finished";
 		else
-			s << U" Unknown";
-		if(vars.count("!mbranch"))
-			s << U"  Branch: " << read_variable_map(vars, "!mbranch");
-		std::u32string macros = read_variable_map(vars, "!macros");
+			s << " Unknown";
+		if(vars.mbranch_valid)
+			s << "  Branch: " << utf8::to8(vars.mbranch);
+		std::string macros = utf8::to8(vars.macros);
 		if(macros.length())
-			s << U"  Macros: " << macros;
+			s << "  Macros: " << macros;
 
 		statusbar->SetStatusText(towxstring(s.str()));
 	} catch(std::exception& e) {
 	}
+	lsnes_status.put_read();
 }
 
 #define NEW_KEYBINDING "A new binding..."

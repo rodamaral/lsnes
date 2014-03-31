@@ -5,6 +5,7 @@
 #include "core/command.hpp"
 #include "core/debug.hpp"
 #include "core/dispatch.hpp"
+#include "core/emustatus.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "core/inthread.hpp"
@@ -300,7 +301,6 @@ void update_movie_state()
 {
 	auto p = project_get();
 	bool readonly = false;
-	static unsigned last_controllers = 0;
 	{
 		uint64_t magic[4];
 		our_rom.region->fill_framerate_magic(magic);
@@ -309,143 +309,123 @@ void update_movie_state()
 		else
 			voice_frame_number(0, 60.0);	//Default.
 	}
-	auto& _status = platform::get_emustatus();
-	if(movb && !system_corrupt) {
-		_status.set("!frame", (stringfmt() << movb.get_movie().get_current_frame()).str());
-		_status.set("!length", (stringfmt() << movb.get_movie().get_frame_count()).str());
-		_status.set("!lag", (stringfmt() << movb.get_movie().get_lag_frames()).str());
-		if(location_special == SPECIAL_FRAME_START)
-			_status.set("!subframe", "0");
-		else if(location_special == SPECIAL_SAVEPOINT)
-			_status.set("!subframe", "S");
-		else if(location_special == SPECIAL_FRAME_VIDEO)
-			_status.set("!subframe", "V");
-		else
-			_status.set("!subframe", (stringfmt() << movb.get_movie().next_poll_number()).str());
-	} else {
-		_status.set("!frame", "N/A");
-		_status.set("!length", "N/A");
-		_status.set("!lag", "N/A");
-		_status.set("!subframe", "N/A");
-	}
-	_status.set("!dumping", (information_dispatch::get_dumper_count() ? "Y" : ""));
-	if(break_pause)
-		_status.set("!pause", "B");
-	else if(amode == ADVANCE_PAUSE)
-		_status.set("!pause", "P");
-	else
-		_status.set("!pause", "");
-	if(movb) {
-		auto& mo = movb.get_movie();
-		readonly = mo.readonly_mode();
-		if(system_corrupt)
-			_status.set("!mode", "C");
-		else if(!readonly)
-			_status.set("!mode", "R");
-		else if(mo.get_frame_count() >= mo.get_current_frame())
-			_status.set("!mode", "P");
-		else
-			_status.set("!mode", "F");
-	} else {
-		_status.erase("!subframe");
-	}
-	if(jukebox_size > 0) {
-		int tmp = -1;
-		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, -1);
-		_status.set("!saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str());
-		_status.set("!saveslotinfo", get_slotinfo(sfilen));
-	} else {
-		_status.erase("!saveslot");
-		_status.erase("!saveslotinfo");
-	}
-	if(p) {
-		_status.set("!branch", p->get_branch_string());
-	} else {
-		_status.erase("!branch");
-	}
-	{
-		std::string cur_branch = movb ? movb.get_mfile().current_branch() : "";
-		if(cur_branch != "")
-			_status.set("!mbranch", cur_branch);
-		else
-			_status.erase("!mbranch");
-	}
-	_status.set("!speed", (stringfmt() << (unsigned)(100 * get_realized_multiplier() + 0.5)).str());
-
-	if(movb && !system_corrupt) {
-		time_t timevalue = static_cast<time_t>(movb.get_mfile().rtc_second);
-		struct tm* time_decompose = gmtime(&timevalue);
-		char datebuffer[512];
-		strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
-		_status.set("RTC", datebuffer);
-	} else {
-		_status.erase("RTC");
-	}
-
-	auto mset = controls.active_macro_set();
-	bool mfirst = true;
-	std::ostringstream mss;
-	for(auto i: mset) {
-		if(!mfirst) mss << ",";
-		mss << i;
-		mfirst = false;
-	}
-	_status.set("!macros", mss.str());
-
-	controller_frame c;
-	if(!multitrack_editor.any_records())
-		c = movb.get_movie().get_controls();
-	else
-		c = controls.get_committed();
-	for(unsigned i = 0;; i++) {
-		auto pindex = controls.lcid_to_pcid(i);
-		if(pindex.first < 0 || !controls.is_present(pindex.first, pindex.second)) {
-			for(unsigned j = i; j < last_controllers; j++)
-				_status.erase((stringfmt() << "P" << (j + 1)).str());
-			last_controllers = i;
-			break;
-		}
-		char32_t buffer[MAX_DISPLAY_LENGTH];
-		c.display(pindex.first, pindex.second, buffer);
-		std::u32string _buffer = buffer;
-		if(readonly && multitrack_editor.is_enabled()) {
-			multitrack_edit::state st = multitrack_editor.get(pindex.first, pindex.second);
-			if(st == multitrack_edit::MT_PRESERVE)
-				_buffer += U" (keep)";
-			else if(st == multitrack_edit::MT_OVERWRITE)
-				_buffer += U" (rewrite)";
-			else if(st == multitrack_edit::MT_OR)
-				_buffer += U" (OR)";
-			else if(st == multitrack_edit::MT_XOR)
-				_buffer += U" (XOR)";
+	auto& _status = lsnes_status.get_write();
+	try {
+		if(movb && !system_corrupt) {
+			_status.movie_valid = true;
+			_status.curframe = movb.get_movie().get_current_frame();
+			_status.length = movb.get_movie().get_frame_count();
+			_status.lag = movb.get_movie().get_lag_frames();
+			if(location_special == SPECIAL_FRAME_START)
+				_status.subframe = 0;
+			else if(location_special == SPECIAL_SAVEPOINT)
+				_status.subframe = _lsnes_status::subframe_savepoint;
+			else if(location_special == SPECIAL_FRAME_VIDEO)
+				_status.subframe = _lsnes_status::subframe_video;
 			else
-				_buffer += U" (\?\?\?)";
+				_status.subframe = movb.get_movie().next_poll_number();
+		} else {
+			_status.movie_valid = false;
+			_status.curframe = 0;
+			_status.length = 0;
+			_status.lag = 0;
+			_status.subframe = 0;
 		}
-		_status.set((stringfmt() << "P" << (i + 1)).str(), _buffer);
+		_status.dumping = (information_dispatch::get_dumper_count() > 0);
+		if(break_pause)
+			_status.pause = _lsnes_status::pause_break;
+		else if(amode == ADVANCE_PAUSE)
+			_status.pause = _lsnes_status::pause_normal;
+		else
+			_status.pause = _lsnes_status::pause_none;
+		if(movb) {
+			auto& mo = movb.get_movie();
+			readonly = mo.readonly_mode();
+			if(system_corrupt)
+				_status.mode = 'C';
+			else if(!readonly)
+				_status.mode = 'R';
+			else if(mo.get_frame_count() >= mo.get_current_frame())
+				_status.mode = 'P';
+			else
+				_status.mode = 'F';
+		}
+		if(jukebox_size > 0) {
+			_status.saveslot_valid = true;
+			int tmp = -1;
+			std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, -1);
+			_status.saveslot = save_jukebox_pointer + 1;
+			_status.slotinfo = utf8::to32(get_slotinfo(sfilen));
+		} else {
+			_status.saveslot_valid = false;
+		}
+		_status.branch_valid = (p != NULL);
+		if(p) _status.branch = utf8::to32(p->get_branch_string());
+
+		std::string cur_branch = movb ? movb.get_mfile().current_branch() : "";
+		_status.mbranch_valid = (cur_branch != "");
+		_status.mbranch = utf8::to32(cur_branch);
+
+		_status.speed = (unsigned)(100 * get_realized_multiplier() + 0.5);
+
+		if(movb && !system_corrupt) {
+			time_t timevalue = static_cast<time_t>(movb.get_mfile().rtc_second);
+			struct tm* time_decompose = gmtime(&timevalue);
+			char datebuffer[512];
+			strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
+			_status.rtc = utf8::to32(datebuffer);
+			_status.rtc_valid = true;
+		} else {
+			_status.rtc_valid = false;
+		}
+
+		auto mset = controls.active_macro_set();
+		bool mfirst = true;
+		std::ostringstream mss;
+		for(auto i: mset) {
+			if(!mfirst) mss << ",";
+			mss << i;
+			mfirst = false;
+		}
+		_status.macros = utf8::to32(mss.str());
+
+		controller_frame c;
+		if(!multitrack_editor.any_records())
+			c = movb.get_movie().get_controls();
+		else
+			c = controls.get_committed();
+		_status.inputs.clear();
+		for(unsigned i = 0;; i++) {
+			auto pindex = controls.lcid_to_pcid(i);
+			if(pindex.first < 0 || !controls.is_present(pindex.first, pindex.second))
+				break;
+			char32_t buffer[MAX_DISPLAY_LENGTH];
+			c.display(pindex.first, pindex.second, buffer);
+			std::u32string _buffer = buffer;
+			if(readonly && multitrack_editor.is_enabled()) {
+				multitrack_edit::state st = multitrack_editor.get(pindex.first, pindex.second);
+				if(st == multitrack_edit::MT_PRESERVE)
+					_buffer += U" (keep)";
+				else if(st == multitrack_edit::MT_OVERWRITE)
+					_buffer += U" (rewrite)";
+				else if(st == multitrack_edit::MT_OR)
+					_buffer += U" (OR)";
+				else if(st == multitrack_edit::MT_XOR)
+					_buffer += U" (XOR)";
+				else
+					_buffer += U" (\?\?\?)";
+			}
+			_status.inputs.push_back(_buffer);
+		}
+		//Lua variables.
+		_status.lvars = get_lua_watch_vars();
+		//Memory watches.
+		_status.mvars = lsnes_memorywatch.get_window_vars();
+
+		_status.valid = true;
+	} catch(...) {
 	}
-	//Lua variables.
-	{
-		static std::map<std::string, std::u32string> old_luavars;
-		auto& lvars = get_lua_watch_vars();
-		for(auto i : old_luavars)
-			if(!lvars.count(i.first))
-				_status.erase("L[" + i.first + "]");
-		for(auto i : lvars)
-			_status.set("L[" + i.first + "]", i.second);
-		old_luavars = lvars;
-	}
-	//Memory watches.
-	{
-		static std::map<std::string, std::u32string> old_memvars;
-		auto& mvars = lsnes_memorywatch.get_window_vars();
-		for(auto i : old_memvars)
-			if(!mvars.count(i.first))
-				_status.erase("M[" + i.first + "]");
-		for(auto i : mvars)
-			_status.set("M[" + i.first + "]", i.second);
-		old_memvars = mvars;
-	}
-	
+	lsnes_status.put_write();
 	notify_status_update();
 }
 
