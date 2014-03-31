@@ -931,6 +931,18 @@ namespace
 			return 0x30000000 + offset;
 		case 12:	//BSX flash.
 			return 0x90000000 + offset;
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS_PPU
+#ifdef BSNES_IS_COMPAT
+		case 13:	//VRAM.
+			return 0x00010000 + offset;
+		case 14:	//OAM.
+			return 0x00020000 + offset;
+		case 15:	//GCRAM.
+			return 0x00021000 + offset;
+#endif
+		case 16:	//APURAM
+			return 0x00000000 + offset;
+#endif
 		default:	//Other, including bus.
 			return 0xFFFFFFFFFFFFFFFFULL;
 		}
@@ -952,6 +964,28 @@ namespace
 			ecore_callbacks->memory_read(0x1000000 + addr, val);
 	}
 
+	void bsnes_debug_read2(uint8_t clazz, unsigned offset, uint8_t val, bool exec)
+	{
+		if(disable_breakpoints) return;
+		uint64_t _addr = translate_class_address(clazz, offset);
+		if(_addr != 0xFFFFFFFFFFFFFFFFULL) {
+			//SMP uses this, so CPU#1.
+			if(exec)
+				ecore_callbacks->memory_execute(_addr, 1);
+			else
+				ecore_callbacks->memory_read(_addr, val);
+		}
+	}
+
+	void bsnes_debug_read3(uint8_t clazz, unsigned offset, uint8_t val)
+	{
+		if(disable_breakpoints) return;
+		uint64_t _addr = translate_class_address(clazz, offset);
+		if(_addr != 0xFFFFFFFFFFFFFFFFULL) {
+			ecore_callbacks->memory_read(_addr, val);
+		}
+	}
+
 	void bsnes_debug_write(uint8_t clazz, unsigned offset, unsigned addr, uint8_t val)
 	{
 		if(disable_breakpoints) return;
@@ -959,6 +993,14 @@ namespace
 		if(_addr != 0xFFFFFFFFFFFFFFFFULL)
 			ecore_callbacks->memory_write(_addr, val);
 		ecore_callbacks->memory_write(0x1000000 + addr, val);
+	}
+
+	void bsnes_debug_write2(uint8_t clazz, unsigned offset, uint8_t val)
+	{
+		if(disable_breakpoints) return;
+		uint64_t _addr = translate_class_address(clazz, offset);
+		if(_addr != 0xFFFFFFFFFFFFFFFFULL)
+			ecore_callbacks->memory_write(_addr, val);
 	}
 
 	void redraw_cover_fbinfo();
@@ -1103,6 +1145,14 @@ namespace
 #ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
 			SNES::bus.debug_read = bsnes_debug_read;
 			SNES::bus.debug_write = bsnes_debug_write;
+#endif
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS_PPU
+#ifdef BSNES_IS_COMPAT
+			SNES::ppu.debug_read = bsnes_debug_read3;
+			SNES::ppu.debug_write = bsnes_debug_write2;
+#endif
+			SNES::smp.debug_read = bsnes_debug_read2;
+			SNES::smp.debug_write = bsnes_debug_write2;
 #endif
 			basic_init();
 			old = SNES::interface;
@@ -1307,6 +1357,22 @@ again2:
 			auto _addr = recognize_address(addr);
 			if(_addr.first == ADDR_KIND_ALL)
 				SNES::bus.debugFlags(sflags & 7, cflags & 7);
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS_PPU
+#ifdef BSNES_IS_COMPAT
+			else if(_addr.first == 13)  //VRAM.
+				SNES::ppu.vram_debugflags[_addr.second] =
+					SNES::ppu.vram_debugflags[_addr.second] & ~(cflags & 7) | (sflags & 7);
+			else if(_addr.first == 14)  //OAM.
+				SNES::ppu.oam_debugflags[_addr.second] =
+					SNES::ppu.oam_debugflags[_addr.second] & ~(cflags & 7) | (sflags & 7);
+			else if(_addr.first == 15)  //CGRAM.
+				SNES::ppu.cgram_debugflags[_addr.second] =
+					SNES::ppu.cgram_debugflags[_addr.second] & ~(cflags & 7) | (sflags & 7);
+#endif
+			else if(_addr.first == 16)  //APURAM.
+				SNES::smp.debugflags[_addr.second] =
+					SNES::smp.debugflags[_addr.second] & ~(cflags & 7) | (sflags & 7);
+#endif
 			else if(_addr.first != ADDR_KIND_NONE && ((sflags | cflags) & 7))
 				SNES::bus.debugFlags(sflags & 7, cflags & 7, _addr.first, _addr.second);
 #endif
@@ -1316,7 +1382,9 @@ again2:
 #ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
 			bool s = false;
 			auto _addr = recognize_address(addr);
-			if(_addr.first == ADDR_KIND_NONE || _addr.first == ADDR_KIND_ALL)
+			//13-16 are VRAM, OAM, CGRAM and APURAM, can't cheat on those (yet).
+			if(_addr.first == ADDR_KIND_NONE || _addr.first == ADDR_KIND_ALL ||
+				(_addr.first >= 13 && _addr.first <= 16))
 				return;
 			unsigned x = 0;
 			while(x < 0x1000000) {
@@ -1349,6 +1417,14 @@ again2:
 #ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
 			SNES::bus.clearDebugFlags();
 			SNES::cheat.reset();
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS_PPU
+#ifdef BSNES_IS_COMPAT
+			memset(SNES::ppu.vram_debugflags, 0, sizeof(SNES::ppu.vram_debugflags));
+			memset(SNES::ppu.oam_debugflags, 0, sizeof(SNES::ppu.oam_debugflags));
+			memset(SNES::ppu.cgram_debugflags, 0, sizeof(SNES::ppu.cgram_debugflags));
+#endif
+			memset(SNES::smp.debugflags, 0, sizeof(SNES::smp.debugflags));
+#endif
 #endif
 			trace_cpu_enable = false;
 			trace_smp_enable = false;
@@ -1658,6 +1734,14 @@ again2:
 			return std::make_pair(2, addr - 0x10000000);
 		if(addr >= 0x007E0000 && addr <= 0x007FFFFF) //WRAM.
 			return std::make_pair(3, addr - 0x007E0000);
+		if(addr >= 0x00010000 && addr <= 0x00020000) //VRAM.
+			return std::make_pair(13, addr - 0x00010000);
+		if(addr >= 0x00020000 && addr <= 0x0002021F) //OAM.
+			return std::make_pair(14, addr - 0x00020000);
+		if(addr >= 0x00021000 && addr <= 0x000211FF) //CGRAM.
+			return std::make_pair(15, addr - 0x00021000);
+		if(addr >= 0x00000000 && addr <= 0x0000FFFF) //APURAM.
+			return std::make_pair(16, addr - 0x00000000);
 		if(internal_rom == &type_sufamiturbo) {
 			if(addr >= 0x90000000 && addr <= 0x9FFFFFFF) //SufamiTurboA Rom.
 				return std::make_pair(8, addr - 0x90000000);

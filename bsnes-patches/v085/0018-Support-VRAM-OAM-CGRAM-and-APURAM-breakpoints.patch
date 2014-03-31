@@ -1,0 +1,537 @@
+From 6bd069191d29ad70d38c82d59dd72cd0996fc45c Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Mon, 31 Mar 2014 20:17:46 +0300
+Subject: [PATCH 18/18] Support VRAM, OAM, CGRAM and APURAM breakpoints
+
+---
+ snes/alt/ppu-compatibility/memory/memory.cpp | 44 +++++++++++++++++++++--
+ snes/alt/ppu-compatibility/ppu.hpp           |  6 ++++
+ snes/cartridge/cartridge.hpp                 |  4 +++
+ snes/smp/core/core.hpp                       |  2 +-
+ snes/smp/core/memory.hpp                     |  6 ++--
+ snes/smp/core/opcodes.cpp                    | 36 +++++++++----------
+ snes/smp/debugger/debugger.cpp               |  4 +--
+ snes/smp/debugger/debugger.hpp               |  2 +-
+ snes/smp/memory/memory.cpp                   | 54 +++++++++++++++++++---------
+ snes/smp/memory/memory.hpp                   |  4 +--
+ snes/smp/smp.hpp                             |  4 +++
+ snes/snes.hpp                                |  1 +
+ 12 files changed, 122 insertions(+), 45 deletions(-)
+
+diff --git a/snes/alt/ppu-compatibility/memory/memory.cpp b/snes/alt/ppu-compatibility/memory/memory.cpp
+index 3f120d8..e47cf20 100755
+--- a/snes/alt/ppu-compatibility/memory/memory.cpp
++++ b/snes/alt/ppu-compatibility/memory/memory.cpp
+@@ -47,20 +47,31 @@ uint8 PPU::vram_mmio_read(uint16 addr) {
+       data = vram[addr];
+     }
+   }
+-
++  if(__builtin_expect(vram_debugflags[addr] & 0x1, 0)) {
++    debug_read(13, addr, data);
++  }
+   return data;
+ }
+ 
+ void PPU::vram_mmio_write(uint16 addr, uint8 data) {
+   if(regs.display_disabled == true) {
++    if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
++      debug_write(13, addr, data);
++    }
+     vram[addr] = data;
+   } else {
+     uint16 v = cpu.vcounter();
+     uint16 h = cpu.hcounter();
+     if(v == 0) {
+       if(h <= 4) {
++        if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
++          debug_write(13, addr, data);
++        }
+         vram[addr] = data;
+       } else if(h == 6) {
++        if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
++          debug_write(13, addr, cpu.regs.mdr);
++        }
+         vram[addr] = cpu.regs.mdr;
+       } else {
+         //no write
+@@ -71,9 +82,15 @@ void PPU::vram_mmio_write(uint16 addr, uint8 data) {
+       if(h <= 4) {
+         //no write
+       } else {
++        if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
++          debug_write(13, addr, data);
++        }
+         vram[addr] = data;
+       }
+     } else {
++      if(__builtin_expect(vram_debugflags[addr] & 0x2, 0)) {
++        debug_write(13, addr, data);
++      }
+       vram[addr] = data;
+     }
+   }
+@@ -93,7 +110,9 @@ uint8 PPU::oam_mmio_read(uint16 addr) {
+       data = oam[addr];
+     }
+   }
+-
++  if(__builtin_expect(oam_debugflags[addr] & 0x1, 0)) {
++    debug_read(14, addr, data);
++  }
+   return data;
+ }
+ 
+@@ -104,13 +123,22 @@ void PPU::oam_mmio_write(uint16 addr, uint8 data) {
+   sprite_list_valid = false;
+ 
+   if(regs.display_disabled == true) {
++    if(__builtin_expect(oam_debugflags[addr] & 0x2, 0)) {
++      debug_write(14, addr, data);
++    }
+     oam[addr] = data;
+     update_sprite_list(addr, data);
+   } else {
+     if(cpu.vcounter() < (!overscan() ? 225 : 240)) {
++      if(__builtin_expect(oam_debugflags[regs.ioamaddr] & 0x2, 0)) {
++        debug_write(14, regs.ioamaddr, data);
++      }
+       oam[regs.ioamaddr] = data;
+       update_sprite_list(regs.ioamaddr, data);
+     } else {
++      if(__builtin_expect(oam_debugflags[addr] & 0x2, 0)) {
++        debug_write(14, addr, data);
++      }
+       oam[addr] = data;
+       update_sprite_list(addr, data);
+     }
+@@ -134,6 +162,9 @@ uint8 PPU::cgram_mmio_read(uint16 addr) {
+   }
+ 
+   if(addr & 1) data &= 0x7f;
++  if(__builtin_expect(cgram_debugflags[addr] & 0x1, 0)) {
++    debug_read(15, addr, data);
++  }
+   return data;
+ }
+ 
+@@ -142,13 +173,22 @@ void PPU::cgram_mmio_write(uint16 addr, uint8 data) {
+   if(addr & 1) data &= 0x7f;
+ 
+   if(1 || regs.display_disabled == true) {
++    if(__builtin_expect(cgram_debugflags[addr] & 0x2, 0)) {
++      debug_write(15, addr, data);
++    }
+     cgram[addr] = data;
+   } else {
+     uint16 v = cpu.vcounter();
+     uint16 h = cpu.hcounter();
+     if(v < (!overscan() ? 225 : 240) && h >= 128 && h < 1096) {
++      if(__builtin_expect(cgram_debugflags[regs.icgramaddr] & 0x2, 0)) {
++        debug_write(15, regs.icgramaddr, data & 0x7f);
++      }
+       cgram[regs.icgramaddr] = data & 0x7f;
+     } else {
++      if(__builtin_expect(cgram_debugflags[addr] & 0x2, 0)) {
++        debug_write(15, addr, data);
++      }
+       cgram[addr] = data;
+     }
+   }
+diff --git a/snes/alt/ppu-compatibility/ppu.hpp b/snes/alt/ppu-compatibility/ppu.hpp
+index cccaabb..4adac4c 100755
+--- a/snes/alt/ppu-compatibility/ppu.hpp
++++ b/snes/alt/ppu-compatibility/ppu.hpp
+@@ -3,6 +3,12 @@ public:
+   uint8 vram[128 * 1024];
+   uint8 oam[544];
+   uint8 cgram[512];
++  //4 is read, 2 is write.
++  uint8 vram_debugflags[128 * 1024];
++  uint8 oam_debugflags[544];
++  uint8 cgram_debugflags[512];
++  function<void (uint8, unsigned, uint8)> debug_read;
++  function<void (uint8, unsigned, uint8)> debug_write;
+ 
+   enum : bool { Threaded = true };
+   alwaysinline void step(unsigned clocks);
+diff --git a/snes/cartridge/cartridge.hpp b/snes/cartridge/cartridge.hpp
+index 82e73c4..2358c08 100755
+--- a/snes/cartridge/cartridge.hpp
++++ b/snes/cartridge/cartridge.hpp
+@@ -26,6 +26,10 @@ struct Cartridge : property<Cartridge> {
+     SUFAMITURBO_RAMA = 10,
+     SUFAMITURBO_RAMB = 11,
+     BSXFLASH = 12,
++    VRAM = 13,
++    OAM = 14,
++    CGRAM = 15,
++    APURAM = 16,
+   };
+ 
+   enum class Slot : unsigned {
+diff --git a/snes/smp/core/core.hpp b/snes/smp/core/core.hpp
+index 13d6936..03f9ac6 100755
+--- a/snes/smp/core/core.hpp
++++ b/snes/smp/core/core.hpp
+@@ -1,6 +1,6 @@
+ struct SMPcore {
+   virtual void op_io() = 0;
+-  virtual uint8 op_read(uint16 addr) = 0;
++  virtual uint8 op_read(uint16 addr, bool exec) = 0;
+   virtual void op_write(uint16 addr, uint8 data) = 0;
+   virtual void op_step();
+ 
+diff --git a/snes/smp/core/memory.hpp b/snes/smp/core/memory.hpp
+index c4b6d99..c297962 100755
+--- a/snes/smp/core/memory.hpp
++++ b/snes/smp/core/memory.hpp
+@@ -1,9 +1,9 @@
+ alwaysinline uint8 op_readpc() {
+-  return op_read(regs.pc++);
++  return op_read(regs.pc++, true);
+ }
+ 
+ alwaysinline uint8 op_readsp() {
+-  return op_read(0x0100 | ++regs.s);
++  return op_read(0x0100 | ++regs.s, false);
+ }
+ 
+ alwaysinline void op_writesp(uint8 data) {
+@@ -11,7 +11,7 @@ alwaysinline void op_writesp(uint8 data) {
+ }
+ 
+ alwaysinline uint8 op_readdp(uint8 addr) {
+-  return op_read((regs.p.p << 8) + addr);
++  return op_read((regs.p.p << 8) + addr, false);
+ }
+ 
+ alwaysinline void op_writedp(uint8 addr, uint8 data) {
+diff --git a/snes/smp/core/opcodes.cpp b/snes/smp/core/opcodes.cpp
+index 95b9844..43db081 100755
+--- a/snes/smp/core/opcodes.cpp
++++ b/snes/smp/core/opcodes.cpp
+@@ -11,7 +11,7 @@ template<uint8 (SMPcore::*op)(uint8)>
+ void SMPcore::op_adjust_addr() {
+   dp.l = op_readpc();
+   dp.h = op_readpc();
+-  rd = op_read(dp);
++  rd = op_read(dp, false);
+   rd = call(rd);
+   op_write(dp, rd);
+ }
+@@ -78,7 +78,7 @@ template<uint8 (SMPcore::*op)(uint8, uint8)>
+ void SMPcore::op_read_addr(uint8 &r) {
+   dp.l = op_readpc();
+   dp.h = op_readpc();
+-  rd = op_read(dp);
++  rd = op_read(dp, false);
+   r = call(r, rd);
+ }
+ 
+@@ -87,7 +87,7 @@ void SMPcore::op_read_addri(uint8 &r) {
+   dp.l = op_readpc();
+   dp.h = op_readpc();
+   op_io();
+-  rd = op_read(dp + r);
++  rd = op_read(dp + r, false);
+   regs.a = call(regs.a, rd);
+ }
+ 
+@@ -127,7 +127,7 @@ void SMPcore::op_read_idpx() {
+   op_io();
+   sp.l = op_readdp(dp++);
+   sp.h = op_readdp(dp++);
+-  rd = op_read(sp);
++  rd = op_read(sp, false);
+   regs.a = call(regs.a, rd);
+ }
+ 
+@@ -137,7 +137,7 @@ void SMPcore::op_read_idpy() {
+   op_io();
+   sp.l = op_readdp(dp++);
+   sp.h = op_readdp(dp++);
+-  rd = op_read(sp + regs.y);
++  rd = op_read(sp + regs.y, false);
+   regs.a = call(regs.a, rd);
+ }
+ 
+@@ -153,7 +153,7 @@ void SMPcore::op_set_addr_bit() {
+   dp.h = op_readpc();
+   bit = dp >> 13;
+   dp &= 0x1fff;
+-  rd = op_read(dp);
++  rd = op_read(dp, false);
+   switch(opcode >> 5) {
+   case 0:  //orc  addr:bit
+   case 1:  //orc !addr:bit
+@@ -198,10 +198,10 @@ void SMPcore::op_set_flag(bool &flag, bool data) {
+ void SMPcore::op_test_addr(bool set) {
+   dp.l = op_readpc();
+   dp.h = op_readpc();
+-  rd = op_read(dp);
++  rd = op_read(dp, false);
+   regs.p.n = (regs.a - rd) & 0x80;
+   regs.p.z = (regs.a - rd) == 0;
+-  op_read(dp);
++  op_read(dp, false);
+   op_write(dp, set ? rd | regs.a : rd & ~regs.a);
+ }
+ 
+@@ -216,7 +216,7 @@ void SMPcore::op_transfer(uint8 &from, uint8 &to) {
+ void SMPcore::op_write_addr(uint8 &r) {
+   dp.l = op_readpc();
+   dp.h = op_readpc();
+-  op_read(dp);
++  op_read(dp, false);
+   op_write(dp, r);
+ }
+ 
+@@ -225,7 +225,7 @@ void SMPcore::op_write_addri(uint8 &i) {
+   dp.h = op_readpc();
+   op_io();
+   dp += i;
+-  op_read(dp);
++  op_read(dp, false);
+   op_write(dp, regs.a);
+ }
+ 
+@@ -317,8 +317,8 @@ void SMPcore::op_bne_ydec() {
+ }
+ 
+ void SMPcore::op_brk() {
+-  rd.l = op_read(0xffde);
+-  rd.h = op_read(0xffdf);
++  rd.l = op_read(0xffde, false);
++  rd.h = op_read(0xffdf, false);
+   op_io();
+   op_io();
+   op_writesp(regs.pc.h);
+@@ -411,8 +411,8 @@ void SMPcore::op_jmp_iaddrx() {
+   dp.h = op_readpc();
+   op_io();
+   dp += regs.x;
+-  rd.l = op_read(dp++);
+-  rd.h = op_read(dp++);
++  rd.l = op_read(dp++, false);
++  rd.h = op_read(dp++, false);
+   regs.pc = rd;
+ }
+ 
+@@ -438,8 +438,8 @@ void SMPcore::op_jsr_addr() {
+ 
+ void SMPcore::op_jst() {
+   dp = 0xffde - ((opcode >> 4) << 1);
+-  rd.l = op_read(dp++);
+-  rd.h = op_read(dp++);
++  rd.l = op_read(dp++, false);
++  rd.h = op_read(dp++, false);
+   op_io();
+   op_io();
+   op_io();
+@@ -505,7 +505,7 @@ void SMPcore::op_sta_idpx() {
+   op_io();
+   dp.l = op_readdp(sp++);
+   dp.h = op_readdp(sp++);
+-  op_read(dp);
++  op_read(dp, false);
+   op_write(dp, regs.a);
+ }
+ 
+@@ -515,7 +515,7 @@ void SMPcore::op_sta_idpy() {
+   dp.h = op_readdp(sp++);
+   op_io();
+   dp += regs.y;
+-  op_read(dp);
++  op_read(dp, false);
+   op_write(dp, regs.a);
+ }
+ 
+diff --git a/snes/smp/debugger/debugger.cpp b/snes/smp/debugger/debugger.cpp
+index 9546c11..894fdac 100755
+--- a/snes/smp/debugger/debugger.cpp
++++ b/snes/smp/debugger/debugger.cpp
+@@ -18,8 +18,8 @@ void SMPDebugger::op_step() {
+   synchronize_cpu();
+ }
+ 
+-uint8 SMPDebugger::op_read(uint16 addr) {
+-  uint8 data = SMP::op_read(addr);
++uint8 SMPDebugger::op_read(uint16 addr, bool exec) {
++  uint8 data = SMP::op_read(addr, exec);
+   usage[addr] |= UsageRead;
+   debugger.breakpoint_test(Debugger::Breakpoint::Source::APURAM, Debugger::Breakpoint::Mode::Read, addr, data);
+   return data;
+diff --git a/snes/smp/debugger/debugger.hpp b/snes/smp/debugger/debugger.hpp
+index d5d28e5..26bc7af 100755
+--- a/snes/smp/debugger/debugger.hpp
++++ b/snes/smp/debugger/debugger.hpp
+@@ -14,7 +14,7 @@ public:
+   bool opcode_edge;
+ 
+   void op_step();
+-  uint8 op_read(uint16 addr);
++  uint8 op_read(uint16 addr, bool exec);
+   void op_write(uint16 addr, uint8 data);
+ 
+   SMPDebugger();
+diff --git a/snes/smp/memory/memory.cpp b/snes/smp/memory/memory.cpp
+index 391324c..58c1191 100755
+--- a/snes/smp/memory/memory.cpp
++++ b/snes/smp/memory/memory.cpp
+@@ -19,61 +19,83 @@ void SMP::port_write(uint2 port, uint8 data) {
+   apuram[0xf4 + port] = data;
+ }
+ 
+-alwaysinline uint8 SMP::op_busread(uint16 addr) {
++alwaysinline uint8 SMP::op_busread(uint16 addr, bool exec) {
+   unsigned result;
++  uint8 data;
+ 
+   switch(addr) {
+   case 0xf0:  //TEST -- write-only register
+-    return 0x00;
++    data = 0x00;
++    break;
+ 
+   case 0xf1:  //CONTROL -- write-only register
+-    return 0x00;
++    data = 0x00;
++    break;
+ 
+   case 0xf2:  //DSPADDR
+-    return status.dsp_addr;
++    data = status.dsp_addr;
++    break;
+ 
+   case 0xf3:  //DSPDATA
+     //0x80-0xff are read-only mirrors of 0x00-0x7f
+-    return dsp.read(status.dsp_addr & 0x7f);
++    data = dsp.read(status.dsp_addr & 0x7f);
++    break;
+ 
+   case 0xf4:  //CPUIO0
+   case 0xf5:  //CPUIO1
+   case 0xf6:  //CPUIO2
+   case 0xf7:  //CPUIO3
+     synchronize_cpu();
+-    return cpu.port_read(addr);
++    data = cpu.port_read(addr);
++    break;
+ 
+   case 0xf8:  //RAM0
+-    return status.ram00f8;
++    data = status.ram00f8;
++    break;
+ 
+   case 0xf9:  //RAM1
+-    return status.ram00f9;
++    data = status.ram00f9;
++    break;
+ 
+   case 0xfa:  //T0TARGET
+   case 0xfb:  //T1TARGET
+   case 0xfc:  //T2TARGET -- write-only registers
+-    return 0x00;
++    data = 0x00;
++    break;
+ 
+   case 0xfd:  //T0OUT -- 4-bit counter value
+     result = timer0.stage3_ticks;
+     timer0.stage3_ticks = 0;
+-    return result;
++    data = result;
++    break;
+ 
+   case 0xfe:  //T1OUT -- 4-bit counter value
+     result = timer1.stage3_ticks;
+     timer1.stage3_ticks = 0;
+-    return result;
++    data = result;
++    break;
+ 
+   case 0xff:  //T2OUT -- 4-bit counter value
+     result = timer2.stage3_ticks;
+     timer2.stage3_ticks = 0;
+-    return result;
++    data = result;
++    break;
++  default:
++    data = ram_read(addr);
++    break;
+   }
+-
+-  return ram_read(addr);
++  uint8 flag = exec ? 0x04 : 0x01;
++  if(__builtin_expect(debugflags[addr] & flag, 0)) {
++    debug_read(16, addr, data, exec);
++  }
++  return data;
+ }
+ 
+ alwaysinline void SMP::op_buswrite(uint16 addr, uint8 data) {
++  if(__builtin_expect(debugflags[addr] & 0x2, 0)) {
++    debug_write(16, addr, data);
++  }
++
+   switch(addr) {
+   case 0xf0:  //TEST
+     if(regs.p.p) break;  //writes only valid when P flag is clear
+@@ -180,9 +202,9 @@ void SMP::op_io() {
+   cycle_edge();
+ }
+ 
+-uint8 SMP::op_read(uint16 addr) {
++uint8 SMP::op_read(uint16 addr, bool exec) {
+   add_clocks(12);
+-  uint8 r = op_busread(addr);
++  uint8 r = op_busread(addr, exec);
+   add_clocks(12);
+   cycle_edge();
+   return r;
+diff --git a/snes/smp/memory/memory.hpp b/snes/smp/memory/memory.hpp
+index 1a07445..faa28da 100755
+--- a/snes/smp/memory/memory.hpp
++++ b/snes/smp/memory/memory.hpp
+@@ -1,9 +1,9 @@
+ uint8 ram_read(uint16 addr);
+ void ram_write(uint16 addr, uint8 data);
+ 
+-uint8 op_busread(uint16 addr);
++uint8 op_busread(uint16 addr, bool exec);
+ void op_buswrite(uint16 addr, uint8 data);
+ 
+ void op_io();
+-debugvirtual uint8 op_read(uint16 addr);
++debugvirtual uint8 op_read(uint16 addr, bool exec);
+ debugvirtual void op_write(uint16 addr, uint8 data);
+diff --git a/snes/smp/smp.hpp b/snes/smp/smp.hpp
+index 6b387cb..6b6ae83 100755
+--- a/snes/smp/smp.hpp
++++ b/snes/smp/smp.hpp
+@@ -1,6 +1,10 @@
+ struct SMP : public Processor, public SMPcore {
+   static const uint8 iplrom[64];
+   uint8 apuram[64 * 1024];
++  uint8 debugflags[64 * 1024];
++
++  function<void (uint8, unsigned, uint8, bool)> debug_read;
++  function<void (uint8, unsigned, uint8)> debug_write;
+ 
+   enum : bool { Threaded = true };
+   alwaysinline void step(unsigned clocks);
+diff --git a/snes/snes.hpp b/snes/snes.hpp
+index 9589db9..27632bf 100755
+--- a/snes/snes.hpp
++++ b/snes/snes.hpp
+@@ -1,6 +1,7 @@
+ #ifndef SNES_HPP
+ #define SNES_HPP
+ #define BSNES_SUPPORTS_ADV_BREAKPOINTS
++#define BSNES_SUPPORTS_ADV_BREAKPOINTS_PPU
+ #define BSNES_SUPPORTS_ALT_TIMINGS
+ 
+ namespace SNES {
+-- 
+1.9.1
+
