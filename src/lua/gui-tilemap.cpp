@@ -312,7 +312,7 @@ namespace
 		{"scroll", &tilemap::scroll},
 		{"getsize", &tilemap::getsize},
 		{"getcsize", &tilemap::getcsize},
-	});
+	}, &tilemap::print);
 
 	tilemap::tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight)
 		: width(_width), height(_height), cwidth(_cwidth), cheight(_cheight)

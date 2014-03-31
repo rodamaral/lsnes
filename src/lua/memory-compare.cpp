@@ -28,6 +28,13 @@ namespace
 		static size_t overcommit(uint64_t addr, uint64_t size, uint64_t rows, uint64_t stride) { return 0; }
 		static int create(lua::state& L, lua::parameters& P);
 		int call(lua::state& L, lua::parameters& P);
+		std::string print()
+		{
+			std::ostringstream x;
+			x << "addr=0x" << std::hex << addr << " rows=" << rows << " size=0x" << std::hex << size
+				<< " stride=0x" << std::hex << stride;
+			return x.str();
+		}
 	private:
 		std::vector<uint8_t> prev;
 		bool try_map;
@@ -116,5 +123,5 @@ namespace
 		{"new", compare_obj::create},
 	}, {
 		{"__call", &compare_obj::call},
-	});
+	}, &compare_obj::print);
 }
