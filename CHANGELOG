@@ -1728,3 +1728,43 @@ rr2-β18 [Wednesday March 19th 2014]
 * SNES: Fix disassembly of long offsets
 * Make setting/unsetting non-bus breaks much faster.
 * Optimize movie.find_frame()
+
+rr2-β19 [Monday March 31th 2014]
+================================
+* Move one #ifdef BSNES_HAS_DEBUGGER to the proper place
+* Some missing string conversions and headers
+* Speed up font init
+* Fix some memory leak complaints from Valgrind
+* Free some more memory before quitting
+* Fix potential dtor ordering crash in file hasher
+* Fix another potential dtor order crash
+* Refactor workthread.hpp and threadtypes.hpp (renamed to threads.hpp)
+* Refactor streamcompress.hpp
+* Lock/Unlock multiple locks at once function / class
+* Gambatte: Mark system bus as I/O special
+* Initialize project active_branch/next_branch
+* Fix loading memory watches on project change
+* GB: Fix read/write of A, PC and CycleCounter when executing
+* GB: Fix tracelogger not to screw up breaks
+* Refactor triple buffering logic to its own file
+* Small tweak to previous (convert multiplication to bitshift)
+* Lua: string.regex
+* Lua: bit.multidiv
+* Tweak description of bit.multidiv
+* Lua: bit.test, bit.testn, string.hex, string.lpad, string.rpad
+* Make redraw_framebuffer call update_movie_state();
+* Only update emulator status from within update_movie_state()
+* Fix the 0 movie length bug
+* Don't crash if trying to load movie with unknown sysregion
+* Work around compiler warning on -2^63 written as constant
+* Make compiler more anal and fix what comes up
+* Lua: bit.mul32
+* Autosave settings immediately after closing settings
+* Add base support for Lua object overcommit
+* Use overcommit for palettes, bitmaps, dbitmaps and tilemaps
+* Error out creating too large bitmaps / tilemaps instead of corrupting memory
+* Fix compare objects
+* Fix printing of tilemaps and compare objects
+* Use overcommit in memory compares
+* SNES: Support VRAM, OAM, CGRAM and APURAM breakpoints
+* Refactor emulator status reporting (and fix the statusbar doesn't update bug)
