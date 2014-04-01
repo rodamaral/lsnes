@@ -80,6 +80,7 @@ private:
 	void* dmenu;
 	projects_menu* projects;
 	wxTimer* focus_timer;
+	wxTimer* status_timer;
 	struct dispatch::target<> corechange;
 	struct dispatch::target<> titlechange;
 	struct dispatch::target<> newcore;

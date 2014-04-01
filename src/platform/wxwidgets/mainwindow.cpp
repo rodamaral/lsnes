@@ -172,9 +172,26 @@ namespace
 	uint64_t hashing_total = 0;
 	int64_t last_update = 0;
 	threads::thread* emulation_thread;
+	bool status_updated = false;
 
 	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(lsnes_vset,
 		"background-audio", "GUI‣Enable background audio", true);
+
+	class _status_timer : public wxTimer
+	{
+	public:
+		_status_timer()
+		{
+			Start(50);
+		}
+		void Notify()
+		{
+			if(status_updated) {
+				status_updated = false;
+				if(main_window) main_window->update_statusbar();
+			}
+		}
+	};
 
 	class _focus_timer : public wxTimer
 	{
@@ -997,6 +1014,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	wxBitmap bmp(wxImage(tw, th, screen_buffer, true));
 	dc.DrawBitmap(bmp, 0, 0, false);
 	main_window_dirty = false;
+	main_window->update_statusbar();
 }
 
 void wxwin_mainwindow::panel::on_erase(wxEraseEvent& e)
@@ -1191,6 +1209,7 @@ wxwin_mainwindow::wxwin_mainwindow(bool fscreen)
 	reinterpret_cast<system_menu*>(sysmenu)->update(false);
 	menubar->SetMenuLabel(1, towxstring(our_rom.rtype->get_systemmenu_name()));
 	focus_timer = new _focus_timer;
+	status_timer = new _status_timer;
 	if(fscreen) {
 		wx_escape_count = 0;
 		enter_or_leave_fullscreen(true);
@@ -1202,6 +1221,10 @@ wxwin_mainwindow::~wxwin_mainwindow()
 	if(sws_ctx) sws_freeContext(sws_ctx);
 	if(screen_buffer) delete[] screen_buffer;
 	if(rotate_buffer) delete[] rotate_buffer;
+	focus_timer->Stop();
+	delete focus_timer;
+	status_timer->Stop();
+	delete status_timer;
 }
 
 void wxwin_mainwindow::request_paint()
@@ -1236,7 +1259,7 @@ void wxwin_mainwindow::notify_update_status() throw()
 	spanel->request_paint();
 	if(mwindow)
 		mwindow->notify_update();
-	update_statusbar();
+	status_updated = true;
 }
 
 void wxwin_mainwindow::notify_exit() throw()
