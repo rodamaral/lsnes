@@ -49,6 +49,8 @@ namespace
 {
 	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> output_native(lsnes_vset,
 		"gambatte-native-sound", "Gambatte‣Sound Output at native rate", false);
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> gbchawk_timings(lsnes_vset,
+		"gambatte-gbchawk-fuckup", "Gambatte‣Use Fucked up GBCHawk timings", false);
 
 	bool do_reset_flag = false;
 	core_type* internal_rom = NULL;
@@ -629,6 +631,7 @@ namespace
 		void c_emulate() {
 			if(!internal_rom)
 				return;
+			bool timings_fucked_up = gbchawk_timings;
 			bool native_rate = output_native;
 			int16_t reset = ecore_callbacks->get_input(0, 0, 1);
 			if(reset) {
@@ -641,7 +644,8 @@ namespace
 			int16_t soundbuf[2 * (SAMPLES_PER_FRAME + 2064)];
 			size_t emitted = 0;
 			while(true) {
-				unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
+				unsigned samples_emitted = timings_fucked_up ? 35112 :
+					(SAMPLES_PER_FRAME - frame_overflow);
 				long ret = instance->runFor(primary_framebuffer, 160, samplebuffer, samples_emitted);
 				if(native_rate)
 					for(unsigned i = 0; i < samples_emitted; i++) {
@@ -670,6 +674,8 @@ namespace
 					frame_overflow -= SAMPLES_PER_FRAME;
 					break;
 				}
+				if(timings_fucked_up)
+					break;
 			}
 			framebuffer::info inf;
 			inf.type = &framebuffer::pixfmt_rgb32;
