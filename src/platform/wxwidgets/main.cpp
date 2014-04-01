@@ -67,6 +67,10 @@ namespace
 	threads::lock ui_mutex;
 	threads::cv ui_condition;
 	threads::thread* joystick_thread_handle;
+	bool if_update_messages = false;
+	bool if_update_screen = false;
+	bool if_update_status = false;
+	threads::lock if_mutex;
 
 	void* joystick_thread(int _args)
 	{
@@ -118,14 +122,17 @@ namespace
 			std::string text = error_message_text;
 			wxMessageBox(towxstring(text), _T("lsnes: Error"), wxICON_EXCLAMATION | wxOK, main_window);
 		} else if(c == UISERV_UPDATE_MESSAGES) {
+			{ threads::alock h(if_mutex); if_update_messages = false; }
 			if(msg_window)
 				msg_window->notify_update();
 		} else if(c == UISERV_UPDATE_STATUS) {
+			{ threads::alock h(if_mutex); if_update_status = false; }
 			if(main_window)
 				main_window->notify_update_status();
 			wxeditor_movie_update();
 			wxeditor_hexeditor_update();
 		} else if(c == UISERV_UPDATE_SCREEN) {
+			{ threads::alock h(if_mutex); if_update_screen = false; }
 			if(main_window)
 				main_window->notify_update();
 			wxwindow_memorysearch_update();
@@ -158,6 +165,22 @@ end:
 
 	void post_ui_event(int code)
 	{
+		//Coalesce some messages.
+		if(code == UISERV_UPDATE_MESSAGES) {
+			threads::alock h(if_mutex);
+			if(if_update_messages) return;
+			if_update_messages = true;
+		}
+		if(code == UISERV_UPDATE_SCREEN) {
+			threads::alock h(if_mutex);
+			if(if_update_screen) return;
+			if_update_screen = true;
+		}
+		if(code == UISERV_UPDATE_STATUS) {
+			threads::alock h(if_mutex);
+			if(if_update_status) return;
+			if_update_status = true;
+		}
 		uiserv_event uic(code);
 		wxPostEvent(ui_services, uic);
 	}
