@@ -1768,3 +1768,11 @@ rr2-β19 [Monday March 31st 2014]
 * Use overcommit in memory compares
 * SNES: Support VRAM, OAM, CGRAM and APURAM breakpoints
 * Refactor emulator status reporting (and fix the statusbar doesn't update bug)
+
+rr2-β20 [Monday April 1st 2014]
+===============================
+* Fix typo in changelog
+* Fix bug in printing MSU-1 track playback messages
+* Add option to emulate fucked up GBC timings
+* Coalesce UI events.
+* Don't update statusbar fast outside paint event
