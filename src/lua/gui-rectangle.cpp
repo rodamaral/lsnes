@@ -58,7 +58,22 @@ namespace
 		return 0;
 	}
 
+	int srectangle(lua::state& L, lua::parameters& P)
+	{
+		int32_t x, y;
+		uint32_t width, height;
+		framebuffer::color pcolor;
+
+		if(!lua_render_ctx) return 0;
+
+		P(x, y, width, height, P.optional(pcolor, 0xFFFFFFU));
+
+		lua_render_ctx->queue->create_add<render_object_rectangle>(x, y, width, height, pcolor, pcolor, 0);
+		return 0;
+	}
+
 	lua::functions rectangle_fns(lua_func_misc, "gui", {
 		{"rectangle", rectangle},
+		{"solidrectangle", srectangle},
 	});
 }

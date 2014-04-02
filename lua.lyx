@@ -4621,6 +4621,40 @@ fill: Color of fill (default is -1 (transparent))
 \end_layout
 
 \begin_layout Subsection
+gui.solidrectangle: Draw a solid rectangle
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.rectangle(number x, number y, number width, number height[,
+ number color])
+\end_layout
+
+\begin_layout Standard
+Draw solid rectangle on the GUI.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of left edge.
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of upper edge.
+\end_layout
+
+\begin_layout Itemize
+width: Width of rectangle.
+\end_layout
+
+\begin_layout Itemize
+height: Height of rectangle.
+\end_layout
+
+\begin_layout Itemize
+color: Color of rectangle (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Subsection
 gui.box: Draw a 3D-effect box
 \end_layout
 
