@@ -5,14 +5,11 @@
 #include "interface/romtype.hpp"
 #include "library/keyboard.hpp"
 #include "library/messagebuffer.hpp"
-#include "library/emustatus.hpp"
 #include "library/framebuffer.hpp"
 #include <string>
 #include <map>
 #include <list>
 #include <stdexcept>
-
-class emulator_status;
 
 /**
  * Information about keypress.
@@ -165,12 +162,6 @@ struct platform
  * throws std::bad_alloc: Not enough memory.
  */
 	static std::ostream& out() throw(std::bad_alloc);
-/**
- * Get emulator status area
- *
- * returns: Emulator status area.
- */
-	static emulator_status& get_emustatus() throw();
 /**
  * Message buffer.
  */

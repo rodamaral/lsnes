@@ -94,8 +94,6 @@ namespace
 	keyboard::invbind ienable_sound(lsnes_mapper, "enable-sound on", "Sound‣Enable");
 	keyboard::invbind idisable_sound(lsnes_mapper, "enable-sound off", "Sound‣Disable");
 
-	emulator_status emustatus;
-
 	class window_output
 	{
 	public:
@@ -147,11 +145,6 @@ namespace
 
 	std::ofstream system_log;
 	bool sounds_enabled = true;
-}
-
-emulator_status& platform::get_emustatus() throw()
-{
-	return emustatus;
 }
 
 void platform::sound_enable(bool enable) throw()
