@@ -41,7 +41,7 @@ namespace
 			render_kill_request(this);
 		}
 		static int create(lua::state& L, lua::parameters& P);
-		int draw(lua::state& L, lua::parameters& P);
+		template<bool outside> int draw(lua::state& L, lua::parameters& P);
 		int get(lua::state& L, lua::parameters& P)
 		{
 			uint32_t x, y;
@@ -171,8 +171,8 @@ namespace
 	struct render_object_tilemap : public framebuffer::object
 	{
 		render_object_tilemap(int32_t _x, int32_t _y, int32_t _x0, int32_t _y0, uint32_t _w,
-			uint32_t _h, lua::objpin<tilemap> _map)
-			: x(_x), y(_y), x0(_x0), y0(_y0), w(_w), h(_h), map(_map) {}
+			uint32_t _h, bool _outside, lua::objpin<tilemap> _map)
+			: x(_x), y(_y), x0(_x0), y0(_y0), w(_w), h(_h), outside(_outside), map(_map) {}
 		~render_object_tilemap() throw()
 		{
 		}
@@ -193,22 +193,36 @@ namespace
 			}
 		}
 		template<bool T> void composite_op(struct framebuffer::fb<T>& scr, int32_t xp,
-			int32_t yp, const range& X, const range& Y, lua_dbitmap& d) throw()
+			int32_t yp, const range& X, const range& Y, const range& sX, const range& sY,
+			lua_dbitmap& d) throw()
 		{
 			if(!X.size() || !Y.size()) return;
 
 			for(uint32_t r = Y.low(); r != Y.high(); r++) {
 				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
 				size_t eptr = xp + X.low();
-				for(uint32_t c = X.low(); c != X.high(); c++, eptr++)
+				uint32_t xmin = X.low();
+				bool cut = outside && sY.in(r);
+				if(cut && sX.in(xmin)) {
+					xmin = sX.high();
+					//FIXME: This may overrun buffer (but the overrun pointer is not accessed.)
+					eptr += (sX.high() - X.low());
+				}
+				for(uint32_t c = xmin; c < X.high(); c++, eptr++) {
+					if(__builtin_expect(cut && c == sX.low(), 0)) {
+						c += sX.size();
+						eptr += sX.size();
+					}
 					d.pixels[r * d.width + c].apply(rptr[eptr]);
+				}
 			}
 		}
 		template<bool T> void composite_op(struct framebuffer::fb<T>& scr, int32_t xp,
-			int32_t yp, const range& X, const range& Y, lua_bitmap& b, lua_palette& p)
-			throw()
+			int32_t yp, const range& X, const range& Y, const range& sX, const range& sY, lua_bitmap& b,
+			lua_palette& p) throw()
 		{
 			if(!X.size() || !Y.size()) return;
+
 			p.palette_mutex.lock();
 			framebuffer::color* palette = p.colors;
 			size_t pallim = p.color_count;
@@ -216,7 +230,18 @@ namespace
 			for(uint32_t r = Y.low(); r != Y.high(); r++) {
 				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
 				size_t eptr = xp + X.low();
-				for(uint32_t c = X.low(); c != X.high(); c++, eptr++) {
+				uint32_t xmin = X.low();
+				bool cut = outside && sY.in(r);
+				if(cut && sX.in(xmin)) {
+					xmin = sX.high();
+					//FIXME: This may overrun buffer (but the overrun pointer is not accessed.)
+					eptr += (sX.high() - X.low());
+				}
+				for(uint32_t c = xmin; c < X.high(); c++, eptr++) {
+					if(__builtin_expect(cut && c == sX.low(), 0)) {
+						c += sX.size();
+						eptr += sX.size();
+					}
 					uint16_t i = b.pixels[r * b.width + c];
 					if(i < pallim)
 						palette[i].apply(rptr[eptr]);
@@ -237,17 +262,19 @@ namespace
 			} else
 				return;
 
-			uint32_t oX = x + scr.get_origin_x();
-			uint32_t oY = y + scr.get_origin_y();
+			uint32_t oX = x + scr.get_origin_x() - x0;
+			uint32_t oY = y + scr.get_origin_y() - y0;
 			range bX = ((range::make_w(scr.get_width()) - oX) & range::make_s(bx, _w) &
 				range::make_s(x0, w)) - bx;
 			range bY = ((range::make_w(scr.get_height()) - oY) & range::make_s(by, _h) &
 				range::make_s(y0, h)) - by;
+			range sX = range::make_s(-x - bx + x0, scr.get_last_blit_width());
+			range sY = range::make_s(-y - by + y0, scr.get_last_blit_height());
 
 			if(e.b)
-				composite_op(scr, oX + bx, oY + by, bX, bY, *e.b, *e.p);
+				composite_op(scr, oX + bx, oY + by, bX, bY, sX, sY, *e.b, *e.p);
 			else if(e.d)
-				composite_op(scr, oX + bx, oY + by, bX, bY, *e.d);
+				composite_op(scr, oX + bx, oY + by, bX, bY, sX, sY, *e.d);
 		}
 		void operator()(struct framebuffer::fb<false>& x) throw() { composite_op(x); }
 		void operator()(struct framebuffer::fb<true>& x) throw() { composite_op(x); }
@@ -259,10 +286,11 @@ namespace
 		int32_t y0;
 		uint32_t w;
 		uint32_t h;
+		bool outside;
 		lua::objpin<tilemap> map;
 	};
 
-	int tilemap::draw(lua::state& L, lua::parameters& P)
+	template<bool outside> int tilemap::draw(lua::state& L, lua::parameters& P)
 	{
 		uint32_t x, y, w, h;
 		int32_t x0, y0;
@@ -273,7 +301,7 @@ namespace
 		P(t, x, y, P.optional(x0, 0), P.optional(y0, 0), P.optional(w, width * cwidth),
 			P.optional(h, height * cheight));
 
-		lua_render_ctx->queue->create_add<render_object_tilemap>(x, y, x0, y0, w, h, t);
+		lua_render_ctx->queue->create_add<render_object_tilemap>(x, y, x0, y0, w, h, outside, t);
 		return 0;
 	}
 
@@ -290,7 +318,8 @@ namespace
 	lua::_class<tilemap> class_tilemap(lua_class_gui, "TILEMAP", {
 		{"new", tilemap::create},
 	}, {
-		{"draw", &tilemap::draw},
+		{"draw", &tilemap::draw<false>},
+		{"draw_outside", &tilemap::draw<true>},
 		{"set", &tilemap::set},
 		{"get", &tilemap::get},
 		{"scroll", &tilemap::scroll},

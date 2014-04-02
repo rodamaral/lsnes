@@ -50,7 +50,7 @@ struct lua_bitmap
 	std::vector<char> save_png(const lua_palette& pal) const;
 	std::string print();
 	static int create(lua::state& L, lua::parameters& P);
-	int draw(lua::state& L, lua::parameters& P);
+	template<bool outside, bool clip> int draw(lua::state& L, lua::parameters& P);
 	int pset(lua::state& L, lua::parameters& P);
 	int pget(lua::state& L, lua::parameters& P);
 	int size(lua::state& L, lua::parameters& P);
@@ -74,7 +74,7 @@ struct lua_dbitmap
 	std::vector<char> save_png() const;
 	std::string print();
 	static int create(lua::state& L, lua::parameters& P);
-	int draw(lua::state& L, lua::parameters& P);
+	template<bool outside, bool clip> int draw(lua::state& L, lua::parameters& P);
 	int pset(lua::state& L, lua::parameters& P);
 	int pget(lua::state& L, lua::parameters& P);
 	int size(lua::state& L, lua::parameters& P);

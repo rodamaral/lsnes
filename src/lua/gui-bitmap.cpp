@@ -65,19 +65,31 @@ namespace
 	struct render_object_bitmap : public framebuffer::object
 	{
 		render_object_bitmap(int32_t _x, int32_t _y, lua::objpin<lua_bitmap> _bitmap,
-			lua::objpin<lua_palette> _palette) throw()
+			lua::objpin<lua_palette> _palette, int32_t _x0, int32_t _y0, uint32_t _dw, uint32_t _dh,
+				bool _outside) throw()
 		{
 			x = _x;
 			y = _y;
 			b = _bitmap;
 			p = _palette;
+			x0 = _x0;
+			y0 = _y0;
+			dw = _dw;
+			dh = _dh;
+			outside = _outside;
 		}
 
-		render_object_bitmap(int32_t _x, int32_t _y, lua::objpin<lua_dbitmap> _bitmap) throw()
+		render_object_bitmap(int32_t _x, int32_t _y, lua::objpin<lua_dbitmap> _bitmap, int32_t _x0,
+			int32_t _y0, uint32_t _dw, uint32_t _dh, bool _outside) throw()
 		{
 			x = _x;
 			y = _y;
 			b2 = _bitmap;
+			x0 = _x0;
+			y0 = _y0;
+			dw = _dw;
+			dh = _dh;
+			outside = _outside;
 		}
 
 		~render_object_bitmap() throw()
@@ -95,8 +107,8 @@ namespace
 		{
 			if(p)
 				p->palette_mutex.lock();
-			uint32_t oX = x + scr.get_origin_x();
-			uint32_t oY = y + scr.get_origin_y();
+			uint32_t oX = x + scr.get_origin_x() - x0;
+			uint32_t oY = y + scr.get_origin_y() - y0;
 			size_t pallim = 0;
 			size_t w, h;
 			framebuffer::color* palette;
@@ -111,21 +123,40 @@ namespace
 				h = b2->height;
 			}
 
-			range bX = (range::make_w(scr.get_width()) - oX) & range::make_w(w);
-			range bY = (range::make_w(scr.get_height()) - oY) & range::make_w(h);
+			range bX = ((range::make_w(scr.get_width()) - oX) & range::make_w(w) & 
+				range::make_s(x0, dw));
+			range bY = ((range::make_w(scr.get_height()) - oY) & range::make_w(h) &
+				range::make_s(y0, dh));
+			range sX = range::make_s(-x + x0, scr.get_last_blit_width());
+			range sY = range::make_s(-y + y0, scr.get_last_blit_height());
 
 			for(uint32_t r = bY.low(); r < bY.high(); r++) {
 				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(oY + r);
 				size_t eptr = oX + bX.low();
+				uint32_t xmin = bX.low();
+				bool cut = outside && sY.in(r);
+				if(cut && sX.in(xmin)) {
+					xmin = sX.high();
+					eptr += (sX.high() - bX.low());
+				}
 				if(b)
-					for(uint32_t c = bX.low(); c < bX.high(); c++, eptr++) {
+					for(uint32_t c = xmin; c < bX.high(); c++, eptr++) {
+						if(__builtin_expect(cut && c == sX.low(), 0)) {
+							c += sX.size();
+							eptr += sX.size();
+						}
 						uint16_t i = b->pixels[r * b->width + c];
 						if(i < pallim)
 							palette[i].apply(rptr[eptr]);
 					}
 				else
-					for(uint32_t c = bX.low(); c < bX.high(); c++, eptr++)
+					for(uint32_t c = xmin; c < bX.high(); c++, eptr++) {
+						if(__builtin_expect(cut && c == sX.low(), 0)) {
+							c += sX.size();
+							eptr += sX.size();
+						}
 						b2->pixels[r * b2->width + c].apply(rptr[eptr]);
+					}
 			}
 			if(p)
 				p->palette_mutex.unlock();
@@ -139,6 +170,11 @@ namespace
 		lua::objpin<lua_bitmap> b;
 		lua::objpin<lua_dbitmap> b2;
 		lua::objpin<lua_palette> p;
+		int32_t x0;
+		int32_t y0;
+		uint32_t dw;
+		uint32_t dh;
+		bool outside;
 	};
 
 	struct operand_dbitmap
@@ -717,7 +753,10 @@ namespace
 	lua::_class<lua_bitmap> class_bitmap(lua_class_gui, "BITMAP", {
 		{"new", lua_bitmap::create},
 	}, {
-		{"draw", &lua_bitmap::draw},
+		{"draw", &lua_bitmap::draw<false, false>},
+		{"draw_clip", &lua_bitmap::draw<false, true>},
+		{"draw_outside", &lua_bitmap::draw<true, false>},
+		{"draw_clip_outside", &lua_bitmap::draw<true, true>},
 		{"pset", &lua_bitmap::pset},
 		{"pget", &lua_bitmap::pget},
 		{"size", &lua_bitmap::size},
@@ -734,7 +773,10 @@ namespace
 	lua::_class<lua_dbitmap> class_dbitmap(lua_class_gui, "DBITMAP", {
 		{"new", lua_dbitmap::create},
 	}, {
-		{"draw", &lua_dbitmap::draw},
+		{"draw", &lua_dbitmap::draw<false, false>},
+		{"draw_clip", &lua_dbitmap::draw<false, true>},
+		{"draw_outside", &lua_dbitmap::draw<true, false>},
+		{"draw_clip_outside", &lua_dbitmap::draw<true, true>},
 		{"pset", &lua_dbitmap::pset},
 		{"pget", &lua_dbitmap::pget},
 		{"size", &lua_dbitmap::size},
@@ -915,6 +957,7 @@ int lua_bitmap::create(lua::state& L, lua::parameters& P)
 	return 1;
 }
 
+template<bool outside, bool clip>
 int lua_bitmap::draw(lua::state& L, lua::parameters& P)
 {
 	int32_t x, y;
@@ -925,7 +968,10 @@ int lua_bitmap::draw(lua::state& L, lua::parameters& P)
 
 	P(b, x, y, p);
 
-	lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b, p);
+	int32_t x0 = 0, y0 = 0, dw = b->width, dh = b->height;
+	if(clip) P(x0, y0, dw, dh);
+
+	lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b, p, x0, y0, dw, dh, outside);
 	return 0;
 }
 
@@ -1083,6 +1129,7 @@ int lua_dbitmap::create(lua::state& L, lua::parameters& P)
 	return 1;
 }
 
+template<bool outside, bool clip>
 int lua_dbitmap::draw(lua::state& L, lua::parameters& P)
 {
 	int32_t x, y;
@@ -1092,7 +1139,10 @@ int lua_dbitmap::draw(lua::state& L, lua::parameters& P)
 
 	P(b, x, y);
 
-	lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b);
+	int32_t x0 = 0, y0 = 0, dw = b->width, dh = b->height;
+	if(clip) P(x0, y0, dw, dh);
+
+	lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b, x0, y0, dw, dh, outside);
 	return 0;
 }
 

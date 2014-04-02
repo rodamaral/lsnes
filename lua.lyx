@@ -1039,6 +1039,22 @@ Draw tilemap <tmap> to screen at <x>,<y>.
 This method requires a rendering context to work.
 \end_layout
 
+\begin_layout Subsubsection
+TILEMAP:draw_outside: Draw tilemap outside game area
+\end_layout
+
+\begin_layout Itemize
+Name: tmap:draw_outside(x, y)
+\end_layout
+
+\begin_layout Itemize
+Name: tmap:draw_outside(x, y, x0, y0, w, h)
+\end_layout
+
+\begin_layout Standard
+Like TILEMAP:draw, but draws only outside game area.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
@@ -1598,6 +1614,78 @@ palette: The palette to use for drawing.
 
 \begin_layout Standard
 Draw bitmap <bitmap> on screen at <x>,<y> with palette <palette>.
+\end_layout
+
+\begin_layout Subsubsection
+Method draw_outside: Draw a bitmap outside game area
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:draw_outside(x, y, palette)
+\end_layout
+
+\begin_layout Standard
+Like bitmap:draw, but does not draw on game area.
+\end_layout
+
+\begin_layout Subsubsection
+Method draw_clip: Draw a bitmap, with clipping
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:draw_clip(x, y, palette, x0, y0, width, height)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP: The bitmap to draw
+\end_layout
+
+\begin_layout Itemize
+x: number: The x-coordinate on screen.
+\end_layout
+
+\begin_layout Itemize
+y: number: The y-coordinate on screen.
+\end_layout
+
+\begin_layout Itemize
+palette: The palette to use for drawing.
+\end_layout
+
+\begin_layout Itemize
+x0: The smallest bitmap x coordinate to draw.
+\end_layout
+
+\begin_layout Itemize
+y0: The smallest bitmap y coordinate to draw.
+\end_layout
+
+\begin_layout Itemize
+width: Width of region to draw
+\end_layout
+
+\begin_layout Itemize
+height: Height of region to draw.
+\end_layout
+
+\begin_layout Standard
+Like bitmap:draw, but clip the bitmap area drawn.
+\end_layout
+
+\begin_layout Subsubsection
+Method draw_clip_outside: Draw a bitmap outside game are, with clipping
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:draw_clip_outside(x, y, palette, x0, y0, width, height)
+\end_layout
+
+\begin_layout Standard
+Like bitmap:draw_clip, but only draw outside game area.
 \end_layout
 
 \begin_layout Subsubsection
@@ -2287,6 +2375,74 @@ y: number: Y-coordinate on screen.
 
 \begin_layout Standard
 Draw bitmap <bitmap> on screen at <x>,<y>.
+\end_layout
+
+\begin_layout Subsubsection
+Method draw_outside: Draw a bitmap outside game area
+\end_layout
+
+\begin_layout Itemize
+Syntax: dbitmap:draw_outside(x, y, palette)
+\end_layout
+
+\begin_layout Standard
+Like dbitmap:draw, but does not draw on game area.
+\end_layout
+
+\begin_layout Subsubsection
+Method draw_clip: Draw a bitmap, with clipping
+\end_layout
+
+\begin_layout Itemize
+Syntax: dbitmap:draw(x, y, palette, x0, y0, width, height)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The bitmap to draw
+\end_layout
+
+\begin_layout Itemize
+x: number: The x-coordinate on screen.
+\end_layout
+
+\begin_layout Itemize
+y: number: The y-coordinate on screen.
+\end_layout
+
+\begin_layout Itemize
+x0: The smallest bitmap x coordinate to draw.
+\end_layout
+
+\begin_layout Itemize
+y0: The smallest bitmap y coordinate to draw.
+\end_layout
+
+\begin_layout Itemize
+width: Width of region to draw
+\end_layout
+
+\begin_layout Itemize
+height: Height of region to draw.
+\end_layout
+
+\begin_layout Standard
+Like dbitmap:draw, but clip the bitmap area drawn.
+\end_layout
+
+\begin_layout Subsubsection
+Method draw_clip_outside: Draw a bitmap outside game are, with clipping
+\end_layout
+
+\begin_layout Itemize
+Syntax: dbitmap:draw_clip_outside(x, y, palette, x0, y0, width, height)
+\end_layout
+
+\begin_layout Standard
+Like dbitmap:draw_clip, but only draw outside game area.
 \end_layout
 
 \begin_layout Subsubsection
