@@ -694,17 +694,6 @@ private:
 };
 
 /**
- * Clip range inside another.
- *
- * parameter origin: Origin coordinate.
- * parameter size: Dimension size.
- * parameter base: Base coordinate.
- * parameter minc: Minimum coordinate relative to base. Updated.
- * parameter maxc: Maximum coordinate relative to base. Updated.
- */
-void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int32_t& maxc) throw();
-
-/**
  * Drop every fourth byte of specified buffer.
  *
  * Parameter dest: Destination buffer, should be 16-byte aligned.

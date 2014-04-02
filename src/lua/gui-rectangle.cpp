@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
+#include "library/range.hpp"
 #include "library/lua-framebuffer.hpp"
 
 namespace
@@ -13,18 +14,14 @@ namespace
 		~render_object_rectangle() throw() {}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
-			uint32_t originx = scr.get_origin_x();
-			uint32_t originy = scr.get_origin_y();
-			int32_t xmin = 0;
-			int32_t xmax = width;
-			int32_t ymin = 0;
-			int32_t ymax = height;
-			framebuffer::clip_range(originx, scr.get_width(), x, xmin, xmax);
-			framebuffer::clip_range(originy, scr.get_height(), y, ymin, ymax);
-			for(int32_t r = ymin; r < ymax; r++) {
-				typename framebuffer::fb<X>::element_t* rptr = scr.rowptr(y + r + originy);
-				size_t eptr = x + xmin + originx;
-				for(int32_t c = xmin; c < xmax; c++, eptr++)
+			uint32_t oX = x + scr.get_origin_x();
+			uint32_t oY = y + scr.get_origin_y();
+			range bX = (range::make_w(scr.get_width()) - oX) & range::make_w(width);
+			range bY = (range::make_w(scr.get_height()) - oY) & range::make_w(height);
+			for(uint32_t r = bY.low(); r != bY.high(); r++) {
+				typename framebuffer::fb<X>::element_t* rptr = scr.rowptr(oY + r);
+				size_t eptr = oX + bX.low();
+				for(uint32_t c = bX.low(); c != bX.high(); c++, eptr++)
 					if(r < thickness || c < thickness || r >= height - thickness ||
 						c >= width - thickness)
 						outline.apply(rptr[eptr]);
@@ -38,11 +35,11 @@ namespace
 	private:
 		int32_t x;
 		int32_t y;
-		int32_t width;
-		int32_t height;
+		uint32_t width;
+		uint32_t height;
 		framebuffer::color outline;
 		framebuffer::color fill;
-		int32_t thickness;
+		uint32_t thickness;
 	};
 
 	int rectangle(lua::state& L, lua::parameters& P)

@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-framebuffer.hpp"
+#include "library/range.hpp"
 
 namespace
 {
@@ -11,20 +12,16 @@ namespace
 		~render_object_crosshair() throw() {}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
-			uint32_t originx = scr.get_origin_x();
-			uint32_t originy = scr.get_origin_y();
-			int32_t xmin = -static_cast<int32_t>(length);
-			int32_t xmax = static_cast<int32_t>(length + 1);
-			int32_t ymin = -static_cast<int32_t>(length);
-			int32_t ymax = static_cast<int32_t>(length + 1);
-			framebuffer::clip_range(originx, scr.get_width(), x, xmin, xmax);
-			framebuffer::clip_range(originy, scr.get_height(), y, ymin, ymax);
-			if(xmin <= 0 && xmax > 0)
-				for(int32_t r = ymin; r < ymax; r++)
-					color.apply(scr.rowptr(y + r + originy)[x + originx]);
-			if(ymin <= 0 && ymax > 0)
-				for(int32_t r = xmin; r < xmax; r++)
-					color.apply(scr.rowptr(y + originy)[x + r + originx]);
+			uint32_t oX = x + scr.get_origin_x();
+			uint32_t oY = y + scr.get_origin_y();
+			range bX = (range::make_w(scr.get_width()) - oX) & range::make_b(-length, length + 1);
+			range bY = (range::make_w(scr.get_height()) - oY) & range::make_b(-length, length + 1);
+			if(bX.in(0))
+				for(uint32_t r = bY.low(); r != bY.high(); r++)
+					color.apply(scr.rowptr(oY + r)[oX]);
+			if(bY.in(0))
+				for(uint32_t r = bX.low(); r != bX.high(); r++)
+					color.apply(scr.rowptr(oY)[oX + r]);
 		}
 		void operator()(struct framebuffer::fb<true>& scr) throw()  { op(scr); }
 		void operator()(struct framebuffer::fb<false>& scr) throw() { op(scr); }

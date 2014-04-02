@@ -2,6 +2,7 @@
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
 #include "library/png.hpp"
+#include "library/range.hpp"
 #include "library/string.hpp"
 #include "library/threads.hpp"
 #include "library/lua-framebuffer.hpp"
@@ -192,31 +193,30 @@ namespace
 			}
 		}
 		template<bool T> void composite_op(struct framebuffer::fb<T>& scr, int32_t xp,
-			int32_t yp, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax, lua_dbitmap& d) throw()
+			int32_t yp, const range& X, const range& Y, lua_dbitmap& d) throw()
 		{
-			if(xmin >= xmax || ymin >= ymax) return;
+			if(!X.size() || !Y.size()) return;
 
-			for(int32_t r = ymin; r < ymax; r++) {
+			for(uint32_t r = Y.low(); r != Y.high(); r++) {
 				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
-				size_t eptr = xp + xmin;
-				for(int32_t c = xmin; c < xmax; c++, eptr++)
+				size_t eptr = xp + X.low();
+				for(uint32_t c = X.low(); c != X.high(); c++, eptr++)
 					d.pixels[r * d.width + c].apply(rptr[eptr]);
 			}
 		}
 		template<bool T> void composite_op(struct framebuffer::fb<T>& scr, int32_t xp,
-			int32_t yp, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax, lua_bitmap& b,
-			lua_palette& p)
+			int32_t yp, const range& X, const range& Y, lua_bitmap& b, lua_palette& p)
 			throw()
 		{
-			if(xmin >= xmax || ymin >= ymax) return;
+			if(!X.size() || !Y.size()) return;
 			p.palette_mutex.lock();
 			framebuffer::color* palette = p.colors;
 			size_t pallim = p.color_count;
 
-			for(int32_t r = ymin; r < ymax; r++) {
+			for(uint32_t r = Y.low(); r != Y.high(); r++) {
 				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
-				size_t eptr = xp + xmin;
-				for(int32_t c = xmin; c < xmax; c++, eptr++) {
+				size_t eptr = xp + X.low();
+				for(uint32_t c = X.low(); c != X.high(); c++, eptr++) {
 					uint16_t i = b.pixels[r * b.width + c];
 					if(i < pallim)
 						palette[i].apply(rptr[eptr]);
@@ -236,34 +236,18 @@ namespace
 				_h = e.d->height;
 			} else
 				return;
-			//Calculate notional screen coordinates for the tile.
-			int32_t scrx = x + scr.get_origin_x() + bx - x0;
-			int32_t scry = y + scr.get_origin_y() + by - y0;
-			int32_t scrw = scr.get_width();
-			int32_t scrh = scr.get_height();
-			int32_t xmin = 0;
-			int32_t xmax = _w;
-			int32_t ymin = 0;
-			int32_t ymax = _h;
-			clip(scrx, scrw, x + scr.get_origin_x(), w, xmin, xmax);
-			clip(scry, scrh, y + scr.get_origin_y(), h, ymin, ymax);
+
+			uint32_t oX = x + scr.get_origin_x();
+			uint32_t oY = y + scr.get_origin_y();
+			range bX = ((range::make_w(scr.get_width()) - oX) & range::make_s(bx, _w) &
+				range::make_s(x0, w)) - bx;
+			range bY = ((range::make_w(scr.get_height()) - oY) & range::make_s(by, _h) &
+				range::make_s(y0, h)) - by;
+
 			if(e.b)
-				composite_op(scr, scrx, scry, xmin, xmax, ymin, ymax, *e.b, *e.p);
+				composite_op(scr, oX + bx, oY + by, bX, bY, *e.b, *e.p);
 			else if(e.d)
-				composite_op(scr, scrx, scry, xmin, xmax, ymin, ymax, *e.d);
-		}
-		//scrc + cmin >= 0 and scrc + cmax <= scrd  (Clip on screen).
-		//scrc + cmin >= bc and scrc + cmax <= bc + d  (Clip on texture).
-		void clip(int32_t scrc, int32_t scrd, int32_t bc, int32_t d, int32_t& cmin, int32_t& cmax)
-		{
-			if(scrc + cmin < 0)
-				cmin = -scrc;
-			if(scrc + cmax > scrd)
-				cmax = scrd - scrc;
-			if(scrc + cmin < bc)
-				cmin = bc - scrc;
-			if(scrc + cmax > bc + d)
-				cmax = bc + d - scrc;
+				composite_op(scr, oX + bx, oY + by, bX, bY, *e.d);
 		}
 		void operator()(struct framebuffer::fb<false>& x) throw() { composite_op(x); }
 		void operator()(struct framebuffer::fb<true>& x) throw() { composite_op(x); }

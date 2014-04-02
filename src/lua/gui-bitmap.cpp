@@ -4,6 +4,7 @@
 #include "library/lua-framebuffer.hpp"
 #include "library/minmax.hpp"
 #include "library/png.hpp"
+#include "library/range.hpp"
 #include "library/sha256.hpp"
 #include "library/serialization.hpp"
 #include "library/string.hpp"
@@ -94,8 +95,8 @@ namespace
 		{
 			if(p)
 				p->palette_mutex.lock();
-			uint32_t originx = scr.get_origin_x();
-			uint32_t originy = scr.get_origin_y();
+			uint32_t oX = x + scr.get_origin_x();
+			uint32_t oY = y + scr.get_origin_y();
 			size_t pallim = 0;
 			size_t w, h;
 			framebuffer::color* palette;
@@ -110,23 +111,20 @@ namespace
 				h = b2->height;
 			}
 
-			int32_t xmin = 0;
-			int32_t xmax = w;
-			int32_t ymin = 0;
-			int32_t ymax = h;
-			framebuffer::clip_range(originx, scr.get_width(), x, xmin, xmax);
-			framebuffer::clip_range(originy, scr.get_height(), y, ymin, ymax);
-			for(int32_t r = ymin; r < ymax; r++) {
-				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(y + r + originy);
-				size_t eptr = x + xmin + originx;
+			range bX = (range::make_w(scr.get_width()) - oX) & range::make_w(w);
+			range bY = (range::make_w(scr.get_height()) - oY) & range::make_w(h);
+
+			for(uint32_t r = bY.low(); r < bY.high(); r++) {
+				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(oY + r);
+				size_t eptr = oX + bX.low();
 				if(b)
-					for(int32_t c = xmin; c < xmax; c++, eptr++) {
+					for(uint32_t c = bX.low(); c < bX.high(); c++, eptr++) {
 						uint16_t i = b->pixels[r * b->width + c];
 						if(i < pallim)
 							palette[i].apply(rptr[eptr]);
 					}
 				else
-					for(int32_t c = xmin; c < xmax; c++, eptr++)
+					for(uint32_t c = bX.low(); c < bX.high(); c++, eptr++)
 						b2->pixels[r * b2->width + c].apply(rptr[eptr]);
 			}
 			if(p)

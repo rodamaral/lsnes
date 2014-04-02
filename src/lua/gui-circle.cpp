@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
+#include "library/range.hpp"
 #include "library/lua-framebuffer.hpp"
 
 namespace
@@ -21,19 +22,15 @@ namespace
 		~render_object_circle() throw() {}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
-			uint32_t originx = scr.get_origin_x();
-			uint32_t originy = scr.get_origin_y();
-			int32_t xmin = -radius;
-			int32_t xmax = radius;
-			int32_t ymin = -radius;
-			int32_t ymax = radius;
-			framebuffer::clip_range(originx, scr.get_width(), x, xmin, xmax);
-			framebuffer::clip_range(originy, scr.get_height(), y, ymin, ymax);
-			for(int32_t r = ymin; r < ymax; r++) {
+			uint32_t oX = x + scr.get_origin_x();
+			uint32_t oY = y + scr.get_origin_y();
+			range bX = (range::make_w(scr.get_width()) - oX) & range::make_b(-radius, radius + 1);
+			range bY = (range::make_w(scr.get_height()) - oY) & range::make_b(-radius, radius + 1);
+			for(uint32_t r = bY.low(); r != bY.high(); r++) {
 				uint64_t pd2 = static_cast<int64_t>(r) * r;
-				typename framebuffer::fb<X>::element_t* rptr = scr.rowptr(y + r + originy);
-				size_t eptr = x + xmin + originx;
-				for(int32_t c = xmin; c < xmax; c++, eptr++) {
+				typename framebuffer::fb<X>::element_t* rptr = scr.rowptr(oY + r);
+				size_t eptr = oX + bX.low();
+				for(uint32_t c = bX.low(); c != bX.high(); c++, eptr++) {
 					uint64_t fd2 = pd2 + static_cast<int64_t>(c) * c;
 					if(fd2 > radius2)
 						continue;
