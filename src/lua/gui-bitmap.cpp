@@ -1214,7 +1214,7 @@ template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, lua:
 	int sidx = P.skip();
 	if(!src_d && !src_p)
 		P.expected("BITMAP or DBITMAP", sidx);
-	int spal;
+	int spal = 0;
 	if(src_p)
 		spal = P.skip();	//Reserve for palette.
 
