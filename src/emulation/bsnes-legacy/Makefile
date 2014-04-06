@@ -41,7 +41,7 @@ ports.inc: ports.json ../make-ports.exe
 	../make-ports.exe <$< >$@
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep ports.inc
-	$(REALCC) -c -o $@ $< -I../../../include -I../../../bsnes $(CFLAGS) $(BSNES_CFLAGS) -Werror=return-type
+	$(REALCC) -c -o $@ $< -I../../../include -I../../../bsnes $(CFLAGS) $(BSNES_CFLAGS) -Wreturn-type
 else
 
 OBJECTS=

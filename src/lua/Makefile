@@ -14,7 +14,7 @@ sysrc.cpp.dep: sysrc.cpp
 	touch sysrc.cpp.dep
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
-	$(REALCC) -c -o $@ $< -I../../include $(CFLAGS) -Wall -Werror
+	$(REALCC) -c -o $@ $< -I../../include $(CFLAGS) -Wall
 
 precheck:
 	../../buildaux/mkdeps.exe ../../include -- *.cpp

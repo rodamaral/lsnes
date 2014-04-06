@@ -7,7 +7,7 @@ __all__.files: $(OBJECTS)
 	touch __all__.ldflags
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
-	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include/library -Wall -Werror
+	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include/library -Wall
 
 precheck: forcelook
 	../../buildaux/mkdeps.exe ../../include/library -- *.cpp

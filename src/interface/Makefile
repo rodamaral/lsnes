@@ -7,7 +7,7 @@ __all__.files: $(OBJECTS)
 	touch __all__.ldflags
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
-	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include -Wall -Werror
+	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include -Wall
 
 precheck:
 	../../buildaux/mkdeps.exe ../../include -- *.cpp
