@@ -26,7 +26,7 @@ public:
  *
  * Parameter s: The stream to output to.
  */
-	output(std::ostream& s);
+	output(int s);
 /**
  * Output a byte to stream (1 byte).
  *
@@ -130,8 +130,9 @@ public:
  */
 	std::string get();
 private:
-	std::ostream& strm;
-	std::ostringstream buf;
+	inline void write(const char* buf, size_t size);
+	int strm;
+	std::vector<char> buf;
 };
 
 /**
@@ -159,7 +160,7 @@ public:
 /**
  * Create a new top-level input stream, reading from specified stream.
  */
-	input(std::istream& s);
+	input(int s);
 /**
  * Create a new input substream, under specified top-level stream and with specified length.
  *
@@ -251,7 +252,7 @@ private:
 	bool read(char* buf, size_t size, bool allow_none = false);
 	void flush();
 	input* parent;
-	std::istream& strm;
+	int strm;
 	uint64_t left;
 };
 

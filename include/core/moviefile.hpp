@@ -33,7 +33,7 @@ struct moviefile
 		uint64_t rerecords;
 	private:
 		void load(zip::reader& r);
-		void binary_io(std::istream& s);
+		void binary_io(int s);
 	};
 /**
  * Extract branches.
@@ -274,8 +274,8 @@ struct moviefile
 private:
 	moviefile(const moviefile&);
 	moviefile& operator=(const moviefile&);
-	void binary_io(std::ostream& stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
-	void binary_io(std::istream& stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
+	void binary_io(int stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
+	void binary_io(int stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 	void save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
 	void load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 };

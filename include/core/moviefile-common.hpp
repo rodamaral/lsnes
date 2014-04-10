@@ -36,7 +36,7 @@ struct moviefile_branch_extractor_binary : public moviefile::branch_extractor
 	std::set<std::string> enumerate();
 	void read(const std::string& name, controller_frame_vector& v);
 private:
-	std::ifstream s;
+	int s;
 };
 
 #endif

@@ -10,8 +10,18 @@
 #include "library/serialization.hpp"
 #include "library/binarystream.hpp"
 #include "interface/romtype.hpp"
+#include <cstring>
+#include <cerrno>
+#include <fcntl.h>
+#include <unistd.h>
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+//FUCK YOU. SERIOUSLY.
+#define EXTRA_OPENFLAGS O_BINARY
+#else
+#define EXTRA_OPENFLAGS 0
+#endif
 
-void moviefile::brief_info::binary_io(std::istream& _stream)
+void moviefile::brief_info::binary_io(int _stream)
 {
 	binarystream::input in(_stream);
 	sysregion = in.string();
@@ -50,7 +60,7 @@ void moviefile::brief_info::binary_io(std::istream& _stream)
 	}, binarystream::null_default);
 }
 
-void moviefile::binary_io(std::ostream& _stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
+void moviefile::binary_io(int _stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
 {
 	binarystream::output out(_stream);
 	out.string(gametype->get_name());
@@ -184,7 +194,7 @@ void moviefile::binary_io(std::ostream& _stream, rrdata_set& rrd) throw(std::bad
 	}
 }
 
-void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
+void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 {
 	binarystream::input in(_stream);
 	std::string tmp = in.string();
@@ -289,9 +299,11 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 
 moviefile_branch_extractor_binary::moviefile_branch_extractor_binary(const std::string& filename)
 {
-	s.open(filename);
-	if(!s)
-		(stringfmt() << "Can't open file '" << filename << "' for reading").throwex();
+	s = open(filename.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
+	if(s < 0) {
+		int err = errno;
+		(stringfmt() << "Can't open file '" << filename << "' for reading: " << strerror(err)).throwex();
+	}
 }
 
 moviefile_branch_extractor_binary::~moviefile_branch_extractor_binary()
@@ -302,9 +314,10 @@ std::set<std::string> moviefile_branch_extractor_binary::enumerate()
 {
 	std::set<std::string> r;
 	std::string name;
-	s.seekg(5);
-	if(!s)
-		(stringfmt() << "Can't read the file").throwex();
+	if(lseek(s, 5, SEEK_SET) < 0) {
+		int err = errno;
+		(stringfmt() << "Can't read the file: " << strerror(err)).throwex();
+	}
 	binarystream::input b(s);
 	//Skip the headers.
 	b.string();
@@ -329,9 +342,10 @@ std::set<std::string> moviefile_branch_extractor_binary::enumerate()
 void moviefile_branch_extractor_binary::read(const std::string& name, controller_frame_vector& v)
 {
 	std::string mname;
-	s.seekg(5);
-	if(!s)
-		(stringfmt() << "Can't read the file").throwex();
+	if(lseek(s, 5, SEEK_SET) < 0) {
+		int err = errno;
+		(stringfmt() << "Can't read the file: " << strerror(err)).throwex();
+	}
 	binarystream::input b(s);
 	bool done = false;
 	//Skip the headers.

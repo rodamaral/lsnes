@@ -19,11 +19,53 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
 #include <windows.h>
+//FUCK YOU. SERIOUSLY.
+#define EXTRA_OPENFLAGS O_BINARY
+#else
+#define EXTRA_OPENFLAGS 0
+#endif
+
+//Damn Windows.
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK EAGAIN
 #endif
 
 namespace
 {
 	std::map<std::string, moviefile*> memory_saves;
+
+	bool check_binary_magic(int s)
+	{
+		char buf[6] = {0};
+		int x = 0;
+		while(x < 5) {
+			int r = read(s, buf + x, 5 - x);
+			if(r < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+				continue;
+			if(r <= 0)		//0 => EOF, break on that too.
+				return false;
+			x += r;
+		}
+		return !strcmp(buf, "lsmv\x1A");
+	}
+
+	void write_whole(int s, const char* buf, size_t size)
+	{
+		size_t w = 0;
+		while(w < size) {
+			int maxw = 32767;
+			if((size_t)maxw > (size - w))
+				maxw = size - w;
+			int r = write(s, buf + w, maxw);
+			if(r < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+				continue;
+			if(r < 0) {
+				int err = errno;
+				(stringfmt() << strerror(err)).throwex();
+			}
+			w += r;
+		}
+	}
 }
 
 moviefile::brief_info::brief_info(const std::string& filename)
@@ -46,15 +88,17 @@ moviefile::brief_info::brief_info(const std::string& filename)
 		return;
 	}
 	{
-		std::istream& s = zip::openrel(filename, "");
-		char buf[6] = {0};
-		s.read(buf, 5);
-		if(!strcmp(buf, "lsmv\x1A")) {
-			binary_io(s);
-			delete &s;
+		int s = open(filename.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
+		if(s < 0) {
+			int err = errno;
+			(stringfmt() << "Can't read file '" << filename << "': " << strerror(err)).throwex();
+		}
+		if(check_binary_magic(s)) {
+			try { binary_io(s); } catch(...) { close(s); throw; }
+			close(s);
 			return;
 		}
-		delete &s;
+		close(s);
 	}
 	zip::reader r(filename);
 	load(r);
@@ -125,15 +169,17 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 	is_savestate = false;
 	lazy_project_create = false;
 	{
-		std::istream& s = zip::openrel(movie, "");
-		char buf[6] = {0};
-		s.read(buf, 5);
-		if(!strcmp(buf, "lsmv\x1A")) {
-			binary_io(s, romtype);
-			delete &s;
+		int s = open(movie.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
+		if(s < 0) {
+			int err = errno;
+			(stringfmt() << "Can't read file '" << movie << "': " << strerror(err)).throwex();
+		}
+		if(check_binary_magic(s)) {
+			try { binary_io(s, romtype); } catch(...) { close(s); throw; }
+			close(s);
 			return;
 		}
-		delete &s;
+		close(s);
 	}
 	zip::reader r(movie);
 	load(r, romtype);
@@ -164,17 +210,23 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 	}
 	if(binary) {
 		std::string tmp = movie + ".tmp";
-		std::ofstream strm(tmp.c_str(), std::ios_base::binary);
-		if(!strm)
-			throw std::runtime_error("Can't open output file");
-		char buf[5] = {'l', 's', 'm', 'v', 0x1A};
-		strm.write(buf, 5);
-		if(!strm)
-			throw std::runtime_error("Failed to write to output file");
-		binary_io(strm, rrd);
-		if(!strm)
-			throw std::runtime_error("Failed to write to output file");
-		strm.close();
+		int strm = open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC | EXTRA_OPENFLAGS, 0644);
+		if(strm < 0) {
+			int err = errno;
+			(stringfmt() << "Failed to open '" << tmp << "': " << strerror(err)).throwex();
+		}
+		try {
+			char buf[5] = {'l', 's', 'm', 'v', 0x1A};
+			write_whole(strm, buf, 5);
+			binary_io(strm, rrd);
+		} catch(std::exception& e) {
+			close(strm);
+			(stringfmt() << "Failed to write '" << tmp << "': " << e.what()).throwex();
+		}
+		if(close(strm) < 0) {
+			int err = errno;
+			(stringfmt() << "Failed to write '" << tmp << "': " << strerror(err)).throwex();
+		}
 		std::string backup = movie + ".backup";
 		zip::rename_overwrite(movie.c_str(), backup.c_str());
 		if(zip::rename_overwrite(tmp.c_str(), movie.c_str()) < 0)

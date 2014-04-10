@@ -7,6 +7,10 @@
 #include <unistd.h>
 #if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
 #include <windows.h>
+//FUCK YOU. SERIOUSLY.
+#define EXTRA_OPENFLAGS O_BINARY
+#else
+#define EXTRA_OPENFLAGS 0
 #endif
 
 namespace
@@ -134,7 +138,7 @@ name_again:
 	strcpy(filename_buf + strlen(filename_buf), "-");
 	append_number(filename_buf + strlen(filename_buf), number++);
 	strcpy(filename_buf + strlen(filename_buf), ".lsmv");
-	fd = open(filename_buf, O_WRONLY | O_CREAT | O_EXCL, 0666);
+	fd = open(filename_buf, O_WRONLY | O_CREAT | O_EXCL | EXTRA_OPENFLAGS, 0666);
 	if(fd < 0 && errno == EEXIST) goto name_again;
 	if(fd < 0) return;  //Can't open.
 	//Headers.

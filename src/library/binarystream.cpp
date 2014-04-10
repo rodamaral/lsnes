@@ -1,28 +1,77 @@
 #include "binarystream.hpp"
 #include "serialization.hpp"
 #include "minmax.hpp"
+#include "string.hpp"
 #include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <unistd.h>
+
+//Damn Windows.
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK EAGAIN
+#endif
+
+namespace
+{
+	void write_whole(int s, const char* buf, size_t size)
+	{
+		size_t w = 0;
+		while(w < size) {
+			int maxw = 32767;
+			if((size_t)maxw > (size - w))
+				maxw = size - w;
+			int r = write(s, buf + w, maxw);
+			if(r < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+				continue;
+			if(r < 0) {
+				int err = errno;
+				(stringfmt() << strerror(err)).throwex();
+			}
+			w += r;
+		}
+	}
+
+	size_t whole_read(int s, char* buf, size_t size)
+	{
+		size_t r = 0;
+		while(r < size) {
+			int maxr = 32767;
+			if((size_t)maxr > (size - r))
+				maxr = size - r;
+			int x = read(s, buf + r, maxr);
+			if(x < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+				continue;
+			if(x < 0) {
+				int err = errno;
+				(stringfmt() << strerror(err)).throwex();
+			}
+			if(x == 0)
+				break;	//EOF.
+			r += x;
+		}
+		return r;
+	}
+}
 
 namespace binarystream
 {
 const uint32_t TAG_ = 0xaddb2d86;
 
 output::output()
-	: strm(buf)
+	: strm(-1)
 {
 }
 
-output::output(std::ostream& s)
+output::output(int s)
 	: strm(s)
 {
 }
 
 void output::byte(uint8_t byte)
 {
-	strm.write(reinterpret_cast<char*>(&byte), 1);
+	write(reinterpret_cast<char*>(&byte), 1);
 }
 
 void output::number(uint64_t number)
@@ -34,7 +83,7 @@ void output::number(uint64_t number)
 		data[len++] = (cont ? 0x80 : 0x00) | (number & 0x7F);
 		number >>= 7;
 	} while(number);
-	strm.write(data, len);
+	write(data, len);
 }
 
 size_t output::numberbytes(uint64_t number)
@@ -57,28 +106,30 @@ void output::number32(uint32_t number)
 {
 	char data[4];
 	serialization::u32b(data, number);
-	strm.write(data, 4);
+	write(data, 4);
 }
 
 void output::string(const std::string& string)
 {
 	number(string.length());
-	std::copy(string.begin(), string.end(), std::ostream_iterator<char>(strm));
+	std::vector<char> tmp(string.begin(), string.end());
+	write(&tmp[0], tmp.size());
 }
 
 void output::string_implicit(const std::string& string)
 {
-	std::copy(string.begin(), string.end(), std::ostream_iterator<char>(strm));
+	std::vector<char> tmp(string.begin(), string.end());
+	write(&tmp[0], tmp.size());
 }
 
 void output::blob_implicit(const std::vector<char>& blob)
 {
-	strm.write(&blob[0], blob.size());
+	write(&blob[0], blob.size());
 }
 
 void output::raw(const void* buf, size_t bufsize)
 {
-	strm.write(reinterpret_cast<const char*>(buf), bufsize);
+	write(reinterpret_cast<const char*>(buf), bufsize);
 }
 
 void output::write_extension_tag(uint32_t tag, uint64_t size)
@@ -92,12 +143,12 @@ void output::extension(uint32_t tag, std::function<void(output&)> fn, bool even_
 {
 	output tmp;
 	fn(tmp);
-	std::string str = tmp.get();
-	if(!even_empty && !str.length())
+	if(!even_empty && !tmp.buf.size())
 		return;
 	number32(TAG_);
 	number32(tag);
-	string(str);
+	number(tmp.buf.size());
+	blob_implicit(tmp.buf);
 }
 
 void output::extension(uint32_t tag, std::function<void(output&)> fn, bool even_empty,
@@ -111,12 +162,22 @@ void output::extension(uint32_t tag, std::function<void(output&)> fn, bool even_
 	fn(*this);
 }
 
+void output::write(const char* ibuf, size_t size)
+{
+	if(strm >= 0)
+		write_whole(strm, ibuf, size);
+	else {
+		size_t o = buf.size();
+		buf.resize(o + size);
+		memcpy(&buf[o], ibuf, size);
+	}
+}
 
 std::string output::get()
 {
-	if(&strm != &buf)
+	if(strm >= 0)
 		throw std::logic_error("Get can only be used without explicit sink");
-	return buf.str();
+	return std::string(buf.begin(), buf.end());
 }
 
 uint8_t input::byte()
@@ -175,7 +236,7 @@ void input::blob_implicit(std::vector<char>& blob)
 	read(&blob[0], left);
 }
 
-input::input(std::istream& s)
+input::input(int s)
 	: parent(NULL), strm(s), left(0)
 {
 }
@@ -240,9 +301,9 @@ bool input::read(char* buf, size_t size, bool allow_none)
 		parent->read(buf, size, false);
 		left -= size;
 	} else {
-		strm.read(buf, size);
-		if(!strm) {
-			if(!strm.gcount() && allow_none)
+		size_t r = whole_read(strm, buf, size);
+		if(r < size) {
+			if(!r && allow_none)
 				return false;
 			throw std::runtime_error("Unexpected EOF");
 		}
