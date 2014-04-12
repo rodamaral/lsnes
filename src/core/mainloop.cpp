@@ -1009,6 +1009,38 @@ namespace
 	keyboard::invbind isave30(lsnes_mapper, "save-state $SLOT:30", "Save‣Slot 30");
 	keyboard::invbind isave31(lsnes_mapper, "save-state $SLOT:31", "Save‣Slot 31");
 	keyboard::invbind isave32(lsnes_mapper, "save-state $SLOT:32", "Save‣Slot 32");
+	keyboard::invbind islot1(lsnes_mapper, "set-jukebox-slot 1", "Slot select‣Slot 1");
+	keyboard::invbind islot2(lsnes_mapper, "set-jukebox-slot 2", "Slot select‣Slot 2");
+	keyboard::invbind islot3(lsnes_mapper, "set-jukebox-slot 3", "Slot select‣Slot 3");
+	keyboard::invbind islot4(lsnes_mapper, "set-jukebox-slot 4", "Slot select‣Slot 4");
+	keyboard::invbind islot5(lsnes_mapper, "set-jukebox-slot 5", "Slot select‣Slot 5");
+	keyboard::invbind islot6(lsnes_mapper, "set-jukebox-slot 6", "Slot select‣Slot 6");
+	keyboard::invbind islot7(lsnes_mapper, "set-jukebox-slot 7", "Slot select‣Slot 7");
+	keyboard::invbind islot8(lsnes_mapper, "set-jukebox-slot 8", "Slot select‣Slot 8");
+	keyboard::invbind islot9(lsnes_mapper, "set-jukebox-slot 9", "Slot select‣Slot 9");
+	keyboard::invbind islot10(lsnes_mapper, "set-jukebox-slot 10", "Slot select‣Slot 10");
+	keyboard::invbind islot11(lsnes_mapper, "set-jukebox-slot 11", "Slot select‣Slot 11");
+	keyboard::invbind islot12(lsnes_mapper, "set-jukebox-slot 12", "Slot select‣Slot 12");
+	keyboard::invbind islot13(lsnes_mapper, "set-jukebox-slot 13", "Slot select‣Slot 13");
+	keyboard::invbind islot14(lsnes_mapper, "set-jukebox-slot 14", "Slot select‣Slot 14");
+	keyboard::invbind islot15(lsnes_mapper, "set-jukebox-slot 15", "Slot select‣Slot 15");
+	keyboard::invbind islot16(lsnes_mapper, "set-jukebox-slot 16", "Slot select‣Slot 16");
+	keyboard::invbind islot17(lsnes_mapper, "set-jukebox-slot 17", "Slot select‣Slot 17");
+	keyboard::invbind islot18(lsnes_mapper, "set-jukebox-slot 18", "Slot select‣Slot 18");
+	keyboard::invbind islot19(lsnes_mapper, "set-jukebox-slot 19", "Slot select‣Slot 19");
+	keyboard::invbind islot20(lsnes_mapper, "set-jukebox-slot 20", "Slot select‣Slot 20");
+	keyboard::invbind islot21(lsnes_mapper, "set-jukebox-slot 21", "Slot select‣Slot 21");
+	keyboard::invbind islot22(lsnes_mapper, "set-jukebox-slot 22", "Slot select‣Slot 22");
+	keyboard::invbind islot23(lsnes_mapper, "set-jukebox-slot 23", "Slot select‣Slot 23");
+	keyboard::invbind islot24(lsnes_mapper, "set-jukebox-slot 24", "Slot select‣Slot 24");
+	keyboard::invbind islot25(lsnes_mapper, "set-jukebox-slot 25", "Slot select‣Slot 25");
+	keyboard::invbind islot26(lsnes_mapper, "set-jukebox-slot 26", "Slot select‣Slot 26");
+	keyboard::invbind islot27(lsnes_mapper, "set-jukebox-slot 27", "Slot select‣Slot 27");
+	keyboard::invbind islot28(lsnes_mapper, "set-jukebox-slot 28", "Slot select‣Slot 28");
+	keyboard::invbind islot29(lsnes_mapper, "set-jukebox-slot 29", "Slot select‣Slot 29");
+	keyboard::invbind islot30(lsnes_mapper, "set-jukebox-slot 30", "Slot select‣Slot 30");
+	keyboard::invbind islot31(lsnes_mapper, "set-jukebox-slot 31", "Slot select‣Slot 31");
+	keyboard::invbind islot32(lsnes_mapper, "set-jukebox-slot 32", "Slot select‣Slot 32");
 
 	bool on_quit_prompt = false;
 	class mywindowcallbacks : public information_dispatch
