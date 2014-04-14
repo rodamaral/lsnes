@@ -15,6 +15,9 @@ public:
     uint16 hcounter;
   } status;
 
+  bool trace_enabled;
+  nall::function<void()> step_event;
+
   static void Enter();
   void enter();
   void tick();

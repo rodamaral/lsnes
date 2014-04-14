@@ -32,6 +32,8 @@ void SA1::enter() {
       continue;
     }
 
+    if(__builtin_expect(trace_enabled ? 1 : 0, 0))
+      step_event();
     (this->*opcode_table[op_readpc()])();
   }
 }
