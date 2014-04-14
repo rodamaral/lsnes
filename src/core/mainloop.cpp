@@ -1269,13 +1269,13 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 		if(!first_round) {
 			controls.reset_framehold();
-			movb.get_movie().get_pollcounters().set_framepflag(false);
-			movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
-			movb.get_movie().get_pollcounters().set_framepflag(true);
 			if(!macro_hold_1 && !macro_hold_2) {
 				controls.advance_macros();
 			}
 			macro_hold_2 = false;
+			movb.get_movie().get_pollcounters().set_framepflag(false);
+			movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
+			movb.get_movie().get_pollcounters().set_framepflag(true);
 			if(amode == ADVANCE_QUIT && queued_saves.empty())
 				break;
 			handle_saves();
@@ -1311,11 +1311,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			movb.get_movie().set_controls(movb.update_controls(true));
 			movb.get_movie().set_all_DRDY();
 			just_did_loadstate = false;
-			//Advance macros to avoid double inputs.
-			if(!macro_hold_1 && !macro_hold_2) {
-				controls.advance_macros();
-			}
-			macro_hold_2 = false;
 		}
 		frame_irq_time = get_utime() - time_x;
 		our_rom.rtype->emulate();
