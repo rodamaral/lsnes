@@ -81,6 +81,7 @@ namespace
 	uint64_t trace_counter;
 	bool trace_cpu_enable;
 	bool trace_smp_enable;
+	bool trace_sa1_enable;
 	SNES::Interface* old;
 	bool stepping_into_save;
 	bool video_refresh_done;
@@ -763,6 +764,16 @@ namespace
 		return false;
 #endif
 	}
+	void sa1_trace_fn()
+	{
+#ifdef BSNES_HAS_DEBUGGER
+		if(trace_sa1_enable) {
+			char buffer[1024];
+			SNES::sa1.disassemble_opcode(buffer, SNES::sa1.regs.pc);
+			ecore_callbacks->memory_trace(2, buffer, true);
+		}
+#endif
+	}
 	bool delayreset_fn()
 	{
 		trace_fn();	//Call this also.
@@ -791,6 +802,13 @@ namespace
 			SNES::smp.step_event = nall::function<bool()>();
 		else
 			SNES::smp.step_event = smp_trace_fn;
+#ifdef BSNES_SUPPORTS_TRACE_SA1
+		if(!trace_sa1_enable)
+			SNES::sa1.step_event = nall::function<void()>();
+		else
+			SNES::sa1.step_event = sa1_trace_fn;
+		SNES::sa1.trace_enabled = trace_sa1_enable;
+#endif
 #endif
 	}
 
@@ -1353,6 +1371,11 @@ again2:
 				if(cflags & 8) trace_smp_enable = false;
 				update_trace_hook_state();
 			}
+			if(addr == 2) {
+				if(sflags & 8) trace_sa1_enable = true;
+				if(cflags & 8) trace_sa1_enable = false;
+				update_trace_hook_state();
+			}
 #ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
 			auto _addr = recognize_address(addr);
 			if(_addr.first == ADDR_KIND_ALL)
@@ -1435,6 +1458,9 @@ again2:
 			std::vector<std::string> r;
 			r.push_back("cpu");
 			r.push_back("smp");
+#ifdef BSNES_SUPPORTS_TRACE_SA1
+			r.push_back("sa1");
+#endif
 			//TODO: Trace various chips.
 			return r;
 		}
@@ -1693,6 +1719,9 @@ again2:
 			create_region(ret, "DSPDROM", 0xF0010000, reinterpret_cast<uint8_t*>(SNES::necdsp.dataROM),
 				4096, true, true);
 		}
+		if(SNES::cartridge.has_sa1())
+			create_region(ret, "SA1IRAM", 0x00040000, SNES::sa1.iram.data(), SNES::sa1.iram.size(),
+				false);
 		create_region(ret, "SRAM", 0x10000000, SNES::cartridge.ram, false);
 		create_region(ret, "ROM", 0x80000000, SNES::cartridge.rom, true);
 		create_region(ret, "BUS", 0x1000000, 0x1000000, snes_bus_iospace_read, snes_bus_iospace_write);

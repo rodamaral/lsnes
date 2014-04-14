@@ -1,0 +1,53 @@
+From f1106d3dffd27dab526a703aa434512495fbacea Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Mon, 14 Apr 2014 21:21:36 +0300
+Subject: [PATCH 19/19] SA1 trace hook support
+
+---
+ snes/chip/sa1/sa1.cpp | 2 ++
+ snes/chip/sa1/sa1.hpp | 3 +++
+ snes/snes.hpp         | 1 +
+ 3 files changed, 6 insertions(+)
+
+diff --git a/snes/chip/sa1/sa1.cpp b/snes/chip/sa1/sa1.cpp
+index 30e0080..fdec362 100755
+--- a/snes/chip/sa1/sa1.cpp
++++ b/snes/chip/sa1/sa1.cpp
+@@ -32,6 +32,8 @@ void SA1::enter() {
+       continue;
+     }
+ 
++    if(__builtin_expect(trace_enabled ? 1 : 0, 0))
++      step_event();
+     (this->*opcode_table[op_readpc()])();
+   }
+ }
+diff --git a/snes/chip/sa1/sa1.hpp b/snes/chip/sa1/sa1.hpp
+index 732b2a8..efd3637 100755
+--- a/snes/chip/sa1/sa1.hpp
++++ b/snes/chip/sa1/sa1.hpp
+@@ -15,6 +15,9 @@ public:
+     uint16 hcounter;
+   } status;
+ 
++  bool trace_enabled;
++  nall::function<void()> step_event;
++
+   static void Enter();
+   void enter();
+   void tick();
+diff --git a/snes/snes.hpp b/snes/snes.hpp
+index 27632bf..3bdca7e 100755
+--- a/snes/snes.hpp
++++ b/snes/snes.hpp
+@@ -3,6 +3,7 @@
+ #define BSNES_SUPPORTS_ADV_BREAKPOINTS
+ #define BSNES_SUPPORTS_ADV_BREAKPOINTS_PPU
+ #define BSNES_SUPPORTS_ALT_TIMINGS
++#define BSNES_SUPPORTS_TRACE_SA1
+ 
+ namespace SNES {
+   namespace Info {
+-- 
+1.9.2
+
