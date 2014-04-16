@@ -939,6 +939,8 @@ namespace
 			return 0x10000000 + offset;
 		case 3:		//WRAM
 			return 0x007E0000 + offset;
+		case 6:		//SA1IRAM
+			return 0x00040000 + offset;
 		case 8:		//SufamiTurboA ROM.
 			return 0x90000000 + offset;
 		case 9:		//SufamiTurboB ROM.
@@ -1763,6 +1765,8 @@ again2:
 			return std::make_pair(2, addr - 0x10000000);
 		if(addr >= 0x007E0000 && addr <= 0x007FFFFF) //WRAM.
 			return std::make_pair(3, addr - 0x007E0000);
+		if(addr >= 0x00040000 && addr <= 0x000407FF) //SA1IRAM.
+			return std::make_pair(6, addr - 0x00040000);
 		if(addr >= 0x00010000 && addr <= 0x00020000) //VRAM.
 			return std::make_pair(13, addr - 0x00010000);
 		if(addr >= 0x00020000 && addr <= 0x0002021F) //OAM.
