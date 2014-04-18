@@ -20,6 +20,8 @@ namespace
 		16);
 	settingvar::variable<settingvar::model_int<8,64>> bhv(lsnes_vset, "avi-zmbv-blockh", "AVI‣ZMBV‣Block height",
 		16);
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> fullsearch(lsnes_vset,
+		"avi-zmbv-fullsearch", "AVI‣ZMBV‣Full search (slow)", false);
 
 	//Motion vector.
 	struct motion
@@ -217,6 +219,15 @@ compress:
 			if(update_best(m, c))
 				return;
 		}
+		//Try all in [-16,16]x[-16,16].
+		if(fullsearch)
+			for(int dy = -16; dy <= 16; dy++) {
+				for(int dx = -16; dx <= 16; dx++) {
+					c.p = mv_penalty(bx, by, c.dx = dx, c.dy = dy);
+					if(update_best(m, c))
+						return;
+				}
+			}
 	}
 
 	avi_codec_zmbv::~avi_codec_zmbv()
