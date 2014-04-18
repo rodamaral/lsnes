@@ -106,6 +106,9 @@ BUILD_GAMBATTE=
 # Set to non-empty value (e.g. 'yes') to build the bsnes core.
 BUILD_BSNES=yes
 
+# Set to non-empty value (e.g. 'yes') to build the meteor core.
+BUILD_METEOR=
+
 # Set to non-empty value (e.g. 'yes') if bsnes build uses compatiblity core, not accuracy core.
 BSNES_IS_COMPAT=
 

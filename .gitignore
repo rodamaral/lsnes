@@ -13,5 +13,6 @@ lsnes
 /core
 /bsnes
 /gambatte
+/meteor
 src/fonts/font.cpp
 src/core/version.cpp

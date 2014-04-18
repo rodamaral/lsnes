@@ -16,33 +16,39 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
   (a) SVN r320, r358 or r364
 
-  (b) Patched with included patches
+  (b) Patched with included patch.
 
-3. Zlib
+3. meteor (for meteor core)
 
-4. boost_iostreams
+  (a) 1.4.0
 
-5. boost_filesystem
+  (b) Patched with included patch.
 
-6. boost_thread (if native std::thread is not available)
+4. Zlib
 
-7. libsdl (SDL only)
+5. boost_iostreams
 
-8. sdlmain (SDL only, part of SDL)
+6. boost_filesystem
 
-9. boost_conversion (this is header-only library)
+7. boost_thread (if native std::thread is not available)
 
-10. libswscale (wxwidgets graphics only)
+8. libsdl (SDL only)
 
-11. Portaudio (portaudio sound only)
+9. sdlmain (SDL only, part of SDL)
 
-12. libao (libao sound only)
+10. boost_conversion (this is header-only library)
 
-13. Lua version 5.1.X or 5.2.X
+11. libswscale (wxwidgets graphics only)
 
-14. G++ 4.6 or 4.7
+12. Portaudio (portaudio sound only)
 
-15. libopus (optional, for commentary track tool)
+13. libao (libao sound only)
+
+14. Lua version 5.1.X or 5.2.X
+
+15. G++ 4.6 or 4.7
+
+16. libopus (optional, for commentary track tool)
 
 3 Building
 

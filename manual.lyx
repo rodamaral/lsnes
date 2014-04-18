@@ -99,7 +99,21 @@ SVN r320, r358 or r364
 \end_layout
 
 \begin_layout Enumerate
-Patched with included patches
+Patched with included patch.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+meteor (for meteor core)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+1.4.0
+\end_layout
+
+\begin_layout Enumerate
+Patched with included patch.
 \end_layout
 
 \end_deeper

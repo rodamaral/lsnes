@@ -1,4 +1,4 @@
-CORES=bsnes-legacy gambatte sky test
+CORES=bsnes-legacy gambatte sky test meteor
 ALLFILES=__all__.files
 ALLFLAGS=__all__.ldflags
 CORES_FILES=$(patsubst %,%/$(ALLFILES),$(CORES))
@@ -23,6 +23,9 @@ sky/$(ALLFILES): forcelook make-ports.exe
 test/$(ALLFILES): forcelook make-ports.exe
 	$(MAKE) -C test
 
+meteor/$(ALLFILES): forcelook
+	$(MAKE) -C meteor
+
 .PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
 precheck:
@@ -30,11 +33,13 @@ precheck:
 	$(MAKE) -C gambatte precheck
 	$(MAKE) -C sky precheck
 	$(MAKE) -C test precheck
+	$(MAKE) -C meteor precheck
 
 clean:
 	rm -f *.$(OBJECT_SUFFIX) __all__.ldflags __all__.files
 	$(MAKE) -C bsnes-legacy clean
 	$(MAKE) -C gambatte clean
+	$(MAKE) -C meteor clean
 	$(MAKE) -C sky clean
 	$(MAKE) -C test clean
 	rm -f make-ports.exe

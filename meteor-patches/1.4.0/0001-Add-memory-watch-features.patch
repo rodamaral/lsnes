@@ -1,0 +1,489 @@
+From c3059a59fa95cd0e165dbcf7df4b9dc11d5b8d29 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Sun, 17 Feb 2013 11:18:50 +0200
+Subject: [PATCH] Add memory watch features
+
+---
+ Makefile                                     |   60 ++++++++++++++++++
+ ameteor/include/ameteor/cartmem.hpp          |    2 +
+ ameteor/include/ameteor/graphics/bglayer.hpp |    3 +
+ ameteor/include/ameteor/io.hpp               |    3 +
+ ameteor/include/ameteor/memory.hpp           |    2 +
+ ameteor/source/clock.cpp                     |    3 +-
+ ameteor/source/graphics/bglayer.cpp          |   85 ++++++++++++++------------
+ ameteor/source/graphics/screen.cpp           |   22 +++++++
+ ameteor/source/io.cpp                        |   15 ++++-
+ ameteor/source/memory.cpp                    |   33 +++++++++--
+ 10 files changed, 180 insertions(+), 48 deletions(-)
+ create mode 100644 Makefile
+
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000..463a2f7
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,60 @@
++TARGET=libmeteor.$(ARCHIVE_SUFFIX)
++CXXFLAGS += -Wall -Wno-parentheses -I. -Iameteor/include -D__LIBRETRO__ -O3 -g
++
++SRCDIR := ameteor/source
++
++SOURCES := \
++	$(SRCDIR)/audio/dsound.cpp \
++	$(SRCDIR)/audio/sound1.cpp \
++	$(SRCDIR)/audio/sound2.cpp \
++	$(SRCDIR)/audio/sound4.cpp \
++	$(SRCDIR)/audio/speaker.cpp \
++	$(SRCDIR)/disassembler/argimmediate.cpp \
++	$(SRCDIR)/disassembler/argmulregisters.cpp \
++	$(SRCDIR)/disassembler/argpsr.cpp \
++	$(SRCDIR)/disassembler/argregister.cpp \
++	$(SRCDIR)/disassembler/argrelative.cpp \
++	$(SRCDIR)/disassembler/argshift.cpp \
++	$(SRCDIR)/disassembler/arguimmediate.cpp \
++	$(SRCDIR)/disassembler/arguments.cpp \
++	$(SRCDIR)/disassembler/instruction.cpp \
++	$(SRCDIR)/graphics/bglayer.cpp \
++	$(SRCDIR)/graphics/object.cpp \
++	$(SRCDIR)/graphics/objects.cpp \
++	$(SRCDIR)/graphics/renderer.cpp \
++	$(SRCDIR)/graphics/screen.cpp \
++	$(SRCDIR)/ameteor.cpp \
++	$(SRCDIR)/bios.cpp \
++	$(SRCDIR)/clock.cpp \
++	$(SRCDIR)/cpu.cpp \
++	$(SRCDIR)/debug.cpp \
++	$(SRCDIR)/dma.cpp \
++	$(SRCDIR)/eeprom.cpp \
++	$(SRCDIR)/flash.cpp \
++	$(SRCDIR)/cartmem.cpp \
++	$(SRCDIR)/interpreter.cpp \
++	$(SRCDIR)/interpreter_arm.cpp \
++	$(SRCDIR)/interpreter_thumb.cpp \
++	$(SRCDIR)/io.cpp \
++	$(SRCDIR)/keypad.cpp \
++	$(SRCDIR)/lcd.cpp \
++	$(SRCDIR)/memory.cpp \
++	$(SRCDIR)/sound.cpp \
++	$(SRCDIR)/sram.cpp \
++	$(SRCDIR)/timer.cpp
++
++OBJ := $(SOURCES:.cpp=.$(OBJECT_SUFFIX))
++
++all: $(TARGET)
++
++$(TARGET): $(OBJ)
++	$(REALAR) crvs $@ $^
++
++%.$(OBJECT_SUFFIX): %.cpp
++	$(CXX) -o $@ -c $< $(CXXFLAGS) 
++
++clean:
++	rm -f $(TARGET)
++	rm -f $(OBJ)
++
++.PHONY: clean
+diff --git a/ameteor/include/ameteor/cartmem.hpp b/ameteor/include/ameteor/cartmem.hpp
+index e7ee436..a18e6d6 100644
+--- a/ameteor/include/ameteor/cartmem.hpp
++++ b/ameteor/include/ameteor/cartmem.hpp
+@@ -44,6 +44,8 @@ namespace AMeteor
+ 			virtual bool SaveState (std::ostream& stream);
+ 			virtual bool LoadState (std::istream& stream);
+ 
++			uint8_t* GetRawData() { return m_data; }
++			uint32_t GetRawSize() { return m_size; }
+ 		protected:
+ 			uint8_t* m_data;
+ 			uint32_t m_size;
+diff --git a/ameteor/include/ameteor/graphics/bglayer.hpp b/ameteor/include/ameteor/graphics/bglayer.hpp
+index 1409929..48d19ff 100644
+--- a/ameteor/include/ameteor/graphics/bglayer.hpp
++++ b/ameteor/include/ameteor/graphics/bglayer.hpp
+@@ -46,6 +46,9 @@ namespace AMeteor
+ 				void DrawLine4 (uint8_t line, uint16_t* ptr,
+ 						int32_t curX, int32_t curY,
+ 						int16_t dx, int16_t dmx, int16_t dy, int16_t dmy, bool frame1);
++				void DrawLine5 (uint16_t* ptr,
++						int32_t refX, int32_t refY,
++						int16_t dx, int16_t dy, bool frame1);
+ 				void FillList ();
+ 
+ 				void UpdateCnt (uint16_t cnt);
+diff --git a/ameteor/include/ameteor/io.hpp b/ameteor/include/ameteor/io.hpp
+index 5f553c0..108e41f 100644
+--- a/ameteor/include/ameteor/io.hpp
++++ b/ameteor/include/ameteor/io.hpp
+@@ -208,8 +208,11 @@ namespace AMeteor
+ 			bool SaveState (std::ostream& stream);
+ 			bool LoadState (std::istream& stream);
+ 
++			bool GetPolled() { return m_polled; }
++			void SetPolled(bool f) { m_polled = f; }
+ 		private :
+ 			uint8_t* m_iomem;
++			bool m_polled;
+ 	};
+ }
+ 
+diff --git a/ameteor/include/ameteor/memory.hpp b/ameteor/include/ameteor/memory.hpp
+index a45652d..e3d1aa4 100644
+--- a/ameteor/include/ameteor/memory.hpp
++++ b/ameteor/include/ameteor/memory.hpp
+@@ -25,6 +25,7 @@
+ #include <string>
+ #include <istream>
+ #include <ostream>
++#include <map>
+ 
+ namespace AMeteor
+ {
+@@ -119,6 +120,7 @@ namespace AMeteor
+ 
+ 			void TimeEvent ();
+ 
++			std::map<std::string, std::pair<uint8_t*, size_t> > GetMemories();
+ 		private :
+ 			// times for a 8 or 16 bits access
+ 			uint8_t m_memtime[0xF];
+diff --git a/ameteor/source/clock.cpp b/ameteor/source/clock.cpp
+index 7f21980..460db6a 100644
+--- a/ameteor/source/clock.cpp
++++ b/ameteor/source/clock.cpp
+@@ -35,12 +35,11 @@ namespace AMeteor
+ 	{
+ 		unsigned short tocommit;
+ 
+-		m_count += m_cycles;
+-
+ 		// this loop is here because a timer can trigger a dma which will take a
+ 		// long time, during this time the lcd must draw and the timers continue
+ 		while (m_cycles >= m_first)
+ 		{
++			m_count += m_cycles;
+ 			tocommit = m_cycles;
+ 			m_cycles = 0;
+ 
+diff --git a/ameteor/source/graphics/bglayer.cpp b/ameteor/source/graphics/bglayer.cpp
+index 72eea70..2c9eea4 100644
+--- a/ameteor/source/graphics/bglayer.cpp
++++ b/ameteor/source/graphics/bglayer.cpp
+@@ -133,11 +133,11 @@ namespace AMeteor
+ 							else
+ 								*ptr = 0x0;
+ 
+-							if (flipH)
+-								--tpChar;
+-							else
+-								++tpChar;
+ 						}
++						if (flipH)
++							--tpChar;
++						else
++							++tpChar;
+ 
+ 						++ptr;
+ 						++tileX;
+@@ -186,27 +186,27 @@ namespace AMeteor
+ 					// we draw until the end of the tile or the line
+ 					while (tileX < 8)
+ 					{
++						if (flipH)
++							if (tileX % 2)
++							{
++								colorInd = *tpChar & 0xF;
++								--tpChar;
++							}
++							else
++								colorInd = *tpChar >> 4;
++						else
++							if (tileX % 2)
++							{
++								colorInd = *tpChar >> 4;
++								++tpChar;
++							}
++							else
++								colorInd = *tpChar & 0xF;
++
+ 						if (mosH && i % mosH)
+ 							*ptr = ptr[-1];
+ 						else
+ 						{
+-							if (flipH)
+-								if (tileX % 2)
+-								{
+-									colorInd = *tpChar & 0xF;
+-									--tpChar;
+-								}
+-								else
+-									colorInd = *tpChar >> 4;
+-							else
+-								if (tileX % 2)
+-								{
+-									colorInd = *tpChar >> 4;
+-									++tpChar;
+-								}
+-								else
+-									colorInd = *tpChar & 0xF;
+-
+ 							if (colorInd)
+ 								*ptr = pPalette[colorInd] | 0x8000;
+ 							else
+@@ -309,7 +309,7 @@ namespace AMeteor
+ 		{
+ 			int32_t intX, intY;
+ 
+-			uint8_t* pChar = m_memory.GetRealAddress(0x06000000);
++			uint16_t* pChar = (uint16_t*)m_memory.GetRealAddress(0x06000000);
+ 
+ 			for (uint8_t x = 0; x < 240; ++x, ++ptr, curX += dx, curY += dy)
+ 			{
+@@ -318,25 +318,9 @@ namespace AMeteor
+ 
+ 				// if we are off layer
+ 				if (intX < 0 || intX >= 240)
+-					if (m_cnt & (0x1 << 13))
+-					{
+-						// NOTE : in C++, the modulus can be negative
+-						intX %= 240;
+-						if (intX < 0)
+-							intX += 240;
+-					}
+-					else
+-						continue;
++					continue;
+ 				if (intY < 0 || intY >= 160)
+-					if (m_cnt & (0x1 << 13))
+-					{
+-						intY %= 160;
+-						if (intY < 0)
+-							intY += 160;
+-					}
+-					else
+-						continue;
+-
++					continue;
+ 				*ptr = pChar[intY * 240 * 2 + intX * 2] | 0x8000;
+ 			}
+ 		}
+@@ -413,6 +397,27 @@ namespace AMeteor
+ 			}
+ 		}
+ 
++		void BgLayer::DrawLine5 (uint16_t* ptr,
++				int32_t curX, int32_t curY,
++				int16_t dx, int16_t dy, bool frame1)
++		{
++			int32_t intX, intY;
++			uint16_t* pChar = (uint16_t*) m_memory.GetRealAddress(frame1 ? 0x0600A000 : 0x06000000);
++
++			for (uint8_t x = 0; x < 240; ++x, ++ptr, curX += dx, curY += dy)
++			{
++				intX = curX >> 8;
++				intY = curY >> 8;
++
++				// if we are off layer
++				if (intX < 0 || intX >= 160)
++					continue;
++				if (intY < 0 || intY >= 128)
++					continue;
++				*ptr = pChar[intY * 160 + intX] | 0x8000;
++			}
++		}
++
+ 		void BgLayer::UpdateCnt (uint16_t cnt)
+ 		{
+ 			if (m_cnt == cnt)
+diff --git a/ameteor/source/graphics/screen.cpp b/ameteor/source/graphics/screen.cpp
+index 4c5628b..85da3b9 100644
+--- a/ameteor/source/graphics/screen.cpp
++++ b/ameteor/source/graphics/screen.cpp
+@@ -121,6 +121,16 @@ namespace AMeteor
+ 					// if objects are enabled draw them
+ 					if (layersOn & (0x1 << 4)) m_objs.DrawLine(line, lineObj);
+ 					break;
++				case 3: // bg2 only 15 bit direct color 240x160
++ 					layersOn &= 0xF4;
++ 					if (layersOn & (0x1 << 2))
++ 						m_bgLayer2.DrawLine3(lineBg+2*WIDTH,
++ 							m_refX2, m_refY2,
++ 							m_io.DRead16(Io::BG2PA),
++							m_io.DRead16(Io::BG2PC));
++ 					if (layersOn & (0x1 << 4))
++ 						m_objs.DrawLineHighOnly(line, lineObj);
++					break;
+ 				// TODO (remember, HIGH ONLY for objs, don't make shitty copy paste)
+ 				case 4: // bg2 only in mode 4 (bitmap 256)
+ 					layersOn &= 0xF4;
+@@ -141,6 +151,18 @@ namespace AMeteor
+ 						// all objs with the current priority
+ 						m_objs.DrawLineHighOnly(line, lineObj);
+ 					break;
++				case 5:  // bg2 only 15 bit direct color 160x128 2 frames
++					layersOn &= 0xF4;
++					if (layersOn & (0x1 << 2))
++						m_bgLayer2.DrawLine5(lineBg+2*WIDTH,
++							m_refX2, m_refY2,
++							m_io.DRead16(Io::BG2PA),
++							m_io.DRead16(Io::BG2PC),
++							m_dispcnt & (0x1 << 4));
++
++					if (layersOn & (0x1 << 4))
++	 					m_objs.DrawLineHighOnly(line, lineObj);
++ 					break;
+ 				default :
+ 					met_abort("not supported : " << (m_dispcnt & 0x7));
+ 					break;
+diff --git a/ameteor/source/io.cpp b/ameteor/source/io.cpp
+index c0cd244..2003d21 100644
+--- a/ameteor/source/io.cpp
++++ b/ameteor/source/io.cpp
+@@ -99,6 +99,8 @@ namespace AMeteor
+ 	// TODO implement unreadable or write-only io
+ 	uint8_t Io::Read8 (uint32_t add)
+ 	{
++		if ((add & 0xFFF) == KEYINPUT)
++			m_polled = true;
+ 		//debug ("IO Read8 at " << IOS_ADD << add << " of " << IOS_ADD << (int)*(uint8_t*)(m_iomem + (add & 0xFFF)));
+ 		if ((add & 0xFF0) == 0x100)
+ 			switch (add & 0xF)
+@@ -114,6 +116,8 @@ namespace AMeteor
+ 
+ 	uint16_t Io::Read16 (uint32_t add)
+ 	{
++		if ((add & 0xFFE) == KEYINPUT)
++			m_polled = true;
+ 		//debug ("IO Read16 at " << IOS_ADD << add << " of " << IOS_ADD << *(uint16_t*)(m_iomem + (add & 0xFFF)));
+ 		// special case, reading timers
+ 		if ((add & 0xFF0) == 0x100)
+@@ -129,6 +133,8 @@ namespace AMeteor
+ 
+ 	uint32_t Io::Read32 (uint32_t add)
+ 	{
++		if ((add & 0xFFC) == KEYINPUT)
++			m_polled = true;
+ 		//debug ("IO Read32 at " << IOS_ADD << add << " of " << IOS_ADD << *(uint32_t*)(m_iomem + (add & 0xFFF)));
+ 		// special case, reading timers
+ 		if ((add & 0xFF0) == 0x100)
+@@ -282,29 +288,36 @@ namespace AMeteor
+ 				// update the vcounter flag and eventually trigger an interrupt
+ 				W16(add, (val & 0xFFF8) | (m_iomem[add & 0xFFF] & 0x07));
+ 				break;
+-			// The BG*OFS are write-only, we don't need to W16()
+ 			case BG0HOFS:
++				W16(add, val & 0x1FF);
+ 				LCD.UpdateBg0XOff(val & 0x1FF);
+ 				break;
+ 			case BG0VOFS:
++				W16(add, val & 0x1FF);
+ 				LCD.UpdateBg0YOff(val & 0x1FF);
+ 				break;
+ 			case BG1HOFS:
++				W16(add, val & 0x1FF);
+ 				LCD.UpdateBg1XOff(val & 0x1FF);
+ 				break;
+ 			case BG1VOFS:
++				W16(add, val & 0x1FF);
+ 				LCD.UpdateBg1YOff(val & 0x1FF);
+ 				break;
+ 			case BG2HOFS:
++				W16(add, val & 0x1FF);
+ 				LCD.UpdateBg2XOff(val & 0x1FF);
+ 				break;
+ 			case BG2VOFS:
++				W16(add, val & 0x1FF);
+ 				LCD.UpdateBg2YOff(val & 0x1FF);
+ 				break;
+ 			case BG3HOFS:
++				W16(add, val & 0x1FF);
+ 				LCD.UpdateBg3XOff(val & 0x1FF);
+ 				break;
+ 			case BG3VOFS:
++				W16(add, val & 0x1FF);
+ 				LCD.UpdateBg3YOff(val & 0x1FF);
+ 				break;
+ 			case BG2X_H:
+diff --git a/ameteor/source/memory.cpp b/ameteor/source/memory.cpp
+index bf17688..839841e 100644
+--- a/ameteor/source/memory.cpp
++++ b/ameteor/source/memory.cpp
+@@ -464,8 +464,9 @@ namespace AMeteor
+ 		// write if we have a custom bios and write it too
+ 		bool b = m_brom;
+ 		SS_WRITE_VAR(b);
+-		if (b)
++		if (b) {
+ 			SS_WRITE_DATA(m_brom, 0x00004000);
++		}
+ 		SS_WRITE_DATA(m_wbram, 0x00040000);
+ 		SS_WRITE_DATA(m_wcram, 0x00008000);
+ 		SS_WRITE_DATA(m_pram , 0x00000400);
+@@ -490,9 +491,9 @@ namespace AMeteor
+ 		// read if we have a custom bios and write it too
+ 		bool b;
+ 		SS_READ_VAR(b);
+-		if (b)
++		if (b) {
+ 			SS_READ_DATA(m_brom , 0x00004000);
+-		else
++		} else
+ 			UnloadBios();
+ 		SS_READ_DATA(m_wbram, 0x00040000);
+ 		SS_READ_DATA(m_wcram, 0x00008000);
+@@ -532,6 +533,8 @@ namespace AMeteor
+ 				if (!r)
+ 				{
+ 					debugm("Unknown address for Read8 : " << IOS_ADD << add);
++					if(add == R(15))
++						return 0xFF;	//We are fucked...
+ 					// FIXME : in arm state, vba returns read8(r15 + (add & 3))
+ 					// and in thumb read8(r15 + (add & 1))
+ 					return Read8(R(15));
+@@ -559,8 +562,10 @@ namespace AMeteor
+ 				if (!r)
+ 				{
+ 					debugm("Unknown address for Read16 : " << IOS_ADD << add);
+-					if (R(15) == add)
++					if (R(15) == add) {
+ 						met_abort("Illegal PC");
++						return 0xFFFF;	//We are fucked.
++					}
+ 					// FIXME : in arm state, vba returns read16(r15 + (add & 2))
+ 					return Read16(R(15));
+ 				}
+@@ -586,8 +591,10 @@ namespace AMeteor
+ 				if (!r)
+ 				{
+ 					debugm("Unknown address for Read32 : " << IOS_ADD << add);
+-					if (R(15) == add)
++					if (R(15) == add) {
+ 						met_abort("Illegal PC");
++						return 0xFFFFFFFFU;	//We are fucked.
++					}
+ 					if (FLAG_T)
+ 					{
+ 						uint16_t o = Read16(R(15));
+@@ -810,4 +817,20 @@ namespace AMeteor
+ 		if (m_cart->Write(add, val))
+ 			CLOCK.SetBattery(CART_SAVE_TIME);
+ 	}
++
++	std::map<std::string, std::pair<uint8_t*, size_t> > Memory::GetMemories()
++	{
++		std::map<std::string, std::pair<uint8_t*, size_t> > x;
++		if(m_brom)
++			x["brom"] = std::make_pair(m_brom, 0x00004000);
++		x["wbram"] = std::make_pair(m_wbram, 0x00040000);
++		x["wcram"] = std::make_pair(m_wcram, 0x00008000);
++		x["pram"] = std::make_pair(m_pram, 0x00000400);
++		x["vram"] = std::make_pair(m_vram, 0x00018000);
++		x["oam"] = std::make_pair(m_oram, 0x00000400);
++		if(m_cart)
++			x["sram"] = std::make_pair(m_cart->GetRawData(), m_cart->GetRawSize());
++		x["rom"] = std::make_pair(m_rom, 0x02000000);
++		return x;
++	}
+ }
+-- 
+1.7.9.48.g85da4d
+
