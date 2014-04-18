@@ -202,6 +202,8 @@ namespace
 			[](uint64_t v) { SNES::sa1.regs.p.z = v; }, true},
 		{"sa1_p_c", []() -> uint64_t { return SNES::sa1.regs.p.c; },
 			[](uint64_t v) { SNES::sa1.regs.p.c = v; }, true},
+		{"hcounter", []() -> uint64_t { return SNES::cpu.hcounter(); }, [](uint64_t v) {}},
+		{"vcounter", []() -> uint64_t { return SNES::cpu.vcounter(); }, [](uint64_t v) {}},
 #ifdef BSNES_IS_COMPAT
 		{"ppu_display_disabled", []() -> uint64_t { return SNES::ppu.regs.display_disabled; },
 			[](uint64_t v) { SNES::ppu.regs.display_disabled = v; }, true},
