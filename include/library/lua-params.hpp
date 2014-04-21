@@ -253,6 +253,10 @@ public:
  * Table tag.
  */
 	table_parameter_tag& table(int& fnidx) { return *new table_parameter_tag(fnidx); }
+/**
+ * Get Lua state.
+ */
+	state& get_state() { return L; }
 private:
 	state& L;
 	std::string fname;

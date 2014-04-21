@@ -23,9 +23,16 @@ uint64_t lua_get_vmabase(const std::string& vma)
 
 uint64_t lua_get_read_address(lua::parameters& P)
 {
+	static std::map<std::string, char> deprecation_keys;
+	char* deprecation = &deprecation_keys[P.get_fname()];
 	uint64_t vmabase = 0;
 	if(P.is_string())
 		vmabase = lua_get_vmabase(P.arg<std::string>());
+	else {
+		//Deprecated.
+		if(P.get_state().do_once(deprecation))
+			messages << P.get_fname() << ": Global memory form is deprecated." << std::endl; 
+	}
 	auto addr = P.arg<uint64_t>();
 	return addr + vmabase;
 }
@@ -372,6 +379,9 @@ namespace
 	int lua_mmap_memory(lua::state& L, lua::parameters& P)
 	{
 		if(P.is_novalue()) {
+			static char deprecation;
+			if(L.do_once(&deprecation))
+				messages << P.get_fname() << ": Mapping entiere space is deprecated." << std::endl;
 			aperture_make_fun<T, rfun, wfun>(L.get_master(), 0, 0xFFFFFFFFFFFFFFFFULL);
 			return 1;
 		}
@@ -415,10 +425,12 @@ namespace
 
 	template<bool write, bool sign> int memory_scattergather(lua::state& L, lua::parameters& P)
 	{
+		static char deprecation;
 		uint64_t val = 0;
 		unsigned shift = 0;
 		uint64_t addr = 0;
 		uint64_t vmabase = 0;
+		bool have_vmabase = false;
 		if(write)
 			val = P.arg<uint64_t>();
 		while(P.more()) {
@@ -429,9 +441,12 @@ namespace
 					addr--;
 			} else if(P.is_string()) {
 				vmabase = lua_get_vmabase(P.arg<std::string>());
+				have_vmabase = true;
 				continue;
 			} else
 				addr = P.arg<uint64_t>();
+			if(!have_vmabase && L.do_once(&deprecation))
+				messages << P.get_fname() << ": Global memory form is deprecated." << std::endl;
 			if(write)
 				lsnes_memory.write<uint8_t>(addr + vmabase, val >> shift);
 			else

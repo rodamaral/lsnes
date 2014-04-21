@@ -416,10 +416,6 @@ operator(): Bind key in mmap structure
 \end_layout
 
 \begin_layout Itemize
-Syntax: obj(key, address, type)
-\end_layout
-
-\begin_layout Itemize
 Syntax: obj(key, marea, address, type)
 \end_layout
 
@@ -3611,11 +3607,11 @@ Static function new: Create a checker
 \end_layout
 
 \begin_layout Itemize
-Syntax: handle classes.COMPARE_OBJ.new([marea], offset, size, [rows, stride])
+Syntax: handle classes.COMPARE_OBJ.new(marea, offset, size, [rows, stride])
 \end_layout
 
 \begin_layout Itemize
-Syntax: handle memory.compare_new([marea], offset, size, rows, stride)
+Syntax: handle memory.compare_new(marea, offset, size, rows, stride)
 \end_layout
 
 \begin_layout Standard
@@ -3624,7 +3620,6 @@ Parameters:
 
 \begin_layout Itemize
 marea: string: The memory area to interpret <offset> against.
- Default is global space.
 \end_layout
 
 \begin_layout Itemize
@@ -6676,43 +6671,43 @@ memory.read{,s}{byte,{,h,d,q}word}: Read memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readbyte([string marea, ]number address)
+Syntax: none memory.readbyte(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readword([string marea, ]number address)
+Syntax: none memory.readword(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readhword([string marea, ]number address)
+Syntax: none memory.readhword(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readdword([string marea, ]number address)
+Syntax: none memory.readdword(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readqword([string marea, ]number address)
+Syntax: none memory.readqword(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsbyte([string marea, ]number address)
+Syntax: none memory.readsbyte(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsword([string marea, ]number address)
+Syntax: none memory.readsword(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readshword([string marea, ]number address)
+Syntax: none memory.readshword(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsdword([string marea, ]number address)
+Syntax: none memory.readsdword(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsqword([string marea, ]number address)
+Syntax: none memory.readsqword(string marea, number address)
 \end_layout
 
 \begin_layout Standard
@@ -6788,11 +6783,11 @@ memory.read{float,double}: Read memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readfloat([string marea, ]number address)
+Syntax: none memory.readfloat(string marea, number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readdouble([string marea, ]number address)
+Syntax: none memory.readdouble(string marea, number address)
 \end_layout
 
 \begin_layout Standard
@@ -6804,31 +6799,31 @@ memory.write{byte,{,h,d,q}word,float,double}: Write memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writebyte([string marea, ]number address, number value)
+Syntax: none memory.writebyte(string marea, number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeword([string marea, ]number address, number value)
+Syntax: none memory.writeword(string marea, number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writehword([string marea, ]number address, number value)
+Syntax: none memory.writehword(string marea, number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writedword([string marea, ]number address, number value)
+Syntax: none memory.writedword(string marea, number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeqword([string marea, ]number address, number value)
+Syntax: none memory.writeqword(string marea, number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writefloat([string marea, ]number address, number value)
+Syntax: none memory.writefloat(string marea, number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writedouble([string marea, ]number address, number value)
+Syntax: none memory.writedouble(string marea, number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -6841,12 +6836,11 @@ memory.map{{,s}{byte,{,h,d,q}word},float,double}: Map an array
 \end_layout
 
 \begin_layout Itemize
-Syntax: userdata memory.map<type>([[string marea, ]number base, number size])
+Syntax: userdata memory.map<type>(string marea, number base, number size)
 \end_layout
 
 \begin_layout Standard
 Returns a table mapping specified memory aperture for read/write.
- If parameters are omitted, entiere map space is the aperture.
 \end_layout
 
 \begin_layout Itemize
@@ -6859,7 +6853,7 @@ memory.hash_region: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region([string marea, ]number base, number size)
+Syntax: string memory.hash_region(string marea, number base, number size)
 \end_layout
 
 \begin_layout Standard
@@ -6872,7 +6866,7 @@ memory.hash_region2: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region2([string marea, ]number base, number size[,
+Syntax: string memory.hash_region2(string marea, number base, number size[,
  number rows, number stride])
 \end_layout
 
@@ -6887,7 +6881,7 @@ memory.hash_region_skein: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region_skein([string marea, ]number base, number
+Syntax: string memory.hash_region_skein(string marea, number base, number
  size[, number rows, number stride])
 \end_layout
 
@@ -6901,7 +6895,7 @@ memory.store: Store region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.store([string marea, ]number addr, number daddr[, number
+Syntax: none memory.store(string marea, number addr, number daddr[, number
  rows, number stride]
 \end_layout
 
@@ -6917,8 +6911,8 @@ memory.storecmp: Compare and store region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: bool memory.storecmp([string marea, ]number addr, number daddr[,
- number rows, number stride]
+Syntax: bool memory.storecmp(string marea, number addr, number daddr[, number
+ rows, number stride]
 \end_layout
 
 \begin_layout Standard
@@ -6945,7 +6939,7 @@ memory.readregion: Read region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: table memory.readregion([string marea, ]number base, number size)
+Syntax: table memory.readregion(string marea, number base, number size)
 \end_layout
 
 \begin_layout Standard
@@ -6961,8 +6955,8 @@ memory.writeregion: Write region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeregion([string marea, ]number base, number size,
- table data)
+Syntax: none memory.writeregion(string marea, number base, number size, table
+ data)
 \end_layout
 
 \begin_layout Standard
@@ -7047,40 +7041,36 @@ memory.{,un}register{read,write,exec}: (Un)Register read / write / execute
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerread([string marea, ] number addr, function
+Syntax: function memory.registerread(string marea, number addr, function
  fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerwrite([string marea, ] number addr, function
+Syntax: function memory.registerwrite(string marea, number addr, function
  fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerexec([string marea, ] number addr, function
+Syntax: function memory.registerexec(string marea, number addr, function
  fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.unregisterread([string marea, ] number addr, function
- fn);
+Syntax: none memory.unregisterread(string marea, number addr, function fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.unregisterwrite([string marea, ] number addr, function
- fn);
+Syntax: none memory.unregisterwrite(string marea, number addr, function fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.unregisterexec([string marea, ] number addr, function
- fn);
+Syntax: none memory.unregisterexec(string marea, number addr, function fn);
 \end_layout
 
 \begin_layout Standard
 Add or remove callback on memory read, write or execute (depending on the
  function).
- If <marea> is specified, <addr> is relative to it, otherwise <addr> is
- global.
+ <addr> is relative to <marea>.
  <fn> is the callback.
  The register* functions return <fn> (which can then be passed to unregister*
  functions.
@@ -7121,16 +7111,15 @@ memory.cheat: Set cheat
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.cheat([string marea, ] number addr, number value);
+Syntax: none memory.cheat(string marea, number addr, number value);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.cheat([string marea, ] number addr);
+Syntax: none memory.cheat(string marea, number addr);
 \end_layout
 
 \begin_layout Standard
-Set or clear cheat (value <value>) on address <addr>.
- If <marea> is specified, <addr> is relative to that.
+Set or clear cheat (value <value>) on address <addr> (relative to <marea>).
  If <value> is not speicified, clear a cheat.
 \end_layout
 
@@ -7650,7 +7639,7 @@ bsnes.dump_sprite: Dump a sprite
 \end_layout
 
 \begin_layout Itemize
-Syntax: BITMAP bsnes.dump_sprite([string marea, ] number addr, number width,
+Syntax: BITMAP bsnes.dump_sprite(string marea, number addr, number width,
  number height[, number stride])
 \end_layout
 
@@ -7674,7 +7663,7 @@ bsnes.dump_palette: Dump a palette
 \end_layout
 
 \begin_layout Itemize
-Syntax: PALETTE bsnes.dump_palette([string marea, ] number addr, bool full256,
+Syntax: PALETTE bsnes.dump_palette(string marea, number addr, bool full256,
  bool first_trans)
 \end_layout
 
@@ -7710,7 +7699,7 @@ bsnes.redump_sprite: Redump a sprite
 \end_layout
 
 \begin_layout Itemize
-Syntax: none bsnes.redump_sprite(BITMAP bitmap, [string marea, ] number addr[,
+Syntax: none bsnes.redump_sprite(BITMAP bitmap, string marea, number addr[,
  number stride])
 \end_layout
 
@@ -7724,8 +7713,8 @@ bsnes.redump_palette: Redump a palette
 \end_layout
 
 \begin_layout Itemize
-Syntax: none bsnes.dump_palette(PALETTE pal, [string marea, ] number addr,
- bool first_trans)
+Syntax: none bsnes.dump_palette(PALETTE pal, string marea, number addr, bool
+ first_trans)
 \end_layout
 
 \begin_layout Standard
