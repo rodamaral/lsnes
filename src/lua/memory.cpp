@@ -13,25 +13,25 @@
 #include "library/hex.hpp"
 #include "library/int24.hpp"
 
+uint64_t lua_get_vmabase(const std::string& vma)
+{
+	for(auto i : lsnes_memory.get_regions())
+		if(i->name == vma)
+			return i->base;
+	throw std::runtime_error("No such VMA");
+}
+
+uint64_t lua_get_read_address(lua::parameters& P)
+{
+	uint64_t vmabase = 0;
+	if(P.is_string())
+		vmabase = lua_get_vmabase(P.arg<std::string>());
+	auto addr = P.arg<uint64_t>();
+	return addr + vmabase;
+}
+
 namespace
 {
-	uint64_t get_vmabase(const std::string& vma)
-	{
-		for(auto i : lsnes_memory.get_regions())
-			if(i->name == vma)
-				return i->base;
-		throw std::runtime_error("No such VMA");
-	}
-
-	uint64_t get_read_address(lua::parameters& P)
-	{
-		uint64_t vmabase = 0;
-		if(P.is_string())
-			vmabase = get_vmabase(P.arg<std::string>());
-		auto addr = P.arg<uint64_t>();
-		return addr + vmabase;
-	}
-
 	template<typename T, T (memory_space::*rfun)(uint64_t addr),
 		bool (memory_space::*wfun)(uint64_t addr, T value)>
 	void do_rw(lua::state& L, uint64_t addr, bool wrflag)
@@ -46,7 +46,7 @@ namespace
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
 	int lua_read_memory(lua::state& L, lua::parameters& P)
 	{
-		auto addr = get_read_address(P);
+		auto addr = lua_get_read_address(P);
 		L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
 		return 1;
 	}
@@ -54,7 +54,7 @@ namespace
 	template<typename T, bool (memory_space::*wfun)(uint64_t addr, T value)>
 	int lua_write_memory(lua::state& L, lua::parameters& P)
 	{
-		auto addr = get_read_address(P);
+		auto addr = lua_get_read_address(P);
 		T value = P.arg<T>();
 		(lsnes_memory.*wfun)(addr, value);
 		return 0;
@@ -343,7 +343,7 @@ namespace
 			addr = 0xFFFFFFFFFFFFFFFFULL;
 			P.skip();
 		} else if(type != DEBUG_TRACE)
-			addr = get_read_address(P);
+			addr = lua_get_read_address(P);
 		else
 			P(addr);
 		P(P.function(lfn));
@@ -375,7 +375,7 @@ namespace
 			aperture_make_fun<T, rfun, wfun>(L.get_master(), 0, 0xFFFFFFFFFFFFFFFFULL);
 			return 1;
 		}
-		auto addr = get_read_address(P);
+		auto addr = lua_get_read_address(P);
 		auto size = P.arg<uint64_t>();
 		if(!size)
 			throw std::runtime_error("Aperture with zero size is not valid");
@@ -428,7 +428,7 @@ namespace
 				else
 					addr--;
 			} else if(P.is_string()) {
-				vmabase = get_vmabase(P.arg<std::string>());
+				vmabase = lua_get_vmabase(P.arg<std::string>());
 				continue;
 			} else
 				addr = P.arg<uint64_t>();
@@ -458,7 +458,7 @@ namespace
 	{
 		uint64_t addr, value;
 
-		addr = get_read_address(P);
+		addr = lua_get_read_address(P);
 
 		if(P.is_novalue()) {
 			debug_clear_cheat(addr);
@@ -522,7 +522,7 @@ namespace
 		bool mappable = true;
 		char buffer[BLOCKSIZE];
 
-		addr = get_read_address(P);
+		addr = lua_get_read_address(P);
 		P(size);
 		if(extra) {
 			P(P.optional(rows, 1));
@@ -604,7 +604,7 @@ namespace
 		uint64_t stride = 0, rows = 1;
 		bool equals = true, mappable = true;
 
-		addr = get_read_address(P);
+		addr = lua_get_read_address(P);
 		P(daddr, size, P.optional(rows, 1));
 		if(rows > 1)
 			P(stride);
@@ -658,7 +658,7 @@ namespace
 	{
 		uint64_t addr, size;
 
-		addr = get_read_address(P);
+		addr = lua_get_read_address(P);
 		P(size);
 
 		L.newtable();
@@ -683,7 +683,7 @@ namespace
 		uint64_t addr, size;
 		int ltbl;
 
-		addr = get_read_address(P);
+		addr = lua_get_read_address(P);
 		P(size, P.table(ltbl));
 
 		char buffer[BLOCKSIZE];
@@ -777,13 +777,11 @@ namespace
 int lua_mmap_struct::map(lua::state& L, lua::parameters& P)
 {
 	std::string name, type;
-	uint64_t vmabase = 0, addr;
+	uint64_t addr;
 
 	P(P.skipped(), name);
-	if(P.is_string())
-		vmabase = get_vmabase(P.arg<std::string>());
-	P(addr, type);
-	addr += vmabase;
+	addr = lua_get_read_address(P);
+	P(type);
 
 	if(type == "byte")
 		mappings[name] = mapping(addr, do_rw<uint8_t, &memory_space::read<uint8_t>,

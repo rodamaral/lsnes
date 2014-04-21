@@ -36,5 +36,7 @@ extern uint64_t lua_timer_hook_time;
 
 extern void* synchronous_paint_ctx;
 void lua_renderq_run(lua_render_context* ctx, void* synchronous_paint_ctx);
+uint64_t lua_get_vmabase(const std::string& vma);
+uint64_t lua_get_read_address(lua::parameters& P);
 
 #endif

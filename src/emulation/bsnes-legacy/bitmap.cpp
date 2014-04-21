@@ -5,22 +5,12 @@
 
 namespace
 {
-	uint64_t get_vmabase(lua::state& L, const std::string& vma)
-	{
-		for(auto i : lsnes_memory.get_regions())
-			if(i->name == vma)
-				return i->base;
-		throw std::runtime_error("No such VMA");
-	}
-
 	template<bool create>
 	int dump_sprite(lua::state& L, lua::parameters& P)
 	{
-		std::string vma;
 		lua_bitmap* b;
 		uint64_t addr;
 		uint32_t width, height;
-		uint64_t vmabase = 0;
 		size_t stride1 = 32;
 		size_t stride2;
 
@@ -31,15 +21,10 @@ namespace
 			if((width | height) & 8)
 				throw std::runtime_error("The image size must be multiple of 8x8");
 		}
-		if(P.is_string()) {
-			P(vma);
-			vmabase = get_vmabase(L, vma);
-		}
-		P(addr);
+		addr = lua_get_read_address(P);
 		if(create)
 			P(width, height);
 		P(P.optional(stride2, 512));
-		addr += vmabase;
 
 		if(create)
 			b = lua::_class<lua_bitmap>::create(L, width * 8, height * 8);
@@ -101,10 +86,8 @@ namespace
 	template<bool create>
 	int dump_palette(lua::state& L, lua::parameters& P)
 	{
-		std::string vma;
 		uint64_t addr;
 		bool full, ftrans;
-		uint64_t vmabase = 0;
 		lua_palette* p;
 
 		if(!create) {
@@ -114,15 +97,10 @@ namespace
 				throw std::runtime_error("Palette to read must be 16 or 256 colors");
 			full = (ccount == 256);
 		}
-		if(P.is_string()) {
-			P(vma);
-			vmabase = get_vmabase(L, vma);
-		}
-		P(addr);
+		addr = lua_get_read_address(P);
 		if(create)
 			P(full);
 		P(ftrans);
-		addr += vmabase;
 
 		size_t ps = full ? 256 : 16;
 		if(create) {

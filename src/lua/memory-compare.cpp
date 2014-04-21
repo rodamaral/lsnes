@@ -4,23 +4,6 @@
 
 namespace
 {
-	uint64_t get_vmabase(const std::string& vma)
-	{
-		for(auto i : lsnes_memory.get_regions())
-			if(i->name == vma)
-				return i->base;
-		throw std::runtime_error("No such VMA");
-	}
-
-	uint64_t get_read_address(lua::parameters& P)
-	{
-		uint64_t vmabase = 0;
-		if(P.is_string())
-			vmabase = get_vmabase(P.arg<std::string>());
-		auto addr = P.arg<uint64_t>();
-		return addr + vmabase;
-	}
-
 	class compare_obj
 	{
 	public:
@@ -81,7 +64,7 @@ namespace
 		uint64_t addr, size;
 		uint64_t stride = 0, rows = 1;
 
-		addr = get_read_address(P);
+		addr = lua_get_read_address(P);
 		P(size, P.optional(rows, 1));
 		if(rows > 1)
 			P(stride);
