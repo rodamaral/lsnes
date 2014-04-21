@@ -313,6 +313,7 @@ private:
 	void push_undo();
 	void handle_save(memory_search::savestate_type type);
 	void handle_load();
+	std::string format_address(uint64_t addr);
 	wxStaticText* count;
 	scroll_bar* scroll;
 	panel* matches;
@@ -329,11 +330,28 @@ private:
 	bool toomany;
 	int scroll_delta;
 	std::set<std::string> vmas_enabled;
+	std::map<std::string, std::pair<uint64_t, uint64_t>> vma_info;
 	wxMenuItem* undoitem;
 	wxMenuItem* redoitem;
 	std::list<std::vector<char>> undohistory;
 	std::list<std::vector<char>> redohistory;
 };
+
+std::string wxwindow_memorysearch::format_address(uint64_t addr)
+{
+	for(auto i : vma_info) {
+		if(i.second.first <= addr && i.second.first + i.second.second > addr) {
+			//Hit.
+			unsigned hcount = 1;
+			uint64_t t = i.second.second;
+			while(t > 0x10) { hcount++; t >>= 4; }
+			return (stringfmt() << i.first << "+" << std::hex << std::setw(hcount) << std::setfill('0')
+				<< (addr - i.second.first)).str();
+		}
+	}
+	//Fallback.
+	return hex::to(addr);
+}
 
 namespace
 {
@@ -643,9 +661,11 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 
 	scroll->set_page_size(matches->get_characters().second);
 
-	for(auto i : lsnes_memory.get_regions())
+	for(auto i : lsnes_memory.get_regions()) {
 		if(memory_search::searchable_region(i))
 			vmas_enabled.insert(i->name);
+		vma_info[i->name] = std::make_pair(i->base, i->size);
+	}
 
 	wxMenuBar* menubar = new wxMenuBar();
 	SetMenuBar(menubar);
@@ -734,7 +754,7 @@ void wxwindow_memorysearch::panel::prepare_paint()
 			std::list<uint64_t> addrs2 = ms->get_candidates();
 			unsigned long j = 0;
 			for(auto i : addrs2) {
-				std::string row = hex::to(i) + " ";
+				std::string row = _parent->format_address(i) + " ";
 				row += (_parent->*displays[_parent->typecode])(i, _parent->hexmode, false);
 				row += " (Was: ";
 				row += (_parent->*displays[_parent->typecode])(i, _parent->hexmode, true);
@@ -803,7 +823,7 @@ void wxwindow_memorysearch::dump_candidates_text()
 		runemufn([ms, this, &out]() {
 			std::list<uint64_t> addrs2 = ms->get_candidates();
 			for(auto i : addrs2) {
-				std::string row = hex::to(i) + " ";
+				std::string row = format_address(i) + " ";
 				row += (this->*displays[this->typecode])(i, this->hexmode, false);
 				row += " (Was: ";
 				row += (this->*displays[this->typecode])(i, this->hexmode, true);
@@ -990,9 +1010,12 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 	if(id == wxID_RESET) {
 		push_undo();
 		msearch->reset();
-		for(auto i : lsnes_memory.get_regions())
+		//Update all VMA info too.
+		for(auto i : lsnes_memory.get_regions()) {
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
+			vma_info[i->name] = std::make_pair(i->base, i->size);
+		}
 		wxeditor_hexeditor_update();
 	} else if(id == wxID_UPDATE) {
 		update();
