@@ -310,17 +310,16 @@ namespace
 
 	std::string format_length(uint64_t mlength)
 	{
-		mlength += 999999;
 		std::ostringstream x;
-		if(mlength > 3600000000000ULL) {
-			x << mlength / 3600000000000ULL << ":";
-			mlength %= 3600000000000ULL;
+		if(mlength >= 3600000ULL) {
+			x << mlength / 3600000ULL << ":";
+			mlength %= 3600000ULL;
 		}
-		x << std::setfill('0') << std::setw(2) << mlength / 60000000000ULL << ":";
-		mlength %= 60000000000ULL;
-		x << std::setfill('0') << std::setw(2) << mlength / 1000000000ULL << ".";
-		mlength %= 1000000000ULL;
-		x << std::setfill('0') << std::setw(3) << mlength / 1000000ULL;
+		x << std::setfill('0') << std::setw(2) << mlength / 60000ULL << ":";
+		mlength %= 60000ULL;
+		x << std::setfill('0') << std::setw(2) << mlength / 1000ULL << ".";
+		mlength %= 1000ULL;
+		x << std::setfill('0') << std::setw(3) << mlength;
 		return x.str();
 	}
 

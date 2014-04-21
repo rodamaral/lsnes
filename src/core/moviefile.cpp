@@ -274,13 +274,13 @@ uint64_t moviefile::get_movie_length() throw()
 {
 	uint64_t frames = get_frame_count();
 	if(!gametype) {
-		return 100000000ULL * frames / 6;
+		return (100ULL * frames + 3) / 6;
 	}
 	uint64_t _magic[4];
 	gametype->fill_framerate_magic(_magic);
-	uint64_t t = _magic[BLOCK_SECONDS] * 1000000000ULL * (frames / _magic[BLOCK_FRAMES]);
+	uint64_t t = _magic[BLOCK_SECONDS] * 1000ULL * (frames / _magic[BLOCK_FRAMES]);
 	frames %= _magic[BLOCK_FRAMES];
-	t += frames * _magic[STEP_W] + (frames * _magic[STEP_N] / _magic[BLOCK_FRAMES]);
+	t += frames * _magic[STEP_W] + ((frames * _magic[STEP_N] + _magic[BLOCK_FRAMES] - 1) / _magic[BLOCK_FRAMES]);
 	return t;
 }
 

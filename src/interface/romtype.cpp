@@ -80,8 +80,8 @@ core_region::core_region(const core_region_params& params)
 	priority = params.priority;
 	magic[0] = params.framemagic[0];
 	magic[1] = params.framemagic[1];
-	magic[2] = 1000000000 * params.framemagic[0] / params.framemagic[1];
-	magic[3] = 1000000000 * params.framemagic[0] % params.framemagic[1];
+	magic[2] = 1000 * params.framemagic[0] / params.framemagic[1];
+	magic[3] = 1000 * params.framemagic[0] % params.framemagic[1];
 	compatible = params.compatible_runs;
 }
 

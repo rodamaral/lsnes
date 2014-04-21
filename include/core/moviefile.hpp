@@ -242,7 +242,7 @@ struct moviefile
 /**
  * Get length of the movie
  *
- * returns: Length of the movie in nanoseconds.
+ * returns: Length of the movie in milliseconds.
  */
 	uint64_t get_movie_length() throw();
 /**
