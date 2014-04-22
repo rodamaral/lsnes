@@ -24,7 +24,7 @@ else
 HOST_BOOST_LIB_POSTFIX=
 endif
 
-LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz -lcurl $(USER_LDFLAGS)
+LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS)
 
 ifeq ($(THREADS), NATIVE)
 CFLAGS += -DNATIVE_THREADS
@@ -63,6 +63,8 @@ all: src/__all_files__
 
 CFLAGS += $(shell $(CROSS_PREFIX)pkg-config $(LUA) --cflags)
 LDFLAGS += $(shell $(CROSS_PREFIX)pkg-config $(LUA) --libs)
+CFLAGS += $(shell $(CROSS_PREFIX)curl-config --cflags)
+LDFLAGS += $(shell $(CROSS_PREFIX)curl-config --libs)
 
 compiler=$(subst ++,cc,$(REALCC))
 gambatte_compiler=$(REALCC)
