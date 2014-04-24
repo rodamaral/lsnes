@@ -37,6 +37,10 @@ struct hash
  */
 	hash(variant v, uint64_t outbits) throw(std::runtime_error);
 /**
+ * Dtor
+ */
+	~hash() throw();
+/**
  * Write data to be hashed.
  *
  * Parameter data: The data to append.
@@ -111,6 +115,14 @@ private:
 	uint8_t state[128];
 	bool _is_seeded;
 };
+
+/**
+ * Zeroize a block of memory.
+ *
+ * Parameter ptr: Pointer to start of block.
+ * Parameter size: Size of block to zeroize.
+ */
+	void zeroize(void* ptr, size_t size);
 }
 
 #endif

@@ -244,6 +244,13 @@ dh25519_http_auth::dh25519_http_auth(const uint8_t* _privkey)
 	ready = false;
 }
 
+dh25519_http_auth::~dh25519_http_auth()
+{
+	skein::zeroize(privkey, sizeof(privkey));
+	skein::zeroize(pubkey, sizeof(pubkey));
+	skein::zeroize(ssecret, sizeof(ssecret));
+}
+
 std::string dh25519_http_auth::format_get_session_request()
 {
 	return "dh25519 key="+hex::b_to(pubkey,32);
@@ -274,7 +281,10 @@ dh25519_http_auth::request_hash dh25519_http_auth::start_request(const std::stri
 	h.write((const uint8_t*)personalization.c_str(), personalization.length(), skein::hash::T_PERSONALIZATION);
 	h.write(pubkey, 32, skein::hash::T_PUBKEY);
 	h.write((uint8_t*)buf, strlen(buf), skein::hash::T_NONCE);
-	return request_hash(id, pubkey, _nonce, h, prereq);
+	auto var = request_hash(id, pubkey, _nonce, h, prereq);
+	skein::zeroize(buf, sizeof(buf));
+	skein::zeroize(prereq, sizeof(prereq));
+	return var;
 }
 
 std::string dh25519_http_auth::request_hash::get_authorization()
@@ -283,8 +293,11 @@ std::string dh25519_http_auth::request_hash::get_authorization()
 	uint8_t response[32];
 	sprintf(buf, "%u", nonce);
 	h.read(response);
-	return "dh25519 id="+quote_field(id)+",key="+hex::b_to(pubkey,32)+",nonce="+identity(buf)+
+	auto var = "dh25519 id="+quote_field(id)+",key="+hex::b_to(pubkey,32)+",nonce="+identity(buf)+
 		",response="+hex::b_to(response,32)+",response2="+hex::b_to(prereq,8)+",noprotocol=1";
+	skein::zeroize(buf, sizeof(buf));
+	skein::zeroize(response, sizeof(response));
+	return var;
 }
 
 void dh25519_http_auth::parse_auth_response(const std::string& response)
@@ -314,6 +327,7 @@ void dh25519_http_auth::parse_auth_response(std::map<std::string, std::string> p
 		nonce = 0;
 		reseeded = true;
 		ready = true;
+		skein::zeroize(_challenge, sizeof(_challenge));
 	}
 no_reseed:
 	if(pparse.count("error")) {

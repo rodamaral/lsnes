@@ -51,6 +51,10 @@ for r=0,rounds do
 	end
 end
 for i=0,okeys-1 do print("\tout["..i.."]=in["..i.."]^out["..i.."];"); end
+print("\tk = 0;");
+print("\tt = 0;");
+print("\tasm volatile(\"\" : : \"r\"(&k) : \"memory\");");
+print("\tasm volatile(\"\" : : \"r\"(&t) : \"memory\");");
 print("}");
 end
 

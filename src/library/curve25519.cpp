@@ -5,6 +5,14 @@
 
 namespace
 {
+	void zeroize(void* ptr, size_t size)
+	{
+		//Whee... Do it like OpenSSL/GnuTLS.
+		volatile char* vptr = (volatile char*)ptr;
+		volatile size_t vidx = 0;
+		do { memset(ptr, 0, size); } while(vptr[vidx]);
+	}
+
 	//Generic (slow).
 	struct element
 	{
@@ -59,6 +67,8 @@ namespace
 					t[i] = x[i];
 			}
 			memcpy(n, t, sizeof(n));
+			zeroize(x, sizeof(x));
+			zeroize(t, sizeof(t));
 		}
 		//a * b -> self
 		inline void multiply(const element& a, const element& b)
@@ -89,6 +99,7 @@ namespace
 			x[0] += carry * 608;
 			for(unsigned i = 0; i < 10; i++)
 				n[i] = x[i];
+			zeroize(x, sizeof(x));
 		}
 		//e - self -> self
 		inline void diff_back(const element& e)
@@ -185,6 +196,10 @@ namespace
 				n[i] ^= t;
 				e.n[i] ^= t;
 			}
+		}
+		inline ~element()
+		{
+			zeroize(n, sizeof(n));
 		}
 		void debug(const char* pfx) const
 		{

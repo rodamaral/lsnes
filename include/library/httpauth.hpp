@@ -55,6 +55,10 @@ public:
  */
 	dh25519_http_auth(const uint8_t* privkey);
 /**
+ * Dtor.
+ */
+	~dh25519_http_auth();
+/**
  * Format a session creation request
  *
  * Returns: The value for Authorization header.

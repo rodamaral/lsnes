@@ -105,6 +105,7 @@ namespace
 			fp.read(buf, sizeof(buf));
 			if(fp.gcount() == 0) break;
 			h.write((const uint8_t*)buf, fp.gcount());
+			skein::zeroize(buf, fp.gcount());
 		}
 		h.read(out);
 		curve25519_clamp(out);
@@ -135,6 +136,7 @@ void file_upload::_do_async()
 	uint8_t key[32];
 	load_dh25519_key(key);
 	dh25519 = new dh25519_http_auth(key);
+	skein::zeroize(key, sizeof(key));
 	{
 		http_async_request obtainkey;
 		{
@@ -274,96 +276,5 @@ void get_dh25519_pubkey(uint8_t* out)
 	load_dh25519_key(privkey);
 	curve25519_clamp(privkey);
 	curve25519(out, privkey, curve25519_base);
+	skein::zeroize(privkey, sizeof(privkey));
 }
-
-#ifdef TEST_FILEUPLOAD_CODE
-
-namespace
-{
-	class file_input
-	{
-	public:
-		typedef char char_type;
-		typedef boost::iostreams::source_tag category;
-
-		file_input(const std::string& file)
-		{
-			fp = new std::ifstream(file, std::ios::binary);
-			if(!*fp) throw std::runtime_error("Can't open input file");
-		}
-
-		void close()
-		{
-			delete fp;
-		}
-
-		std::streamsize read(char* s, std::streamsize x)
-		{
-			fp->read(s, x);
-			if(!fp->gcount() && !*fp) return -1;
-			return fp->gcount();
-		}
-
-		~file_input()
-		{
-		}
-	private:
-		file_input& operator=(const file_input& f);
-		std::ifstream* fp;
-	};
-
-	std::vector<char> load_vec(const std::string& fn)
-	{
-		std::vector<char> out;
-		boost::iostreams::filtering_istream* s = new boost::iostreams::filtering_istream();
-		s->push(file_input(fn));
-		boost::iostreams::back_insert_device<std::vector<char>> rd(out);
-		boost::iostreams::copy(*s, rd);
-		delete s;
-		return out;
-	}
-
-	std::string load_str(const std::string& fn)
-	{
-		std::vector<char> out = load_vec(fn);
-		return std::string(&out[0], out.size());
-	}
-}
-
-int main(int argc, char** argv)
-{
-	uint8_t privkey[32] = {0x76,0x5d,0x92,0xdf,0x54,0x9a,0xcb,0x67,0xb5,0x0b,0x72,0x62,0xeb,0xd9,0x99,0x2d,
-		0xa6,0xb6,0xee,0x97,0x86,0x2a,0x91,0xa6,0x55,0x30,0xac,0x90,0xe1,0xef,0x6d,0x05};
-	file_upload upload;
-	memcpy(upload.dh25519_privkey, privkey, 32);
-	upload.base_url = "http://dev.tasvideos.org/userfiles/api";
-	upload.filename = argv[1];
-	auto r = regex(".*/([^/]+)", upload.filename);
-	if(r) upload.filename = r[1];
-	upload.title = argv[2];
-	if(argc > 3 && argv[3][0]) upload.description = load_str(argv[3]);
-	upload.content = load_vec(argv[1]);
-	if(argc > 4 && argv[4][0]) upload.gamename = argv[4];
-	if(argc > 5 && argv[5][0]) upload.hidden = (argv[5][0] != '0');
-
-	upload.do_async();
-	bool last_progress = false;
-	while(!upload.finished) {
-		usleep(100000);
-		for(auto i : upload.get_messages()) {
-			if(last_progress) std::cout << std::endl;
-			std::cout << i << std::endl;
-			last_progress = false;
-		}
-		auto progress = upload.get_progress_ppm();
-		if(progress >= 0) {
-			std::cout << "\e[1GUpload: " << (double)progress / 10000 << "%           " << std::flush;
-			last_progress = true;
-		}
-	}
-	for(auto i : upload.get_messages())
-		std::cout << i << std::endl;
-	return upload.success ? 0 : 1;
-}
-
-#endif

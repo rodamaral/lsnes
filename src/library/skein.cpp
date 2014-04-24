@@ -117,6 +117,16 @@ hash::hash(hash::variant v, uint64_t _outbits) throw(std::runtime_error)
 	last_type = -1;
 }
 
+hash::~hash() throw()
+{
+	zeroize(chain, sizeof(chain));
+	zeroize(buffer, sizeof(buffer));
+	zeroize(&bufferfill, sizeof(bufferfill));
+	zeroize(&data_low, sizeof(data_low));
+	zeroize(&data_high, sizeof(data_high));
+	zeroize(&last_type, sizeof(last_type));
+}
+
 void hash::configure()
 {
 	uint64_t config[16] = {0x133414853ULL,outbits};
@@ -125,6 +135,9 @@ void hash::configure()
 	compress(iv, config, chain, tweak);
 	memcpy(chain, iv, fullbuffer);
 	last_type = 4;
+	zeroize(iv, sizeof(iv));
+	zeroize(tweak, sizeof(tweak));
+	zeroize(config, sizeof(config));
 }
 
 void hash::typechange(uint8_t newtype)
@@ -196,6 +209,9 @@ void hash::flush_buffer(uint8_t type, bool final)
 		data_high++;
 	bufferfill = 0;
 	memset(buffer, 0, fullbuffer);
+	zeroize(_buffer, sizeof(_buffer));
+	zeroize(_buffer2, sizeof(_buffer2));
+	zeroize(tweak, sizeof(tweak));
 }
 
 void hash::read_partial(uint8_t* output, uint64_t startblock, uint64_t bits) throw()
@@ -218,6 +234,9 @@ void hash::read_partial(uint8_t* output, uint64_t startblock, uint64_t bits) thr
 		}
 		offset += fullbuffer;
 	}
+	zeroize(out, sizeof(out));
+	zeroize(zeroes, sizeof(zeroes));
+	zeroize(tweak, sizeof(tweak));
 }
 
 void hash::read(uint8_t* output) throw()
@@ -261,12 +280,25 @@ void prng::read(void* buffer, size_t size) throw(std::runtime_error)
 	zeroes[0] = 0;
 	_skein1024_compress(out, zeroes, chain, tweak);
 	to_bytes(state, out, 128);
+	zeroize(chain, sizeof(chain));
+	zeroize(zeroes, sizeof(zeroes));
+	zeroize(out, sizeof(out));
+	zeroize(tweak, sizeof(tweak));
 }
 
 bool prng::is_seeded() const throw()
 {
 	return _is_seeded;
 }
+
+void zeroize(void* ptr, size_t size)
+{
+	//Whee... Do it like OpenSSL/GnuTLS.
+	volatile char* vptr = (volatile char*)ptr;
+	volatile size_t vidx = 0;
+	do { memset(ptr, 0, size); } while(vptr[vidx]);
+}
+
 }
 #ifdef TEST_SKEIN_CODE
 #define SKEIN_DEBUG

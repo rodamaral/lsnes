@@ -317,10 +317,10 @@ void wxeditor_uploadtarget::on_cancel(wxCommandEvent& e)
 
 void wxeditor_uploadtarget::generate_dh25519(wxCommandEvent& e)
 {
+	uint8_t rbuf[192];
 	try {
 		std::string entropy = pick_text(this, "Enter garbage", "Mash some garbage from keyboard to derive\n"
 			"key from:", "", true);
-		uint8_t rbuf[192];
 		highrandom_256(rbuf + 0);
 		highrandom_256(rbuf + 32);
 		std::vector<char> x;
@@ -338,10 +338,13 @@ void wxeditor_uploadtarget::generate_dh25519(wxCommandEvent& e)
 			fp.write((char*)rbuf, 192);
 			if(!fp) throw std::runtime_error("Can't write keyfile");
 		}
+		skein::zeroize(rbuf, sizeof(rbuf));
 		dh25519_fill_box();
 	} catch(canceled_exception& e) {
+		skein::zeroize(rbuf, sizeof(rbuf));
 		return;
 	} catch(std::exception& e) {
+		skein::zeroize(rbuf, sizeof(rbuf));
 		show_message_ok(this, "Generate keys error", std::string("Error generating keys:") + e.what(),
 			wxICON_EXCLAMATION);
 		return;
