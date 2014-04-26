@@ -414,9 +414,26 @@ Run <script> as if commands were entered on the command line.
 Memory manipulation
 \end_layout
 
+\begin_layout Itemize
+<address> can be one of:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Decimal number
+\end_layout
+
+\begin_layout Itemize
+Hexadecimal number (prefixed with 0x)
+\end_layout
+
+\begin_layout Itemize
+<memarea>+<hexoffset> (no 0x prefix for offset).
+\end_layout
+
+\end_deeper
 \begin_layout Standard
-<address> may be decimal or hexadecimal (prefixed with '0x').
- <value> can be hexadecimal (prefixed with '0x'), unsigned or signed (prefixed
+<value> can be hexadecimal (prefixed with '0x'), unsigned or signed (prefixed
  with '-') decimal.
 \end_layout
 

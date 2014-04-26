@@ -124,6 +124,44 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 
 namespace
 {
+	uint64_t parse_address(std::string addr)
+	{
+		if(regex_match("[0-9]+|0x[0-9A-Fa-f]+", addr)) {
+			//Absolute in mapspace.
+			return parse_value<uint64_t>(addr);
+		} else if(regex_match("[^+]+\\+[0-9A-Fa-f]+", addr)) {
+			//VMA-relative.
+			regex_results r = regex("([^+]+)\\+([0-9A-Fa-f]+)", addr);
+			std::string vma = r[1];
+			std::string _offset = r[2];
+			uint64_t offset = parse_value<uint64_t>("0x" + _offset);
+			for(auto i : lsnes_memory.get_regions())
+				if(i->name == vma) {
+					if(offset >= i->size)
+						throw std::runtime_error("Offset out of range");
+					return i->base + offset;
+				}
+			throw std::runtime_error("No such VMA");
+		} else
+			throw std::runtime_error("Unknown syntax");
+	}
+
+	std::string format_address(uint64_t addr)
+	{
+		for(auto i : lsnes_memory.get_regions())
+			if(i->base <= addr && i->base + i->size > addr) {
+				//Hit.
+				unsigned hcount = 1;
+				uint64_t t = i->size;
+				while(t > 0x10) { hcount++; t >>= 4; }
+				return (stringfmt() << i->name << "+" << std::hex << std::setw(hcount)
+					<< std::setfill('0')
+					<< (addr - i->base)).str();
+			}
+		//Fallback.
+		return hex::to(addr);
+	}
+
 	class memorymanip_command : public command::base
 	{
 	public:
@@ -147,7 +185,7 @@ namespace
 			value_bad = true;
 			has_value = (secondword != "");
 			try {
-				address = parse_value<uint64_t>(firstword);
+				address = parse_address(firstword);
 				address_bad = false;
 			} catch(...) {
 			}
@@ -195,13 +233,13 @@ namespace
 			{
 				std::ostringstream x;
 				if(hexd)
-					x << hex::to(address, true) << " -> "
+					x << format_address(address) << " -> "
 						<< hex::to((lsnes_memory.*_rfn)(address), true);
 				else if(sizeof(ret) > 1)
-					x << hex::to(address, true) << " -> " << std::dec
+					x << format_address(address) << " -> " << std::dec
 						<< (lsnes_memory.*_rfn)(address);
 				else
-					x << hex::to(address, true) << " -> " << std::dec
+					x << format_address(address) << " -> " << std::dec
 						<< (int)(lsnes_memory.*_rfn)(address);
 				messages << x.str() << std::endl;
 			}

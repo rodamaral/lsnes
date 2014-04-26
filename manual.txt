@@ -178,7 +178,14 @@ Run <script> as if commands were entered on the command line.
 
 5.2 Memory manipulation
 
-<address> may be decimal or hexadecimal (prefixed with '0x'). 
+• <address> can be one of:
+
+  – Decimal number
+
+  – Hexadecimal number (prefixed with 0x)
+
+  – <memarea>+<hexoffset> (no 0x prefix for offset).
+
 <value> can be hexadecimal (prefixed with '0x'), unsigned or 
 signed (prefixed with '-') decimal.
 
