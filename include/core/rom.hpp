@@ -128,8 +128,6 @@ void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb);
 
 //Map of preferred cores for each extension and type.
 extern std::map<std::string, core_type*> preferred_core;
-//Preferred overall core.
-extern std::string preferred_core_default;
 //Main hasher
 extern fileimage::hash lsnes_image_hasher;
 

@@ -138,25 +138,49 @@ namespace
 	core_type* current_rom_type = &core_null;
 	core_region* current_region = &core_null;
 
+	core_type* prompt_core_fallback(const std::vector<core_type*>& choices)
+	{
+		if(choices.size() == 0)
+			return NULL;
+		if(choices.size() == 1)
+			return choices[0];
+		rom_request req;
+		req.cores = choices;
+		req.core_guessed = false;
+		req.selected = 0;
+		//Tell that all ROMs have been correctly guessed, leaving only core select.
+		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+			req.has_slot[i] = false;
+			req.guessed[i] = false;
+		}
+		req.canceled = false;
+		graphics_driver_request_rom(req);
+		if(req.canceled)
+			throw std::runtime_error("Canceled ROM loading");
+		if(req.selected < choices.size())
+			return choices[req.selected];
+		return choices[0];
+	}
+
 	core_type* find_core_by_extension(const std::string& ext, const std::string& tmpprefer)
 	{
 		std::string key = "ext:" + ext;
 		std::list<core_type*> possible = core_type::get_core_types();
-		core_type* fallback = NULL;
 		core_type* preferred = preferred_core.count(key) ? preferred_core[key] : NULL;
+		std::vector<core_type*> fallbacks;
 		//Tmpprefer overrides normal preferred core.
 		if(tmpprefer != "")
 			for(auto i : possible)
-				if(i->is_known_extension(ext) && i->get_core_identifier() == tmpprefer)
-					preferred = i;
+				if(i->get_core_identifier() == tmpprefer)
+					return i;
 		for(auto i : possible)
 			if(i->is_known_extension(ext)) {
-				fallback = i;
-				if(!preferred && i->get_core_shortname() == preferred_core_default)
-					return i;
+				fallbacks.push_back(i);
 				if(i == preferred)
 					return i;
 			}
+		core_type* fallback = prompt_core_fallback(fallbacks);
+		if(!fallback) throw std::runtime_error("No core available to load the ROM");
 		return fallback;
 	}
 
@@ -164,21 +188,21 @@ namespace
 	{
 		std::string key = "type:" + name;
 		std::list<core_type*> possible = core_type::get_core_types();
-		core_type* fallback = NULL;
+		std::vector<core_type*> fallbacks;
 		core_type* preferred = preferred_core.count(key) ? preferred_core[key] : NULL;
 		//Tmpprefer overrides normal preferred core.
 		if(tmpprefer != "")
 			for(auto i : possible)
 				if(i->get_iname() == tmpprefer)
-					preferred = i;
+					return i;
 		for(auto i : possible)
 			if(i->get_iname() == name) {
-				fallback = i;
-				if(!preferred && i->get_core_shortname() == preferred_core_default)
-					return i;
+				fallbacks.push_back(i);
 				if(i == preferred)
 					return i;
 			}
+		core_type* fallback = prompt_core_fallback(fallbacks);
+		if(!fallback) throw std::runtime_error("No core available to load the ROM");
 		return fallback;
 	}
 
@@ -669,4 +693,3 @@ void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb)
 }
 
 std::map<std::string, core_type*> preferred_core;
-std::string preferred_core_default;

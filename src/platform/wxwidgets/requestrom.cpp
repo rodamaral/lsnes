@@ -89,7 +89,7 @@ namespace
 			mr.singlefile = req.singlefile = filename;
 		}
 		parent->recent_roms->add(mr);
-		runemufn([req]() {
+		runemufn_async([req]() {
 			lsnes_cmd.invoke("unpause-emulator");
 			load_new_rom(req);
 		});
