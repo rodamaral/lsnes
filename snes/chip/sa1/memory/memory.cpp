@@ -36,6 +36,7 @@ uint8 SA1::bus_read(unsigned addr) {
     synchronize_cpu();
     return bitmap_read(addr & 0x0fffff);
   }
+  return regs.mdr;
 }
 
 void SA1::bus_write(unsigned addr, uint8 data) {
@@ -73,29 +74,31 @@ void SA1::bus_write(unsigned addr, uint8 data) {
 //to avoid syncing the S-CPU and SA-1*; as both chips are able to access
 //these ports.
 uint8 SA1::vbr_read(unsigned addr) {
+  //Let's share the bus state with main SA1 bus (is this correct?)
   if((addr & 0x408000) == 0x008000) {  //$00-3f|80-bf:8000-ffff
-    return mmc_read(addr);
+    return regs.mdr = mmc_read(addr);
   }
 
   if((addr & 0xc00000) == 0xc00000) {  //$c0-ff:0000-ffff
-    return mmc_read(addr);
+    return regs.mdr = mmc_read(addr);
   }
 
   if((addr & 0x40e000) == 0x006000) {  //$00-3f|80-bf:6000-7fff
-    return cartridge.ram.read(addr & (cartridge.ram.size() - 1));
+    return regs.mdr = cartridge.ram.read(addr & (cartridge.ram.size() - 1));
   }
 
   if((addr & 0xf00000) == 0x400000) {  //$40-4f:0000-ffff
-    return cartridge.ram.read(addr & (cartridge.ram.size() - 1));
+    return regs.mdr = cartridge.ram.read(addr & (cartridge.ram.size() - 1));
   }
 
   if((addr & 0x40f800) == 0x000000) {  //$00-3f|80-bf:0000-07ff
-    return iram.read(addr & 2047);
+    return regs.mdr = iram.read(addr & 2047);
   }
 
   if((addr & 0x40f800) == 0x003000) {  //$00-3f|80-bf:3000-37ff
-    return iram.read(addr & 0x2047);
+    return regs.mdr = iram.read(addr & 0x2047);
   }
+  return regs.mdr;
 }
 
 //ROM, I-RAM and MMIO registers are accessed at ~10.74MHz (2 clock ticks)
@@ -110,13 +113,13 @@ void SA1::op_io() {
 uint8 SA1::op_read(unsigned addr, bool exec) {
   tick();
   if(((addr & 0x40e000) == 0x006000) || ((addr & 0xd00000) == 0x400000)) tick();
-  return bus_read(addr);
+  return regs.mdr = bus_read(addr);
 }
 
 void SA1::op_write(unsigned addr, uint8 data) {
   tick();
   if(((addr & 0x40e000) == 0x006000) || ((addr & 0xd00000) == 0x400000)) tick();
-  bus_write(addr, data);
+  bus_write(addr, regs.mdr = data);
 }
 
 uint8 SA1::mmc_read(unsigned addr) {
