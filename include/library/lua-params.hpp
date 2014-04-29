@@ -3,7 +3,7 @@
 
 #include "lua-base.hpp"
 #include "lua-framebuffer.hpp"
-#include "lua-function.hpp"
+#include "lua-class.hpp"
 
 namespace lua
 {

@@ -40,6 +40,10 @@
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
 #include "library/framebuffer.hpp"
+#include "library/lua-base.hpp"
+#include "library/lua-params.hpp"
+#include "library/lua-function.hpp"
+#include "lua/internal.hpp"
 #define HAVE_CSTDINT
 #include "libgambatte/include/gambatte.h"
 
@@ -75,6 +79,7 @@ namespace
 	bool disable_breakpoints = false;
 	bool palette_colors_default[3] = {true, true, true};
 	uint32_t palette_colors[12];
+	uint32_t last_tsc_increment = 0;
 
 	struct interface_device_reg gb_registers[] = {
 		{"wrambank", []() -> uint64_t { return instance ? instance->getIoRam().first[0x170] & 0x07 : 0; },
@@ -643,6 +648,7 @@ namespace
 			uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
 			int16_t soundbuf[2 * (SAMPLES_PER_FRAME + 2064)];
 			size_t emitted = 0;
+			last_tsc_increment = 0;
 			while(true) {
 				unsigned samples_emitted = timings_fucked_up ? 35112 :
 					(SAMPLES_PER_FRAME - frame_overflow);
@@ -670,6 +676,7 @@ namespace
 					}
 				ecore_callbacks->timer_tick(samples_emitted, 2097152);
 				frame_overflow += samples_emitted;
+				last_tsc_increment += samples_emitted;
 				if(frame_overflow >= SAMPLES_PER_FRAME) {
 					frame_overflow -= SAMPLES_PER_FRAME;
 					break;
@@ -962,6 +969,17 @@ namespace
 			return;
 		instance->saveState(x, cmp_save);
 	});
+
+	int last_frame_cycles(lua::state& L, lua::parameters& P)
+	{
+		L.pushnumber(last_tsc_increment);
+		return 1;
+	}
+
+	lua::functions debug_fns_snes(lua_func_misc, "gambatte", {
+		{"last_frame_cycles", last_frame_cycles},
+	});
+	
 
 	struct oninit {
 		oninit()

@@ -6,7 +6,7 @@
 
 namespace lua
 {
-class parameter;
+class parameters;
 
 /**
  * Group of functions.
