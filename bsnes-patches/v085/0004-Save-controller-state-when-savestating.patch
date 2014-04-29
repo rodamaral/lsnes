@@ -1,7 +1,7 @@
 From efe1b5884c316ce070953edd87c6c9aeffffaa94 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 01:52:08 +0200
-Subject: [PATCH 04/19] Save controller state when savestating
+Subject: [PATCH 04/20] Save controller state when savestating
 
 When savestating, save the controller state and restore it upon loadstate.
 Prevents libsnes from mixing up buttons.
@@ -342,5 +342,5 @@ index f7d6f3b..08e7051 100755
    if(cartridge.mode() == Cartridge::Mode::SufamiTurbo) sufamiturbo.serialize(s);
    if(cartridge.mode() == Cartridge::Mode::SuperGameBoy) icd2.serialize(s);
 -- 
-1.9.2
+2.0.0.rc0
 

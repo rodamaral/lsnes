@@ -1,7 +1,7 @@
 From a5b380757b086e3a00b47fe14e2a63c74683e8da Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 28 Nov 2013 22:36:29 +0200
-Subject: [PATCH 12/19] Support unlimited number of breakpoints
+Subject: [PATCH 12/20] Support unlimited number of breakpoints
 
 ---
  snes/alt/cpu/cpu.cpp                        | 22 +++++++-------
@@ -795,5 +795,5 @@ index dffeeee..37ed1fe 100755
  namespace SNES {
    namespace Info {
 -- 
-1.9.2
+2.0.0.rc0
 

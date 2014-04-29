@@ -1,7 +1,7 @@
 From 6e0364c9a86caa71623a188a720b2d68b304b89b Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 24 Sep 2012 21:46:09 +0300
-Subject: [PATCH 09/19] Add needed support for detecting true polls as opposed
+Subject: [PATCH 09/20] Add needed support for detecting true polls as opposed
  to just autopolling
 
 ---
@@ -65,5 +65,5 @@ index 8b6aaa6..c5ee930 100755
  //DMAPx
  uint8 CPU::mmio_r43x0(uint8 i) {
 -- 
-1.9.2
+2.0.0.rc0
 
