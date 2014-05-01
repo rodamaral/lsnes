@@ -480,9 +480,6 @@ function_group::function_group()
 
 function_group::~function_group()
 {
-	for(auto i : functions)
-		for(auto j : callbacks)
-			j.second(i.first, NULL);
 	for(auto i : dcallbacks)
 		i.second(this);
 	regqueue3_t::do_ready(*this, false);
@@ -532,9 +529,6 @@ class_group::class_group()
 
 class_group::~class_group()
 {
-	for(auto i : classes)
-		for(auto j : callbacks)
-			j.second(i.first, NULL);
 	for(auto i : dcallbacks)
 		i.second(this);
 	regqueue4_t::do_ready(*this, false);
