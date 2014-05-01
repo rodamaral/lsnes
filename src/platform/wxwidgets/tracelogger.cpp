@@ -596,6 +596,7 @@ namespace
 			//Dirty hack.
 			i.second.handle = NULL;
 		}
+		trace_active = false;
 		convert_break_to_pause();
 	}
 
@@ -750,8 +751,6 @@ namespace
 						auto tmp = this;
 						if(!tmp->trace_active)
 							return;
-						this->trace_active = false;
-						debug_remove_callback(cpuid, DEBUG_TRACE, trace_handle);
 						tmp->kill_debug_hooks();
 						//We can't use this anymore.
 						runuifun([tmp]() {
