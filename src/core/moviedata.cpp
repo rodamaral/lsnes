@@ -643,6 +643,9 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	//In certain conditions, trun LOAD_STATE_CURRENT into LOAD_STATE_PRESERVE.
 	if(lmode == LOAD_STATE_CURRENT && current_mode && readonly_load_preserves)
 		lmode = LOAD_STATE_PRESERVE;
+	//If movie file changes, turn LOAD_STATE_CURRENT into LOAD_STATE_RO
+	if(lmode == LOAD_STATE_CURRENT && movb.get_mfile().projectid != _movie.projectid)
+		lmode = LOAD_STATE_RO;
 
 	//Handle preserving load specially.
 	if(lmode == LOAD_STATE_PRESERVE) {
