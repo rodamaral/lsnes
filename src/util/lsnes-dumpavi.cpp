@@ -10,6 +10,7 @@
 #include "interface/romtype.hpp"
 #include "core/loadlib.hpp"
 #include "lua/lua.hpp"
+#include "core/filedownload.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/movie.hpp"
@@ -18,6 +19,7 @@
 #include "core/romloader.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/directory.hpp"
 #include "library/string.hpp"
 
 #include <sys/time.h>
@@ -28,6 +30,32 @@ namespace
 	bool hashing_in_progress = false;
 	uint64_t hashing_left = 0;
 	int64_t last_update = 0;
+
+	std::string do_download_movie(const std::string& origname)
+	{
+		if(!regex_match("[A-Za-z][A-Za-z0-9+.-]*:.+", origname))
+			return origname;	//File.
+		if(file_is_regular(origname))
+			return origname;	//Even exists.
+		//Okay, we need to download this.
+		auto download_in_progress = new file_download();
+		download_in_progress->url = origname;
+		download_in_progress->target_slot = "dumpavi_download_tmp";
+		download_in_progress->do_async();
+		messages << "Downloading " << origname << ":" << std::endl;
+		while(!download_in_progress->finished) {
+			messages << download_in_progress->statusmsg() << std::endl;
+			sleep(1);
+		}
+		if(download_in_progress->errormsg != "") {
+			std::string err = download_in_progress->errormsg;
+			delete download_in_progress;
+			throw std::runtime_error(err);
+		}
+		delete download_in_progress;
+		messages << "Download finished." << std::endl;
+		return "$MEMORY:dumpavi_download_tmp";
+	}
 
 	void hash_callback(uint64_t left, uint64_t total)
 	{
@@ -321,6 +349,15 @@ int main(int argc, char** argv)
 	if(movfn == "") {
 		messages << "Movie filename required" << std::endl;
 		return 0;
+	}
+
+	try {
+		movfn = do_download_movie(movfn);
+	} catch(std::exception& e) {
+		messages << "FATAL: Can't download movie: " << e.what() << std::endl;
+		quit_lua();
+		fatal_error();
+		exit(1);
 	}
 
 	init_main_callbacks();
