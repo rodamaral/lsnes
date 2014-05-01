@@ -41,6 +41,7 @@ enum
 	wxID_APPEND_FRAME,
 	wxID_CHANGE_LINECOUNT,
 	wxID_INSERT_AFTER,
+	wxID_INSERT_AFTER_MULTIPLE,
 	wxID_DELETE_FRAME,
 	wxID_DELETE_SUBFRAME,
 	wxID_POSITION_LOCK,
@@ -776,7 +777,7 @@ private:
 		void do_sweep_axis(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_append_frames(uint64_t count);
 		void do_append_frames();
-		void do_insert_frame_after(uint64_t row);
+		void do_insert_frame_after(uint64_t row, bool multi);
 		void do_delete_frame(uint64_t row1, uint64_t row2, bool wholeframe);
 		void do_truncate(uint64_t row);
 		void do_set_stop_at_frame();
@@ -1210,12 +1211,24 @@ void wxeditor_movie::_moviepanel::do_append_frames()
 	signal_repaint();
 }
 
-void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
+void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row, bool multi)
 {
+	uint64_t multicount = 1;
+	if(multi) {
+		try {
+			std::string text = pick_text(m, "Append frames", "Enter number of frames to insert:", "");
+			multicount = parse_value<uint64_t>(text);
+		} catch(canceled_exception& e) {
+			return;
+		} catch(std::exception& e) {
+			wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+			return;
+		}
+	}
 	recursing = true;
 	frame_controls* _fcontrols = &fcontrols;
 	uint64_t _row = row;
-	runemufn([_row, _fcontrols]() {
+	runemufn([_row, _fcontrols, multicount]() {
 		if(!movb.get_movie().readonly_mode())
 			return;
 		controller_frame_vector& fv = *movb.get_mfile().input;
@@ -1228,12 +1241,14 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
 		if(nframe < fedit)
 			return;
 		controller_frame_vector::notify_freeze freeze(fv);
-		fv.append(fv.blank_frame(true));
+		for(uint64_t k = 0; k < multicount; k++)
+			fv.append(fv.blank_frame(true));
 		if(nframe < vsize) {
 			//Okay, gotta copy all data after this point. nframe has to be at least 1.
 			for(uint64_t i = vsize - 1; i >= nframe; i--)
-				fv[i + 1] = fv[i];
-			fv[nframe] = fv.blank_frame(true);
+				fv[i + multicount] = fv[i];
+			for(uint64_t k = 0; k < multicount; k++)
+				fv[nframe + k] = fv.blank_frame(true);
 		}
 	});
 	max_subframe = row;
@@ -1552,7 +1567,10 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		do_append_frames();
 		return;
 	case wxID_INSERT_AFTER:
-		do_insert_frame_after(press_line);
+		do_insert_frame_after(press_line, false);
+		return;
+	case wxID_INSERT_AFTER_MULTIPLE:
+		do_insert_frame_after(press_line, true);
 		return;
 	case wxID_DELETE_FRAME:
 		do_delete_frame(press_line, rpress_line, true);
@@ -1956,6 +1974,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	if(enable_toggle_button || enable_change_axis || enable_sweep_axis)
 		menu.AppendSeparator();
 	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
+	menu.Append(wxID_INSERT_AFTER_MULTIPLE, wxT("Insert frames after"))->Enable(enable_insert_frame);
 	menu.Append(wxID_INSERT_CONTROLLER_AFTER, wxT("Insert controller frame"))
 		->Enable(enable_insert_controller);
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"))->Enable(enable_append_frame);
