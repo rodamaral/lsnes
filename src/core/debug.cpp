@@ -22,14 +22,22 @@ namespace
 		std::function<void(uint64_t proc, const char* str, bool true_insn)> cb;
 		std::function<void()> dtor;
 	};
+	struct cb_frame
+	{
+		std::function<void(uint64_t frame, bool loadstate)> cb;
+		std::function<void()> dtor;
+	};
 	typedef std::list<cb_rwx> cb_list;
 	typedef std::list<cb_trace> cb2_list;
+	typedef std::list<cb_frame> cb3_list;
 	std::map<uint64_t, cb_list> read_cb;
 	std::map<uint64_t, cb_list> write_cb;
 	std::map<uint64_t, cb_list> exec_cb;
 	std::map<uint64_t, cb2_list> trace_cb;
+	std::map<uint64_t, cb3_list> frame_cb;
 	cb_list dummy_cb;  //Always empty.
 	cb2_list dummy_cb2;  //Always empty.
+	cb3_list dummy_cb3;  //Always empty.
 	uint64_t xmask = 1;
 	std::function<void()> tracelog_change_cb;
 	struct dispatch::target<> corechange;
@@ -61,6 +69,7 @@ namespace
 		case DEBUG_WRITE: return 2;
 		case DEBUG_EXEC: return 4;
 		case DEBUG_TRACE: return 8;
+		case DEBUG_FRAME: return 0;
 		default: throw std::runtime_error("Invalid debug callback type");
 		}
 	}
@@ -77,7 +86,7 @@ namespace
 			corechange.set(notify_core_change, []() { debug_core_change(); });
 			corechange_r = true;
 		}
-		if(!cb.count(addr))
+		if(!cb.count(addr) && type != DEBUG_FRAME)
 			our_rom.rtype->set_debug_flags(addr, debug_flag(type), 0);
 
 		auto& lst = cb[addr];
@@ -99,7 +108,8 @@ namespace
 		}
 		if(cb[addr].empty()) {
 			cb.erase(addr);
-			our_rom.rtype->set_debug_flags(addr, 0, debug_flag(type));
+			if(type != DEBUG_FRAME)
+				our_rom.rtype->set_debug_flags(addr, 0, debug_flag(type));
 		}
 	}
 
@@ -136,9 +146,20 @@ debug_handle debug_add_trace_callback(uint64_t proc, std::function<void(uint64_t
 	return _debug_add_callback(trace_cb, proc, DEBUG_TRACE, t, dtor);
 }
 
+debug_handle debug_add_frame_callback(std::function<void(uint64_t frame, bool loadstate)> fn,
+	std::function<void()> dtor)
+{
+	cb_frame t;
+	t.cb = fn;
+	t.dtor = dtor;
+	return _debug_add_callback(frame_cb, 0, DEBUG_FRAME, t, dtor);
+}
+
 void debug_remove_callback(uint64_t addr, debug_type type, debug_handle handle)
 {
-	if(type == DEBUG_TRACE) {
+	if(type == DEBUG_FRAME) {
+		_debug_remove_callback(frame_cb, 0, DEBUG_FRAME, handle);
+	} else if(type == DEBUG_TRACE) {
 		_debug_remove_callback(trace_cb, addr, DEBUG_TRACE, handle);
 	} else {
 		_debug_remove_callback(get_lists(type), addr, type, handle);
@@ -193,6 +214,13 @@ void debug_fire_callback_trace(uint64_t proc, const char* str, bool true_insn)
 	for(auto& i : _cb) i.cb(proc, str, true_insn);
 	if(requesting_break)
 		do_break_pause();
+}
+
+void debug_fire_callback_frame(uint64_t frame, bool loadstate)
+{
+	cb3_list* cb = frame_cb.count(0) ? &frame_cb[0] : &dummy_cb3;
+	auto _cb = *cb;
+	for(auto& i : _cb) i.cb(frame, loadstate);
 }
 
 void debug_set_cheat(uint64_t addr, uint64_t value)
@@ -295,6 +323,9 @@ namespace
 		for(auto& i : trace_cb)
 			for(auto& j : i.second)
 				messages << "TRACE proc=" << i.first << " handle=" << &j << std::endl;
+		for(auto& i : frame_cb)
+			for(auto& j : i.second)
+				messages << "FRAME handle=" << &j << std::endl;
 	});
 
 	command::fnptr<const std::string&> generate_event(lsnes_cmd, "generate-memory-event", "", "",

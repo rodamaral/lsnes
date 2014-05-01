@@ -15,6 +15,7 @@ enum debug_type
 	DEBUG_WRITE,
 	DEBUG_EXEC,
 	DEBUG_TRACE,
+	DEBUG_FRAME,
 };
 
 extern const uint64_t debug_all_addr;
@@ -23,11 +24,14 @@ debug_handle debug_add_callback(uint64_t addr, debug_type type,
 	std::function<void(uint64_t addr, uint64_t value)> fn, std::function<void()> dtor);
 debug_handle debug_add_trace_callback(uint64_t proc, std::function<void(uint64_t proc, const char* str,
 	bool true_insn)> fn, std::function<void()> dtor);
+debug_handle debug_add_frame_callback(std::function<void(uint64_t frame, bool loadstate)> fn,
+	std::function<void()> dtor);
 void debug_remove_callback(uint64_t addr, debug_type type, debug_handle handle);
 void debug_fire_callback_read(uint64_t addr, uint64_t value);
 void debug_fire_callback_write(uint64_t addr, uint64_t value);
 void debug_fire_callback_exec(uint64_t addr, uint64_t value);
 void debug_fire_callback_trace(uint64_t proc, const char* str, bool true_insn = true);
+void debug_fire_callback_frame(uint64_t frame, bool loadstate);
 void debug_set_cheat(uint64_t addr, uint64_t value);
 void debug_clear_cheat(uint64_t addr);
 void debug_setxmask(uint64_t mask);

@@ -543,6 +543,7 @@ namespace
 		int cpuid;
 		volatile bool trace_active;
 		debug_handle trace_handle;
+		debug_handle trace_handle_frame;
 		void do_rwx_break(uint64_t addr, uint64_t value, debug_type type);
 		void kill_debug_hooks();
 		scroll_bar* scroll;
@@ -585,6 +586,7 @@ namespace
 	void wxwin_tracelog::kill_debug_hooks()
 	{
 		debug_remove_callback(cpuid, DEBUG_TRACE, trace_handle);
+		debug_remove_callback(cpuid, DEBUG_FRAME, trace_handle_frame);
 		threads::alock h(buffer_mutex);
 		for(auto& i : rwx_breakpoints) {
 			if(!i.second.handle)
@@ -753,6 +755,26 @@ namespace
 							tmp->enabled->SetValue(false);
 							tmp->m_singlestep->Enable(false);
 						});
+					});
+				this->trace_handle_frame = debug_add_frame_callback([this](uint64_t frame,
+					bool loadstate) {
+						std::ostringstream xstr;
+						xstr << "------------ ";
+						xstr << "Frame " << frame;
+						if(loadstate) xstr << " (loadstated)";
+						xstr << " ------------";
+						std::string str = xstr.str();
+						threads::alock h(this->buffer_mutex);
+						lines_waiting.push_back(str);
+						if(!this->unprocessed_lines) {
+							this->unprocessed_lines = true;
+							runuifun([this]() { this->process_lines(); });
+						}
+					}, [this]() {
+						auto tmp = this;
+						if(!tmp->trace_active)
+							return;
+						debug_remove_callback(0, DEBUG_TRACE, trace_handle_frame);
 					});
 				this->trace_active = true;
 			} else if(trace_active) {

@@ -1292,6 +1292,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
 				controls.reset_framehold();
+				debug_fire_callback_frame(movb.get_movie().get_current_frame(), true);
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
@@ -1313,6 +1314,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;
+		debug_fire_callback_frame(movb.get_movie().get_current_frame(), false);
 		our_rom.rtype->emulate();
 		random_mix_timing_entropy();
 		time_x = get_utime();
