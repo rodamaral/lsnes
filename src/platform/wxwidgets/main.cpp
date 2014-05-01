@@ -240,6 +240,7 @@ end:
 			lineno++;
 		}
 		refresh_alias_binds();
+		lsnes_uri_rewrite.load(get_config_path() + "/lsnesurirewrite.cfg");
 	}
 
 	void save_configuration()
@@ -291,8 +292,8 @@ end:
 		//Last save.
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
 		lsave << last_save;
+		lsnes_uri_rewrite.save(get_config_path() + "/lsnesurirewrite.cfg");
 	}
-
 
 	void* eloop_helper(int x)
 	{

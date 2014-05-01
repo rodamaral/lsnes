@@ -39,10 +39,12 @@ namespace
 			return origname;	//Even exists.
 		//Okay, we need to download this.
 		auto download_in_progress = new file_download();
-		download_in_progress->url = origname;
+		download_in_progress->url = lsnes_uri_rewrite(origname);
+		if(download_in_progress->url != origname)
+			messages << "Internally redirecting to " << download_in_progress->url << std::endl;
 		download_in_progress->target_slot = "dumpavi_download_tmp";
 		download_in_progress->do_async();
-		messages << "Downloading " << origname << ":" << std::endl;
+		messages << "Downloading " << download_in_progress->url << ":" << std::endl;
 		while(!download_in_progress->finished) {
 			messages << download_in_progress->statusmsg() << std::endl;
 			sleep(1);
@@ -316,6 +318,8 @@ int main(int argc, char** argv)
 
 	std::string cfgpath = get_config_path();
 	autoload_libraries();
+
+	lsnes_uri_rewrite.load(cfgpath + "/lsnesurirewrite.cfg");
 
 	for(auto i : cmdline) {
 		regex_results r;

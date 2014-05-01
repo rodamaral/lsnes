@@ -3,6 +3,7 @@
 
 #include "library/threads.hpp"
 #include "library/httpreq.hpp"
+#include "library/urirewrite.hpp"
 #include <string>
 #include <list>
 #include <vector>
@@ -31,5 +32,6 @@ struct file_download
 	std::string tempname2;
 };
 
+extern urirewrite::rewriter lsnes_uri_rewrite;
 
 #endif

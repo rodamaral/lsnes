@@ -1797,7 +1797,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		if(download_in_progress) return;
 		filename = pick_text(this, "Download movie", "Enter URL to download");
 		download_in_progress = new file_download();
-		download_in_progress->url = filename;
+		download_in_progress->url = lsnes_uri_rewrite(filename);
 		download_in_progress->target_slot = "wxwidgets_download_tmp";
 		download_in_progress->do_async();
 		new download_timer(this);

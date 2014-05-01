@@ -173,3 +173,5 @@ void file_download::_do_async()
 	finished = true;
 	cond.notify_all();
 }
+
+urirewrite::rewriter lsnes_uri_rewrite;
