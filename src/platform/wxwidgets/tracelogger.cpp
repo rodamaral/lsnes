@@ -41,6 +41,7 @@ namespace
 		wxID_BREAKPOINTS,
 		wxID_CONTINUE,
 		wxID_FRAMEADVANCE,
+		wxID_CLEAR,
 	};
 
 	int prompt_for_save(wxWindow* parent, const std::string& what)
@@ -643,6 +644,8 @@ namespace
 				wxCommandEventHandler(wxwin_tracelog::_panel::on_popup_menu), NULL, this);
 			menu.Append(wxID_COPY, wxT("Copy to clipboard"));
 			menu.Append(wxID_SAVE, wxT("Save to file"));
+			menu.AppendSeparator();
+			menu.Append(wxID_DELETE, wxT("Delete"));
 			PopupMenu(&menu);
 		} else {
 			current_row = min(local_line, static_cast<uint64_t>(rows.size()));
@@ -935,6 +938,13 @@ namespace
 			dialog_breakpoints* d = new dialog_breakpoints(this);
 			d->ShowModal();
 			d->Destroy();
+		} else if(e.GetId() == wxID_CLEAR) {
+			int r = prompt_for_save(this, "Trace log");
+			if(r < 0 || (r > 0 && !do_exit_save()))
+				return;
+			panel->rows.clear();
+			panel->request_paint();
+			find_active = false;
 		}
 	}
 
@@ -942,10 +952,12 @@ namespace
 	{
 		std::string str;
 		uint64_t m = min(pressed_row, current_row);
-		uint64_t M = max(pressed_row, current_row);
+		uint64_t M = max(pressed_row, current_row) + 1;
+		m = min(m, rows.size());
+		M = min(M, rows.size());
 		size_t lines = 0;
 		{
-			for(uint64_t i = m; i <= M && i < rows.size(); i++) {
+			for(uint64_t i = m; i < M && i < rows.size(); i++) {
 				try {
 					std::string mline = rows[i];
 					if(lines == 1) str += "\n";
@@ -977,6 +989,12 @@ namespace
 				wxMessageBox(towxstring(e.what()), _T("Error creating file"), wxICON_EXCLAMATION |
 					wxOK, this);
 			}
+			break;
+		case wxID_DELETE:
+			rows.erase(rows.begin() + m, rows.begin() + M);
+			if(m != M)
+				p->dirty = true;
+			request_paint();
 			break;
 		}
 	}
@@ -1100,6 +1118,8 @@ back:
 		menu->Append(wxID_FIND, wxT("Find..."));
 		menu->Append(wxID_FIND_NEXT, wxT("Find next\tF3"));
 		menu->Append(wxID_FIND_PREV, wxT("Find previous\tSHIFT+F3"));
+		menu->AppendSeparator();
+		menu->Append(wxID_CLEAR, towxstring("Clear"));
 		mb->Append(menu = new wxMenu(), wxT("Debug"));
 		m_singlestep = menu->Append(wxID_SINGLESTEP, towxstring("Singlestep\tF2"));
 		menu->Append(wxID_FRAMEADVANCE, towxstring("Frame advance\tF4"));
