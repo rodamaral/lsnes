@@ -37,6 +37,57 @@ namespace
 		return a;
 	}
 
+	int resolve_core(std::map<unsigned, core_type*> coreid, const std::string& filename, int findex)
+	{
+		if(coreid.count(findex))
+			return findex;	//Already resolved.
+		if(loaded_rom::is_gamepak(filename))
+			return 0; //Gamepaks don't resolve.
+
+		//Get the extension.
+		regex_results r = regex(".*\\.([^.]+)", filename);
+		if(!r)
+			return 0; //WTF is this? Leave unresolved.
+		std::string extension = r[1];
+
+		std::map<core_type*, unsigned> candidates;
+		for(auto i : coreid) {
+			if(!can_load_singlefile(i.second))
+				continue;
+			if(i.second->is_hidden())
+				continue;
+			if(i.second->isnull())
+				continue;
+			std::set<std::string> exts;
+			unsigned base = (i.second->get_biosname() != "" && i.second->get_image_count() > 1) ? 1 : 0;
+			for(auto j : i.second->get_image_info(base).extensions)
+				if(j == extension) {
+					//This is a candidate.
+					candidates[i.second] = i.first;
+				}
+		}
+
+		if(candidates.empty())
+			return 0;	//Err. Leave unresolved.
+		if(candidates.size() == 1)
+			return candidates.begin()->second;	//Only one candidate.
+
+		//Okay, we have multiple candidates. Prompt among them.
+		std::vector<std::string> choices;
+		std::vector<unsigned> indexes;
+		for(auto i : candidates) {
+			choices.push_back(i.first->get_core_identifier() + " [" + i.first->get_hname() + "]");
+			indexes.push_back(i.second);
+		}
+		std::string coretext;
+		coretext = pick_among(NULL, "Choose core", "Choose core to load the ROM", choices, 0);
+		for(size_t i = 0; i < choices.size(); i++)
+			if(choices[i] == coretext)
+				return indexes[i];
+		//Err?
+		return 0;
+	}
+
 	void do_load_rom_image_single(wxwin_mainwindow* parent)
 	{
 		std::map<std::string, core_type*> cores;
@@ -80,6 +131,11 @@ namespace
 		recentfiles::multirom mr;
 		std::string filename = tostdstring(d->GetPath());
 		int findex = d->GetFilterIndex();
+		try {
+			findex = resolve_core(coreid, filename, findex);
+		} catch(canceled_exception& e) {
+			return;
+		}
 		if(!coreid.count(findex)) {
 			//Autodetect.
 			mr.packfile = req.packfile = filename;

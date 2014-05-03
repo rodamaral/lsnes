@@ -101,6 +101,15 @@ struct loaded_rom
  * throws std::runtime_error: Loading state failed.
  */
 	void load_core_state(const std::vector<char>& buf, bool nochecksum = false) throw(std::runtime_error);
+
+/**
+ * Is file a gamepak?
+ *
+ * parameter filename: The file to probe.
+ * retruns: True if gamepak, false if not.
+ * throws std::runtime_error: No such file.
+ */
+	static bool is_gamepak(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
 };
 
 /**

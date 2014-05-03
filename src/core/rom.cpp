@@ -687,6 +687,23 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 	rtype->unserialize(&buf[0], buf.size() - 32);
 }
 
+bool loaded_rom::is_gamepak(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
+{
+	std::istream* spec = NULL;
+	try {
+		spec = &zip::openrel(filename, "");
+		std::string line;
+		std::getline(*spec, line);
+		istrip_CR(line);
+		bool ret = (line == "[GAMEPACK FILE]");
+		delete spec;
+		return ret;
+	} catch(...) {
+		delete spec;
+		return false;
+	}
+}
+
 void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb)
 {
 	lsnes_image_hasher.set_callback(cb);
