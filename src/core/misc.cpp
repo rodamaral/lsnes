@@ -30,6 +30,8 @@
 #include <ctime>
 #include <cstdlib>
 #include <cstring>
+#include <sys/time.h>
+#include <unistd.h>
 #include <boost/filesystem.hpp>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -100,14 +102,17 @@ namespace
 	std::string get_random_hexstring_64(size_t index)
 	{
 		threads::alock h(seed_mutex);
-		uint64_t buf[6];
+		uint64_t buf[7];
 		uint8_t out[32];
-		buf[0] = time(NULL);
-		buf[1] = arch_get_tsc();
-		buf[2] = arch_get_random();
+		timeval tv;
 		buf[3] = arch_get_random();
 		buf[4] = arch_get_random();
 		buf[5] = arch_get_random();
+		buf[6] = arch_get_random();
+		gettimeofday(&tv, NULL);
+		buf[0] = tv.tv_sec;
+		buf[1] = tv.tv_usec;
+		buf[2] = arch_get_tsc();
 		prng.write(buf, sizeof(buf));
 		prng.read(out, sizeof(out));
 		return hex::b_to(out, sizeof(out));
@@ -424,7 +429,9 @@ void highrandom_256(uint8_t* buf)
 	std::copy(s.begin(), s.end(), reinterpret_cast<char*>(tmp));
 	arch_random_256(tmp + 64);
 	serialization::u64b(tmp + 96, arch_get_tsc());
-	sha256::hash(buf, tmp, 104);
+	skein::hash hsh(skein::hash::PIPE_1024, 256);
+	hsh.write(tmp, 104);
+	hsh.read(buf);
 #ifdef USE_LIBGCRYPT_SHA256
 	memset(tmp, 0, 32);
 	gcry_randomize((unsigned char*)buf, 32, GCRY_STRONG_RANDOM);
