@@ -1,3 +1,4 @@
+#include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/framebuffer.hpp"
 #include "core/movie.hpp"
@@ -32,6 +33,14 @@ extern "C"
 
 namespace
 {
+	const char* button_codes = "QWERTYUIOPASDFGHJKLZXCVBNM";
+
+	std::string get_shorthand(int index) {
+		if(index < 0 || index > (int)strlen(button_codes))
+			return "";
+		return std::string(" [") + std::string(1, button_codes[index]) + "]";
+	}
+
 	const int padmajsize = 193;
 	const int padminsize = 16;
 
@@ -136,6 +145,7 @@ private:
 		void Destroy();
 		void do_redraw();
 	private:
+		friend class wxeditor_tasinput;
 		short x, y;
 		wxEvtHandler* obj;
 		wxObjectEventFunction fun;
@@ -147,12 +157,16 @@ private:
 		bool lightgun;
 		bool dirty;
 		struct SwsContext* rctx;
+		int xstep, ystep;
 	};
 	std::map<int, control_triple> inputs;
 	std::vector<controller_double> panels;
 	void update_controls();
 	void connect_keyboard_recursive(wxWindow* win);
+	control_triple* find_triple(unsigned controller, unsigned control);
 	bool closing;
+	unsigned current_controller;
+	unsigned current_button;
 	wxBoxSizer* hsizer;
 };
 
@@ -169,12 +183,14 @@ wxeditor_tasinput::xypanel::xypanel(wxWindow* win, wxSizer* s, control_triple _t
 	xnum = NULL;
 	ynum = NULL;
 	rctx = NULL;
+	xstep = 1;
+	ystep = 1;
 	dirty = false;
 	obj = _obj;
 	fun = _fun;
 	wxid = _wxid;
 	t = _t;
-	s->Add(new wxStaticText(win, wxID_ANY, towxstring(t.name)));
+	s->Add(new wxStaticText(win, wxID_ANY, towxstring(t.name), wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS));
 	s->Add(graphics = new wxPanel(win, wxID_ANY));
 	lightgun = false;
 	if(t.type == port_controller_button::TYPE_LIGHTGUN && t.yindex != std::numeric_limits<unsigned>::max()) {
@@ -194,7 +210,7 @@ wxeditor_tasinput::xypanel::xypanel(wxWindow* win, wxSizer* s, control_triple _t
 		t.xmin, t.xmax, x));
 	if(t.yindex != std::numeric_limits<unsigned>::max())
 		s->Add(ynum = new wxSpinCtrl(win, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
-			wxSP_ARROW_KEYS, t.ymin, t.ymax, y));
+			wxSP_ARROW_KEYS | wxWANTS_CHARS, t.ymin, t.ymax, y));
 	xnum->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(xypanel::on_numbers_change), NULL, this);
 	if(ynum) ynum->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(xypanel::on_numbers_change), NULL,
 		this);
@@ -310,6 +326,8 @@ wxeditor_tasinput::~wxeditor_tasinput() throw() {}
 wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: TAS input plugin"), wxDefaultPosition, wxSize(-1, -1))
 {
+	current_controller = 0;
+	current_button = 0;
 	closing = false;
 	Centre();
 	hsizer = new wxBoxSizer(wxHORIZONTAL);
@@ -361,7 +379,7 @@ void wxeditor_tasinput::on_control(wxCommandEvent& e)
 		xstate = t.panel->get_x();
 		ystate = t.panel->get_y();
 	}
-	runemufn([t, xstate, ystate]() {
+	runemufn_async([t, xstate, ystate]() {
 		controls.tasinput(t.port, t.controller, t.xindex, xstate);
 		if(t.yindex != std::numeric_limits<unsigned>::max())
 			controls.tasinput(t.port, t.controller, t.yindex, ystate);
@@ -491,7 +509,8 @@ void wxeditor_tasinput::update_controls()
 		t.check = NULL;
 		t.panel = NULL;
 		if(i.type == port_controller_button::TYPE_BUTTON) {
-			t.check = new wxCheckBox(current_p, next_id, towxstring(i.name));
+			t.check = new wxCheckBox(current_p, next_id, towxstring(i.name + get_shorthand(i.xindex)),
+				wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS);
 			current->Add(t.check);
 			t.check->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 				wxCommandEventHandler(wxeditor_tasinput::on_control), NULL, this);
@@ -503,6 +522,11 @@ void wxeditor_tasinput::update_controls()
 	}
 	if(_inputs.empty()) {
 		throw std::runtime_error("No controlers");
+	}
+	auto tx = find_triple(current_controller = 0, current_button = 0);
+	if(tx) {
+		if(tx->check) tx->check->SetFocus();
+		else tx->panel->xnum->SetFocus();
 	}
 	//Connect the keyboard.
 	hsizer->Layout();
@@ -524,14 +548,172 @@ void wxeditor_tasinput::on_wclose(wxCloseEvent& e)
 
 void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
 {
-	handle_wx_keyboard(e, true);
+	int key = e.GetKeyCode();
+	if(key == WXK_LEFT || key == WXK_RIGHT || key == WXK_UP || key == WXK_DOWN) {
+		//See if this is associated with a panel.
+		int delta = 1;
+		if(e.GetModifiers() & wxMOD_SHIFT) delta = 999999998;
+		if(e.GetModifiers() & wxMOD_CONTROL) delta = 999999999;
+		if(key == WXK_LEFT || key == WXK_UP) delta = -delta;
+		bool vertical = (key == WXK_UP || key == WXK_DOWN);
+		auto t = find_triple(current_controller, current_button);
+		if(t->panel) {
+			//Handle movement better if span is large.
+			auto ctrl = vertical ? t->panel->ynum : t->panel->xnum;
+			if(!ctrl)
+				return;
+			if(abs(delta) == 999999998) {
+				int& wstep = vertical ? t->panel->ystep : t->panel->xstep;
+				int range = ctrl->GetMax() - ctrl->GetMin();
+				delta = (delta / abs(delta)) * wstep;
+				wstep += sqrt(wstep);
+				if(wstep > range / 20)
+					wstep = range / 20;
+			}
+			if(abs(delta) == 999999999) {
+				int range = ctrl->GetMax() - ctrl->GetMin();
+				delta = (delta / abs(delta)) * range / 16;
+			}
+			ctrl->SetValue(min(max(ctrl->GetValue() + delta, ctrl->GetMin()), ctrl->GetMax()));
+			wxSpinEvent e(wxEVT_COMMAND_SPINCTRL_UPDATED, ctrl->GetId());
+			e.SetPosition(ctrl->GetValue());
+			t->panel->on_numbers_change(e);
+		}
+		return;
+	}
+	if(key == WXK_F5) runemufn_async([this]() { lsnes_cmd.invoke("+advance-frame"); });
 }
 
 void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
 {
-	handle_wx_keyboard(e, false);
+	int key = e.GetKeyCode();
+	if(key == WXK_LEFT || key == WXK_RIGHT) {
+		auto t = find_triple(current_controller, current_button);
+		if(t && t->panel) t->panel->xstep = 1;
+	}
+	if(key == WXK_UP || key == WXK_DOWN) {
+		auto t = find_triple(current_controller, current_button);
+		if(t && t->panel) t->panel->ystep = 1;
+	}
+	if(key == WXK_TAB) {
+		//Reset speed.
+		auto t = find_triple(current_controller, current_button);
+		if(t && t->panel) t->panel->xstep = t->panel->ystep = 1;
+
+		if(e.GetModifiers() & wxMOD_SHIFT) {
+			if(current_controller)
+				current_controller--;
+			else
+				current_controller = panels.size() - 1;
+		} else {
+			current_controller++;
+			if(current_controller >= panels.size())
+				current_controller = 0;
+		}
+		//Hilight zero control (but don't change). If it is a panel, it is X of it.
+		current_button = 0;
+		t = find_triple(current_controller, 0);
+		if(t) {
+			if(t->check)
+				t->check->SetFocus();
+			else
+				t->panel->xnum->SetFocus();
+		}
+		return;
+	}
+	for(const char* b = button_codes; *b; b++) {
+		if(key == *b) {
+			//Reset speed.
+			auto t = find_triple(current_controller, current_button);
+			if(t && t->panel) t->panel->xstep = t->panel->ystep = 1;
+
+			unsigned bn = b - button_codes;
+			//Select (current_controller,bn).
+			t = find_triple(current_controller, bn);
+			if(!t) return;
+			if(t->check) {
+				//Focus and toggle the checkbox.
+				t->check->SetFocus();
+				t->check->SetValue(!t->check->GetValue());
+				//Emit fake event.
+				wxCommandEvent e(wxEVT_COMMAND_CHECKBOX_CLICKED, t->check->GetId());
+				on_control(e);
+				current_button = bn;
+				return;
+			} else if(bn == t->xindex) {
+				//Focus the associated X box.
+				t->panel->xnum->SetFocus();
+				current_button = bn;
+				return;
+			} else if(bn == t->yindex) {
+				//Focus the associated Y box.
+				t->panel->ynum->SetFocus();
+				current_button = bn;
+				return;
+			}
+			return;
+		}
+	}
+	if(key == '\b') {
+		auto t = find_triple(current_controller, current_button);
+		if(t && t->panel) {
+			//Zero this.
+			auto ctrl = t->panel->ynum;
+			if(ctrl)
+				ctrl->SetValue(min(max(0, ctrl->GetMin()), ctrl->GetMax()));
+			ctrl = t->panel->xnum;
+			ctrl->SetValue(min(max(0, ctrl->GetMin()), ctrl->GetMax()));
+			wxSpinEvent e(wxEVT_COMMAND_SPINCTRL_UPDATED, ctrl->GetId());
+			e.SetPosition(0);
+			t->panel->on_numbers_change(e);
+		}
+	}
+	if(key == ' ') {
+		//Toggle button.
+		auto t = find_triple(current_controller, current_button);
+		if(t && t->check) {
+			t->check->SetValue(!t->check->GetValue());
+			wxCommandEvent e(wxEVT_COMMAND_CHECKBOX_CLICKED, t->check->GetId());
+			on_control(e);
+		}
+		return;
+	}
+	if(key == WXK_RETURN) {
+		try {
+			auto t = find_triple(current_controller, current_button);
+			if(!t || !t->panel) return;
+			bool vertical = (current_button == t->yindex);
+			auto ctrl = vertical ? t->panel->ynum : t->panel->xnum;
+			std::string v = pick_text(this, "Enter coordinate", "Enter new coordinate value",
+				(stringfmt() << ctrl->GetValue()).str(), false);
+			int val = parse_value<int>(v);
+			ctrl->SetValue(min(max(val, ctrl->GetMin()), ctrl->GetMax()));
+			wxSpinEvent e(wxEVT_COMMAND_SPINCTRL_UPDATED, ctrl->GetId());
+			e.SetPosition(ctrl->GetValue());
+			t->panel->on_numbers_change(e);
+		} catch(...) {
+			return;
+		}
+	}
+	if(key == WXK_F1) runemufn_async([this]() { lsnes_cmd.invoke("cycle-jukebox-backward"); });
+	if(key == WXK_F2) runemufn_async([this]() { lsnes_cmd.invoke("cycle-jukebox-forward"); });
+	if(key == WXK_F3) runemufn_async([this]() { lsnes_cmd.invoke("save-jukebox"); });
+	if(key == WXK_F4) runemufn_async([this]() { lsnes_cmd.invoke("load-jukebox"); });
+	if(key == WXK_F5) runemufn_async([this]() { lsnes_cmd.invoke("-advance-frame"); });
 }
 
+wxeditor_tasinput::control_triple* wxeditor_tasinput::find_triple(unsigned controller, unsigned control)
+{
+	for(auto& i : inputs) {
+		if(i.second.logical != controller)
+			continue;
+		if(i.second.xindex == control)
+			return &i.second;
+		if(i.second.yindex == control)
+			return &i.second;
+	}
+	return NULL;
+}
 
 void wxeditor_tasinput_display(wxWindow* parent)
 {

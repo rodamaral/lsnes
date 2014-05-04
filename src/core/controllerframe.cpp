@@ -187,9 +187,9 @@ void controller_state::set_ports(const port_type_set& ptype) throw(std::runtime_
 		_autofire.clear();
 		reread_tasinput_mode(ptype);
 		_autohold = _autohold.blank_frame();
+		reread_active_buttons();
+		notify_autohold_reconfigure();
 	}
-	reread_active_buttons();
-	notify_autohold_reconfigure();
 }
 
 controller_frame controller_state::get_blank() throw()
