@@ -952,8 +952,8 @@ namespace
 		std::string str;
 		uint64_t m = min(pressed_row, current_row);
 		uint64_t M = max(pressed_row, current_row) + 1;
-		m = min(m, rows.size());
-		M = min(M, rows.size());
+		m = min(m, (uint64_t)rows.size());
+		M = min(M, (uint64_t)rows.size());
 		size_t lines = 0;
 		{
 			for(uint64_t i = m; i < M && i < rows.size(); i++) {

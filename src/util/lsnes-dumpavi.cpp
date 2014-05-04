@@ -47,7 +47,7 @@ namespace
 		messages << "Downloading " << download_in_progress->url << ":" << std::endl;
 		while(!download_in_progress->finished) {
 			messages << download_in_progress->statusmsg() << std::endl;
-			sleep(1);
+			usleep(1000000);
 		}
 		if(download_in_progress->errormsg != "") {
 			std::string err = download_in_progress->errormsg;
