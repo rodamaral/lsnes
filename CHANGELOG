@@ -1776,3 +1776,46 @@ rr2-β20 [Monday April 1st 2014]
 * Add option to emulate fucked up GBC timings
 * Coalesce UI events.
 * Don't update statusbar fast outside paint event
+
+rr2-β21 [Sunday May 4th 2014]
+=============================
+* Delete the now-unused emulator_status stuff
+* Numeric range class, obsolete clip_range.
+* Lua: gui.solidrectangle
+* Lua: (D)BITMAP:draw_clip, (D)BITMAP:draw_outside, TILEMAP:draw_outside
+* c-interface: Add some translation templates
+* src/lua/gui-bitmap.cpp Initialize spal to avoid compiler warning
+* Don't use -Werror
+* Use open/read/write/close for binary saves instead of iostreams
+* Select slot hotkeys
+* Fix macros getting frame duplicated after loadstate
+* Advance macros after frame is complete, not before frame starts
+* SA1 tracing support + memorywatch/search SA1 IRAM
+* Recognize SA1IRAM for purposes of breakpoints
+* ZMBV full search mode
+* SNES: SA1 registers for memory.getregister/setregister
+* SNES: Pseudo-registers hcounter and vcounter
+* Memory search: Resolve memory area if possible
+* Merge multiple versions of get_read_address() into one
+* Lua: Deprecate global addresses
+* moviefile::get_movie_length: Use milliseconds, not nanoseconds
+* Use curl-config instead of -lcurl
+* Wipe all sorts of potentially sensitive stuff after use
+* Memory peek/poke: Accept and show relative addresses
+* Autodetect followed by undefined with multiple choices: Ask user
+* Lua: Fix some includes
+* Fix SA1 open bus
+* Trace logger (Window): Show start of frame
+* Trace logger: Allow deleting lines / clearing
+* Fix potential crash on exit
+* lsnes-dumpavi: Support downloading movies
+* Trace logger: Don't double free trace hooks
+* Support configurable URI shorthands
+* Movie editor: Draw clear / fix current column
+* Movie editor: Insert multiple lines at once
+* Fix loading states with movie-ahead without ROM
+* If loading ROM with multiple candidates, prompt before adding to recentrom
+* Tweak the RNG a bit
+* Some Win32 build fixes
+* TAS input keyboard support
+* Use urandom / rtlgenrandom
