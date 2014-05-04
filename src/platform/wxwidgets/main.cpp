@@ -19,6 +19,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
+#include "library/crandom.hpp"
 #include "library/string.hpp"
 #include "library/threads.hpp"
 #include "library/utf8.hpp"
@@ -449,6 +450,13 @@ bool lsnes_app::OnInit()
 	wxApp::OnInit();
 	if(exit_immediately)
 		return false;
+
+	try {
+		crandom::init();
+	} catch(std::exception& e) {
+		show_message_ok(NULL, "RNG error", "Error initializing system RNG", wxICON_ERROR);
+		return false;
+	}
 
 	reached_main();
 	set_random_seed();

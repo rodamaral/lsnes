@@ -9,6 +9,7 @@
 #include "core/moviedata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/crandom.hpp"
 #include "library/directory.hpp"
 #include "library/hex.hpp"
 #include "library/loadlib.hpp"
@@ -62,24 +63,13 @@ namespace
 	{
 #ifdef ARCH_IS_I386
 		uint32_t r;
+		//This reads undefined value if RDRAND is not supported. Don't care.
 		asm volatile (".byte 0xb8, 0x01, 0x00, 0x00, 0x00, 0x0f, 0xa2, 0xf7, 0xc1, 0x00, 0x00, 0x00, 0x40, "
 			"0x74, 0x03, 0x0f, 0xc7, 0xf0" : "=a"(r) : : "ebx", "ecx", "edx");
 		return r;
 #else
 		return 0;
 #endif
-	}
-
-	//Returns 32 bytes.
-	void arch_random_256(uint8_t* buf)
-	{
-		uint32_t tmp[1026];
-		uint64_t tsc = arch_get_tsc();
-		tmp[1024] = tsc;
-		tmp[1025] = tsc >> 32;
-		for(unsigned i = 0; i < 1024; i++)
-			tmp[i] = arch_get_random();
-		sha256::hash(buf, reinterpret_cast<uint8_t*>(tmp), sizeof(tmp));
 	}
 
 	void do_mix_tsc()
@@ -116,31 +106,6 @@ namespace
 		prng.write(buf, sizeof(buf));
 		prng.read(out, sizeof(out));
 		return hex::b_to(out, sizeof(out));
-	}
-
-	std::string collect_identifying_information()
-	{
-		//TODO: Collect as much identifying information as possible.
-		std::ostringstream str;
-		time_t told = time(NULL);
-		time_t tnew;
-		uint64_t loops = 0;
-		uint64_t base = 0;
-		int cnt = 0;
-		while(cnt < 3) {
-			tnew = time(NULL);
-			if(tnew > told) {
-				told = tnew;
-				cnt++;
-				str << (loops - base) << " ";
-				base = loops;
-			}
-			loops++;
-		}
-		str << arch_get_tsc() << " ";
-		for(unsigned i = 0; i < 256; i++)
-			str << arch_get_random() << " ";
-		return str.str();
 	}
 
 	char endian_char(int e)
@@ -210,33 +175,11 @@ void set_random_seed(const std::string& seed) throw(std::bad_alloc)
 
 void set_random_seed() throw(std::bad_alloc)
 {
-	//Try /dev/urandom first.
-	{
-		std::ifstream r("/dev/urandom", std::ios::binary);
-		if(r.is_open()) {
-			char buf[128];
-			r.read(buf, sizeof(buf));
-			std::string s(buf, sizeof(buf));
-			set_random_seed(s);
-			return;
-		}
-	}
-	//If libgcrypt is available, use that.
-#ifdef USE_LIBGCRYPT_SHA256
-	{
-		char buf[128];
-		gcry_randomize((unsigned char*)buf, sizeof(buf), GCRY_STRONG_RANDOM);
-		std::string s(buf, sizeof(buf));
-		set_random_seed(s);
-		return;
-	}
-#endif
-	//Fall back to time.
-	std::ostringstream str;
-	str << collect_identifying_information() << " " << time(NULL);
-	set_random_seed(str.str());
+	char buf[128];
+	crandom::generate(buf, 128);
+	std::string s(buf, sizeof(buf));
+	set_random_seed(s);
 }
-
 
 struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) throw(std::bad_alloc,
 	std::runtime_error)
@@ -357,6 +300,7 @@ bool in_global_ctors()
 
 void reached_main()
 {
+	crandom::init();
 	new_core_flag = false;	//We'll process the static cores anyway.
 	reached_main_flag = true;
 	lsnes_cmd.set_oom_panic(OOM_panic);
@@ -427,17 +371,11 @@ void highrandom_256(uint8_t* buf)
 	uint8_t tmp[104];
 	std::string s = get_random_hexstring(64);
 	std::copy(s.begin(), s.end(), reinterpret_cast<char*>(tmp));
-	arch_random_256(tmp + 64);
+	crandom::generate(tmp + 64, 32);
 	serialization::u64b(tmp + 96, arch_get_tsc());
 	skein::hash hsh(skein::hash::PIPE_1024, 256);
 	hsh.write(tmp, 104);
 	hsh.read(buf);
-#ifdef USE_LIBGCRYPT_SHA256
-	memset(tmp, 0, 32);
-	gcry_randomize((unsigned char*)buf, 32, GCRY_STRONG_RANDOM);
-	for(unsigned i = 0; i < 32; i++)
-		buf[i] ^= tmp[i];
-#endif
 }
 
 std::string get_temp_file()

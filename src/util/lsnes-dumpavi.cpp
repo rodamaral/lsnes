@@ -20,6 +20,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/directory.hpp"
+#include "library/crandom.hpp"
 #include "library/string.hpp"
 
 #include <sys/time.h>
@@ -296,6 +297,13 @@ namespace
 
 int main(int argc, char** argv)
 {
+	try {
+		crandom::init();
+	} catch(std::exception& e) {
+		std::cerr << "Error initializing system RNG" << std::endl;
+		return 1;
+	}
+
 	reached_main();
 	std::vector<std::string> cmdline;
 	for(int i = 1; i < argc; i++)
