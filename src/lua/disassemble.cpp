@@ -68,6 +68,25 @@ namespace
 		return 1;
 	}
 
+	int getregisters(lua::state& L, lua::parameters& P)
+	{
+		const interface_device_reg* regs = our_rom.rtype->get_registers();
+		if(!regs) {
+			L.pushnil();
+			return 1;
+		}
+		L.newtable();
+		for(size_t i = 0; regs[i].name; i++) {
+			L.pushlstring(regs[i].name);
+			if(regs[i].boolean)
+				L.pushboolean(regs[i].read() != 0);
+			else
+				L.pushnumber(regs[i].read());
+			L.settable(-3);
+		}
+		return 1;
+	}
+
 	int setregister(lua::state& L, lua::parameters& P)
 	{
 		std::string r;
@@ -95,6 +114,7 @@ namespace
 	lua::functions disasm_fns(lua_func_misc, "memory", {
 		{"disassemble", disassemble},
 		{"getregister", getregister},
+		{"getregisters", getregisters},
 		{"setregister", setregister},
 	});
 }

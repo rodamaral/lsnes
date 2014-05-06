@@ -7142,6 +7142,42 @@ Set the global execute hook mask to <mask>.
 \end_layout
 
 \begin_layout Subsection
+memory.getregister: Get register value
+\end_layout
+
+\begin_layout Itemize
+Syntax: number/boolean memory.getregister(string register)
+\end_layout
+
+\begin_layout Standard
+Get the value of named register.
+\end_layout
+
+\begin_layout Subsection
+memory.getregisters: Get register values
+\end_layout
+
+\begin_layout Itemize
+Syntax: table memory.getregisters()
+\end_layout
+
+\begin_layout Standard
+Get the value of all known registers as table.
+\end_layout
+
+\begin_layout Subsection
+memory.setregister: Set register value
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.setregister(string register, number/boolean value)
+\end_layout
+
+\begin_layout Standard
+Set the value of named register.
+\end_layout
+
+\begin_layout Subsection
 memory.mmap: Class MMAP_STRUCT
 \end_layout
 
