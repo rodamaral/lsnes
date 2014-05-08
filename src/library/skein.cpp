@@ -293,6 +293,7 @@ bool prng::is_seeded() const throw()
 
 void zeroize(void* ptr, size_t size)
 {
+	if(!size) return;
 	//Whee... Do it like OpenSSL/GnuTLS.
 	volatile char* vptr = (volatile char*)ptr;
 	volatile size_t vidx = 0;
