@@ -10,7 +10,6 @@
 #include <cstring>
 #include <fstream>
 
-struct moviefile cur_mf;
 movie_logic movb;
 
 movie_logic::movie_logic() throw()
@@ -82,10 +81,7 @@ short movie_logic::input_poll(unsigned port, unsigned dev, unsigned id) throw(st
 		mov->set_controls(update_controls(true));
 		mov->set_all_DRDY();
 	}
-	int16_t in = mov->next_input(port, dev, id);
-	//std::cerr << "BSNES asking for (" << port << "," << dev << "," << id << ") (frame "
-	//	<< mov->get_current_frame() << ") giving " << in << std::endl;
-	return in;
+	return mov->next_input(port, dev, id);
 }
 
 void movie_logic::release_memory()
