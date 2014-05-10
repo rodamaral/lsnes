@@ -1,6 +1,7 @@
 #ifndef _instance__hpp__included__
 #define _instance__hpp__included__
 
+#include "core/emustatus.hpp"
 #include "core/inthread.hpp"
 #include "core/movie.hpp"
 #include "core/mbranch.hpp"
@@ -22,6 +23,10 @@ struct emulator_instance
 	subtitle_commentary subtitles;
 	movie_branches mbranch;
 	multitrack_edit mteditor;
+	_lsnes_status status_A;
+	_lsnes_status status_B;
+	_lsnes_status status_C;
+	triplebuffer::triplebuffer<_lsnes_status> status;
 };
 
 extern emulator_instance lsnes_instance;

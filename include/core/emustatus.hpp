@@ -40,6 +40,4 @@ struct _lsnes_status
 	std::map<std::string, std::u32string> lvars;	//Lua variables.
 };
 
-extern triplebuffer::triplebuffer<_lsnes_status> lsnes_status;
-
 #endif

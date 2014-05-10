@@ -311,7 +311,7 @@ void update_movie_state()
 		else
 			CORE().commentary.frame_number(0, 60.0);	//Default.
 	}
-	auto& _status = lsnes_status.get_write();
+	auto& _status = CORE().status.get_write();
 	try {
 		if(CORE().mlogic && !system_corrupt) {
 			_status.movie_valid = true;
@@ -428,7 +428,7 @@ void update_movie_state()
 		_status.valid = true;
 	} catch(...) {
 	}
-	lsnes_status.put_write();
+	CORE().status.put_write();
 	notify_status_update();
 }
 

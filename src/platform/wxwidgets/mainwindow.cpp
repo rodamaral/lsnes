@@ -1293,9 +1293,9 @@ void wxwin_mainwindow::update_statusbar()
 		statusbar->SetStatusText(towxstring(s.str()));
 		return;
 	}
-	auto& vars = lsnes_status.get_read();
+	auto& vars = lsnes_instance.status.get_read();
 	if(!vars.valid) {
-		lsnes_status.put_read();
+		lsnes_instance.status.put_read();
 		return;
 	}
 	try {
@@ -1348,7 +1348,7 @@ void wxwin_mainwindow::update_statusbar()
 		statusbar->SetStatusText(towxstring(s.str()));
 	} catch(std::exception& e) {
 	}
-	lsnes_status.put_read();
+	lsnes_instance.status.put_read();
 }
 
 #define NEW_KEYBINDING "A new binding..."

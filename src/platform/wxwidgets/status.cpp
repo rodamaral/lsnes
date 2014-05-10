@@ -1,4 +1,4 @@
-#include "core/emustatus.hpp"
+#include "core/instance.hpp"
 #include "core/window.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_status.hpp"
@@ -79,7 +79,7 @@ void wxwin_status::panel::prepare_paint()
 {
 	clear();
 
-	auto& newstatus = lsnes_status.get_read();
+	auto& newstatus = lsnes_instance.status.get_read();
 	try {
 		bool entry_so_far = false;
 		size_t mem_width = 0;
@@ -129,7 +129,7 @@ void wxwin_status::panel::prepare_paint()
 		}
 	} catch(...) {
 	}
-	lsnes_status.put_read();
+	lsnes_instance.status.put_read();
 }
 
 void wxwin_status::notify_update() throw()
