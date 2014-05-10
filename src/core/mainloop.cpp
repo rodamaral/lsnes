@@ -243,7 +243,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 	controller_frame tmp = controls.get(CORE().mlogic.get_movie().get_current_frame());
 	our_rom.rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	lua_callback_do_input(tmp, subframe);
-	multitrack_editor.process_frame(tmp);
+	CORE().mteditor.process_frame(tmp);
 	controls.commit(tmp);
 	return tmp;
 }
@@ -393,7 +393,7 @@ void update_movie_state()
 		_status.macros = utf8::to32(mss.str());
 
 		controller_frame c;
-		if(!multitrack_editor.any_records())
+		if(!CORE().mteditor.any_records())
 			c = CORE().mlogic.get_movie().get_controls();
 		else
 			c = controls.get_committed();
@@ -405,8 +405,8 @@ void update_movie_state()
 			char32_t buffer[MAX_DISPLAY_LENGTH];
 			c.display(pindex.first, pindex.second, buffer);
 			std::u32string _buffer = buffer;
-			if(readonly && multitrack_editor.is_enabled()) {
-				multitrack_edit::state st = multitrack_editor.get(pindex.first, pindex.second);
+			if(readonly && CORE().mteditor.is_enabled()) {
+				multitrack_edit::state st = CORE().mteditor.get(pindex.first, pindex.second);
 				if(st == multitrack_edit::MT_PRESERVE)
 					_buffer += U" (keep)";
 				else if(st == multitrack_edit::MT_OVERWRITE)

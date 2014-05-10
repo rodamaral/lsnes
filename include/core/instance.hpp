@@ -5,6 +5,7 @@
 #include "core/movie.hpp"
 #include "core/mbranch.hpp"
 #include "core/memorywatch.hpp"
+#include "core/multitrack.hpp"
 #include "library/lua-base.hpp"
 #include "library/memoryspace.hpp"
 #include "library/settingvar.hpp"
@@ -20,6 +21,7 @@ struct emulator_instance
 	voice_commentary commentary;
 	subtitle_commentary subtitles;
 	movie_branches mbranch;
+	multitrack_edit mteditor;
 };
 
 extern emulator_instance lsnes_instance;

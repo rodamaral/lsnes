@@ -4,6 +4,7 @@
 #include <map>
 #include "library/threads.hpp"
 #include "library/controller-data.hpp"
+#include "core/movie.hpp"
 
 class multitrack_edit
 {
@@ -15,6 +16,7 @@ public:
 		MT_OR,
 		MT_XOR
 	};
+	multitrack_edit(movie_logic* _mlogic);
 	void enable(bool state);
 	void set(unsigned port, unsigned controller, state s);
 	void set_and_notify(unsigned port, unsigned controller, state s);
@@ -28,8 +30,7 @@ private:
 	threads::lock mlock;
 	bool enabled;
 	std::map<std::pair<unsigned, unsigned>, state> controllerstate;
+	movie_logic& mlogic;
 };
-
-extern multitrack_edit multitrack_editor;
 
 #endif

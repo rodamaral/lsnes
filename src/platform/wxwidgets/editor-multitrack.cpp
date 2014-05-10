@@ -86,7 +86,7 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
 	ahreconfigure.set(notify_autohold_reconfigure, [this]() {
 		if(typeset && *typeset == controls.get_blank().porttypes())
 			return;  //Don't reconfigure if no change.
-		multitrack_editor.config_altered();
+		lsnes_instance.mteditor.config_altered();
 		runuifun([this]() {
 			try {
 				this->update_controls();
@@ -95,7 +95,7 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
 				bool wasc = closing;
 				closing = true;
 				multitrack_open = NULL;
-				runemufn([]() { multitrack_editor.enable(false); });
+				runemufn([]() { lsnes_instance.mteditor.enable(false); });
 				if(!wasc)
 					Destroy();
 			}
@@ -138,13 +138,13 @@ void wxeditor_multitrack::on_control(wxCommandEvent& e)
 	std::string mode = tostdstring(ci.mode->GetStringSelection());
 	runemufn([ci, mode]() {
 		if(mode == MTMODE_PRESERVE)
-			multitrack_editor.set(ci.port, ci.controller, multitrack_edit::MT_PRESERVE);
+			lsnes_instance.mteditor.set(ci.port, ci.controller, multitrack_edit::MT_PRESERVE);
 		else if(mode == MTMODE_OVERWRITE)
-			multitrack_editor.set(ci.port, ci.controller, multitrack_edit::MT_OVERWRITE);
+			lsnes_instance.mteditor.set(ci.port, ci.controller, multitrack_edit::MT_OVERWRITE);
 		else if(mode == MTMODE_OR)
-			multitrack_editor.set(ci.port, ci.controller, multitrack_edit::MT_OR);
+			lsnes_instance.mteditor.set(ci.port, ci.controller, multitrack_edit::MT_OR);
 		else if(mode == MTMODE_XOR)
-			multitrack_editor.set(ci.port, ci.controller, multitrack_edit::MT_XOR);
+			lsnes_instance.mteditor.set(ci.port, ci.controller, multitrack_edit::MT_XOR);
 	});
 }
 
@@ -231,7 +231,7 @@ void wxeditor_multitrack::on_wclose(wxCloseEvent& e)
 	bool wasc = closing;
 	closing = true;
 	multitrack_open = NULL;
-	runemufn([]() { multitrack_editor.enable(false); });
+	runemufn([]() { lsnes_instance.mteditor.enable(false); });
 	if(!wasc)
 		Destroy();
 }
@@ -249,5 +249,5 @@ void wxeditor_multitrack_display(wxWindow* parent)
 	}
 	v->Show();
 	multitrack_open = v;
-	runemufn([]() { multitrack_editor.enable(true); });
+	runemufn([]() { lsnes_instance.mteditor.enable(true); });
 }
