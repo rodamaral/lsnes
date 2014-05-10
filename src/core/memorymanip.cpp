@@ -1,6 +1,6 @@
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
@@ -27,19 +27,19 @@ namespace
 		try {
 			if(offset >= 0 && offset < 8) {
 				//Frame counter.
-				uint64_t x = movb.get_movie().get_current_frame();
+				uint64_t x = lsnes_instance.mlogic.get_movie().get_current_frame();
 				return x >> (8 * (offset & 7));
 			} else if(offset >= 8 && offset < 16) {
 				//Movie length.
-				uint64_t x = movb.get_movie().get_frame_count();
+				uint64_t x = lsnes_instance.mlogic.get_movie().get_frame_count();
 				return x >> (8 * (offset & 7));
 			} else if(offset >= 16 && offset < 24) {
 				//Lag counter.
-				uint64_t x = movb.get_movie().get_lag_frames();
+				uint64_t x = lsnes_instance.mlogic.get_movie().get_lag_frames();
 				return x >> (8 * (offset & 7));
 			} else if(offset >= 24 && offset < 32) {
 				//Rerecord counter.
-				uint64_t x = movb.get_rrdata().count();
+				uint64_t x = lsnes_instance.mlogic.get_rrdata().count();
 				return x >> (8 * (offset & 7));
 			} else
 				return 0;

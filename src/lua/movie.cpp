@@ -1,6 +1,6 @@
 #include "lua/internal.hpp"
 #include "lua/unsaferewind.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/mainloop.hpp"
 
@@ -8,41 +8,41 @@ namespace
 {
 	int currentframe(lua::state& L, lua::parameters& P)
 	{
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		L.pushnumber(m.get_current_frame());
 		return 1;
 	}
 
 	int lagcounter(lua::state& L, lua::parameters& P)
 	{
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		L.pushnumber(m.get_lag_frames());
 		return 1;
 	}
 
 	int framecount(lua::state& L, lua::parameters& P)
 	{
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		L.pushnumber(m.get_frame_count());
 		return 1;
 	}
 
 	int rerecords(lua::state& L, lua::parameters& P)
 	{
-		L.pushnumber(movb.get_rrdata().count());
+		L.pushnumber(lsnes_instance.mlogic.get_rrdata().count());
 		return 1;
 	}
 
 	int readonly(lua::state& L, lua::parameters& P)
 	{
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		L.pushboolean(m.readonly_mode() ? 1 : 0);
 		return 1;
 	}
 
 	int readwrite(lua::state& L, lua::parameters& P)
 	{
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		m.readonly_mode(false);
 		return 0;
 	}
@@ -53,7 +53,7 @@ namespace
 
 		P(frame);
 
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		L.pushnumber(m.frame_subframes(frame));
 		return 1;
 	}
@@ -64,7 +64,7 @@ namespace
 
 		P(frame, subframe);
 
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		controller_frame r = m.read_subframe(frame, subframe);
 		L.newtable();
 
@@ -78,8 +78,8 @@ namespace
 
 	int read_rtc(lua::state& L, lua::parameters& P)
 	{
-		L.pushnumber(movb.get_mfile().rtc_second);
-		L.pushnumber(movb.get_mfile().rtc_subsecond);
+		L.pushnumber(lsnes_instance.mlogic.get_mfile().rtc_second);
+		L.pushnumber(lsnes_instance.mlogic.get_mfile().rtc_subsecond);
 		return 2;
 	}
 

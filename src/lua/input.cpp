@@ -1,6 +1,6 @@
 #include "core/keymapper.hpp"
 #include "lua/internal.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/controller.hpp"
 #include "interface/romtype.hpp"
@@ -28,7 +28,7 @@ namespace
 
 	int input_controllertype(lua::state& L, unsigned port, unsigned controller)
 	{
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
 		if(port >= f.get_port_count()) {
 			L.pushnil();
@@ -90,7 +90,7 @@ namespace
 
 	const port_controller_set* lookup_ps(unsigned port)
 	{
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
 		const port_type& p = f.get_port_type(port);
 		return p.controller_info;
@@ -189,7 +189,7 @@ namespace
 
 		P(controller);
 
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		auto _controller = s.legacy_pcid_to_pair(controller);
 		return input_controllertype(L, _controller.first, _controller.second);
@@ -373,7 +373,7 @@ namespace
 
 		P(port);
 
-		auto& m = movb.get_movie();
+		auto& m = lsnes_instance.mlogic.get_movie();
 		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		try {
 			const port_type& p = s.port_type(port);

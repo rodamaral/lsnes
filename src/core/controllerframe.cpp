@@ -2,6 +2,7 @@
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "interface/romtype.hpp"
 
@@ -76,7 +77,7 @@ void controller_state::autofire2(unsigned port, unsigned controller, unsigned pb
 {
 	unsigned idx = _input.porttypes().triple_to_index(port, controller, pbid);
 	if(duty) {
-		_autofire[idx].first_frame = movb.get_movie().get_current_frame();
+		_autofire[idx].first_frame = lsnes_instance.mlogic.get_movie().get_current_frame();
 		_autofire[idx].duty = duty;
 		_autofire[idx].cyclelen = cyclelen;
 	} else

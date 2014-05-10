@@ -1,4 +1,5 @@
 #include "core/subtitles.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -302,7 +303,7 @@ void wxeditor_subtitles::on_delete(wxCommandEvent& e)
 void wxeditor_subtitles_display(wxWindow* parent)
 {
 	wxFrame* editor;
-	if(!movb) {
+	if(!lsnes_instance.mlogic) {
 		show_message_ok(parent, "No movie", "Can't edit authors of nonexistent movie", wxICON_EXCLAMATION);
 		return;
 	}

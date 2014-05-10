@@ -91,6 +91,4 @@ private:
 	rrdata_set* rrd;
 };
 
-extern movie_logic movb;
-
 #endif

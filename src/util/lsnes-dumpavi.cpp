@@ -13,7 +13,7 @@
 #include "core/filedownload.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
@@ -416,7 +416,7 @@ int main(int argc, char** argv)
 	}
 	information_dispatch::do_dump_end();
 	quit_lua();
-	movb.release_memory();
+	lsnes_instance.mlogic.release_memory();
 	kill_alias_binds();
 	cleanup_all_keys();
 	return 0;

@@ -1,6 +1,7 @@
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/menu_upload.hpp"
 #include "core/fileupload.hpp"
+#include "core/instance.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "core/project.hpp"
@@ -633,7 +634,7 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, upload_menu::uplo
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
 	file->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
-	if(!movb || !our_rom.rtype || our_rom.rtype->isnull()) {
+	if(!lsnes_instance.mlogic || !our_rom.rtype || our_rom.rtype->isnull()) {
 		current->Enable(false);
 		file->SetValue(true);
 	}
@@ -746,15 +747,15 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 	} else {
 		if(fn.length() < 6 || fn.substr(fn.length() - 5) != ".lsmv")
 			filename->SetValue(towxstring(fn + ".lsmv"));
-		movb.get_mfile().is_savestate = false;
+		lsnes_instance.mlogic.get_mfile().is_savestate = false;
 		auto prj = project_get();
 		if(prj) {
-			movb.get_mfile().gamename = prj->gamename;
-			movb.get_mfile().authors = prj->authors;
+			lsnes_instance.mlogic.get_mfile().gamename = prj->gamename;
+			lsnes_instance.mlogic.get_mfile().authors = prj->authors;
 		}
-		movb.get_mfile().active_macros.clear();
+		lsnes_instance.mlogic.get_mfile().active_macros.clear();
 		std::ostringstream stream;
-		movb.get_mfile().save(stream, movb.get_rrdata());
+		lsnes_instance.mlogic.get_mfile().save(stream, lsnes_instance.mlogic.get_rrdata());
 		std::string _stream = stream.str();
 		content = std::vector<char>(_stream.begin(), _stream.end());
 	}
@@ -781,9 +782,10 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 			if(prj)
 				curgame = prj->gamename;
 			else
-				curgame = movb.get_mfile().gamename;
+				curgame = lsnes_instance.mlogic.get_mfile().gamename;
 
-			std::string plat = lookup_sysregion_mapping(movb.get_mfile().gametype->get_name()) + " ";
+			std::string plat = lookup_sysregion_mapping(
+				lsnes_instance.mlogic.get_mfile().gametype->get_name()) + " ";
 			size_t platlen = plat.length();
 			std::string c = tostdstring(game->GetLabel());
 			std::string fullname = plat + curgame;
@@ -825,7 +827,7 @@ void wxeditor_uploaddialog::on_game_sel(wxCommandEvent& e)
 	auto pos = game_sel_button->GetScreenPosition();
 	std::string system;
 	if(current->GetValue())
-		system = lookup_sysregion_mapping(movb.get_mfile().gametype->get_name());
+		system = lookup_sysregion_mapping(lsnes_instance.mlogic.get_mfile().gametype->get_name());
 	wxwin_gameselect* gs = new wxwin_gameselect(this, games_list, tostdstring(game->GetLabel()), system,
 		pos.x, pos.y);
 	if(gs->ShowModal() != wxID_OK) {

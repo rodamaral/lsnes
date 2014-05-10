@@ -12,7 +12,7 @@
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviefile-common.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
@@ -564,7 +564,7 @@ int lsnes_app::OnExit()
 	save_configuration();
 	information_dispatch::do_dump_end();
 	quit_lua();
-	movb.release_memory();
+	lsnes_instance.mlogic.release_memory();
 	joystick_driver_signal();
 	joystick_thread_handle->join();
 	platform::quit();

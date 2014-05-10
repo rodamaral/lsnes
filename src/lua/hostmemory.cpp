@@ -1,4 +1,5 @@
 #include "lua/internal.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "library/serialization.hpp"
 #include "library/int24.hpp"
@@ -12,7 +13,7 @@ namespace
 
 		P(address);
 
-		auto& h = movb.get_mfile().host_memory;
+		auto& h = lsnes_instance.mlogic.get_mfile().host_memory;
 		if(address + sizeof(S) > h.size()) {
 			L.pushboolean(0);
 			return 1;
@@ -29,7 +30,7 @@ namespace
 
 		P(address, value);
 
-		auto& h = movb.get_mfile().host_memory;
+		auto& h = lsnes_instance.mlogic.get_mfile().host_memory;
 		if(address + sizeof(S) > h.size())
 			h.resize(address + sizeof(S));
 		serialization::write_endian<S>(&h[address], value, 1);

@@ -1,5 +1,5 @@
 #include "core/framebuffer.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/dispatch.hpp"
 #include "core/window.hpp"
@@ -837,9 +837,9 @@ namespace
 	//Call only in emulator thread.
 	uint64_t real_first_editable(frame_controls& fc, unsigned idx)
 	{
-		uint64_t cffs = movb.get_movie().get_current_frame_first_subframe();
-		controller_frame_vector& fv = *movb.get_mfile().input;
-		pollcounter_vector& pv = movb.get_movie().get_pollcounters();
+		uint64_t cffs = lsnes_instance.mlogic.get_movie().get_current_frame_first_subframe();
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
+		pollcounter_vector& pv = lsnes_instance.mlogic.get_movie().get_pollcounters();
 		uint64_t vsize = fv.size();
 		uint32_t pc = fc.read_pollcount(pv, idx);
 		for(uint32_t i = 1; i < pc; i++)
@@ -861,7 +861,7 @@ namespace
 	uint64_t real_first_nextframe(frame_controls& fc)
 	{
 		uint64_t base = real_first_editable(fc, 0);
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		for(uint32_t i = 0;; i++)
 			if(base + i >= vsize || fv[base + i].sync())
@@ -903,8 +903,8 @@ wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
 
 void wxeditor_movie::_moviepanel::update_cache()
 {
-	movie& m = movb.get_movie();
-	controller_frame_vector& fv = *movb.get_mfile().input;
+	movie& m = lsnes_instance.mlogic.get_movie();
+	controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 	if(&m == prev_obj && prev_seqno == m.get_seqno()) {
 		//Just process new subframes if any.
 		for(uint64_t i = max_subframe; i < fv.size(); i++) {
@@ -968,12 +968,12 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 	e.ch = 0x2502;
 	_fb[y * fbstride + divcnt] = e;
 	const std::list<control_info>& ctrlinfo = fcontrols.get_controlinfo();
-	uint64_t curframe = movb.get_movie().get_current_frame();
-	pollcounter_vector& pv = movb.get_movie().get_pollcounters();
-	uint64_t cffs = movb.get_movie().get_current_frame_first_subframe();
+	uint64_t curframe = lsnes_instance.mlogic.get_movie().get_current_frame();
+	pollcounter_vector& pv = lsnes_instance.mlogic.get_movie().get_pollcounters();
+	uint64_t cffs = lsnes_instance.mlogic.get_movie().get_current_frame_first_subframe();
 	cached_cffs = cffs;
 	int past = -1;
-	if(!movb.get_movie().readonly_mode())
+	if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 		past = 1;
 	else if(subframe_to_frame[sfn] < curframe)
 		past = 1;
@@ -1023,15 +1023,15 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 void wxeditor_movie::_moviepanel::render(text_framebuffer& fb, unsigned long long pos)
 {
 	spos = pos;
-	controller_frame_vector& fv = *movb.get_mfile().input;
+	controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 	controller_frame cf = fv.blank_frame(false);
 	int _width = width(cf);
 	fb.set_size(_width, lines_to_display + 3);
 	size_t fbstride = fb.get_stride();
 	auto fbsize = fb.get_characters();
 	text_framebuffer::element* _fb = fb.get_buffer();
-	fb.write((stringfmt() << "Current frame: " << movb.get_movie().get_current_frame() << " of "
-		<< movb.get_movie().get_frame_count()).str(), _width, 0, 0,
+	fb.write((stringfmt() << "Current frame: " << lsnes_instance.mlogic.get_movie().get_current_frame() << " of "
+		<< lsnes_instance.mlogic.get_movie().get_frame_count()).str(), _width, 0, 0,
 		 0x000000, 0xFFFFFF);
 	fb.write(render_line1(cf), _width, 0, 1, 0x000000, 0xFFFFFF);
 	fb.write(render_line2(cf), _width, 0, 2, 0x000000, 0xFFFFFF);
@@ -1064,10 +1064,10 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 		std::swap(_press_line, line);
 	recursing = true;
 	runemufn([idx, _press_line, line, _fcontrols, _force_false]() {
-		if(!movb.get_movie().readonly_mode())
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = _press_line; i <= line; i++) {
 			if(i < fedit || i >= fv.size())
@@ -1093,12 +1093,12 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 	short value;
 	bool valid = true;
 	runemufn([idx, line, &value, _fcontrols, &valid]() {
-		if(!movb.get_movie().readonly_mode()) {
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode()) {
 			valid = false;
 			return;
 		}
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		if(line < fedit || line >= fv.size()) {
 			valid = false;
 			return;
@@ -1122,7 +1122,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 		std::swap(line, line2);
 	runemufn([idx, line, line2, value, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = line; i <= line2; i++) {
 			if(i < fedit || i >= fv.size())
@@ -1145,12 +1145,12 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 	if(line > line2)
 		std::swap(line, line2);
 	runemufn([idx, line, line2, &value, &value2, _fcontrols, &valid]() {
-		if(!movb.get_movie().readonly_mode()) {
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode()) {
 			valid = false;
 			return;
 		}
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		if(line2 < fedit || line2 >= fv.size()) {
 			valid = false;
 			return;
@@ -1164,7 +1164,7 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 		return;
 	runemufn([idx, line, line2, value, value2, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = line + 1; i <= line2 - 1; i++) {
 			if(i < fedit || i >= fv.size())
@@ -1184,9 +1184,9 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 	recursing = true;
 	uint64_t _count = count;
 	runemufn([_count]() {
-		if(!movb.get_movie().readonly_mode())
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = 0; i < _count; i++)
 			fv.append(fv.blank_frame(true));
@@ -1229,9 +1229,9 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row, bool multi
 	frame_controls* _fcontrols = &fcontrols;
 	uint64_t _row = row;
 	runemufn([_row, _fcontrols, multicount]() {
-		if(!movb.get_movie().readonly_mode())
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t fedit = real_first_editable(*_fcontrols, 0);
 		//Find the start of the next frame.
 		uint64_t nframe = _row + 1;
@@ -1265,7 +1265,7 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row1, uint64_t row2, 
 	frame_controls* _fcontrols = &fcontrols;
 	if(_row1 > _row2) std::swap(_row1, _row2);
 	runemufn([_row1, _row2, _wholeframe, _fcontrols]() {
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(_row1 >= vsize)
 			return;		//Nothing to do.
@@ -1334,7 +1334,7 @@ void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
 	uint64_t _row = row;
 	frame_controls* _fcontrols = &fcontrols;
 	runemufn([_row, _fcontrols]() {
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(_row >= vsize)
 			return;
@@ -1356,7 +1356,7 @@ void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
 	uint64_t curframe;
 	uint64_t frame;
 	runemufn([&curframe]() {
-		curframe = movb.get_movie().get_current_frame();
+		curframe = lsnes_instance.mlogic.get_movie().get_current_frame();
 	});
 	try {
 		std::string text = pick_text(m, "Frame", (stringfmt() << "Enter frame to stop at (currently at "
@@ -1441,7 +1441,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		runemufn([ciX, row, c, _fcontrols]() {
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			if(row < fedit) return;
-			controller_frame_vector& fv = *movb.get_mfile().input;
+			controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 			controller_frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 		});
@@ -1477,7 +1477,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
 			if(row < fedit) return;
-			controller_frame_vector& fv = *movb.get_mfile().input;
+			controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 			controller_frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 			_fcontrols->write_index(cf, ciY.index, c.second);
@@ -1489,7 +1489,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
 			if(row < fedit) return;
-			controller_frame_vector& fv = *movb.get_mfile().input;
+			controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 			controller_frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 			_fcontrols->write_index(cf, ciY.index, c.second);
@@ -1821,7 +1821,7 @@ uint64_t wxeditor_movie::_moviepanel::first_editable(unsigned index)
 	if(!subframe_to_frame.count(cffs))
 		return cffs;
 	uint64_t f = subframe_to_frame[cffs];
-	pollcounter_vector& pv = movb.get_movie().get_pollcounters();
+	pollcounter_vector& pv = lsnes_instance.mlogic.get_movie().get_pollcounters();
 	uint32_t pc = fcontrols.read_pollcount(pv, index);
 	for(uint32_t i = 1; i < pc; i++)
 		if(!subframe_to_frame.count(cffs + i) || subframe_to_frame[cffs + i] > f)
@@ -1886,7 +1886,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	}
 
 	//Find first editable frame, controllerframe and buttonframe.
-	bool not_editable = !movb.get_movie().readonly_mode();
+	bool not_editable = !lsnes_instance.mlogic.get_movie().readonly_mode();
 	uint64_t eframe_low = first_editable(0);
 	uint64_t ebutton_low = clicked_button ? first_editable(clicked.index) : std::numeric_limits<uint64_t>::max();
 	uint64_t econtroller_low = ebutton_low;
@@ -2012,7 +2012,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	runemufn([&list, &current, &ro]() {
 		list = mbranch_enumerate();
 		current = mbranch_get();
-		ro = movb.get_movie().readonly_mode();
+		ro = lsnes_instance.mlogic.get_movie().readonly_mode();
 	});
 	int ass_id = wxID_MBRANCH_FIRST;
 	for(auto i : list) {
@@ -2035,7 +2035,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 
 int wxeditor_movie::_moviepanel::get_lines()
 {
-	controller_frame_vector& fv = *movb.get_mfile().input;
+	controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 	return fv.size();
 }
 
@@ -2143,7 +2143,7 @@ void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2, unsigned
 		std::swap(line, line2);
 	std::string copied;
 	runemufn([port, controller, line, line2, _fcontrols, &copied]() {
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(!vsize)
 			return;
@@ -2162,7 +2162,7 @@ void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2)
 		std::swap(line, line2);
 	std::string copied;
 	runemufn([line, line2, &copied]() {
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(!vsize)
 			return;
@@ -2194,7 +2194,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, bool append)
 	runemufn([_fcontrols, &cliptext, _gapstart, append]() {
 		//Insert enough lines for the pasted content.
 		uint64_t gapstart = _gapstart;
-		if(!movb.get_movie().readonly_mode())
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
 		uint64_t gaplen = 0;
 		int64_t newframes = 0;
@@ -2209,7 +2209,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, bool append)
 			while(std::getline(y, z))
 				gaplen++;
 		}
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, 0))
 			return;
@@ -2250,7 +2250,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 	runemufn([_fcontrols, iset, &cliptext, _gapstart, port, controller, append]() {
 		//Insert enough lines for the pasted content.
 		uint64_t gapstart = _gapstart;
-		if(!movb.get_movie().readonly_mode())
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
 		uint64_t gaplen = 0;
 		int64_t newframes = 0;
@@ -2267,7 +2267,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 				newframes++;
 			}
 		}
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;
@@ -2304,9 +2304,9 @@ void wxeditor_movie::_moviepanel::do_insert_controller(uint64_t row, unsigned po
 	uint64_t gapstart = row;
 	runemufn([_fcontrols, iset, gapstart, port, controller]() {
 		//Insert enough lines for the pasted content.
-		if(!movb.get_movie().readonly_mode())
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;
@@ -2333,9 +2333,9 @@ void wxeditor_movie::_moviepanel::do_delete_controller(uint64_t row1, uint64_t r
 	uint64_t gaplen = row2 - row1 + 1;
 	runemufn([_fcontrols, iset, gapstart, gaplen, port, controller]() {
 		//Insert enough lines for the pasted content.
-		if(!movb.get_movie().readonly_mode())
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = *movb.get_mfile().input;
+		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;

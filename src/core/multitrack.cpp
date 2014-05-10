@@ -3,6 +3,7 @@
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
 #include "core/keymapper.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/multitrack.hpp"
 #include "lua/internal.hpp"
@@ -35,7 +36,7 @@ void multitrack_edit::set(unsigned port, unsigned controller, state s)
 
 void multitrack_edit::set_and_notify(unsigned port, unsigned controller, state s)
 {
-	if(!movb || !movb.get_movie().readonly_mode())
+	if(!lsnes_instance.mlogic || !lsnes_instance.mlogic.get_movie().readonly_mode())
 		return;
 	set(port, controller, s);
 	notify_multitrack_change(port, controller, (int)s);
@@ -43,7 +44,7 @@ void multitrack_edit::set_and_notify(unsigned port, unsigned controller, state s
 
 void multitrack_edit::rotate(bool forward)
 {
-	if(!movb || !movb.get_movie().readonly_mode())
+	if(!lsnes_instance.mlogic || !lsnes_instance.mlogic.get_movie().readonly_mode())
 		return;
 	std::vector<std::pair<unsigned, unsigned>> x;
 	for(unsigned i = 0;; i++) {
@@ -90,7 +91,7 @@ void multitrack_edit::config_altered()
 
 void multitrack_edit::process_frame(controller_frame& input)
 {
-	if(!movb || !movb.get_movie().readonly_mode())
+	if(!lsnes_instance.mlogic || !lsnes_instance.mlogic.get_movie().readonly_mode())
 		return;
 	threads::alock h(mlock);
 	bool any_need = false;
@@ -102,7 +103,7 @@ void multitrack_edit::process_frame(controller_frame& input)
 		return;	//No need to twiddle.
 	unsigned indices = input.get_index_count();
 	const port_type_set& portset = input.porttypes();
-	pollcounter_vector& p = movb.get_movie().get_pollcounters();
+	pollcounter_vector& p = lsnes_instance.mlogic.get_movie().get_pollcounters();
 	for(unsigned i = 0; i < indices; i++) {
 		port_index_triple t = portset.index_to_triple(i);
 		if(!t.valid)
@@ -110,10 +111,12 @@ void multitrack_edit::process_frame(controller_frame& input)
 		auto key = std::make_pair(t.port, t.controller);
 		uint32_t pc = p.get_polls(i);
 		if(!controllerstate.count(key) || controllerstate[key] == MT_PRESERVE || (!t.port && !t.controller)) {
-			int16_t v = movb.get_movie().read_subframe_at_index(pc, t.port, t.controller, t.control);
+			int16_t v = lsnes_instance.mlogic.get_movie().read_subframe_at_index(pc, t.port, t.controller,
+				t.control);
 			input.axis3(t.port, t.controller, t.control, v);
 		} else {
-			int16_t v = movb.get_movie().read_subframe_at_index(pc, t.port, t.controller, t.control);
+			int16_t v = lsnes_instance.mlogic.get_movie().read_subframe_at_index(pc, t.port, t.controller,
+				t.control);
 			controllerstate[key];
 			const port_type& pt = portset.port_type(t.port);
 			auto pci = pt.controller_info->get(t.controller);
@@ -143,8 +146,10 @@ void multitrack_edit::process_frame(controller_frame& input)
 					v ^= input.axis3(t.port, t.controller, t.control);
 				break;
 			}
-			movb.get_movie().write_subframe_at_index(pc, t.port, t.controller, t.control, v);
-			v = movb.get_movie().read_subframe_at_index(pc, t.port, t.controller, t.control);
+			lsnes_instance.mlogic.get_movie().write_subframe_at_index(pc, t.port, t.controller, t.control,
+				v);
+			v = lsnes_instance.mlogic.get_movie().read_subframe_at_index(pc, t.port, t.controller,
+				t.control);
 			input.axis3(t.port, t.controller, t.control, v);
 		}
 	}
@@ -152,7 +157,7 @@ void multitrack_edit::process_frame(controller_frame& input)
 
 bool multitrack_edit::any_records()
 {
-	if(!movb || !movb.get_movie().readonly_mode())
+	if(!lsnes_instance.mlogic || !lsnes_instance.mlogic.get_movie().readonly_mode())
 		return true;
 	threads::alock h(mlock);
 	bool any_need = false;

@@ -14,7 +14,7 @@
 #include "lua/lua.hpp"
 #include "library/string.hpp"
 #include "core/mainloop.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/memorymanip.hpp"
@@ -130,9 +130,9 @@ namespace
 			std::ostringstream out;
 			try {
 				moviefile::brief_info info(filename);
-				if(!movb)
+				if(!lsnes_instance.mlogic)
 					out << "No movie";
-				else if(movb.get_mfile().projectid == info.projectid)
+				else if(lsnes_instance.mlogic.get_mfile().projectid == info.projectid)
 					out << info.rerecords << "R/" << info.current_frame << "F";
 				else
 					out << "Wrong movie";
@@ -218,15 +218,16 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 				cancel_advance = false;
 			}
 			platform::set_paused(amode == ADVANCE_PAUSE);
-		} else if(amode == ADVANCE_AUTO && movb.get_movie().readonly_mode() && pause_on_end &&
-			!stop_at_frame_active) {
-			if(movb.get_movie().get_current_frame() == movb.get_movie().get_frame_count()) {
+		} else if(amode == ADVANCE_AUTO && lsnes_instance.mlogic.get_movie().readonly_mode() &&
+			pause_on_end && !stop_at_frame_active) {
+			if(lsnes_instance.mlogic.get_movie().get_current_frame() ==
+				lsnes_instance.mlogic.get_movie().get_frame_count()) {
 				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 				platform::set_paused(true);
 			}
 		} else if(amode == ADVANCE_AUTO && stop_at_frame_active) {
-			if(movb.get_movie().get_current_frame() >= stop_at_frame) {
+			if(lsnes_instance.mlogic.get_movie().get_current_frame() >= stop_at_frame) {
 				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 				platform::set_paused(true);
@@ -239,7 +240,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		update_movie_state();
 	}
 	platform::flush_command_queue();
-	controller_frame tmp = controls.get(movb.get_movie().get_current_frame());
+	controller_frame tmp = controls.get(lsnes_instance.mlogic.get_movie().get_current_frame());
 	our_rom.rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	lua_callback_do_input(tmp, subframe);
 	multitrack_editor.process_frame(tmp);
@@ -304,18 +305,19 @@ void update_movie_state()
 	{
 		uint64_t magic[4];
 		our_rom.region->fill_framerate_magic(magic);
-		if(movb)
-			voice_frame_number(movb.get_movie().get_current_frame(), 1.0 * magic[1] / magic[0]);
+		if(lsnes_instance.mlogic)
+			voice_frame_number(lsnes_instance.mlogic.get_movie().get_current_frame(),
+				1.0 * magic[1] / magic[0]);
 		else
 			voice_frame_number(0, 60.0);	//Default.
 	}
 	auto& _status = lsnes_status.get_write();
 	try {
-		if(movb && !system_corrupt) {
+		if(lsnes_instance.mlogic && !system_corrupt) {
 			_status.movie_valid = true;
-			_status.curframe = movb.get_movie().get_current_frame();
-			_status.length = movb.get_movie().get_frame_count();
-			_status.lag = movb.get_movie().get_lag_frames();
+			_status.curframe = lsnes_instance.mlogic.get_movie().get_current_frame();
+			_status.length = lsnes_instance.mlogic.get_movie().get_frame_count();
+			_status.lag = lsnes_instance.mlogic.get_movie().get_lag_frames();
 			if(location_special == SPECIAL_FRAME_START)
 				_status.subframe = 0;
 			else if(location_special == SPECIAL_SAVEPOINT)
@@ -323,7 +325,7 @@ void update_movie_state()
 			else if(location_special == SPECIAL_FRAME_VIDEO)
 				_status.subframe = _lsnes_status::subframe_video;
 			else
-				_status.subframe = movb.get_movie().next_poll_number();
+				_status.subframe = lsnes_instance.mlogic.get_movie().next_poll_number();
 		} else {
 			_status.movie_valid = false;
 			_status.curframe = 0;
@@ -338,8 +340,8 @@ void update_movie_state()
 			_status.pause = _lsnes_status::pause_normal;
 		else
 			_status.pause = _lsnes_status::pause_none;
-		if(movb) {
-			auto& mo = movb.get_movie();
+		if(lsnes_instance.mlogic) {
+			auto& mo = lsnes_instance.mlogic.get_movie();
 			readonly = mo.readonly_mode();
 			if(system_corrupt)
 				_status.mode = 'C';
@@ -362,14 +364,15 @@ void update_movie_state()
 		_status.branch_valid = (p != NULL);
 		if(p) _status.branch = utf8::to32(p->get_branch_string());
 
-		std::string cur_branch = movb ? movb.get_mfile().current_branch() : "";
+		std::string cur_branch = lsnes_instance.mlogic ? lsnes_instance.mlogic.get_mfile().current_branch() :
+			"";
 		_status.mbranch_valid = (cur_branch != "");
 		_status.mbranch = utf8::to32(cur_branch);
 
 		_status.speed = (unsigned)(100 * get_realized_multiplier() + 0.5);
 
-		if(movb && !system_corrupt) {
-			time_t timevalue = static_cast<time_t>(movb.get_mfile().rtc_second);
+		if(lsnes_instance.mlogic && !system_corrupt) {
+			time_t timevalue = static_cast<time_t>(lsnes_instance.mlogic.get_mfile().rtc_second);
 			struct tm* time_decompose = gmtime(&timevalue);
 			char datebuffer[512];
 			strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
@@ -391,7 +394,7 @@ void update_movie_state()
 
 		controller_frame c;
 		if(!multitrack_editor.any_records())
-			c = movb.get_movie().get_controls();
+			c = lsnes_instance.mlogic.get_movie().get_controls();
 		else
 			c = controls.get_committed();
 		_status.inputs.clear();
@@ -444,19 +447,19 @@ public:
 	int16_t get_input(unsigned port, unsigned index, unsigned control)
 	{
 		int16_t x;
-		x = movb.input_poll(port, index, control);
+		x = lsnes_instance.mlogic.input_poll(port, index, control);
 		lua_callback_snoop_input(port, index, control, x);
 		return x;
 	}
 
 	int16_t set_input(unsigned port, unsigned index, unsigned control, int16_t value)
 	{
-		if(!movb.get_movie().readonly_mode()) {
-			controller_frame f = movb.get_movie().get_controls();
+		if(!lsnes_instance.mlogic.get_movie().readonly_mode()) {
+			controller_frame f = lsnes_instance.mlogic.get_movie().get_controls();
 			f.axis3(port, index, control, value);
-			movb.get_movie().set_controls(f);
+			lsnes_instance.mlogic.get_movie().set_controls(f);
 		}
-		return movb.get_movie().next_input(port, index, control);
+		return lsnes_instance.mlogic.get_movie().next_input(port, index, control);
 	}
 
 	void notify_latch(std::list<std::string>& args)
@@ -466,9 +469,9 @@ public:
 
 	void timer_tick(uint32_t increment, uint32_t per_second)
 	{
-		if(!movb)
+		if(!lsnes_instance.mlogic)
 			return;
-		auto& m = movb.get_mfile();
+		auto& m = lsnes_instance.mlogic.get_mfile();
 		m.rtc_subsecond += increment;
 		while(m.rtc_subsecond >= per_second) {
 			m.rtc_second++;
@@ -488,7 +491,7 @@ public:
 
 	time_t get_time()
 	{
-		return movb ? movb.get_mfile().rtc_second : 0;
+		return lsnes_instance.mlogic ? lsnes_instance.mlogic.get_mfile().rtc_second : 0;
 	}
 
 	time_t get_randomseed()
@@ -549,7 +552,7 @@ namespace
 		"Syntax: count-rerecords\nCounts rerecords.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			std::vector<char> tmp;
-			uint64_t x = movb.get_rrdata().write(tmp);
+			uint64_t x = lsnes_instance.mlogic.get_rrdata().write(tmp);
 			messages << x << " rerecord(s)" << std::endl;
 		});
 
@@ -833,7 +836,7 @@ namespace
 		"Syntax: set-rwmode\nSwitches to read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			lua_callback_movie_lost("readwrite");
-			movb.get_movie().readonly_mode(false);
+			lsnes_instance.mlogic.get_movie().readonly_mode(false);
 			notify_mode_change(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
@@ -842,7 +845,7 @@ namespace
 	command::fnptr<> set_romode(lsnes_cmd, "set-romode", "Switch to read-only mode",
 		"Syntax: set-romode\nSwitches to read-only mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			movb.get_movie().readonly_mode(true);
+			lsnes_instance.mlogic.get_movie().readonly_mode(true);
 			notify_mode_change(true);
 			update_movie_state();
 		});
@@ -850,10 +853,10 @@ namespace
 	command::fnptr<> toggle_rwmode(lsnes_cmd, "toggle-rwmode", "Toggle read/write mode",
 		"Syntax: toggle-rwmode\nToggles read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			bool c = movb.get_movie().readonly_mode();
+			bool c = lsnes_instance.mlogic.get_movie().readonly_mode();
 			if(c)
 				lua_callback_movie_lost("readwrite");
-			movb.get_movie().readonly_mode(!c);
+			lsnes_instance.mlogic.get_movie().readonly_mode(!c);
 			notify_mode_change(!c);
 			if(c)
 				lua_callback_do_readwrite();
@@ -1082,17 +1085,17 @@ namespace
 	//failing.
 	int handle_load()
 	{
-		std::string old_project = movb ? movb.get_mfile().projectid : "";
+		std::string old_project = lsnes_instance.mlogic ? lsnes_instance.mlogic.get_mfile().projectid : "";
 jumpback:
 		if(do_unsafe_rewind && unsafe_rewind_obj) {
-			if(!movb)
+			if(!lsnes_instance.mlogic)
 				return 0;
 			uint64_t t = get_utime();
 			std::vector<char> s;
-			lua_callback_do_unsafe_rewind(s, 0, 0, movb.get_movie(), unsafe_rewind_obj);
+			lua_callback_do_unsafe_rewind(s, 0, 0, lsnes_instance.mlogic.get_movie(), unsafe_rewind_obj);
 			notify_mode_change(false);
 			do_unsafe_rewind = false;
-			movb.get_mfile().is_savestate = true;
+			lsnes_instance.mlogic.get_mfile().is_savestate = true;
 			location_special = SPECIAL_SAVEPOINT;
 			update_movie_state();
 			messages << "Rewind done in " << (get_utime() - t) << " usec." << std::endl;
@@ -1158,7 +1161,7 @@ nothing_to_do:
 				if(amode == ADVANCE_LOAD)
 					goto jumpback;
 			}
-			if(old_project != (movb ? movb.get_mfile().projectid : ""))
+			if(old_project != (lsnes_instance.mlogic ? lsnes_instance.mlogic.get_mfile().projectid : ""))
 				flush_slotinfo();	//Wrong movie may be stale.
 			return 1;
 		}
@@ -1168,7 +1171,7 @@ nothing_to_do:
 	//If there are pending saves, perform them.
 	void handle_saves()
 	{
-		if(!movb)
+		if(!lsnes_instance.mlogic)
 			return;
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
 			our_rom.rtype->runtosave();
@@ -1180,9 +1183,10 @@ nothing_to_do:
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();
 				std::vector<char> s = our_rom.save_core_state(true);
-				uint64_t secs = movb.get_mfile().rtc_second;
-				uint64_t ssecs = movb.get_mfile().rtc_subsecond;
-				lua_callback_do_unsafe_rewind(s, secs, ssecs, movb.get_movie(), NULL);
+				uint64_t secs = lsnes_instance.mlogic.get_mfile().rtc_second;
+				uint64_t ssecs = lsnes_instance.mlogic.get_mfile().rtc_subsecond;
+				lua_callback_do_unsafe_rewind(s, secs, ssecs, lsnes_instance.mlogic.get_movie(),
+					NULL);
 				do_unsafe_rewind = false;
 				messages << "Rewind point set in " << (get_utime() - t) << " usec." << std::endl;
 			}
@@ -1233,7 +1237,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		do_load_state(initial, LOAD_STATE_INITIAL, used);
 		location_special = SPECIAL_SAVEPOINT;
 		update_movie_state();
-		first_round = movb.get_mfile().is_savestate;
+		first_round = lsnes_instance.mlogic.get_mfile().is_savestate;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -1259,7 +1263,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	uint64_t time_x = get_utime();
 	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
 		if(handle_corrupt()) {
-			first_round = movb && movb.get_mfile().is_savestate;
+			first_round = lsnes_instance.mlogic && lsnes_instance.mlogic.get_mfile().is_savestate;
 			just_did_loadstate = first_round;
 			continue;
 		}
@@ -1273,9 +1277,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				controls.advance_macros();
 			}
 			macro_hold_2 = false;
-			movb.get_movie().get_pollcounters().set_framepflag(false);
-			movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
-			movb.get_movie().get_pollcounters().set_framepflag(true);
+			lsnes_instance.mlogic.get_movie().get_pollcounters().set_framepflag(false);
+			lsnes_instance.mlogic.new_frame_starting(amode == ADVANCE_SKIPLAG);
+			lsnes_instance.mlogic.get_movie().get_pollcounters().set_framepflag(true);
 			if(amode == ADVANCE_QUIT && queued_saves.empty())
 				break;
 			handle_saves();
@@ -1283,8 +1287,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			if(queued_saves.empty())
 				r = handle_load();
 			if(r > 0 || system_corrupt) {
-				movb.get_movie().get_pollcounters().set_framepflag(movb.get_mfile().is_savestate);
-				first_round = movb.get_mfile().is_savestate;
+				lsnes_instance.mlogic.get_movie().get_pollcounters().set_framepflag(
+					lsnes_instance.mlogic.get_mfile().is_savestate);
+				first_round = lsnes_instance.mlogic.get_mfile().is_savestate;
 				if(system_corrupt)
 					amode = ADVANCE_PAUSE;
 				else
@@ -1292,7 +1297,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
 				controls.reset_framehold();
-				debug_fire_callback_frame(movb.get_movie().get_current_frame(), true);
+				debug_fire_callback_frame(lsnes_instance.mlogic.get_movie().get_current_frame(),
+					true);
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
@@ -1309,12 +1315,12 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			platform::set_paused(amode == ADVANCE_PAUSE);
 			platform::flush_command_queue();
 			//We already have done the reset this frame if we are going to do one at all.
-			movb.get_movie().set_controls(movb.update_controls(true));
-			movb.get_movie().set_all_DRDY();
+			lsnes_instance.mlogic.get_movie().set_controls(lsnes_instance.mlogic.update_controls(true));
+			lsnes_instance.mlogic.get_movie().set_all_DRDY();
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;
-		debug_fire_callback_frame(movb.get_movie().get_current_frame(), false);
+		debug_fire_callback_frame(lsnes_instance.mlogic.get_movie().get_current_frame(), false);
 		our_rom.rtype->emulate();
 		random_mix_timing_entropy();
 		time_x = get_utime();

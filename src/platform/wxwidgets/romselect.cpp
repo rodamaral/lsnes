@@ -7,6 +7,7 @@
 #include "lsnes.hpp"
 
 #include "core/controller.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
@@ -238,7 +239,7 @@ namespace
 
 	void wxwin_newproject::on_ok(wxCommandEvent& e)
 	{
-		if(!movb) {
+		if(!lsnes_instance.mlogic) {
 			show_message_ok(this, "Error", "Can't start project without movie", wxICON_EXCLAMATION);
 			return;
 		}
@@ -249,7 +250,7 @@ namespace
 		pinfo.last_save = "";
 		pinfo.directory = tostdstring(projdir->GetValue());
 		pinfo.prefix = tostdstring(projpfx->GetValue());
-		auto& m = movb.get_mfile();
+		auto& m = lsnes_instance.mlogic.get_mfile();
 		pinfo.gametype = m.gametype->get_name();
 		pinfo.settings = m.settings;
 		pinfo.coreversion = m.coreversion;

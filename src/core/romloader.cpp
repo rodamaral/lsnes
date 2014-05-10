@@ -1,4 +1,5 @@
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
@@ -16,11 +17,11 @@ bool load_null_rom()
 	}
 	loaded_rom newrom;
 	our_rom = newrom;
-	if(movb)
+	if(lsnes_instance.mlogic)
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			movb.get_mfile().romimg_sha256[i] = "";
-			movb.get_mfile().romxml_sha256[i] = "";
-			movb.get_mfile().namehint[i] = "";
+			lsnes_instance.mlogic.get_mfile().romimg_sha256[i] = "";
+			lsnes_instance.mlogic.get_mfile().romxml_sha256[i] = "";
+			lsnes_instance.mlogic.get_mfile().namehint[i] = "";
 		}
 	notify_core_change();
 	return true;
@@ -95,11 +96,11 @@ bool _load_new_rom(const romload_request& req)
 	}
 	try {
 		load_new_rom_inner(req);
-		if(movb)
+		if(lsnes_instance.mlogic)
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				movb.get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-				movb.get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
-				movb.get_mfile().namehint[i] = our_rom.romimg[i].namehint;
+				lsnes_instance.mlogic.get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
+				lsnes_instance.mlogic.get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
+				lsnes_instance.mlogic.get_mfile().namehint[i] = our_rom.romimg[i].namehint;
 			}
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Can't load ROM: ") + e.what());

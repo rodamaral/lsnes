@@ -2,6 +2,7 @@
 #include "lua/debug.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/rom.hpp"
@@ -372,7 +373,7 @@ namespace
 			throw std::runtime_error("Source out of range");
 
 		//Calculate new size of target.
-		auto& h = movb.get_mfile().host_memory;
+		auto& h = lsnes_instance.mlogic.get_mfile().host_memory;
 		size_t rsize = size * rows;
 		if(size && rsize / size != rows)
 			throw std::runtime_error("Copy size out of range");

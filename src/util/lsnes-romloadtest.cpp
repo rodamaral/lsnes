@@ -12,7 +12,7 @@
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
 
 	dump_what_was_loaded(r, *movie);
 
-	movb.release_memory();
+	lsnes_instance.mlogic.release_memory();
 	cleanup_all_keys();
 	return 0;
 }

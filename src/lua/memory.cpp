@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "lua/internal.hpp"
 #include "core/debug.hpp"
+#include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/moviedata.hpp"
@@ -632,7 +633,7 @@ namespace
 		if((size_t)(daddr + rows * size) < daddr)
 			throw std::runtime_error("Size to copy too large");
 
-		auto& h = movb.get_mfile().host_memory;
+		auto& h = lsnes_instance.mlogic.get_mfile().host_memory;
 		if(daddr + rows * size > h.size()) {
 			equals = false;
 			h.resize(daddr + rows * size);

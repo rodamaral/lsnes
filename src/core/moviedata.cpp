@@ -7,7 +7,7 @@
 #include "core/framerate.hpp"
 #include "core/misc.hpp"
 #include "core/mainloop.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
 #include "core/romguess.hpp"
@@ -117,7 +117,7 @@ namespace
 
 std::string get_mprefix_for_project()
 {
-	return get_mprefix_for_project(movb ? movb.get_mfile().projectid : "");
+	return get_mprefix_for_project(lsnes_instance.mlogic ? lsnes_instance.mlogic.get_mfile().projectid : "");
 }
 
 void set_mprefix_for_project(const std::string& prjid, const std::string& pfx)
@@ -129,7 +129,7 @@ void set_mprefix_for_project(const std::string& prjid, const std::string& pfx)
 
 void set_mprefix_for_project(const std::string& pfx)
 {
-	set_mprefix_for_project(movb ? movb.get_mfile().projectid : "", pfx);
+	set_mprefix_for_project(lsnes_instance.mlogic ? lsnes_instance.mlogic.get_mfile().projectid : "", pfx);
 	set_mprefix(pfx);
 }
 
@@ -197,12 +197,12 @@ std::string resolve_relative_path(const std::string& path)
 void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	if(!movb || !movb.get_mfile().gametype) {
+	if(!lsnes_instance.mlogic || !lsnes_instance.mlogic.get_mfile().gametype) {
 		platform::error_message("Can't save movie without a ROM");
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
-	auto& target = movb.get_mfile();
+	auto& target = lsnes_instance.mlogic.get_mfile();
 	std::string filename2 = translate_name_mprefix(filename, binary, 1);
 	lua_callback_pre_save(filename2, true);
 	try {
@@ -216,8 +216,8 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		}
 		target.savestate = our_rom.save_core_state();
 		get_framebuffer().save(target.screenshot);
-		movb.get_movie().save_state(target.projectid, target.save_frame, target.lagged_frames,
-			target.pollcounters);
+		lsnes_instance.mlogic.get_movie().save_state(target.projectid, target.save_frame,
+			target.lagged_frames, target.pollcounters);
 		target.poll_flag = our_rom.rtype->get_pflag();
 		auto prj = project_get();
 		if(prj) {
@@ -225,7 +225,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 			target.authors = prj->authors;
 		}
 		target.active_macros = controls.get_macro_frames();
-		target.save(filename2, savecompression, binary > 0, movb.get_rrdata());
+		target.save(filename2, savecompression, binary > 0, lsnes_instance.mlogic.get_rrdata());
 		uint64_t took = get_utime() - origtime;
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved state " << kind << " '" << filename2 << "' in " << took << " microseconds."
@@ -249,12 +249,12 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 //Save movie.
 void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!movb || !movb.get_mfile().gametype) {
+	if(!lsnes_instance.mlogic || !lsnes_instance.mlogic.get_mfile().gametype) {
 		platform::error_message("Can't save movie without a ROM");
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
-	auto& target = movb.get_mfile();
+	auto& target = lsnes_instance.mlogic.get_mfile();
 	std::string filename2 = translate_name_mprefix(filename, binary, 0);
 	lua_callback_pre_save(filename2, false);
 	try {
@@ -266,7 +266,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 			target.authors = prj->authors;
 		}
 		target.active_macros.clear();
-		target.save(filename2, savecompression, binary > 0, movb.get_rrdata());
+		target.save(filename2, savecompression, binary > 0, lsnes_instance.mlogic.get_rrdata());
 		uint64_t took = get_utime() - origtime;
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved movie " << kind << " '" << filename2 << "' in " << took << " microseconds."
@@ -393,7 +393,7 @@ namespace
 		random_seed_value = _movie.movie_rtc_second;
 		if(will_load_state) {
 			//If settings possibly change, reload the ROM.
-			if(!movb || movb.get_mfile().projectid != _movie.projectid)
+			if(!lsnes_instance.mlogic || lsnes_instance.mlogic.get_mfile().projectid != _movie.projectid)
 				our_rom.load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 			//Load the savestate and movie state.
 			//Set the core ports in order to avoid port state being reinitialized when loading.
@@ -423,34 +423,35 @@ namespace
 
 void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 {
-	bool load_readwrite = !movb || !movb.get_movie().readonly_mode();
-	if(movb) {
-		port_type_set& portset = construct_movie_portset(movb.get_mfile(), our_rom);
+	bool load_readwrite = !lsnes_instance.mlogic || !lsnes_instance.mlogic.get_movie().readonly_mode();
+	if(lsnes_instance.mlogic) {
+		port_type_set& portset = construct_movie_portset(lsnes_instance.mlogic.get_mfile(), our_rom);
 		//If portset or gametype changes, force readwrite with new movie.
-		if(movb.get_mfile().input->get_types() != portset) load_readwrite = true;
-		if(our_rom.rtype != &movb.get_mfile().gametype->get_type()) load_readwrite = true;
+		if(lsnes_instance.mlogic.get_mfile().input->get_types() != portset) load_readwrite = true;
+		if(our_rom.rtype != &lsnes_instance.mlogic.get_mfile().gametype->get_type()) load_readwrite = true;
 	}
 
 	if(!load_readwrite) {
 		//Read-only load. This is pretty simple.
 		//Force unlazying of rrdata and count a rerecord.
-		if(movb.get_rrdata().is_lazy())
-			movb.get_rrdata().read_base(rrdata_filename(movb.get_mfile().projectid), false);
-		movb.get_rrdata().add(next_rrdata());
+		if(lsnes_instance.mlogic.get_rrdata().is_lazy())
+			lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(
+				lsnes_instance.mlogic.get_mfile().projectid), false);
+		lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
 
-		port_type_set& portset = construct_movie_portset(movb.get_mfile(), our_rom);
+		port_type_set& portset = construct_movie_portset(lsnes_instance.mlogic.get_mfile(), our_rom);
 
 		try {
-			handle_load_core(movb.get_mfile(), portset, false);
-			movb.get_mfile().gametype = &our_rom.rtype->combine_region(*our_rom.region);
+			handle_load_core(lsnes_instance.mlogic.get_mfile(), portset, false);
+			lsnes_instance.mlogic.get_mfile().gametype = &our_rom.rtype->combine_region(*our_rom.region);
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				movb.get_mfile().namehint[i] = our_rom.romimg[i].namehint;
-				movb.get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-				movb.get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
+				lsnes_instance.mlogic.get_mfile().namehint[i] = our_rom.romimg[i].namehint;
+				lsnes_instance.mlogic.get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
+				lsnes_instance.mlogic.get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
 			}
-			movb.get_mfile().is_savestate = false;
-			movb.get_mfile().host_memory.clear();
-			movb.get_movie().reset_state();
+			lsnes_instance.mlogic.get_mfile().is_savestate = false;
+			lsnes_instance.mlogic.get_mfile().host_memory.clear();
+			lsnes_instance.mlogic.get_movie().reset_state();
 			redraw_framebuffer(our_rom.rtype->draw_cover());
 			lua_callback_do_rewind();
 		} catch(std::bad_alloc& e) {
@@ -514,36 +515,37 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		}
 
 		//Set up stuff.
-		movb.set_movie(*(newmovie()), true);
-		movb.set_mfile(*(_movie()), true);
-		movb.set_rrdata(*(rrd()), true);
-		set_mprefix(get_mprefix_for_project(movb.get_mfile().projectid));
+		lsnes_instance.mlogic.set_movie(*(newmovie()), true);
+		lsnes_instance.mlogic.set_mfile(*(_movie()), true);
+		lsnes_instance.mlogic.set_rrdata(*(rrd()), true);
+		set_mprefix(get_mprefix_for_project(lsnes_instance.mlogic.get_mfile().projectid));
 	}
-	notify_mode_change(movb.get_movie().readonly_mode());
+	notify_mode_change(lsnes_instance.mlogic.get_movie().readonly_mode());
 	notify_mbranch_change();
 	messages << "ROM reloaded." << std::endl;
 }
 
 void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 {
-	if(!movb || !movb.get_mfile().gametype)
+	if(!lsnes_instance.mlogic || !lsnes_instance.mlogic.get_mfile().gametype)
 		throw std::runtime_error("Can't rewind movie without existing movie");
 
-	port_type_set& portset = construct_movie_portset(movb.get_mfile(), our_rom);
+	port_type_set& portset = construct_movie_portset(lsnes_instance.mlogic.get_mfile(), our_rom);
 
 	//Force unlazying of rrdata and count a rerecord.
-	if(movb.get_rrdata().is_lazy())
-		movb.get_rrdata().read_base(rrdata_filename(movb.get_mfile().projectid), false);
-	movb.get_rrdata().add(next_rrdata());
+	if(lsnes_instance.mlogic.get_rrdata().is_lazy())
+		lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(
+			lsnes_instance.mlogic.get_mfile().projectid), false);
+	lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
 
 	//Enter readonly mode.
-	movb.get_movie().readonly_mode(true);
+	lsnes_instance.mlogic.get_movie().readonly_mode(true);
 	notify_mode_change(true);
 	try {
-		handle_load_core(movb.get_mfile(), portset, false);
-		movb.get_mfile().is_savestate = false;
-		movb.get_mfile().host_memory.clear();
-		movb.get_movie().reset_state();
+		handle_load_core(lsnes_instance.mlogic.get_mfile(), portset, false);
+		lsnes_instance.mlogic.get_mfile().is_savestate = false;
+		lsnes_instance.mlogic.get_mfile().host_memory.clear();
+		lsnes_instance.mlogic.get_movie().reset_state();
 		redraw_framebuffer(our_rom.rtype->draw_cover());
 		lua_callback_do_rewind();
 	} catch(std::bad_alloc& e) {
@@ -559,17 +561,17 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 //Load state preserving input. Does not do checks.
 void do_load_state_preserve(struct moviefile& _movie)
 {
-	if(!movb || !movb.get_mfile().gametype)
+	if(!lsnes_instance.mlogic || !lsnes_instance.mlogic.get_mfile().gametype)
 		throw std::runtime_error("Can't load movie preserving input without previous movie");
-	if(movb.get_mfile().projectid != _movie.projectid)
+	if(lsnes_instance.mlogic.get_mfile().projectid != _movie.projectid)
 		throw std::runtime_error("Savestate is from different movie");
 
 	bool will_load_state = _movie.is_savestate;
-	port_type_set& portset = construct_movie_portset(movb.get_mfile(), our_rom);
+	port_type_set& portset = construct_movie_portset(lsnes_instance.mlogic.get_mfile(), our_rom);
 
 	//Construct a new movie sharing the input data.
 	temporary_handle<movie> newmovie;
-	newmovie.get()->set_movie_data(movb.get_mfile().input);
+	newmovie.get()->set_movie_data(lsnes_instance.mlogic.get_mfile().input);
 	newmovie.get()->readonly_mode(true);
 	newmovie.get()->set_pflag_handler(&lsnes_pflag_handler);
 
@@ -579,9 +581,9 @@ void do_load_state_preserve(struct moviefile& _movie)
 			_movie.input, _movie.projectid);
 
 	//Count a rerecord.
-	if(movb.get_rrdata().is_lazy() && !_movie.lazy_project_create)
-		movb.get_rrdata().read_base(rrdata_filename(_movie.projectid), false);
-	movb.get_rrdata().add(next_rrdata());
+	if(lsnes_instance.mlogic.get_rrdata().is_lazy() && !_movie.lazy_project_create)
+		lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(_movie.projectid), false);
+	lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
 
 	//Negative return.
 	try {
@@ -595,15 +597,15 @@ void do_load_state_preserve(struct moviefile& _movie)
 	}
 
 	//Set new movie.
-	movb.set_movie(*(newmovie()), true);
+	lsnes_instance.mlogic.set_movie(*(newmovie()), true);
 
 	//Some fields MUST be taken from movie or one gets desyncs.
-	movb.get_mfile().is_savestate = _movie.is_savestate;
-	movb.get_mfile().rtc_second = _movie.rtc_second;
-	movb.get_mfile().rtc_subsecond = _movie.rtc_subsecond;
-	std::swap(movb.get_mfile().host_memory, _movie.host_memory);
+	lsnes_instance.mlogic.get_mfile().is_savestate = _movie.is_savestate;
+	lsnes_instance.mlogic.get_mfile().rtc_second = _movie.rtc_second;
+	lsnes_instance.mlogic.get_mfile().rtc_subsecond = _movie.rtc_subsecond;
+	std::swap(lsnes_instance.mlogic.get_mfile().host_memory, _movie.host_memory);
 	if(!will_load_state)
-		movb.get_mfile().host_memory.clear();
+		lsnes_instance.mlogic.get_mfile().host_memory.clear();
 
 	try {
 		//Paint the screen.
@@ -616,7 +618,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 	} catch(...) {
 	}
 	delete &_movie;
-	notify_mode_change(movb.get_movie().readonly_mode());
+	notify_mode_change(lsnes_instance.mlogic.get_movie().readonly_mode());
 	messages << "Loadstated at earlier point of movie." << std::endl;
 }
 
@@ -624,7 +626,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 {
 	//Some basic sanity checks.
-	bool current_mode = movb ? movb.get_movie().readonly_mode() : false;
+	bool current_mode = lsnes_instance.mlogic ? lsnes_instance.mlogic.get_movie().readonly_mode() : false;
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
 
 	//Load state all branches and load state initial are the same.
@@ -644,7 +646,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	if(lmode == LOAD_STATE_CURRENT && current_mode && readonly_load_preserves)
 		lmode = LOAD_STATE_PRESERVE;
 	//If movie file changes, turn LOAD_STATE_CURRENT into LOAD_STATE_RO
-	if(lmode == LOAD_STATE_CURRENT && movb.get_mfile().projectid != _movie.projectid)
+	if(lmode == LOAD_STATE_CURRENT && lsnes_instance.mlogic.get_mfile().projectid != _movie.projectid)
 		lmode = LOAD_STATE_RO;
 
 	//Handle preserving load specially.
@@ -664,11 +666,11 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 			NULL, _movie.projectid);
 
 	//Copy the other branches.
-	if(lmode != LOAD_STATE_INITIAL && movb.get_mfile().projectid == _movie.projectid) {
+	if(lmode != LOAD_STATE_INITIAL && lsnes_instance.mlogic.get_mfile().projectid == _movie.projectid) {
 		newmovie.get()->set_movie_data(NULL);
-		auto& oldm = movb.get_mfile().branches;
+		auto& oldm = lsnes_instance.mlogic.get_mfile().branches;
 		auto& newm = _movie.branches;
-		auto oldd = movb.get_mfile().input;
+		auto oldd = lsnes_instance.mlogic.get_mfile().input;
 		auto newd = _movie.input;
 		std::string dflt_name;
 		//What was the old default name?
@@ -698,16 +700,16 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	temporary_handle<rrdata_set> rrd;
 	bool new_rrdata = false;
 	//Count a rerecord (against new or old movie).
-	if(!movb || _movie.projectid != movb.get_mfile().projectid) {
+	if(!lsnes_instance.mlogic || _movie.projectid != lsnes_instance.mlogic.get_mfile().projectid) {
 		rrd.get()->read_base(rrdata_filename(_movie.projectid), _movie.lazy_project_create);
 		rrd.get()->read(_movie.c_rrdata);
 		rrd.get()->add(next_rrdata());
 		new_rrdata = true;
 	} else {
 		//Unlazy rrdata if needed.
-		if(movb.get_rrdata().is_lazy() && !_movie.lazy_project_create)
-			movb.get_rrdata().read_base(rrdata_filename(_movie.projectid), false);
-		movb.get_rrdata().add(next_rrdata());
+		if(lsnes_instance.mlogic.get_rrdata().is_lazy() && !_movie.lazy_project_create)
+			lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(_movie.projectid), false);
+		lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
 	}
 	//Negative return.
 	try {
@@ -730,15 +732,15 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	lua_callback_movie_lost("load");
 
 	//Copy the data.
-	if(new_rrdata) movb.set_rrdata(*(rrd()), true);
-	movb.set_movie(*newmovie(), true);
-	movb.set_mfile(_movie, true);
+	if(new_rrdata) lsnes_instance.mlogic.set_rrdata(*(rrd()), true);
+	lsnes_instance.mlogic.set_movie(*newmovie(), true);
+	lsnes_instance.mlogic.set_mfile(_movie, true);
 	used = true;
 
-	set_mprefix(get_mprefix_for_project(movb.get_mfile().projectid));
+	set_mprefix(get_mprefix_for_project(lsnes_instance.mlogic.get_mfile().projectid));
 
 	//Activate RW mode if needed.
-	auto& m = movb.get_movie();
+	auto& m = lsnes_instance.mlogic.get_movie();
 	if(lmode == LOAD_STATE_RW)
 		m.readonly_mode(false);
 	if(lmode == LOAD_STATE_DEFAULT && !current_mode && m.get_frame_count() <= m.get_current_frame())
@@ -759,7 +761,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	}
 
 	notify_mode_change(m.readonly_mode());
-	print_movie_info(_movie, our_rom, movb.get_rrdata());
+	print_movie_info(_movie, our_rom, lsnes_instance.mlogic.get_rrdata());
 	notify_mbranch_change();
 }
 
@@ -831,7 +833,7 @@ bool do_load_state(const std::string& filename, int lmode)
 		do_load_state(*mfile, lmode, used);
 		uint64_t took = get_utime() - origtime;
 		messages << "Loaded '" << filename2 << "' in " << took << " microseconds." << std::endl;
-		lua_callback_post_load(filename2, movb.get_mfile().is_savestate);
+		lua_callback_post_load(filename2, lsnes_instance.mlogic.get_mfile().is_savestate);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -848,9 +850,10 @@ bool do_load_state(const std::string& filename, int lmode)
 void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
 {
 	//Force unlazy rrdata.
-	movb.get_rrdata().read_base(rrdata_filename(movb.get_mfile().projectid), false);
-	movb.get_rrdata().add(next_rrdata());
-	movb.get_mfile().rtc_second = secs;
-	movb.get_mfile().rtc_subsecond = ssecs;
+	lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(lsnes_instance.mlogic.get_mfile().projectid),
+		false);
+	lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
+	lsnes_instance.mlogic.get_mfile().rtc_second = secs;
+	lsnes_instance.mlogic.get_mfile().rtc_subsecond = ssecs;
 	our_rom.load_core_state(state, true);
 }

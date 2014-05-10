@@ -22,6 +22,7 @@
 #include "core/emustatus.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "interface/romtype.hpp"
 #include "core/loadlib.hpp"
@@ -668,7 +669,9 @@ namespace
 	bool is_readonly_mode()
 	{
 		bool ret;
-		runemufn([&ret]() { ret = movb ? movb.get_movie().readonly_mode() : false; });
+		runemufn([&ret]() {
+			ret = lsnes_instance.mlogic ? lsnes_instance.mlogic.get_movie().readonly_mode() : false;
+		});
 		return ret;
 	}
 
@@ -1541,7 +1544,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([s]() {
 			if(!s)
 				lua_callback_movie_lost("readwrite");
-			if(movb) movb.get_movie().readonly_mode(s);
+			if(lsnes_instance.mlogic) lsnes_instance.mlogic.get_movie().readonly_mode(s);
 			notify_mode_change(s);
 			if(!s)
 				lua_callback_do_readwrite();

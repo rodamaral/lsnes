@@ -1,5 +1,5 @@
 #include "core/controller.hpp"
-#include "core/movie.hpp"
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/multitrack.hpp"
 #include "core/dispatch.hpp"
@@ -150,7 +150,7 @@ void wxeditor_multitrack::on_control(wxCommandEvent& e)
 
 void wxeditor_multitrack::update_controls()
 {
-	bool readonly = movb.get_movie().readonly_mode();
+	bool readonly = lsnes_instance.mlogic.get_movie().readonly_mode();
 
 	for(auto i : controllers) {
 		vsizer->Detach(i.text);

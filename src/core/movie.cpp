@@ -3,14 +3,11 @@
 #include "core/misc.hpp"
 #include "core/movie.hpp"
 #include "core/rom.hpp"
-#include "interface/romtype.hpp"
 
 #include <stdexcept>
 #include <cassert>
 #include <cstring>
 #include <fstream>
-
-movie_logic movb;
 
 movie_logic::movie_logic() throw()
 {
