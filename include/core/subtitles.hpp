@@ -19,11 +19,20 @@ private:
 	bool position_only;
 };
 
-std::set<std::pair<uint64_t, uint64_t>> get_subtitles();
-std::string get_subtitle_for(uint64_t f, uint64_t l);
-void set_subtitle_for(uint64_t f, uint64_t l, const std::string& x);
-std::string s_unescape(std::string x);
-std::string s_escape(std::string x);
-void render_subtitles(lua_render_context& ctx);
+class movie_logic;
+
+struct subtitle_commentary
+{
+public:
+	subtitle_commentary(movie_logic* _mlogic);
+	std::set<std::pair<uint64_t, uint64_t>> get_all();
+	std::string get(uint64_t f, uint64_t l);
+	void set(uint64_t f, uint64_t l, const std::string& x);
+	static std::string s_unescape(std::string x);
+	static std::string s_escape(std::string x);
+	void render(lua_render_context& ctx);
+private:
+	movie_logic& mlogic;
+};
 
 #endif

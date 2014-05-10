@@ -1,5 +1,5 @@
 #include "lua/internal.hpp"
-#include "core/subtitles.hpp"
+#include "core/instance.hpp"
 
 namespace
 {
@@ -7,7 +7,7 @@ namespace
 	{
 		auto n = P.arg<uint64_t>();
 		uint64_t j = 0;
-		for(auto i : get_subtitles()) {
+		for(auto i : lsnes_instance.subtitles.get_all()) {
 			if(j == n) {
 				L.pushnumber(i.first);
 				L.pushnumber(i.second);
@@ -22,7 +22,7 @@ namespace
 	{
 		auto frame = P.arg<uint64_t>();
 		auto length = P.arg<uint64_t>();
-		std::string x = get_subtitle_for(frame, length);
+		std::string x = lsnes_instance.subtitles.get(frame, length);
 		L.pushstring(x.c_str());
 		return 1;
 	}
@@ -32,7 +32,7 @@ namespace
 		auto frame = P.arg<uint64_t>();
 		auto length = P.arg<uint64_t>();
 		std::string text = P.arg<std::string>();
-		set_subtitle_for(frame, length, text);
+		lsnes_instance.subtitles.set(frame, length, text);
 		return 0;
 	}
 
@@ -40,7 +40,7 @@ namespace
 	{
 		auto frame = P.arg<uint64_t>();
 		auto length = P.arg<uint64_t>();
-		set_subtitle_for(frame, length, "");
+		lsnes_instance.subtitles.set(frame, length, "");
 		return 0;
 	}
 

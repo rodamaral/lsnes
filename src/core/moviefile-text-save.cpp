@@ -145,8 +145,8 @@ namespace
 		std::ostream& m = w.create_file(file);
 		try {
 			for(auto i : x)
-				m << i.first.get_frame() << " " << i.first.get_length() << " " << s_escape(i.second)
-					<< std::endl;
+				m << i.first.get_frame() << " " << i.first.get_length() << " "
+					<< subtitle_commentary::s_escape(i.second) << std::endl;
 			if(!m)
 				throw std::runtime_error("Can't write ZIP file member");
 			w.close_file();

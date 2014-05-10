@@ -17,6 +17,7 @@ struct emulator_instance
 	lsnes_memorywatch_set mwatch;
 	settingvar::cache setcache;
 	voice_commentary commentary;
+	subtitle_commentary subtitles;
 };
 
 extern emulator_instance lsnes_instance;

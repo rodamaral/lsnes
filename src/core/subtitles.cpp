@@ -110,7 +110,8 @@ namespace
 			if(text == "")
 				lsnes_instance.mlogic.get_mfile().subtitles.erase(key);
 			else
-				lsnes_instance.mlogic.get_mfile().subtitles[key] = s_unescape(text);
+				lsnes_instance.mlogic.get_mfile().subtitles[key] =
+					subtitle_commentary::s_unescape(text);
 			notify_subtitle_change();
 			redraw_framebuffer();
 		});
@@ -122,7 +123,7 @@ namespace
 				lsnes_instance.mlogic.get_mfile().subtitles.rend();
 				i++) {
 				messages << i->first.get_frame() << " " << i->first.get_length() << " "
-					<< s_escape(i->second) << std::endl;
+					<< subtitle_commentary::s_escape(i->second) << std::endl;
 			}
 		});
 
@@ -158,7 +159,12 @@ namespace
 		});
 }
 
-std::string s_escape(std::string x)
+subtitle_commentary::subtitle_commentary(movie_logic* _mlogic)
+	: mlogic(*_mlogic)
+{
+}
+
+std::string subtitle_commentary::s_escape(std::string x)
 {
 	std::string y;
 	for(size_t i = 0; i < x.length(); i++) {
@@ -173,7 +179,7 @@ std::string s_escape(std::string x)
 	return y;
 }
 
-std::string s_unescape(std::string x)
+std::string subtitle_commentary::s_unescape(std::string x)
 {
 	bool escape = false;
 	std::string y;
@@ -195,53 +201,53 @@ std::string s_unescape(std::string x)
 	return y;
 }
 
-void render_subtitles(lua_render_context& ctx)
+void subtitle_commentary::render(lua_render_context& ctx)
 {
-	if(!lsnes_instance.mlogic || lsnes_instance.mlogic.get_mfile().subtitles.empty())
+	if(!mlogic || mlogic.get_mfile().subtitles.empty())
 		return;
 	if(ctx.bottom_gap < 32)
 		ctx.bottom_gap = 32;
-	uint64_t curframe = lsnes_instance.mlogic.get_movie().get_current_frame() + 1;
+	uint64_t curframe = mlogic.get_movie().get_current_frame() + 1;
 	moviefile_subtiming posmarker(curframe);
-	auto i = lsnes_instance.mlogic.get_mfile().subtitles.upper_bound(posmarker);
-	if(i != lsnes_instance.mlogic.get_mfile().subtitles.end() && i->first.inrange(curframe)) {
+	auto i = mlogic.get_mfile().subtitles.upper_bound(posmarker);
+	if(i != mlogic.get_mfile().subtitles.end() && i->first.inrange(curframe)) {
 		std::string subtxt = i->second;
 		int32_t y = ctx.height;
 		ctx.queue->create_add<render_object_subtitle>(0, y, subtxt);
 	}
 }
 
-std::set<std::pair<uint64_t, uint64_t>> get_subtitles()
+std::set<std::pair<uint64_t, uint64_t>> subtitle_commentary::get_all()
 {
 	std::set<std::pair<uint64_t, uint64_t>> r;
-	if(!lsnes_instance.mlogic)
+	if(!mlogic)
 		return r;
-	for(auto i = lsnes_instance.mlogic.get_mfile().subtitles.rbegin(); i !=
-		lsnes_instance.mlogic.get_mfile().subtitles.rend(); i++)
+	for(auto i = mlogic.get_mfile().subtitles.rbegin(); i !=
+		mlogic.get_mfile().subtitles.rend(); i++)
 		r.insert(std::make_pair(i->first.get_frame(), i->first.get_length()));
 	return r;
 }
 
-std::string get_subtitle_for(uint64_t f, uint64_t l)
+std::string subtitle_commentary::get(uint64_t f, uint64_t l)
 {
-	if(!lsnes_instance.mlogic)
+	if(!mlogic)
 		return "";
 	moviefile_subtiming key(f, l);
-	if(!lsnes_instance.mlogic.get_mfile().subtitles.count(key))
+	if(!mlogic.get_mfile().subtitles.count(key))
 		return "";
 	else
-		return s_escape(lsnes_instance.mlogic.get_mfile().subtitles[key]);
+		return s_escape(mlogic.get_mfile().subtitles[key]);
 }
 
-void set_subtitle_for(uint64_t f, uint64_t l, const std::string& x)
+void subtitle_commentary::set(uint64_t f, uint64_t l, const std::string& x)
 {
-	if(!lsnes_instance.mlogic)
+	if(!mlogic)
 		return;
 	moviefile_subtiming key(f, l);
 	if(x == "")
-		lsnes_instance.mlogic.get_mfile().subtitles.erase(key);
+		mlogic.get_mfile().subtitles.erase(key);
 	else
-		lsnes_instance.mlogic.get_mfile().subtitles[key] = s_unescape(x);
+		mlogic.get_mfile().subtitles[key] = s_unescape(x);
 	notify_subtitle_change();
 	redraw_framebuffer();
 }

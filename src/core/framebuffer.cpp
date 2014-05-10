@@ -165,7 +165,7 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	lrc.height = todraw.get_height() * vscl;
 	if(!no_lua) {
 		lua_callback_do_paint(&lrc, spontaneous);
-		render_subtitles(lrc);
+		lsnes_instance.subtitles.render(lrc);
 	}
 	ri.fbuf = todraw;
 	ri.hscl = hscl;

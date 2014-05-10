@@ -127,7 +127,7 @@ namespace
 				if(!r)
 					continue;
 				x[moviefile_subtiming(parse_value<uint64_t>(r[1]), parse_value<uint64_t>(r[2]))] =
-					s_unescape(r[3]);
+					subtitle_commentary::s_unescape(r[3]);
 			}
 			delete &m;
 		} catch(...) {
