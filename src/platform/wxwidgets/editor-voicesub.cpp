@@ -1,4 +1,4 @@
-#include "core/inthread.hpp"
+#include "core/instance.hpp"
 #include "core/project.hpp"
 #include <stdexcept>
 
@@ -164,7 +164,7 @@ void wxeditor_voicesub::on_play(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		voicesub_play_stream(id);
+		lsnes_instance.commentary.play_stream(id);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error playing", e.what(), wxICON_EXCLAMATION);
 	}
@@ -176,7 +176,7 @@ void wxeditor_voicesub::on_delete(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		voicesub_delete_stream(id);
+		lsnes_instance.commentary.delete_stream(id);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error deleting", e.what(), wxICON_EXCLAMATION);
 	}
@@ -187,7 +187,7 @@ namespace
 	class _opus_or_sox
 	{
 	public:
-		typedef std::pair<std::string, enum external_stream_format> returntype;
+		typedef std::pair<std::string, enum voice_commentary::external_stream_format> returntype;
 		_opus_or_sox() {}
 		filedialog_input_params input(bool save) const
 		{
@@ -197,10 +197,11 @@ namespace
 			p.default_type = 0;
 			return p;
 		}
-		std::pair<std::string, enum external_stream_format> output(const filedialog_output_params& p,
-			bool save) const
+		std::pair<std::string, enum voice_commentary::external_stream_format> output(
+			const filedialog_output_params& p, bool save) const
 		{
-			return std::make_pair(p.path, (p.typechoice == 1) ? EXTFMT_SOX : EXTFMT_OGGOPUS);
+			return std::make_pair(p.path, (p.typechoice == 1) ? voice_commentary::EXTFMT_SOX :
+				voice_commentary::EXTFMT_OGGOPUS);
 		}
 	} filetype_opus_sox;
 }
@@ -213,7 +214,7 @@ void wxeditor_voicesub::on_export(wxCommandEvent& e)
 	try {
 		auto filename = choose_file_save(this, "Select file to epxort", project_otherpath(),
 			filetype_opus_sox);
-		voicesub_export_stream(id, filename.first, filename.second);
+		lsnes_instance.commentary.export_stream(id, filename.first, filename.second);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
@@ -226,7 +227,7 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 		std::string filename;
 		filename = choose_file_save(this, "Select file to export superstream", project_otherpath(),
 			filetype_sox);
-		voicesub_export_superstream(filename);
+		lsnes_instance.commentary.export_superstream(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting superstream", e.what(), wxICON_EXCLAMATION);
@@ -237,11 +238,11 @@ void wxeditor_voicesub::on_import(wxCommandEvent& e)
 {
 	try {
 		uint64_t ts;
-		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
-			"imported stream"));
+		ts = lsnes_instance.commentary.parse_timebase(pick_text(this, "Enter timebase",
+			"Enter position for newly imported stream"));
 		auto filename = choose_file_save(this, "Select file to import", project_otherpath(),
 			filetype_opus_sox);
-		voicesub_import_stream(ts, filename.first, filename.second);
+		lsnes_instance.commentary.import_stream(ts, filename.first, filename.second);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
@@ -255,9 +256,9 @@ void wxeditor_voicesub::on_change_ts(wxCommandEvent& e)
 		return;
 	try {
 		uint64_t ts;
-		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter new position for "
-			"stream"));
-		voicesub_alter_timebase(id, ts);
+		ts = lsnes_instance.commentary.parse_timebase(pick_text(this, "Enter timebase",
+			"Enter new position for stream"));
+		lsnes_instance.commentary.alter_timebase(id, ts);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error changing timebase", e.what(), wxICON_EXCLAMATION);
@@ -271,9 +272,9 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 		return;
 	try {
 		float gain;
-		std::string old = (stringfmt() << voicesub_get_gain(id)).str();
+		std::string old = (stringfmt() << lsnes_instance.commentary.get_gain(id)).str();
 		gain = parse_value<float>(pick_text(this, "Enter gain", "Enter new gain (dB) for stream", old));
-		voicesub_set_gain(id, gain);
+		lsnes_instance.commentary.set_gain(id, gain);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error changing gain", e.what(), wxICON_EXCLAMATION);
@@ -292,7 +293,7 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 		} catch(...) {
 			return;
 		}
-		voicesub_load_collection(filename);
+		lsnes_instance.commentary.load_collection(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading collection", e.what(), wxICON_EXCLAMATION);
@@ -303,7 +304,7 @@ void wxeditor_voicesub::on_unload(wxCommandEvent& e)
 {
 	if(project_get() != NULL)
 		return;
-	voicesub_unload_collection();
+	lsnes_instance.commentary.unload_collection();
 }
 
 void wxeditor_voicesub::on_refresh(wxCommandEvent& e)
@@ -321,7 +322,7 @@ void wxeditor_voicesub::refresh()
 {
 	if(closing)
 		return;
-	bool cflag = voicesub_collection_loaded();
+	bool cflag = lsnes_instance.commentary.collection_loaded();
 	bool pflag = (project_get() != NULL);
 	unloadbutton->Enable(cflag && !pflag);
 	loadbutton->Enable(!pflag);
@@ -331,12 +332,12 @@ void wxeditor_voicesub::refresh()
 	subtitles->Clear();
 	smap.clear();
 	int next = 0;
-	for(auto i : voicesub_get_stream_info()) {
+	for(auto i : lsnes_instance.commentary.get_stream_info()) {
 		smap[next++] = i.id;
 		std::ostringstream tmp;
-		tmp << "#" << i.id << " " << voicesub_ts_seconds(i.length) << "s@" << voicesub_ts_seconds(i.base)
-			<< "s";
-		float gain = voicesub_get_gain(i.id);
+		tmp << "#" << i.id << " " << lsnes_instance.commentary.ts_seconds(i.length) << "s@"
+			<< lsnes_instance.commentary.ts_seconds(i.base) << "s";
+		float gain = lsnes_instance.commentary.get_gain(i.id);
 		if(gain < -1e-5 || gain > 1e-5)
 			tmp << " (gain " << gain << "dB)";
 		std::string text = tmp.str();

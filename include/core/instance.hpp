@@ -1,6 +1,7 @@
 #ifndef _instance__hpp__included__
 #define _instance__hpp__included__
 
+#include "core/inthread.hpp"
 #include "core/movie.hpp"
 #include "core/memorywatch.hpp"
 #include "library/lua-base.hpp"
@@ -15,6 +16,7 @@ struct emulator_instance
 	lua::state lua;
 	lsnes_memorywatch_set mwatch;
 	settingvar::cache setcache;
+	voice_commentary commentary;
 };
 
 extern emulator_instance lsnes_instance;

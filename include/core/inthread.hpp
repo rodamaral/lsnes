@@ -5,36 +5,44 @@
 #include <cstdint>
 #include <string>
 
-void voicethread_task();
-void voicethread_kill();
-void voice_frame_number(uint64_t newframe, double rate);
-
-enum external_stream_format
+class voice_commentary
 {
-	EXTFMT_SOX,
-	EXTFMT_OGGOPUS
-};
+public:
+	enum external_stream_format
+	{
+		EXTFMT_SOX,
+		EXTFMT_OGGOPUS
+	};
 
-struct playback_stream_info
-{
-	uint64_t id;
-	uint64_t base;
-	uint64_t length;
-};
+	struct playback_stream_info
+	{
+		uint64_t id;
+		uint64_t base;
+		uint64_t length;
+	};
 
-bool voicesub_collection_loaded();
-std::list<playback_stream_info> voicesub_get_stream_info();
-void voicesub_play_stream(uint64_t id);
-void voicesub_export_stream(uint64_t id, const std::string& filename, external_stream_format fmt);
-uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, external_stream_format fmt);
-void voicesub_delete_stream(uint64_t id);
-void voicesub_export_superstream(const std::string& filename);
-void voicesub_load_collection(const std::string& filename);
-void voicesub_unload_collection();
-void voicesub_alter_timebase(uint64_t id, uint64_t ts);
-uint64_t voicesub_parse_timebase(const std::string& n);
-double voicesub_ts_seconds(uint64_t ts);
-float voicesub_get_gain(uint64_t id);
-void voicesub_set_gain(uint64_t id, float gain);
+	voice_commentary();
+	~voice_commentary();
+	void init();
+	void kill();
+	void frame_number(uint64_t newframe, double rate);
+	bool collection_loaded();
+	std::list<playback_stream_info> get_stream_info();
+	void play_stream(uint64_t id);
+	void export_stream(uint64_t id, const std::string& filename, external_stream_format fmt);
+	uint64_t import_stream(uint64_t ts, const std::string& filename, external_stream_format fmt);
+	void delete_stream(uint64_t id);
+	void export_superstream(const std::string& filename);
+	void load_collection(const std::string& filename);
+	void unload_collection();
+	void alter_timebase(uint64_t id, uint64_t ts);
+	uint64_t parse_timebase(const std::string& n);
+	double ts_seconds(uint64_t ts);
+	float get_gain(uint64_t id);
+	void set_gain(uint64_t id, float gain);
+	void set_active_flag(bool flag);
+private:
+	void* internal;
+};
 
 #endif

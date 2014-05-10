@@ -12,6 +12,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/instance.hpp"
 #include "core/inthread.hpp"
 #include "core/keymapper.hpp"
 #include "core/settings.hpp"
@@ -61,35 +62,65 @@ namespace
 	class opus_playback_stream;
 	class opus_stream;
 	class stream_collection;
+	class bitrate_tracker;
+	class inthread_th;
 
 	settingvar::variable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_bitrate(lsnes_vset,
 		"opus-bitrate", "commentary‣Bitrate", OPUS_BITRATE);
 	settingvar::variable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_max_bitrate(lsnes_vset,
 		"opus-max-bitrate", "commentary‣Max bitrate", OPUS_MAX_BITRATE);
 
-	//Recording active flag.
-	volatile bool active_flag = false;
-	//Last seen frame number.
-	uint64_t last_frame_number = 0;
-	//Last seen rate.
-	double last_rate = 0;
-	//Mutex protecting current_time and time_jump.
-	threads::lock time_mutex;
-	//The current time.
-	uint64_t current_time;
-	//Time jump flag. Set if time jump is detected.
-	//If time jump is detected, all current playing streams are stopped, stream locks are cleared and
-	//apropriate streams are restarted. If time jump is false, all unlocked streams coming into range
-	//are started.
-	bool time_jump;
-	//Lock protecting active_playback_streams.
-	threads::lock active_playback_streams_lock;
-	//List of streams currently playing.
-	std::list<opus_playback_stream*> active_playback_streams;
-	//The collection of streams.
-	stream_collection* current_collection;
-	//Lock protecting current collection.
-	threads::lock current_collection_lock;
+	struct voicesub_state
+	{
+		//Recording active flag.
+		volatile bool active_flag = false;
+		//Last seen frame number.
+		uint64_t last_frame_number = 0;
+		//Last seen rate.
+		double last_rate = 0;
+		//Mutex protecting current_time and time_jump.
+		threads::lock time_mutex;
+		//The current time.
+		uint64_t current_time;
+		//Time jump flag. Set if time jump is detected.
+		//If time jump is detected, all current playing streams are stopped, stream locks are cleared and
+		//apropriate streams are restarted. If time jump is false, all unlocked streams coming into range
+		//are started.
+		bool time_jump;
+		//Lock protecting active_playback_streams.
+		threads::lock active_playback_streams_lock;
+		//List of streams currently playing.
+		std::list<opus_playback_stream*> active_playback_streams;
+		//The collection of streams.
+		stream_collection* current_collection;
+		//Lock protecting current collection.
+		threads::lock current_collection_lock;
+		//The task handling the stuff.
+		inthread_th* int_task;
+		//Functions.
+		void start_management_stream(opus_stream& s);
+		void advance_time(uint64_t newtime);
+		void jump_time(uint64_t newtime);
+		void do_resample(audioapi_resampler& r, float* srcbuf, size_t& srcuse, float* dstbuf,
+			size_t& dstuse, size_t dstmax, double ratio);
+		void drain_input();
+		void read_input(float* buf, size_t& use, size_t maxuse);
+		void compress_opus_block(opus::encoder& e, float* buf, size_t& use,
+			opus_stream& active_stream, bitrate_tracker& brtrack);
+		void update_time();
+		void decompress_active_streams(float* out, size_t& use);
+		void handle_tangent_positive_edge(opus::encoder& e, opus_stream*& active_stream,
+			bitrate_tracker& brtrack);
+		void handle_tangent_negative_edge(opus_stream*& active_stream, bitrate_tracker& brtrack);
+	};
+
+	voicesub_state* get_state(void* ptr)
+	{
+		auto x = reinterpret_cast<voicesub_state*>(ptr);
+		if(!x)
+			throw std::runtime_error("voice_commentary not initialized");
+		return x;
+	}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Bitrate tracker.
@@ -223,12 +254,12 @@ namespace
 		//Import a stream with specified base time.
 		//Can throw.
 		opus_stream(uint64_t base, filesystem::ref filesys, std::ifstream& data,
-			external_stream_format extfmt);
+			voice_commentary::external_stream_format extfmt);
 		//Delete this stream (also puts a ref)
 		void delete_stream() { deleting = true; put_ref(); }
 		//Export a stream.
 		//Can throw.
-		void export_stream(std::ofstream& data, external_stream_format extfmt);
+		void export_stream(std::ofstream& data, voice_commentary::external_stream_format extfmt);
 		//Get length of specified packet in samples.
 		uint16_t packet_length(uint32_t seqno)
 		{
@@ -416,7 +447,7 @@ out_parsing:
 	}
 
 	opus_stream::opus_stream(uint64_t base, filesystem::ref filesys, std::ifstream& data,
-		external_stream_format extfmt)
+		voice_commentary::external_stream_format extfmt)
 		: fs(filesys)
 	{
 		refcount = 1;
@@ -433,9 +464,9 @@ out_parsing:
 		pregap_length = 0;
 		postgap_length = 0;
 		gain = 0;
-		if(extfmt == EXTFMT_OGGOPUS)
+		if(extfmt == voice_commentary::EXTFMT_OGGOPUS)
 			import_stream_oggopus(data);
-		else if(extfmt == EXTFMT_SOX)
+		else if(extfmt == voice_commentary::EXTFMT_SOX)
 			import_stream_sox(data);
 	}
 
@@ -725,11 +756,11 @@ out:
 		}
 	}
 
-	void opus_stream::export_stream(std::ofstream& data, external_stream_format extfmt)
+	void opus_stream::export_stream(std::ofstream& data, voice_commentary::external_stream_format extfmt)
 	{
-		if(extfmt == EXTFMT_OGGOPUS)
+		if(extfmt == voice_commentary::EXTFMT_OGGOPUS)
 			export_stream_oggopus(data);
-		else if(extfmt == EXTFMT_SOX)
+		else if(extfmt == voice_commentary::EXTFMT_SOX)
 			export_stream_sox(data);
 	}
 
@@ -1270,14 +1301,14 @@ out:
 	}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	void start_management_stream(opus_stream& s)
+	void voicesub_state::start_management_stream(opus_stream& s)
 	{
 		opus_playback_stream* p = new opus_playback_stream(s);
 		threads::alock m(active_playback_streams_lock);
 		active_playback_streams.push_back(p);
 	}
 
-	void advance_time(uint64_t newtime)
+	void voicesub_state::advance_time(uint64_t newtime)
 	{
 		threads::alock m2(current_collection_lock);
 		if(!current_collection) {
@@ -1305,7 +1336,7 @@ out:
 		}
 	}
 
-	void jump_time(uint64_t newtime)
+	void voicesub_state::jump_time(uint64_t newtime)
 	{
 		threads::alock m2(current_collection_lock);
 		if(!current_collection) {
@@ -1350,8 +1381,8 @@ out:
 	}
 
 	//Resample.
-	void do_resample(audioapi_resampler& r, float* srcbuf, size_t& srcuse, float* dstbuf, size_t& dstuse,
-		size_t dstmax, double ratio)
+	void voicesub_state::do_resample(audioapi_resampler& r, float* srcbuf, size_t& srcuse, float* dstbuf,
+		size_t& dstuse, size_t dstmax, double ratio)
 	{
 		if(srcuse == 0 || dstuse >= dstmax)
 			return;
@@ -1368,7 +1399,7 @@ out:
 	}
 
 	//Drain the input buffer.
-	void drain_input()
+	void voicesub_state::drain_input()
 	{
 		while(audioapi_voice_r_status() > 0) {
 			float buf[256];
@@ -1378,7 +1409,7 @@ out:
 	}
 
 	//Read the input buffer.
-	void read_input(float* buf, size_t& use, size_t maxuse)
+	void voicesub_state::read_input(float* buf, size_t& use, size_t maxuse)
 	{
 		size_t rleft = audioapi_voice_r_status();
 		unsigned toread = min(rleft, max(maxuse, use) - use);
@@ -1389,8 +1420,8 @@ out:
 	}
 
 	//Compress Opus block.
-	void compress_opus_block(opus::encoder& e, float* buf, size_t& use, opus_stream& active_stream,
-		bitrate_tracker& brtrack)
+	void voicesub_state::compress_opus_block(opus::encoder& e, float* buf, size_t& use,
+		opus_stream& active_stream, bitrate_tracker& brtrack)
 	{
 		const size_t opus_out_max = 1276;
 		unsigned char opus_output[opus_out_max];
@@ -1422,7 +1453,7 @@ out:
 		use -= cblock;
 	}
 
-	void update_time()
+	void voicesub_state::update_time()
 	{
 		uint64_t sampletime;
 		bool jumping;
@@ -1438,7 +1469,7 @@ out:
 			advance_time(sampletime);
 	}
 
-	void decompress_active_streams(float* out, size_t& use)
+	void voicesub_state::decompress_active_streams(float* out, size_t& use)
 	{
 		size_t base = use;
 		use += OUTPUT_BLOCK;
@@ -1480,7 +1511,8 @@ out:
 		}
 	}
 
-	void handle_tangent_positive_edge(opus::encoder& e, opus_stream*& active_stream, bitrate_tracker& brtrack)
+	void voicesub_state::handle_tangent_positive_edge(opus::encoder& e, opus_stream*& active_stream,
+		bitrate_tracker& brtrack)
 	{
 		threads::alock m2(current_collection_lock);
 		if(!current_collection)
@@ -1505,7 +1537,7 @@ out:
 		messages << "Tangent enaged." << std::endl;
 	}
 
-	void handle_tangent_negative_edge(opus_stream*& active_stream, bitrate_tracker& brtrack)
+	void voicesub_state::handle_tangent_negative_edge(opus_stream*& active_stream, bitrate_tracker& brtrack)
 	{
 		threads::alock m2(current_collection_lock);
 		messages << "Tangent disenaged: " << brtrack;
@@ -1530,7 +1562,8 @@ out:
 	class inthread_th : public workthread::worker
 	{
 	public:
-		inthread_th()
+		inthread_th(voicesub_state* _internal)
+			: internal(*_internal)
 		{
 			quit = false;
 			quit_ack = false;
@@ -1593,23 +1626,23 @@ out:
 			bitrate_tracker brtrack;
 			opus_stream* active_stream = NULL;
 
-			drain_input();
+			internal.drain_input();
 			while(1) {
 				if(clear_workflag(workthread::quit_request) & workthread::quit_request) {
-					if(!active_flag && active_stream)
-						handle_tangent_negative_edge(active_stream, brtrack);
+					if(!internal.active_flag && active_stream)
+						internal.handle_tangent_negative_edge(active_stream, brtrack);
 					break;
 				}
 				uint64_t ticks = get_utime();
 				//Handle tangent edgets.
-				if(active_flag && !active_stream) {
-					drain_input();
+				if(internal.active_flag && !active_stream) {
+					internal.drain_input();
 					buf_in_use = 0;
 					buf_inr_use = 0;
-					handle_tangent_positive_edge(oenc, active_stream, brtrack);
+					internal.handle_tangent_positive_edge(oenc, active_stream, brtrack);
 				}
-				else if((!active_flag || quit) && active_stream)
-					handle_tangent_negative_edge(active_stream, brtrack);
+				else if((!internal.active_flag || quit) && active_stream)
+					internal.handle_tangent_negative_edge(active_stream, brtrack);
 				if(quit)
 					break;
 
@@ -1617,25 +1650,26 @@ out:
 				unsigned rate_in = audioapi_voice_rate().first;
 				unsigned rate_out = audioapi_voice_rate().second;
 				size_t dbuf_max = min(buf_max, rate_in / REC_THRESHOLD_DIV);
-				read_input(buf_in, buf_in_use, dbuf_max);
+				internal.read_input(buf_in, buf_in_use, dbuf_max);
 
 				//Resample up to full opus block.
-				do_resample(rin, buf_in, buf_in_use, buf_inr, buf_inr_use, OPUS_BLOCK_SIZE,
+				internal.do_resample(rin, buf_in, buf_in_use, buf_inr, buf_inr_use, OPUS_BLOCK_SIZE,
 					1.0 * OPUS_SAMPLERATE / rate_in);
 
 				//If we have full opus block and recording is enabled, compress it.
 				if(buf_inr_use >= OPUS_BLOCK_SIZE && active_stream)
-					compress_opus_block(oenc, buf_inr, buf_inr_use, *active_stream, brtrack);
+					internal.compress_opus_block(oenc, buf_inr, buf_inr_use, *active_stream,
+						brtrack);
 
 				//Update time, starting/ending streams.
-				update_time();
+				internal.update_time();
 
 				//Decompress active streams.
 				if(buf_outr_use < BLOCK_THRESHOLD)
-					decompress_active_streams(buf_outr, buf_outr_use);
+					internal.decompress_active_streams(buf_outr, buf_outr_use);
 
 				//Resample to output rate.
-				do_resample(rout, buf_outr, buf_outr_use, buf_out, buf_out_use, buf_max,
+				internal.do_resample(rout, buf_outr, buf_outr_use, buf_out, buf_out_use, buf_max,
 					1.0 * rate_out / OPUS_SAMPLERATE);
 
 				//Output stuff.
@@ -1649,9 +1683,9 @@ out:
 				if(ticks_spent < ITERATION_TIME)
 					usleep(ITERATION_TIME - ticks_spent);
 			}
-			threads::alock h(current_collection_lock);
-			delete current_collection;
-			current_collection = NULL;
+			threads::alock h(internal.current_collection_lock);
+			delete internal.current_collection;
+			internal.current_collection = NULL;
 		}
 	private:
 		size_t rptr;
@@ -1660,49 +1694,73 @@ out:
 		volatile bool quit_ack;
 		threads::lock lmut;
 		threads::cv lcond;
+		voicesub_state& internal;
 	};
 
 	//The tangent function.
 	command::fnptr<> ptangent(lsnes_cmd, "+tangent", "Voice tangent",
 		"Syntax: +tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			active_flag = true;
+			lsnes_instance.commentary.set_active_flag(true);
 		});
 	command::fnptr<> ntangent(lsnes_cmd, "-tangent", "Voice tangent",
 		"Syntax: -tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			active_flag = false;
+			lsnes_instance.commentary.set_active_flag(false);
 		});
 	keyboard::invbind itangent(lsnes_mapper, "+tangent", "Movie‣Voice tangent");
-	inthread_th* int_task;
+}
+
+voice_commentary::voice_commentary()
+{
+	internal = NULL;
+}
+
+voice_commentary::~voice_commentary()
+{
+	if(internal)
+		kill();
 }
 
 //Rate is not sampling rate!
-void voice_frame_number(uint64_t newframe, double rate)
+void voice_commentary::frame_number(uint64_t newframe, double rate)
 {
-	if(rate == last_rate && last_frame_number == newframe)
+	if(!internal)
 		return;
-	threads::alock m(time_mutex);
-	current_time = newframe / rate * OPUS_SAMPLERATE;
-	if(fabs(rate - last_rate) > 1e-6 || last_frame_number + 1 != newframe)
-		time_jump = true;
-	last_frame_number = newframe;
-	last_rate = rate;
+	auto _internal = get_state(internal);
+	if(rate == _internal->last_rate && _internal->last_frame_number == newframe)
+		return;
+	threads::alock m(_internal->time_mutex);
+	_internal->current_time = newframe / rate * OPUS_SAMPLERATE;
+	if(fabs(rate - _internal->last_rate) > 1e-6 || _internal->last_frame_number + 1 != newframe)
+		_internal->time_jump = true;
+	_internal->last_frame_number = newframe;
+	_internal->last_rate = rate;
 }
 
-void voicethread_task()
+void voice_commentary::init()
 {
-	int_task = new inthread_th;
+	internal = new voicesub_state;
+	auto _internal = get_state(internal);
+	try {
+		_internal->int_task = new inthread_th(_internal);
+	} catch(...) {
+		delete _internal;
+		throw;
+	}
 }
 
-void voicethread_kill()
+void voice_commentary::kill()
 {
-	int_task->kill();
-	delete int_task;
-	int_task = NULL;
+	auto _internal = get_state(internal);
+	_internal->int_task->kill();
+	delete _internal->int_task;
+	_internal->int_task = NULL;
+	delete _internal;
+	internal = NULL;
 }
 
-uint64_t voicesub_parse_timebase(const std::string& n)
+uint64_t voice_commentary::parse_timebase(const std::string& n)
 {
 	std::string x = n;
 	if(x.length() > 0 && x[x.length() - 1] == 's') {
@@ -1712,21 +1770,26 @@ uint64_t voicesub_parse_timebase(const std::string& n)
 		return parse_value<uint64_t>(x);
 }
 
-bool voicesub_collection_loaded()
+bool voice_commentary::collection_loaded()
 {
-	threads::alock m2(current_collection_lock);
-	return (current_collection != NULL);
+	if(!internal) return false;
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	return (_internal->current_collection != NULL);
 }
 
-std::list<playback_stream_info> voicesub_get_stream_info()
+std::list<voice_commentary::playback_stream_info> voice_commentary::get_stream_info()
 {
-	threads::alock m2(current_collection_lock);
-	std::list<playback_stream_info> in;
-	if(!current_collection)
+	std::list<voice_commentary::playback_stream_info> in;
+	if(!internal)
 		return in;
-	for(auto i : current_collection->all_streams()) {
-		opus_stream* s = current_collection->get_stream(i);
-		playback_stream_info pi;
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
+		return in;
+	for(auto i : _internal->current_collection->all_streams()) {
+		opus_stream* s = _internal->current_collection->get_stream(i);
+		voice_commentary::playback_stream_info pi;
 		if(!s)
 			continue;
 		pi.id = i;
@@ -1741,16 +1804,17 @@ std::list<playback_stream_info> voicesub_get_stream_info()
 	return in;
 }
 
-void voicesub_play_stream(uint64_t id)
+void voice_commentary::play_stream(uint64_t id)
 {
-	threads::alock m2(current_collection_lock);
-	if(!current_collection)
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
-	opus_stream* s = current_collection->get_stream(id);
+	opus_stream* s = _internal->current_collection->get_stream(id);
 	if(!s)
 		return;
 	try {
-		start_management_stream(*s);
+		_internal->start_management_stream(*s);
 	} catch(...) {
 		s->put_ref();
 		throw;
@@ -1758,12 +1822,14 @@ void voicesub_play_stream(uint64_t id)
 	s->put_ref();
 }
 
-void voicesub_export_stream(uint64_t id, const std::string& filename, external_stream_format fmt)
+void voice_commentary::export_stream(uint64_t id, const std::string& filename,
+	voice_commentary::external_stream_format fmt)
 {
-	threads::alock m2(current_collection_lock);
-	if(!current_collection)
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
-	opus_stream* st = current_collection->get_stream(id);
+	opus_stream* st = _internal->current_collection->get_stream(id);
 	if(!st)
 		return;
 	std::ofstream s(filename, std::ios_base::out | std::ios_base::binary);
@@ -1780,19 +1846,21 @@ void voicesub_export_stream(uint64_t id, const std::string& filename, external_s
 	st->put_ref();
 }
 
-uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, external_stream_format fmt)
+uint64_t voice_commentary::import_stream(uint64_t ts, const std::string& filename,
+	voice_commentary::external_stream_format fmt)
 {
-	threads::alock m2(current_collection_lock);
-	if(!current_collection)
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
 
 	std::ifstream s(filename, std::ios_base::in | std::ios_base::binary);
 	if(!s)
 		throw std::runtime_error("Can't open input file");
-	opus_stream* st = new opus_stream(ts, current_collection->get_filesystem(), s, fmt);
+	opus_stream* st = new opus_stream(ts, _internal->current_collection->get_filesystem(), s, fmt);
 	uint64_t id;
 	try {
-		id = current_collection->add_stream(*st);
+		id = _internal->current_collection->add_stream(*st);
 	} catch(...) {
 		st->delete_stream();
 		throw;
@@ -1802,78 +1870,92 @@ uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, extern
 	return id;
 }
 
-void voicesub_delete_stream(uint64_t id)
+void voice_commentary::delete_stream(uint64_t id)
 {
-	threads::alock m2(current_collection_lock);
-	if(!current_collection)
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
-	current_collection->delete_stream(id);
+	_internal->current_collection->delete_stream(id);
 	notify_voice_stream_change();
 }
 
-void voicesub_export_superstream(const std::string& filename)
+void voice_commentary::export_superstream(const std::string& filename)
 {
-	threads::alock m2(current_collection_lock);
-	if(!current_collection)
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
 	std::ofstream s(filename, std::ios_base::out | std::ios_base::binary);
 	if(!s)
 		throw std::runtime_error("Can't open output file");
-	current_collection->export_superstream(s);
+	_internal->current_collection->export_superstream(s);
 }
 
-void voicesub_load_collection(const std::string& filename)
+void voice_commentary::load_collection(const std::string& filename)
 {
-	threads::alock m2(current_collection_lock);
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
 	filesystem::ref newfs;
 	stream_collection* newc;
 	newfs = filesystem::ref(filename);
 	newc = new stream_collection(newfs);
-	if(current_collection)
-		delete current_collection;
-	current_collection = newc;
+	if(_internal->current_collection)
+		delete _internal->current_collection;
+	_internal->current_collection = newc;
 	notify_voice_stream_change();
 }
 
-void voicesub_unload_collection()
+void voice_commentary::unload_collection()
 {
-	threads::alock m2(current_collection_lock);
-	if(current_collection)
-		delete current_collection;
-	current_collection = NULL;
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(_internal->current_collection)
+		delete _internal->current_collection;
+	_internal->current_collection = NULL;
 	notify_voice_stream_change();
 }
 
-void voicesub_alter_timebase(uint64_t id, uint64_t ts)
+void voice_commentary::alter_timebase(uint64_t id, uint64_t ts)
 {
-	threads::alock m2(current_collection_lock);
-	if(!current_collection)
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
-	current_collection->alter_stream_timebase(id, ts);
+	_internal->current_collection->alter_stream_timebase(id, ts);
 	notify_voice_stream_change();
 }
 
-float voicesub_get_gain(uint64_t id)
+float voice_commentary::get_gain(uint64_t id)
 {
-	threads::alock m2(current_collection_lock);
-	if(!current_collection)
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
-	return current_collection->get_stream(id)->get_gain() / 256.0;
+	return _internal->current_collection->get_stream(id)->get_gain() / 256.0;
 }
 
-void voicesub_set_gain(uint64_t id, float gain)
+void voice_commentary::set_gain(uint64_t id, float gain)
 {
-	threads::alock m2(current_collection_lock);
-	if(!current_collection)
+	auto _internal = get_state(internal);
+	threads::alock m2(_internal->current_collection_lock);
+	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
 	int64_t _gain = gain * 256;
 	if(_gain < -32768 || _gain > 32767)
 		throw std::runtime_error("Gain out of range (+-128dB)");
-	current_collection->alter_stream_gain(id, _gain);
+	_internal->current_collection->alter_stream_gain(id, _gain);
 	notify_voice_stream_change();
 }
 
-double voicesub_ts_seconds(uint64_t ts)
+double voice_commentary::ts_seconds(uint64_t ts)
 {
 	return ts / 48000.0;
+}
+
+void voice_commentary::set_active_flag(bool flag)
+{
+	if(!internal) return;
+	auto _internal = get_state(internal);
+	_internal->active_flag = flag;
 }

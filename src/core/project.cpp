@@ -318,7 +318,7 @@ bool project_set(project_info* p, bool current)
 {
 	if(!p) {
 		if(active_project)
-			voicesub_unload_collection();
+			lsnes_instance.commentary.unload_collection();
 		active_project = p;
 		notify_core_change();
 		notify_branch_change();
@@ -386,7 +386,7 @@ skip_rom_movie:
 			} catch(std::exception& e) {
 				messages << "Can't set/clear watch '" << i << "': " << e.what() << std::endl;
 			}
-		voicesub_load_collection(p->directory + "/" + p->prefix + ".lsvs");
+		lsnes_instance.commentary.load_collection(p->directory + "/" + p->prefix + ".lsvs");
 		lsnes_cmd.invoke("reset-lua");
 		for(auto i : p->luascripts)
 			lsnes_cmd.invoke("run-lua " + i);

@@ -306,10 +306,10 @@ void update_movie_state()
 		uint64_t magic[4];
 		our_rom.region->fill_framerate_magic(magic);
 		if(lsnes_instance.mlogic)
-			voice_frame_number(lsnes_instance.mlogic.get_movie().get_current_frame(),
+			lsnes_instance.commentary.frame_number(lsnes_instance.mlogic.get_movie().get_current_frame(),
 				1.0 * magic[1] / magic[0]);
 		else
-			voice_frame_number(0, 60.0);	//Default.
+			lsnes_instance.commentary.frame_number(0, 60.0);	//Default.
 	}
 	auto& _status = lsnes_status.get_write();
 	try {
@@ -1222,7 +1222,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	dispatch_set_error_streams(&messages.getstream());
 	emulation_thread = threads::this_id();
 	jukebox_size_listener jlistener;
-	voicethread_task();
+	lsnes_instance.commentary.init();
 	init_special_screens();
 	our_rom = rom;
 	init_main_callbacks();
@@ -1331,7 +1331,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	}
 	information_dispatch::do_dump_end();
 	core_core::uninstall_all_handlers();
-	voicethread_kill();
+	lsnes_instance.commentary.kill();
 	platform::system_thread_available(false);
 	//Kill some things to avoid crashes.
 	debug_core_change();
