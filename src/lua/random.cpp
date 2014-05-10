@@ -1,6 +1,6 @@
 #include "lua/internal.hpp"
 #include "lua/unsaferewind.hpp"
-#include "core/misc.hpp"
+#include "core/random.hpp"
 #include "library/string.hpp"
 #include "library/hex.hpp"
 

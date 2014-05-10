@@ -1,3 +1,4 @@
+#include "arch-detect.hpp"
 #include "crandom.hpp"
 #include <stdexcept>
 #include <iostream>
@@ -69,6 +70,29 @@ void generate(void* buffer, size_t buffersize)
 		ssize_t r = read(fd, (char*)buffer + out, buffersize - out);
 		if(r > 0) out += r;
 	}
+}
+
+uint64_t arch_get_tsc()
+{
+#ifdef ARCH_IS_I386
+	uint32_t a, b;
+	asm volatile("rdtsc" : "=a"(a), "=d"(b));
+	return ((uint64_t)b << 32) | a;
+#else
+	return 0;
+#endif
+}
+
+uint64_t arch_get_random()
+{
+#ifdef ARCH_IS_I386
+	uint32_t r;
+	asm volatile (".byte 0xb8, 0x01, 0x00, 0x00, 0x00, 0x0f, 0xa2, 0xf7, 0xc1, 0x00, 0x00, 0x00, 0x40, "
+		"0x74, 0x05, 0x0f, 0xc7, 0xf0, 0xeb, 0x02, 0x31, 0xc0" : "=a"(r) : : "ebx", "ecx", "edx");
+	return r;
+#else
+	return 0;
+#endif
 }
 }
 

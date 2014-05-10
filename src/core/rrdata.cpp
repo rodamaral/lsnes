@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "core/random.hpp"
 #include "core/misc.hpp"
 
 rrdata_set::instance next_rrdata()

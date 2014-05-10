@@ -1,6 +1,7 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
 #include "core/window.hpp"
+#include "core/random.hpp"
 #include "video/sox.hpp"
 #include "library/serialization.hpp"
 #include "library/string.hpp"

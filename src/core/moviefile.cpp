@@ -3,6 +3,7 @@
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/moviefile-common.hpp"
+#include "core/random.hpp"
 #include "library/zip.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"

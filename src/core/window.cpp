@@ -6,6 +6,7 @@
 #include "core/keymapper.hpp"
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
+#include "core/random.hpp"
 #include "core/window.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/framebuffer.hpp"

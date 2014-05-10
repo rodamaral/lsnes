@@ -12,6 +12,7 @@
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
 #include "core/project.hpp"
+#include "core/random.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"

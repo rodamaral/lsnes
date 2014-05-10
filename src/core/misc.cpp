@@ -44,69 +44,7 @@
 
 namespace
 {
-	skein::prng prng;
 	bool reached_main_flag;
-	threads::lock seed_mutex;
-
-	uint64_t arch_get_tsc()
-	{
-#ifdef ARCH_IS_I386
-		uint32_t a, b;
-		asm volatile("rdtsc" : "=a"(a), "=d"(b));
-		return ((uint64_t)b << 32) | a;
-#else
-		return 0;
-#endif
-	}
-
-	uint64_t arch_get_random()
-	{
-#ifdef ARCH_IS_I386
-		uint32_t r;
-		//This reads undefined value if RDRAND is not supported. Don't care.
-		asm volatile (".byte 0xb8, 0x01, 0x00, 0x00, 0x00, 0x0f, 0xa2, 0xf7, 0xc1, 0x00, 0x00, 0x00, 0x40, "
-			"0x74, 0x03, 0x0f, 0xc7, 0xf0" : "=a"(r) : : "ebx", "ecx", "edx");
-		return r;
-#else
-		return 0;
-#endif
-	}
-
-	void do_mix_tsc()
-	{
-		const unsigned slots = 32;
-		static unsigned count = 0;
-		static uint64_t last_reseed = 0;
-		static uint64_t buf[slots + 1];
-		buf[count++] = arch_get_tsc();
-		threads::alock h(seed_mutex);
-		if(count == 0) count = 1;  //Shouldn't happen.
-		if(count == slots || buf[count - 1] - last_reseed > 300000000) {
-			last_reseed = buf[count - 1];
-			buf[slots] = arch_get_random();
-			prng.write(buf, sizeof(buf));
-			count = 0;
-		}
-	}
-
-	std::string get_random_hexstring_64(size_t index)
-	{
-		threads::alock h(seed_mutex);
-		uint64_t buf[7];
-		uint8_t out[32];
-		timeval tv;
-		buf[3] = arch_get_random();
-		buf[4] = arch_get_random();
-		buf[5] = arch_get_random();
-		buf[6] = arch_get_random();
-		gettimeofday(&tv, NULL);
-		buf[0] = tv.tv_sec;
-		buf[1] = tv.tv_usec;
-		buf[2] = arch_get_tsc();
-		prng.write(buf, sizeof(buf));
-		prng.read(out, sizeof(out));
-		return hex::b_to(out, sizeof(out));
-	}
 
 	char endian_char(int e)
 	{
@@ -157,31 +95,6 @@ std::string safe_filename(const std::string& str)
 			o << "%" << hex::to8(ch);
 	}
 	return o.str();
-}
-
-std::string get_random_hexstring(size_t length) throw(std::bad_alloc)
-{
-	std::string out;
-	for(size_t i = 0; i < length; i += 64)
-		out = out + get_random_hexstring_64(i);
-	return out.substr(0, length);
-}
-
-void set_random_seed(const std::string& seed) throw(std::bad_alloc)
-{
-	std::vector<char> x(seed.begin(), seed.end());
-	{
-		threads::alock h(seed_mutex);
-		prng.write(&x[0], x.size());
-	}
-}
-
-void set_random_seed() throw(std::bad_alloc)
-{
-	char buf[128];
-	crandom::generate(buf, 128);
-	std::string s(buf, sizeof(buf));
-	set_random_seed(s);
 }
 
 struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) throw(std::bad_alloc,
@@ -362,24 +275,6 @@ std::string mangle_name(const std::string& orig)
 			out << i;
 	}
 	return out.str();
-}
-
-void random_mix_timing_entropy()
-{
-	do_mix_tsc();
-}
-
-//Generate highly random stuff.
-void highrandom_256(uint8_t* buf)
-{
-	uint8_t tmp[104];
-	std::string s = get_random_hexstring(64);
-	std::copy(s.begin(), s.end(), reinterpret_cast<char*>(tmp));
-	crandom::generate(tmp + 64, 32);
-	serialization::u64b(tmp + 96, arch_get_tsc());
-	skein::hash hsh(skein::hash::PIPE_1024, 256);
-	hsh.write(tmp, 104);
-	hsh.read(buf);
 }
 
 std::string get_temp_file()

@@ -20,6 +20,7 @@
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/project.hpp"
+#include "core/random.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
 #include "core/settings.hpp"

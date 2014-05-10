@@ -14,6 +14,7 @@
 #include "core/misc.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
+#include "core/random.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
 #include "core/settings.hpp"

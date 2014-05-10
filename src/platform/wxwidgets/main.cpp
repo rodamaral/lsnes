@@ -15,6 +15,7 @@
 #include "core/instance.hpp"
 #include "core/moviefile-common.hpp"
 #include "core/moviedata.hpp"
+#include "core/random.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"

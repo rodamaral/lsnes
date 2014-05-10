@@ -10,6 +10,7 @@
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
+#include "core/random.hpp"
 #include "core/romguess.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"

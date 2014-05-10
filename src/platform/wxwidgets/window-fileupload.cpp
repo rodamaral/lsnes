@@ -3,6 +3,7 @@
 #include "core/fileupload.hpp"
 #include "core/instance.hpp"
 #include "core/misc.hpp"
+#include "core/random.hpp"
 #include "core/rom.hpp"
 #include "core/project.hpp"
 #include "core/moviedata.hpp"
