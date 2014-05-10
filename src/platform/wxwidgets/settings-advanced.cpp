@@ -327,7 +327,7 @@ namespace
 		settings = lsnes_instance.setcache.get_keys();
 		for(auto i : settings) {
 			values[i] = lsnes_instance.setcache.get(i);
-			names[i] = lsnes_vset[i].get_hname();
+			names[i] = lsnes_instance.setcache.get_hname(i);
 		}
 		_refresh();
 	}

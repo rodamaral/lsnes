@@ -436,7 +436,7 @@ std::string project_moviepath()
 	if(active_project)
 		return active_project->directory;
 	else
-		return lsnes_vset["moviepath"].str();
+		return lsnes_instance.setcache.get("moviepath");
 }
 
 std::string project_otherpath()

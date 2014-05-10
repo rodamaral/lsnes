@@ -124,6 +124,14 @@ public:
  */
 	const description& get_description(const std::string& name) throw(std::bad_alloc,
 		std::runtime_error);
+/**
+ * Get human-readable name.
+ *
+ * Parameter name: Name of the setting.
+ * Return: Human-readable name of the setting.
+ * Throws std::runtime_error: Setting doesn't exist.
+ */
+	std::string get_hname(const std::string& name) throw(std::bad_alloc, std::runtime_error);
 private:
 	group& grp;
 	threads::lock lock;

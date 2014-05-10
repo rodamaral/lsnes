@@ -2,6 +2,7 @@
 #include "platform/wxwidgets/window_mainwindow.hpp"
 #include "platform/wxwidgets/window-romload.hpp"
 #include "core/command.hpp"
+#include "core/instance.hpp"
 #include "core/mainloop.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
@@ -12,7 +13,7 @@ namespace
 {
 	std::string rom_path()
 	{
-		return lsnes_vset["rompath"].str();
+		return lsnes_instance.setcache.get("rompath");
 	}
 
 	bool can_load_singlefile(core_type* t)
@@ -120,7 +121,7 @@ namespace
 			coreid[++corecount] = i.second;
 		}
 		filter += "|All files|*";
-		std::string directory = lsnes_vset["rompath"].str();
+		std::string directory = lsnes_instance.setcache.get("rompath");
 		wxFileDialog* d = new wxFileDialog(parent, towxstring("Choose ROM to load"), towxstring(directory),
 			wxT(""), towxstring(filter), wxFD_OPEN);
 		if(d->ShowModal() == wxID_CANCEL) {
@@ -299,7 +300,7 @@ namespace
 				directory = "firmwarepath";
 			else
 				directory = "rompath";
-			directory = lsnes_vset[directory].str();
+			directory = lsnes_instance.setcache.get(directory);
 			core_romimage_info iinfo = t.get_image_info(i);
 			wxFileDialog* d = new wxFileDialog(this, towxstring("Load " + iinfo.hname),
 				towxstring(directory), wxT(""), towxstring(filter), wxFD_OPEN);
@@ -432,7 +433,7 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 			directory = "firmwarepath";
 		else
 			directory = "rompath";
-		directory = lsnes_vset[directory].str();
+		directory = lsnes_instance.setcache.get(directory);
 		std::string _title = "Select " + iinfo.hname;
 		std::string filespec = "Known ROMs|";
 		std::string exts = "";

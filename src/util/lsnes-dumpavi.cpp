@@ -228,7 +228,7 @@ namespace
 				std::string name = nameval.substr(0, s);
 				std::string val = nameval.substr(s + 1);
 				try {
-					lsnes_vset[name].str(val);
+					lsnes_instance.setcache.set(name, val);
 				} catch(std::exception& e) {
 					std::cerr << "Can't set '" << name << "' to '" << val << "': " << e.what()
 						<< std::endl;
@@ -341,7 +341,7 @@ int main(int argc, char** argv)
 		}
 		if(r = regex("--setting-(.*)=(.*)", i)) {
 			try {
-				lsnes_vset[r[1]].str(r[2]);
+				lsnes_instance.setcache.set(r[1], r[2]);
 				std::cerr << "Set " << r[1] << " to '" << r[2] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what()

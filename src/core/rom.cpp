@@ -3,6 +3,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/instance.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
@@ -263,7 +264,7 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 	if((bios = ctype.get_biosname()) != "") {
 		//This thing has a BIOS.
 		romidx = 1;
-		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
+		std::string basename = lsnes_instance.setcache.get("firmwarepath") + "/" + bios;
 		romimg[0] = fileimage::image(lsnes_image_hasher, basename, "", xlate_info(ctype.get_image_info(0)));
 		if(zip::file_exists(basename + ".xml"))
 			romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
@@ -304,7 +305,7 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 		if((bios = coretype->get_biosname()) != "") {
 			//This thing has a BIOS.
 			romidx = 1;
-			std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
+			std::string basename = lsnes_instance.setcache.get("firmwarepath") + "/" + bios;
 			romimg[0] = fileimage::image(lsnes_image_hasher, basename, "",
 				xlate_info(coretype->get_image_info(0)));
 			if(zip::file_exists(basename + ".xml"))
@@ -505,7 +506,7 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& core, const s
 	std::string bios = t->get_biosname();
 	unsigned romidx = (bios != "") ? 1 : 0;
 	if(bios != "") {
-		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
+		std::string basename = lsnes_instance.setcache.get("firmwarepath") + "/" + bios;
 		romimg[0] = fileimage::image(lsnes_image_hasher, basename, "", xlate_info(t->get_image_info(0)));
 		if(zip::file_exists(basename + ".xml"))
 			romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());

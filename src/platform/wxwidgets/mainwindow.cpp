@@ -708,7 +708,7 @@ namespace
 
 	std::string movie_path()
 	{
-		return lsnes_vset["moviepath"].str();
+		return lsnes_instance.setcache.get("moviepath");
 	}
 
 	bool is_lsnes_movie(const std::string& filename)

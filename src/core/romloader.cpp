@@ -201,7 +201,7 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 			//Try to use hint.
 			std::set<std::string> exts = img.extensions;
 			for(auto j : exts) {
-				std::string candidate = lsnes_vset[psetting].str() + "/" + info.hint[i] +
+				std::string candidate = lsnes_instance.setcache.get(psetting) + "/" + info.hint[i] +
 					"." + j;
 				if(zip::file_exists(candidate)) {
 					roms[i] = candidate;
@@ -211,7 +211,7 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 		}
 		if(isbios && roms[i] == "" && i == 0) {
 			//Fallback default.
-			roms[0] = lsnes_vset["firmwarepath"].str() + "/" + bios;
+			roms[0] = lsnes_instance.setcache.get("firmwarepath") + "/" + bios;
 		}
 		if(roms[i] == "" && info.hash[i] != "")
 			roms[i] = try_to_guess_rom(info.hint[i], info.hash[i], info.hashxml[i], *ctype, i);

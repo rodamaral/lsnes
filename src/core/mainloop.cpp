@@ -481,7 +481,7 @@ public:
 
 	std::string get_firmware_path()
 	{
-		return lsnes_vset["firmwarepath"].str();
+		return lsnes_instance.setcache.get("firmwarepath");
 	}
 
 	std::string get_base_path()

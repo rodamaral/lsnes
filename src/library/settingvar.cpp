@@ -140,6 +140,10 @@ const description& cache::get_description(const std::string& name) throw(std::ba
 	return grp[name].get_description();
 }
 
+std::string cache::get_hname(const std::string& name) throw(std::bad_alloc, std::runtime_error)
+{
+	return grp[name].get_hname();
+}
 
 const char* yes_no::enable = "yes";
 const char* yes_no::disable = "no";

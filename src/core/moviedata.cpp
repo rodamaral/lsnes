@@ -155,7 +155,7 @@ std::string translate_name_mprefix(std::string original, int& binary, int save)
 			}
 			return filename;
 		} else {
-			std::string pprf = lsnes_vset["slotpath"].str() + "/";
+			std::string pprf = lsnes_instance.setcache.get("slotpath") + "/";
 			return pprf + get_mprefix() + r[1] + ".lsmv";
 		}
 	} else {
