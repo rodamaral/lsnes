@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/memorywatch.hpp"
 #include "core/misc.hpp"
@@ -173,7 +174,7 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	ri.rgap = max(lrc.right_gap, (unsigned)drb);
 	ri.tgap = max(lrc.top_gap, (unsigned)dtb);
 	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb);
-	lsnes_memorywatch.watch(ri.rq);
+	lsnes_instance.mwatch.watch(ri.rq);
 	buffering.put_write();
 	notify_screen_update();
 	last_redraw_no_lua = no_lua;

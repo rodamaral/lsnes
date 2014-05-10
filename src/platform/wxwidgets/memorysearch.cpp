@@ -1058,7 +1058,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 						endianess = j->endian;
 				}
 				e.endianess = endianess;
-				runemufn([n, &e]() { lsnes_memorywatch.set(n, e); });
+				runemufn([n, &e]() { lsnes_instance.mwatch.set(n, e); });
 			} catch(canceled_exception& e) {
 			}
 		}

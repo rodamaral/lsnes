@@ -423,7 +423,7 @@ void update_movie_state()
 		//Lua variables.
 		_status.lvars = get_lua_watch_vars();
 		//Memory watches.
-		_status.mvars = lsnes_memorywatch.get_window_vars();
+		_status.mvars = lsnes_instance.mwatch.get_window_vars();
 
 		_status.valid = true;
 	} catch(...) {
@@ -1336,7 +1336,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	//Kill some things to avoid crashes.
 	debug_core_change();
 	project_set(NULL, true);
-	lsnes_memorywatch.clear_multi(lsnes_memorywatch.enumerate());
+	lsnes_instance.mwatch.clear_multi(lsnes_instance.mwatch.enumerate());
 }
 
 void set_stop_at_frame(uint64_t frame)

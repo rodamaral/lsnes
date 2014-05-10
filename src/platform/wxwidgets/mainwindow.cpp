@@ -455,13 +455,13 @@ namespace
 					if(!old_watches.count(name)) {
 						try {
 							if(name != "" && i.second != "")
-								lsnes_memorywatch.set(name, i.second);
+								lsnes_instance.mwatch.set(name, i.second);
 						} catch(std::exception& e) {
 							messages << "Can't set memory watch '" << name << "': "
 								<< e.what() << std::endl;
 						}
 						break;
-					} else if(lsnes_memorywatch.get_string(name) == i.second)
+					} else if(lsnes_instance.mwatch.get_string(name) == i.second)
 						break;
 					else
 						name = munge_name(name);
@@ -471,7 +471,7 @@ namespace
 			for(auto i : new_watches)
 				try {
 					if(i.first != "" && i.second != "")
-						lsnes_memorywatch.set(i.first, i.second);
+						lsnes_instance.mwatch.set(i.first, i.second);
 				} catch(std::exception& e) {
 					messages << "Can't set memory watch '" << i.first << "': "
 						<< e.what() << std::endl;
@@ -479,7 +479,7 @@ namespace
 			for(auto i : old_watches)
 				if(!new_watches.count(i))
 					try {
-						lsnes_memorywatch.clear(i);
+						lsnes_instance.mwatch.clear(i);
 					} catch(std::exception& e) {
 						messages << "Can't clear memory watch '" << i << "': "
 							<< e.what() << std::endl;
@@ -1573,7 +1573,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SAVE_MEMORYWATCH: {
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
-		runemufn([&old_watches]() { old_watches = lsnes_memorywatch.enumerate(); });
+		runemufn([&old_watches]() { old_watches = lsnes_instance.mwatch.enumerate(); });
 		std::string filename = choose_file_save(this, "Save watches to file", project_otherpath(),
 			filetype_watch);
 		std::ofstream out(filename.c_str());
@@ -1581,7 +1581,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 			std::string val;
 			runemufn([i, &val]() {
 				try {
-					val = lsnes_memorywatch.get_string(i);
+					val = lsnes_instance.mwatch.get_string(i);
 				} catch(std::exception& e) {
 					messages << "Can't get value of watch '" << i << "': " << e.what()
 						<< std::endl;
@@ -1595,7 +1595,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_LOAD_MEMORYWATCH: {
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
-		runemufn([&old_watches]() { old_watches = lsnes_memorywatch.enumerate(); });
+		runemufn([&old_watches]() { old_watches = lsnes_instance.mwatch.enumerate(); });
 		std::map<std::string, std::string> new_watches;
 		std::string filename = choose_file_load(this, "Choose memory watch file", project_otherpath(),
 			filetype_watch);

@@ -181,6 +181,4 @@ private:
 	memorywatch_set watch_set;
 };
 
-extern lsnes_memorywatch_set lsnes_memorywatch;
-
 #endif

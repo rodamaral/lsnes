@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 #include "core/inthread.hpp"
 #include "core/project.hpp"
 #include "core/misc.hpp"
@@ -373,15 +374,15 @@ skip_rom_movie:
 		active_project = p;
 		switched = true;
 		//Calculate union of old and new.
-		std::set<std::string> _watches = lsnes_memorywatch.enumerate();
+		std::set<std::string> _watches = lsnes_instance.mwatch.enumerate();
 		for(auto i : p->watches) _watches.insert(i.first);
 
 		for(auto i : _watches)
 			try {
 				if(p->watches.count(i))
-					lsnes_memorywatch.set(i, p->watches[i]);
+					lsnes_instance.mwatch.set(i, p->watches[i]);
 				else
-					lsnes_memorywatch.clear(i);
+					lsnes_instance.mwatch.clear(i);
 			} catch(std::exception& e) {
 				messages << "Can't set/clear watch '" << i << "': " << e.what() << std::endl;
 			}
@@ -453,9 +454,9 @@ std::string project_savestate_ext()
 
 void project_copy_watches(project_info& p)
 {
-	for(auto i : lsnes_memorywatch.enumerate()) {
+	for(auto i : lsnes_instance.mwatch.enumerate()) {
 		try {
-			p.watches[i] = lsnes_memorywatch.get_string(i);
+			p.watches[i] = lsnes_instance.mwatch.get_string(i);
 		} catch(std::exception& e) {
 			messages << "Can't read memory watch '" << i << "': " << e.what() << std::endl;
 		}

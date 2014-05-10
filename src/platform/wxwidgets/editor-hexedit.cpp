@@ -517,7 +517,7 @@ public:
 			}
 			e.endianess = hostendian ? 0 : (littleendian ? -1 : 1);
 			e.scale_div = 1ULL << datatypes[curtype].scale;
-			runemufn([n, &e]() { lsnes_memorywatch.set(n, e); });
+			runemufn([n, &e]() { lsnes_instance.mwatch.set(n, e); });
 		} catch(canceled_exception& e) {
 		}
 	}
