@@ -16,7 +16,7 @@
 
 uint64_t lua_get_vmabase(const std::string& vma)
 {
-	for(auto i : lsnes_instance.memory.get_regions())
+	for(auto i : CORE().memory.get_regions())
 		if(i->name == vma)
 			return i->base;
 	throw std::runtime_error("No such VMA");
@@ -46,16 +46,16 @@ namespace
 	{
 		if(wrflag) {
 			T value = L.get_numeric_argument<T>(3, "aperture(write)");
-			(lsnes_instance.memory.*wfun)(addr, value);
+			(CORE().memory.*wfun)(addr, value);
 		} else
-			L.pushnumber(static_cast<T>((lsnes_instance.memory.*rfun)(addr)));
+			L.pushnumber(static_cast<T>((CORE().memory.*rfun)(addr)));
 	}
 
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
 	int lua_read_memory(lua::state& L, lua::parameters& P)
 	{
 		auto addr = lua_get_read_address(P);
-		L.pushnumber(static_cast<T>((lsnes_instance.memory.*rfun)(addr)));
+		L.pushnumber(static_cast<T>((CORE().memory.*rfun)(addr)));
 		return 1;
 	}
 
@@ -64,7 +64,7 @@ namespace
 	{
 		auto addr = lua_get_read_address(P);
 		T value = P.arg<T>();
-		(lsnes_instance.memory.*wfun)(addr, value);
+		(CORE().memory.*wfun)(addr, value);
 		return 0;
 	}
 }
@@ -150,7 +150,7 @@ namespace
 			return 1;
 		}
 		addr += base;
-		L.pushnumber(static_cast<T>((lsnes_instance.memory.*rfun)(addr)));
+		L.pushnumber(static_cast<T>((CORE().memory.*rfun)(addr)));
 		return 1;
 	}
 
@@ -169,7 +169,7 @@ namespace
 			return 0;
 		addr += base;
 		T value = L.get_numeric_argument<T>(3, "aperture(write)");
-		(lsnes_instance.memory.*wfun)(addr, value);
+		(CORE().memory.*wfun)(addr, value);
 		return 0;
 	}
 
@@ -449,9 +449,9 @@ namespace
 			if(!have_vmabase && L.do_once(&deprecation))
 				messages << P.get_fname() << ": Global memory form is deprecated." << std::endl;
 			if(write)
-				lsnes_instance.memory.write<uint8_t>(addr + vmabase, val >> shift);
+				CORE().memory.write<uint8_t>(addr + vmabase, val >> shift);
 			else
-				val = val + ((uint64_t)lsnes_instance.memory.read<uint8_t>(addr + vmabase) << shift);
+				val = val + ((uint64_t)CORE().memory.read<uint8_t>(addr + vmabase) << shift);
 			shift += 8;
 		}
 		if(!write) {
@@ -466,7 +466,7 @@ namespace
 
 	int vma_count(lua::state& L, lua::parameters& P)
 	{
-		L.pushnumber(lsnes_instance.memory.get_regions().size());
+		L.pushnumber(CORE().memory.get_regions().size());
 		return 1;
 	}
 
@@ -498,7 +498,7 @@ namespace
 
 		P(num);
 
-		std::list<memory_region*> regions = lsnes_instance.memory.get_regions();
+		std::list<memory_region*> regions = CORE().memory.get_regions();
 		uint32_t j = 0;
 		for(auto i = regions.begin(); i != regions.end(); i++, j++)
 			if(j == num)
@@ -513,7 +513,7 @@ namespace
 
 		P(addr);
 
-		auto r = lsnes_instance.memory.lookup(addr);
+		auto r = CORE().memory.lookup(addr);
 		if(r.first)
 			return handle_push_vma(L, *r.first);
 		L.pushnil();
@@ -550,7 +550,7 @@ namespace
 		if(low > high || high - low + 1 == 0)
 			mappable = false;
 
-		char* pbuffer = mappable ? lsnes_instance.memory.get_physical_mapping(low, high - low + 1) : NULL;
+		char* pbuffer = mappable ? CORE().memory.get_physical_mapping(low, high - low + 1) : NULL;
 		if(low > high) {
 		} else if(pbuffer) {
 			uint64_t offset = addr - low;
@@ -565,7 +565,7 @@ namespace
 				while(sz > 0) {
 					size_t ssz = min(sz, static_cast<size_t>(BLOCKSIZE));
 					for(size_t i = 0; i < ssz; i++)
-						buffer[i] = lsnes_instance.memory.read<uint8_t>(offset + i);
+						buffer[i] = CORE().memory.read<uint8_t>(offset + i);
 					offset += ssz;
 					sz -= ssz;
 					update(state, buffer, ssz);
@@ -633,13 +633,13 @@ namespace
 		if((size_t)(daddr + rows * size) < daddr)
 			throw std::runtime_error("Size to copy too large");
 
-		auto& h = lsnes_instance.mlogic.get_mfile().host_memory;
+		auto& h = CORE().mlogic.get_mfile().host_memory;
 		if(daddr + rows * size > h.size()) {
 			equals = false;
 			h.resize(daddr + rows * size);
 		}
 
-		char* pbuffer = mappable ? lsnes_instance.memory.get_physical_mapping(low, high - low + 1) : NULL;
+		char* pbuffer = mappable ? CORE().memory.get_physical_mapping(low, high - low + 1) : NULL;
 		if(!size && !rows) {
 		} else if(pbuffer) {
 			//Mapable.
@@ -657,7 +657,7 @@ namespace
 				uint64_t addr1 = addr + i * stride;
 				uint64_t addr2 = daddr + i * size;
 				for(uint64_t j = 0; j < size; j++) {
-					uint8_t byte = lsnes_instance.memory.read<uint8_t>(addr1 + j);
+					uint8_t byte = CORE().memory.read<uint8_t>(addr1 + j);
 					bool eq = (cmp && h[addr2 + j] == (char)byte);
 					if(!eq)
 						h[addr2 + j] = byte;
@@ -682,7 +682,7 @@ namespace
 		uint64_t ctr = 0;
 		while(size > 0) {
 			size_t rsize = min(size, static_cast<uint64_t>(BLOCKSIZE));
-			lsnes_instance.memory.read_range(addr, buffer, rsize);
+			CORE().memory.read_range(addr, buffer, rsize);
 			for(size_t i = 0; i < rsize; i++) {
 				L.pushnumber(ctr++);
 				L.pushnumber(static_cast<unsigned char>(buffer[i]));
@@ -712,7 +712,7 @@ namespace
 				buffer[i] = L.tointeger(-1);
 				L.pop(1);
 			}
-			lsnes_instance.memory.write_range(addr, buffer, rsize);
+			CORE().memory.write_range(addr, buffer, rsize);
 			addr += rsize;
 			size -= rsize;
 		}

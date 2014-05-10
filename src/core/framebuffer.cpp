@@ -165,7 +165,7 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	lrc.height = todraw.get_height() * vscl;
 	if(!no_lua) {
 		lua_callback_do_paint(&lrc, spontaneous);
-		lsnes_instance.subtitles.render(lrc);
+		CORE().subtitles.render(lrc);
 	}
 	ri.fbuf = todraw;
 	ri.hscl = hscl;
@@ -174,7 +174,7 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	ri.rgap = max(lrc.right_gap, (unsigned)drb);
 	ri.tgap = max(lrc.top_gap, (unsigned)dtb);
 	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb);
-	lsnes_instance.mwatch.watch(ri.rq);
+	CORE().mwatch.watch(ri.rq);
 	buffering.put_write();
 	notify_screen_update();
 	last_redraw_no_lua = no_lua;

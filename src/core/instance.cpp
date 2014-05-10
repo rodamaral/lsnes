@@ -7,3 +7,8 @@ emulator_instance::emulator_instance()
 }
 
 emulator_instance lsnes_instance;
+
+emulator_instance& CORE()
+{
+	return lsnes_instance;
+}

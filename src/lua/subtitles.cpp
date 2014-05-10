@@ -7,7 +7,7 @@ namespace
 	{
 		auto n = P.arg<uint64_t>();
 		uint64_t j = 0;
-		for(auto i : lsnes_instance.subtitles.get_all()) {
+		for(auto i : CORE().subtitles.get_all()) {
 			if(j == n) {
 				L.pushnumber(i.first);
 				L.pushnumber(i.second);
@@ -22,7 +22,7 @@ namespace
 	{
 		auto frame = P.arg<uint64_t>();
 		auto length = P.arg<uint64_t>();
-		std::string x = lsnes_instance.subtitles.get(frame, length);
+		std::string x = CORE().subtitles.get(frame, length);
 		L.pushstring(x.c_str());
 		return 1;
 	}
@@ -32,7 +32,7 @@ namespace
 		auto frame = P.arg<uint64_t>();
 		auto length = P.arg<uint64_t>();
 		std::string text = P.arg<std::string>();
-		lsnes_instance.subtitles.set(frame, length, text);
+		CORE().subtitles.set(frame, length, text);
 		return 0;
 	}
 
@@ -40,7 +40,7 @@ namespace
 	{
 		auto frame = P.arg<uint64_t>();
 		auto length = P.arg<uint64_t>();
-		lsnes_instance.subtitles.set(frame, length, "");
+		CORE().subtitles.set(frame, length, "");
 		return 0;
 	}
 

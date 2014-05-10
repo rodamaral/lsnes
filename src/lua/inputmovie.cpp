@@ -98,7 +98,7 @@ namespace
 	int32_t get_pc_for(unsigned port, unsigned controller, unsigned button, bool extra0 = false);
 	int32_t get_pc_for(unsigned port, unsigned controller, unsigned button, bool extra0)
 	{
-		movie& m = lsnes_instance.mlogic.get_movie();
+		movie& m = CORE().mlogic.get_movie();
 		if(port == 0 && controller == 0 && button == 0)
 			return m.get_pollcounters().max_polls() + (extra0 ? 1 : 0);
 		if(port == 0 && controller == 0 && m.get_pollcounters().get_framepflag())
@@ -112,17 +112,17 @@ namespace
 	void check_can_edit(unsigned port, unsigned controller, unsigned button, uint64_t frame,
 		bool allow_past_end)
 	{
-		movie& m = lsnes_instance.mlogic.get_movie();
+		movie& m = CORE().mlogic.get_movie();
 		if(!m.readonly_mode())
 			throw std::runtime_error("Not in read-only mode");
-		if(!allow_past_end && frame >= lsnes_instance.mlogic.get_mfile().input->size())
+		if(!allow_past_end && frame >= CORE().mlogic.get_mfile().input->size())
 			throw std::runtime_error("Index out of movie");
 		int32_t pc = get_pc_for(port, controller, button, true);
 		if(pc < 0)
 			throw std::runtime_error("Invalid control to edit");
 		uint64_t firstframe = m.get_current_frame_first_subframe();
 		uint64_t minframe = firstframe + pc;
-		uint64_t msize = lsnes_instance.mlogic.get_mfile().input->size();
+		uint64_t msize = CORE().mlogic.get_mfile().input->size();
 		if(minframe > msize || firstframe >= msize)
 			throw std::runtime_error("Can not edit finished movie");
 		if(frame < minframe)
@@ -131,7 +131,7 @@ namespace
 
 	int current_first_subframe(lua::state& L, lua::parameters& P)
 	{
-		movie& m = lsnes_instance.mlogic.get_movie();
+		movie& m = CORE().mlogic.get_movie();
 		L.pushnumber(m.get_current_frame_first_subframe());
 		return 1;
 	}
@@ -183,12 +183,12 @@ namespace
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
 		//Checks if requested frame is from movie.
-		if(&v == lsnes_instance.mlogic.get_mfile().input)
+		if(&v == CORE().mlogic.get_mfile().input)
 			check_can_edit(0, 0, 0, n);
 
 		v[n] = f->get_frame();
 
-		if(&v == lsnes_instance.mlogic.get_mfile().input) {
+		if(&v == CORE().mlogic.get_mfile().input) {
 			//This can't add frames, so no need to adjust the movie.
 			update_movie_state();
 			platform::notify_status();
@@ -244,7 +244,7 @@ namespace
 			for(uint64_t i = 0; i < count; i++)
 				v.append(v.blank_frame(true));
 		}
-		if(&v == lsnes_instance.mlogic.get_mfile().input) {
+		if(&v == CORE().mlogic.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -259,13 +259,13 @@ namespace
 		P(f);
 
 		v.append(v.blank_frame(true));
-		if(&v == lsnes_instance.mlogic.get_mfile().input) {
+		if(&v == CORE().mlogic.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 			check_can_edit(0, 0, 0, v.size() - 1);
 		}
 		v[v.size() - 1] = f->get_frame();
-		if(&v == lsnes_instance.mlogic.get_mfile().input) {
+		if(&v == CORE().mlogic.get_mfile().input) {
 			if(!v[v.size() - 1].sync()) {
 				update_movie_state();
 			}
@@ -283,10 +283,10 @@ namespace
 
 		if(n > v.size())
 			throw std::runtime_error("Requested truncate length longer than existing");
-		if(&v == lsnes_instance.mlogic.get_mfile().input)
+		if(&v == CORE().mlogic.get_mfile().input)
 			check_can_edit(0, 0, 0, n);
 		v.resize(n);
-		if(&v == lsnes_instance.mlogic.get_mfile().input) {
+		if(&v == CORE().mlogic.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -306,11 +306,11 @@ namespace
 		else
 			P.expected("number or boolean");
 
-		if(&v == lsnes_instance.mlogic.get_mfile().input)
+		if(&v == CORE().mlogic.get_mfile().input)
 			check_can_edit(port, controller, button, frame);
 		v[frame].axis3(port, controller, button, value);
 
-		if(&v == lsnes_instance.mlogic.get_mfile().input) {
+		if(&v == CORE().mlogic.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -334,7 +334,7 @@ namespace
 		if(dst > dstv.size() || dst + count < dst)
 			throw std::runtime_error("Destination index out of movie");
 
-		if(&dstv == lsnes_instance.mlogic.get_mfile().input)
+		if(&dstv == CORE().mlogic.get_mfile().input)
 			check_can_edit(0, 0, 0, dst, true);
 
 		{
@@ -346,7 +346,7 @@ namespace
 			for(uint64_t i = backwards ? (count - 1) : 0; i < count; i = backwards ? (i - 1) : (i + 1))
 				dstv[dst + i] = srcv[src + i];
 		}
-		if(&dstv == lsnes_instance.mlogic.get_mfile().input) {
+		if(&dstv == CORE().mlogic.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -583,32 +583,32 @@ namespace
 
 	int current_branch(lua::state& L, lua::parameters& P)
 	{
-		L.pushlstring(lsnes_instance.mlogic.get_mfile().current_branch());
+		L.pushlstring(CORE().mlogic.get_mfile().current_branch());
 		return 1;
 	}
 
 	int get_branches(lua::state& L, lua::parameters& P)
 	{
-		for(auto& i : lsnes_instance.mlogic.get_mfile().branches)
+		for(auto& i : CORE().mlogic.get_mfile().branches)
 			L.pushlstring(i.first);
-		return lsnes_instance.mlogic.get_mfile().branches.size();
+		return CORE().mlogic.get_mfile().branches.size();
 	}
 
 	controller_frame_vector& framevector(lua::state& L, lua::parameters& P)
 	{
 		if(P.is_nil()) {
 			P.skip();
-			return *lsnes_instance.mlogic.get_mfile().input;
+			return *CORE().mlogic.get_mfile().input;
 		} else if(P.is_string()) {
 			std::string x;
 			P(x);
-			if(!lsnes_instance.mlogic.get_mfile().branches.count(x))
+			if(!CORE().mlogic.get_mfile().branches.count(x))
 				throw std::runtime_error("No such branch");
-			return lsnes_instance.mlogic.get_mfile().branches[x];
+			return CORE().mlogic.get_mfile().branches[x];
 		} else if(P.is<lua_inputmovie>())
 			return *(P.arg<lua_inputmovie*>()->get_frame_vector());
 		else
-			return *lsnes_instance.mlogic.get_mfile().input;
+			return *CORE().mlogic.get_mfile().input;
 	}
 
 	lua::_class<lua_inputmovie> class_inputmovie(lua_class_movie, "INPUTMOVIE", {}, {

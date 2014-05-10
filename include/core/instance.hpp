@@ -22,4 +22,6 @@ struct emulator_instance
 
 extern emulator_instance lsnes_instance;
 
+emulator_instance& CORE();
+
 #endif
