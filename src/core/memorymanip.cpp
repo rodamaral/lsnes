@@ -18,8 +18,6 @@
 #include <cstdint>
 #include <cstring>
 
-memory_space lsnes_memory;
-
 namespace
 {
 	uint8_t lsnes_mmio_iospace_read(uint64_t offset)
@@ -92,7 +90,7 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 {
 	if(!our_rom.rtype)
 		return;
-	std::list<memory_region*> cur_regions = lsnes_memory.get_regions();
+	std::list<memory_region*> cur_regions = lsnes_instance.memory.get_regions();
 	std::list<memory_region*> regions;
 	memory_region* tmp = NULL;
 	auto vmalist = our_rom.rtype->vma_list();
@@ -110,7 +108,7 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 			regions.push_back(tmp);
 			tmp = NULL;
 		}
-		lsnes_memory.set_regions(regions);
+		lsnes_instance.memory.set_regions(regions);
 	} catch(...) {
 		if(tmp)
 			delete tmp;
@@ -135,7 +133,7 @@ namespace
 			std::string vma = r[1];
 			std::string _offset = r[2];
 			uint64_t offset = parse_value<uint64_t>("0x" + _offset);
-			for(auto i : lsnes_memory.get_regions())
+			for(auto i : lsnes_instance.memory.get_regions())
 				if(i->name == vma) {
 					if(offset >= i->size)
 						throw std::runtime_error("Offset out of range");
@@ -148,7 +146,7 @@ namespace
 
 	std::string format_address(uint64_t addr)
 	{
-		for(auto i : lsnes_memory.get_regions())
+		for(auto i : lsnes_instance.memory.get_regions())
 			if(i->base <= addr && i->base + i->size > addr) {
 				//Hit.
 				unsigned hcount = 1;
@@ -234,13 +232,13 @@ namespace
 				std::ostringstream x;
 				if(hexd)
 					x << format_address(address) << " -> "
-						<< hex::to((lsnes_memory.*_rfn)(address), true);
+						<< hex::to((lsnes_instance.memory.*_rfn)(address), true);
 				else if(sizeof(ret) > 1)
 					x << format_address(address) << " -> " << std::dec
-						<< (lsnes_memory.*_rfn)(address);
+						<< (lsnes_instance.memory.*_rfn)(address);
 				else
 					x << format_address(address) << " -> " << std::dec
-						<< (int)(lsnes_memory.*_rfn)(address);
+						<< (int)(lsnes_instance.memory.*_rfn)(address);
 				messages << x.str() << std::endl;
 			}
 		}
@@ -269,7 +267,7 @@ namespace
 			int64_t value2 = static_cast<int64_t>(value);
 			if(value2 < low || (value > high && value2 >= 0))
 				throw std::runtime_error("Value to write out of range");
-			(lsnes_memory.*_wfn)(address, value & high);
+			(lsnes_instance.memory.*_wfn)(address, value & high);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Write memory"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -293,7 +291,7 @@ namespace
 		{
 			if(address_bad || !has_valuef || has_tail)
 				throw std::runtime_error("Syntax: " + _command + " <address> <value>");
-			(lsnes_memory.*_wfn)(address, valuef);
+			(lsnes_instance.memory.*_wfn)(address, valuef);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Write memory"; }
 		std::string get_long_help() throw(std::bad_alloc)

@@ -221,7 +221,7 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 
 void dump_region_map() throw(std::bad_alloc)
 {
-	std::list<struct memory_region*> regions = lsnes_memory.get_regions();
+	std::list<struct memory_region*> regions = lsnes_instance.memory.get_regions();
 	for(auto i : regions) {
 		std::ostringstream x;
 		x << hex::to(i->base) << "-" << hex::to(i->last_address()) << " " << hex::to(i->size) << " ";

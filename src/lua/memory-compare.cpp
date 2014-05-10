@@ -1,4 +1,5 @@
 #include "lua/internal.hpp"
+#include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 #include "library/minmax.hpp"
 
@@ -78,7 +79,8 @@ namespace
 	int compare_obj::call(lua::state& L, lua::parameters& P)
 	{
 		bool equals = true;
-		char* pbuffer = try_map ? lsnes_memory.get_physical_mapping(minaddr, maxaddr - minaddr + 1) : NULL;
+		char* pbuffer = try_map ? lsnes_instance.memory.get_physical_mapping(minaddr, maxaddr - minaddr + 1) :
+			NULL;
 		if(pbuffer) {
 			//Mapable.
 			uint64_t offset = addr - minaddr;
@@ -95,7 +97,7 @@ namespace
 				uint64_t addr1 = addr + i * stride;
 				uint64_t addr2 = i * size;
 				for(uint64_t j = 0; j < size; j++) {
-					uint8_t byte = lsnes_memory.read<uint8_t>(addr1 + j);
+					uint8_t byte = lsnes_instance.memory.read<uint8_t>(addr1 + j);
 					bool eq = prev[addr2 + j] == (char)byte;
 					if(!eq)
 						prev[addr2 + j] = byte;

@@ -1,6 +1,7 @@
 #include "lua/bitmap.hpp"
 #include "lua/internal.hpp"
 #include "library/serialization.hpp"
+#include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 
 namespace
@@ -38,7 +39,7 @@ namespace
 			rangesize = (width - 1) * stride1 + (height - 1) * stride2 + 32;
 		}
 
-		char* mem = map ? lsnes_memory.get_physical_mapping(rangebase, rangesize) : NULL;
+		char* mem = map ? lsnes_instance.memory.get_physical_mapping(rangebase, rangesize) : NULL;
 		if(mem) {
 			for(unsigned j = 0; j < height; j++)
 				for(unsigned i = 0; i < width; i++) {
@@ -64,10 +65,13 @@ namespace
 				for(unsigned i = 0; i < width; i++) {
 					uint64_t sbase = addr + stride2 * j + stride1 * i;
 					for(unsigned k = 0; k < 8; k++) {
-						uint8_t byte1 = lsnes_memory.read<uint8_t>(sbase + 2 * k);
-						uint8_t byte2 = lsnes_memory.read<uint8_t>(sbase + 2 * k + 1);
-						uint8_t byte3 = lsnes_memory.read<uint8_t>(sbase + 2 * k + 16);
-						uint8_t byte4 = lsnes_memory.read<uint8_t>(sbase + 2 * k + 17);
+						uint8_t byte1 = lsnes_instance.memory.read<uint8_t>(sbase + 2 * k);
+						uint8_t byte2 = lsnes_instance.memory.read<uint8_t>(sbase + 2 * k +
+							1);
+						uint8_t byte3 = lsnes_instance.memory.read<uint8_t>(sbase + 2 * k +
+							16);
+						uint8_t byte4 = lsnes_instance.memory.read<uint8_t>(sbase + 2 * k +
+							17);
 						uint32_t soff = (j * 8 + k) * (8 * width) + i * 8;
 						for(unsigned l = 0; l < 8; l++) {
 							uint32_t v = 0;
@@ -107,7 +111,7 @@ namespace
 			p = lua::_class<lua_palette>::create(L);
 			p->adjust_palette_size(ps);
 		}
-		uint8_t* mem = reinterpret_cast<uint8_t*>(lsnes_memory.get_physical_mapping(addr, 2 * ps));
+		uint8_t* mem = reinterpret_cast<uint8_t*>(lsnes_instance.memory.get_physical_mapping(addr, 2 * ps));
 		if(mem) {
 			for(unsigned j = 0; j < ps; j++) {
 				if(j == 0 && ftrans)
@@ -129,7 +133,7 @@ namespace
 					p->colors[j] = framebuffer::color(-1);
 				else {
 					uint64_t val = 0;
-					uint16_t c = lsnes_memory.read<uint16_t>(addr + j * 2);
+					uint16_t c = lsnes_instance.memory.read<uint16_t>(addr + j * 2);
 					uint64_t r = (c >> 0) & 0x1F;
 					uint64_t g = (c >> 5) & 0x1F;
 					uint64_t b = (c >> 10) & 0x1F;

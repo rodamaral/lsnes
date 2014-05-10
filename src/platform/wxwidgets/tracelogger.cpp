@@ -4,6 +4,7 @@
 #include "platform/wxwidgets/loadsave.hpp"
 #include "core/command.hpp"
 #include "core/debug.hpp"
+#include "core/instance.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
 #include "core/project.hpp"
@@ -158,7 +159,7 @@ namespace
 		std::map<std::string, std::pair<uint64_t, uint64_t>> regions;
 		std::set<std::string> disasms;
 		runemufn([&regions, &disasms]() {
-			for(auto i : lsnes_memory.get_regions())
+			for(auto i : lsnes_instance.memory.get_regions())
 				regions[i->name] = std::make_pair(i->base, i->size);
 			disasms = disassembler::list();
 		});
@@ -320,7 +321,7 @@ namespace
 			if(_endian <= 0 || _endian > 3) {
 				_endian = 1;
 				runemufn([&_endian, _vma]() {
-					for(auto i : lsnes_memory.get_regions()) {
+					for(auto i : lsnes_instance.memory.get_regions()) {
 						if(i->name == _vma) {
 							_endian = i->endian + 2;
 						}
@@ -350,7 +351,7 @@ namespace
 		if(vma->GetSelection() && vma->GetSelection() != wxNOT_FOUND) {
 			std::string _vma = tostdstring(vma->GetStringSelection());
 			runemufn([&base, _vma]() {
-				for(auto i : lsnes_memory.get_regions()) {
+				for(auto i : lsnes_instance.memory.get_regions()) {
 					if(i->name == _vma) {
 						base = i->base;
 					}
@@ -1326,7 +1327,7 @@ back:
 					}
 					if(vma != "") {
 						bool found = false;
-						for(auto i : lsnes_memory.get_regions()) {
+						for(auto i : lsnes_instance.memory.get_regions()) {
 							if(i->name == vma) {
 								base = i->base;
 								found = true;
@@ -1493,7 +1494,7 @@ back:
 
 	std::string lookup_address(uint64_t raw)
 	{
-		auto g = lsnes_memory.lookup(raw);
+		auto g = lsnes_instance.memory.lookup(raw);
 		if(!g.first)
 			return hex::to<uint64_t>(raw);
 		else
@@ -1578,7 +1579,7 @@ back:
 	{
 		char buf[sizeof(T)];
 		for(size_t i = 0; i < sizeof(T); i++)
-			buf[i] = lsnes_memory.read<uint8_t>(addrbase + i);
+			buf[i] = lsnes_instance.memory.read<uint8_t>(addrbase + i);
 		disasm_row r;
 		if(hex)
 			r.row = (stringfmt() << "DATA 0x" << hex::to<T>(serialization::read_endian<T>(buf, endian))).
@@ -1677,7 +1678,7 @@ back:
 			uint64_t base = addrbase;
 			disasm_row r;
 			r.row = d->disassemble(addrbase, [&addrbase]() -> unsigned char {
-				return lsnes_memory.read<uint8_t>(addrbase++);
+				return lsnes_instance.memory.read<uint8_t>(addrbase++);
 			});
 			r.cover = addrbase - base;
 			r.language = disasm;
@@ -1757,7 +1758,7 @@ back:
 		: wxDialog(parent, wxID_ANY, wxT("Breakpoints"))
 	{
 		pwin = parent;
-		regions = lsnes_memory.get_regions();
+		regions = lsnes_instance.memory.get_regions();
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 		top_s->Add(brklist = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(300, 400)), 1, wxGROW);

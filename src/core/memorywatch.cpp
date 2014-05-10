@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/project.hpp"
@@ -227,7 +228,7 @@ lsnes_memorywatch_item::lsnes_memorywatch_item()
 	scale_div = 1;
 	addr_base = 0;
 	addr_size = 0;
-	mspace = &lsnes_memory;
+	mspace = &lsnes_instance.memory;
 }
 
 JSON::node lsnes_memorywatch_item::serialize()
@@ -305,7 +306,7 @@ void lsnes_memorywatch_item::compatiblity_unserialize(const std::string& item)
 	case 'F': bytes = 8; signed_flag = true;  float_flag = true;  break;
 	default:  bytes = 0;                                          break;
 	}
-	auto mdata = lsnes_memory.lookup(addr);
+	auto mdata = lsnes_instance.memory.lookup(addr);
 	if(mdata.first) {
 		addr = mdata.second;
 		addr_base = mdata.first->base;
@@ -327,7 +328,7 @@ void lsnes_memorywatch_item::compatiblity_unserialize(const std::string& item)
 		format = "";
 	expr = (stringfmt() << "0x" << std::hex << addr).str();
 	scale_div = 1;
-	mspace = &lsnes_memory;	
+	mspace = &lsnes_instance.memory;	
 	printer.position = lsnes_memorywatch_printer::PC_MEMORYWATCH;
 	printer.cond_enable = false;
 	printer.enabled = "true";

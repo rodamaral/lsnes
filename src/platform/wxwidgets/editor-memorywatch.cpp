@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/memorywatch.hpp"
 #include "core/memorymanip.hpp"
@@ -204,7 +205,7 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, const std::string& 
 		nullptr, wxCB_READONLY);
 	vma.add(s5, true);
 	vma->Append(wxT("(All)"));
-	auto i = lsnes_memory.get_regions();
+	auto i = lsnes_instance.memory.get_regions();
 	for(auto j : i) {
 		int id = vma->GetCount();
 		vma->Append(towxstring(j->name));

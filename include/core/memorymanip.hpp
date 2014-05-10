@@ -6,9 +6,6 @@
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
-#include "library/memoryspace.hpp"
-
-extern memory_space lsnes_memory;
 
 void refresh_cart_mappings() throw(std::bad_alloc);
 

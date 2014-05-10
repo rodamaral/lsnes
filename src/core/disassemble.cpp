@@ -2,6 +2,7 @@
 #include "interface/disassembler.hpp"
 #include "library/hex.hpp"
 #include "library/minmax.hpp"
+#include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"
@@ -50,7 +51,7 @@ namespace
 			dres x;
 			x.addr = laddr;
 			x.disasm = d->disassemble(laddr, [&bytes, laddr]() -> unsigned char {
-				return lsnes_memory.read<uint8_t>(laddr + bytes++);
+				return lsnes_instance.memory.read<uint8_t>(laddr + bytes++);
 			});
 			x.len = bytes;
 			result.push_back(x);
@@ -68,7 +69,7 @@ namespace
 		for(auto i : result) {
 			std::vector<unsigned char> tmp;
 			tmp.resize(i.len);
-			lsnes_memory.read_range(i.addr, &tmp[0], i.len);
+			lsnes_instance.memory.read_range(i.addr, &tmp[0], i.len);
 			std::string l = hex::to(i.addr) + " " + hex::b_to(&tmp[0], i.len) + " " + i.disasm;
 			(*strm) << l << std::endl;
 		}

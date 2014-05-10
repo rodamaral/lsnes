@@ -2,6 +2,7 @@
 #include "interface/disassembler.hpp"
 #include "interface/romtype.hpp"
 #include "library/hex.hpp"
+#include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 #include "core/moviedata.hpp"
 
@@ -28,13 +29,13 @@ namespace
 
 			L.pushstring("disasm");
 			L.pushlstring(d->disassemble(laddr, [&bytes, laddr]() -> unsigned char {
-				return lsnes_memory.read<uint8_t>(laddr + bytes++);
+				return lsnes_instance.memory.read<uint8_t>(laddr + bytes++);
 			}));
 			L.settable(-3);
 
 			std::vector<unsigned char> tmp;
 			tmp.resize(bytes);
-			lsnes_memory.read_range(laddr, &tmp[0], bytes);
+			lsnes_instance.memory.read_range(laddr, &tmp[0], bytes);
 			L.pushstring("bytes");
 			L.pushlstring(hex::b_to(&tmp[0], bytes));
 			L.settable(-3);

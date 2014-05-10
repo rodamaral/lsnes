@@ -185,7 +185,7 @@ namespace
 
 	int lua_vma::info(lua::state& L, lua::parameters& P)
 	{
-		for(auto i : lsnes_memory.get_regions())
+		for(auto i : lsnes_instance.memory.get_regions())
 			if(i->name == vma)
 				return handle_push_vma(L, *i);
 		(stringfmt() << P.get_fname() << ": Stale region").throwex();
@@ -203,7 +203,7 @@ namespace
 			throw std::runtime_error("VMA::rw<T>: Address outside VMA bounds");
 		if(P.is_novalue()) {
 			//Read.
-			T val = lsnes_memory.read<T>(addr + vmabase);
+			T val = lsnes_instance.memory.read<T>(addr + vmabase);
 			if(_bswap) val = bswap(val);
 			L.pushnumber(val);
 			return 1;
@@ -213,7 +213,7 @@ namespace
 				(stringfmt() << P.get_fname() << ": VMA is read-only").throwex();
 			P(val);
 			if(_bswap) val = bswap(val);
-			lsnes_memory.write<T>(addr + vmabase, val);
+			lsnes_instance.memory.write<T>(addr + vmabase, val);
 			return 0;
 		} else
 			P.expected("number or nil");
@@ -239,9 +239,9 @@ namespace
 			} else
 				addr = P.arg<uint64_t>();
 			if(write)
-				lsnes_memory.write<uint8_t>(addr + vmabase, val >> shift);
+				lsnes_instance.memory.write<uint8_t>(addr + vmabase, val >> shift);
 			else
-				val = val + ((uint64_t)lsnes_memory.read<uint8_t>(addr + vmabase) << shift);
+				val = val + ((uint64_t)lsnes_instance.memory.read<uint8_t>(addr + vmabase) << shift);
 			shift += 8;
 		}
 		if(!write) {
@@ -265,7 +265,7 @@ namespace
 
 		auto hstate = T::create();
 		//Try to map the VMA.
-		char* vmabuf = lsnes_memory.get_physical_mapping(vmabase, vmasize);
+		char* vmabuf = lsnes_instance.memory.get_physical_mapping(vmabase, vmasize);
 		if(vmabuf) {
 			for(uint64_t i = 0; i < rows; i++) {
 				T::write(hstate, vmabuf + addr, size);
@@ -276,7 +276,7 @@ namespace
 			unsigned bf = 0;
 			for(uint64_t i = 0; i < rows; i++) {
 				for(uint64_t j = 0; j < size; j++) {
-					buf[bf] = lsnes_memory.read<uint8_t>(vmabase + addr + j);
+					buf[bf] = lsnes_instance.memory.read<uint8_t>(vmabase + addr + j);
 					bf = (bf + 1) & (sizeof(buf) - 1);
 					if(!bf)
 						T::write(hstate, buf, sizeof(buf));
@@ -300,7 +300,7 @@ namespace
 			throw std::runtime_error("Read out of range");
 
 		L.newtable();
-		char* vmabuf = lsnes_memory.get_physical_mapping(vmabase, vmasize);
+		char* vmabuf = lsnes_instance.memory.get_physical_mapping(vmabase, vmasize);
 		if(vmabuf) {
 			uint64_t ctr = 1;
 			for(size_t i = 0; i < size; i++) {
@@ -312,7 +312,7 @@ namespace
 			uint64_t ctr = 1;
 			for(size_t i = 0; i < size; i++) {
 				L.pushnumber(ctr++);
-				L.pushnumber(lsnes_memory.read<uint8_t>(addr + i));
+				L.pushnumber(lsnes_instance.memory.read<uint8_t>(addr + i));
 				L.settable(-3);
 			}
 		}
@@ -326,14 +326,14 @@ namespace
 
 		P(P.skipped(), addr, P.table(ltbl));
 
-		auto g = lsnes_memory.lookup(vmabase);
+		auto g = lsnes_instance.memory.lookup(vmabase);
 		if(!g.first || g.first->readonly)
 			throw std::runtime_error("Memory address is read-only");
 		if(addr >= vmasize)
 			throw std::runtime_error("Write out of range");
 
 		uint64_t ctr = 1;
-		char* vmabuf = lsnes_memory.get_physical_mapping(vmabase, vmasize);
+		char* vmabuf = lsnes_instance.memory.get_physical_mapping(vmabase, vmasize);
 		if(vmabuf) {
 			for(size_t i = 0;; i++) {
 				L.pushnumber(ctr++);
@@ -353,7 +353,7 @@ namespace
 					break;
 				if(addr + i >= vmasize)
 					throw std::runtime_error("Write out of range");
-				lsnes_memory.write<uint8_t>(vmabase + addr + i, L.tointeger(-1));
+				lsnes_instance.memory.write<uint8_t>(vmabase + addr + i, L.tointeger(-1));
 				L.pop(1);
 			}
 		}
@@ -385,7 +385,7 @@ namespace
 		}
 
 		//Try to map the VMA.
-		char* vmabuf = lsnes_memory.get_physical_mapping(vmabase, vmasize);
+		char* vmabuf = lsnes_instance.memory.get_physical_mapping(vmabase, vmasize);
 		if(vmabuf) {
 			for(uint64_t i = 0; i < rows; i++) {
 				bool eq = (cmp && !memcmp(&h[daddr], vmabuf + addr, size));
@@ -398,7 +398,7 @@ namespace
 		} else {
 			for(uint64_t i = 0; i < rows; i++) {
 				for(uint64_t j = 0; j < size; j++) {
-					uint8_t byte = lsnes_memory.read<uint8_t>(vmabase + addr + j);
+					uint8_t byte = lsnes_instance.memory.read<uint8_t>(vmabase + addr + j);
 					bool eq = (cmp && ((uint8_t)h[daddr + j] == byte));
 					h[daddr + j] = byte;
 					equals &= eq;
@@ -457,7 +457,7 @@ namespace
 	{
 		L.newtable();
 		size_t key = 1;
-		for(auto i : lsnes_memory.get_regions()) {
+		for(auto i : lsnes_instance.memory.get_regions()) {
 			L.pushnumber(key++);
 			L.pushlstring(i->name);
 			L.rawset(-3);
@@ -471,7 +471,7 @@ namespace
 
 		P(P.skipped(), vma);
 
-		auto l = lsnes_memory.get_regions();
+		auto l = lsnes_instance.memory.get_regions();
 		size_t j;
 		std::list<memory_region*>::iterator i;
 		for(i = l.begin(), j = 0; i != l.end(); i++, j++)
