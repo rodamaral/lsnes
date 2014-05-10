@@ -1653,12 +1653,12 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		try {
 			std::string newname;
 			std::string oldname;
-			runemufn([&oldname]() { oldname = mbranch_get(); });
+			runemufn([&oldname]() { oldname = lsnes_instance.mbranch.get(); });
 			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to fork "
-				"from " + mbranch_name(oldname) + "):", "", false);
+				"from " + lsnes_instance.mbranch.name(oldname) + "):", "", false);
 			runemufn_async([this, oldname, newname] {
 				try {
-					mbranch_new(newname, oldname);
+					lsnes_instance.mbranch._new(newname, oldname);
 				} catch(std::exception& e) {
 					std::string error = e.what();
 					runuifun([this, error]() {
@@ -1685,7 +1685,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 				bool failed = false;
 				runemufn([this, filename, &brlist, &failed]() {
 					try {
-						brlist = mbranch_movie_branches(filename);
+						brlist = lsnes_instance.mbranch._movie_branches(filename);
 					} catch(std::exception& e) {
 						std::string error = e.what();
 						failed = true;
@@ -1715,7 +1715,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 				branch, false);
 			runemufn_async([this, filename, branch, dbranch, mode]() {
 				try {
-					mbranch_import(filename, branch, dbranch, mode);
+					lsnes_instance.mbranch.import(filename, branch, dbranch, mode);
 				} catch(std::exception& e) {
 					std::string error = e.what();
 					runuifun([this, error]() {
@@ -1737,8 +1737,8 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			mode = g.second;
 			runemufn_async([this, file, mode]() {
 				try {
-					std::string bname = mbranch_get();
-					mbranch_export(file, bname, mode == MBRANCH_IMPORT_BINARY);
+					std::string bname = lsnes_instance.mbranch.get();
+					lsnes_instance.mbranch._export(file, bname, mode == MBRANCH_IMPORT_BINARY);
 				} catch(std::exception& e) {
 					std::string error = e.what();
 					runuifun([this, error]() {
@@ -1755,15 +1755,15 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			std::string newname;
 			std::string oldname;
 			std::set<std::string> list;
-			runemufn([&list]() { list = mbranch_enumerate(); });
+			runemufn([&list]() { list = lsnes_instance.mbranch.enumerate(); });
 			std::vector<std::string> choices(list.begin(), list.end());
 			oldname = pick_among(this, "Select branch to rename", "Select branch to rename",
 				choices, 0);
 			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to rename "
-				"'" + mbranch_name(oldname) + "'):", oldname, false);
+				"'" + lsnes_instance.mbranch.name(oldname) + "'):", oldname, false);
 			runemufn_async([this, oldname, newname] {
 				try {
-					mbranch_rename(oldname, newname);
+					lsnes_instance.mbranch.rename(oldname, newname);
 				} catch(std::exception& e) {
 					std::string error = e.what();
 					runuifun([this, error]() {
@@ -1779,13 +1779,13 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		try {
 			std::string oldname;
 			std::set<std::string> list;
-			runemufn([&list]() { list = mbranch_enumerate(); });
+			runemufn([&list]() { list = lsnes_instance.mbranch.enumerate(); });
 			std::vector<std::string> choices(list.begin(), list.end());
 			oldname = pick_among(this, "Select branch to delete", "Select branch to delete",
 				choices, 0);
 			runemufn_async([this, oldname] {
 				try {
-					mbranch_delete(oldname);
+					lsnes_instance.mbranch._delete(oldname);
 				} catch(std::exception& e) {
 					std::string error = e.what();
 					runuifun([this, error]() {
@@ -1803,7 +1803,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		std::string name = branch_names[id];
 		runemufn_async([this, name]() {
 			try {
-				mbranch_set(name);
+				lsnes_instance.mbranch.set(name);
 			} catch(std::exception& e) {
 				std::string err = e.what();
 				runuifun([this, err]() {
@@ -2010,15 +2010,15 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	std::string current;
 	bool ro;
 	runemufn([&list, &current, &ro]() {
-		list = mbranch_enumerate();
-		current = mbranch_get();
+		list = lsnes_instance.mbranch.enumerate();
+		current = lsnes_instance.mbranch.get();
 		ro = lsnes_instance.mlogic.get_movie().readonly_mode();
 	});
 	int ass_id = wxID_MBRANCH_FIRST;
 	for(auto i : list) {
 		bool selected = (i == current);
 		wxMenuItem* it;
-		it = branches_submenu->AppendCheckItem(ass_id, towxstring(mbranch_name(i)));
+		it = branches_submenu->AppendCheckItem(ass_id, towxstring(lsnes_instance.mbranch.name(i)));
 		branch_names[ass_id++] = i;
 		if(selected) it->Check(selected);
 		it->Enable(ro);

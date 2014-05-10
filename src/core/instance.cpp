@@ -2,7 +2,7 @@
 #include "core/settings.hpp"
 
 emulator_instance::emulator_instance()
-	: setcache(lsnes_vset), subtitles(&mlogic)
+	: setcache(lsnes_vset), subtitles(&mlogic), mbranch(&mlogic)
 {
 }
 

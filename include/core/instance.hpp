@@ -3,6 +3,7 @@
 
 #include "core/inthread.hpp"
 #include "core/movie.hpp"
+#include "core/mbranch.hpp"
 #include "core/memorywatch.hpp"
 #include "library/lua-base.hpp"
 #include "library/memoryspace.hpp"
@@ -18,6 +19,7 @@ struct emulator_instance
 	settingvar::cache setcache;
 	voice_commentary commentary;
 	subtitle_commentary subtitles;
+	movie_branches mbranch;
 };
 
 extern emulator_instance lsnes_instance;

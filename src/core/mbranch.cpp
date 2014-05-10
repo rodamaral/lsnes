@@ -5,98 +5,104 @@
 
 void update_movie_state();
 
-std::string mbranch_name(const std::string& internal)
+movie_branches::movie_branches(movie_logic* _mlogic)
+	: mlogic(*_mlogic)
+{
+}
+
+std::string movie_branches::name(const std::string& internal)
 {
 	if(internal != "")
 		return internal;
 	return "(Default branch)";
 }
 
-std::set<std::string> mbranch_enumerate()
+std::set<std::string> movie_branches::enumerate()
 {
 	std::set<std::string> r;
-	if(!lsnes_instance.mlogic)
+	if(!mlogic)
 		return r;
-	for(auto& i : lsnes_instance.mlogic.get_mfile().branches)
+	for(auto& i : mlogic.get_mfile().branches)
 		r.insert(i.first);
 	return r;
 }
 
-std::string mbranch_get()
+std::string movie_branches::get()
 {
-	if(!lsnes_instance.mlogic)
+	if(!mlogic)
 		return "";
-	return lsnes_instance.mlogic.get_mfile().current_branch();
+	return mlogic.get_mfile().current_branch();
 }
 
-void mbranch_set(const std::string& branch)
+void movie_branches::set(const std::string& branch)
 {
-	moviefile& mf = lsnes_instance.mlogic.get_mfile();
-	if(!lsnes_instance.mlogic.get_movie().readonly_mode())
+	moviefile& mf = mlogic.get_mfile();
+	if(!mlogic.get_movie().readonly_mode())
 		(stringfmt() << "Branches are only switchable in readonly mode.").throwex();
 	if(!mf.branches.count(branch))
-		(stringfmt() << "Branch '" << mbranch_name(branch) << "' does not exist.").throwex();
-	if(!lsnes_instance.mlogic.get_movie().compatible(mf.branches[branch]))
-		(stringfmt() << "Branch '" << mbranch_name(branch) << "' differs in past.").throwex();
+		(stringfmt() << "Branch '" << name(branch) << "' does not exist.").throwex();
+	if(!mlogic.get_movie().compatible(mf.branches[branch]))
+		(stringfmt() << "Branch '" << name(branch) << "' differs in past.").throwex();
 	//Ok, execute the switch.
 	mf.input = &mf.branches[branch];
-	lsnes_instance.mlogic.get_movie().set_movie_data(mf.input);
+	mlogic.get_movie().set_movie_data(mf.input);
 	notify_mbranch_change();
 	update_movie_state();
-	messages << "Switched to branch '" << mbranch_name(branch) << "'" << std::endl;
+	messages << "Switched to branch '" << name(branch) << "'" << std::endl;
 }
 
-void mbranch_new(const std::string& branch, const std::string& from)
+void movie_branches::_new(const std::string& branch, const std::string& from)
 {
-	moviefile& mf = lsnes_instance.mlogic.get_mfile();
+	moviefile& mf = mlogic.get_mfile();
 	if(mf.branches.count(branch))
-		(stringfmt() << "Branch '" << mbranch_name(branch) << "' already exists.").throwex();
+		(stringfmt() << "Branch '" << name(branch) << "' already exists.").throwex();
 	mf.fork_branch(from, branch);
-	messages << "Created branch '" << mbranch_name(branch) << "'" << std::endl;
+	messages << "Created branch '" << name(branch) << "'" << std::endl;
 	notify_mbranch_change();
 }
 
-void mbranch_rename(const std::string& oldn, const std::string& newn)
+void movie_branches::rename(const std::string& oldn, const std::string& newn)
 {
-	moviefile& mf = lsnes_instance.mlogic.get_mfile();
+	moviefile& mf = mlogic.get_mfile();
 	if(oldn == newn)
 		return;
 	if(!mf.branches.count(oldn))
-		(stringfmt() << "Branch '" << mbranch_name(oldn) << "' does not exist.").throwex();
+		(stringfmt() << "Branch '" << name(oldn) << "' does not exist.").throwex();
 	if(mf.branches.count(newn))
-		(stringfmt() << "Branch '" << mbranch_name(newn) << "' already exists.").throwex();
+		(stringfmt() << "Branch '" << name(newn) << "' already exists.").throwex();
 	mf.fork_branch(oldn, newn);
-	if(lsnes_instance.mlogic.get_mfile().current_branch() == oldn) {
+	if(mlogic.get_mfile().current_branch() == oldn) {
 		mf.input = &mf.branches[newn];
-		lsnes_instance.mlogic.get_movie().set_movie_data(mf.input);
+		mlogic.get_movie().set_movie_data(mf.input);
 	}
 	mf.branches.erase(oldn);
-	messages << "Renamed branch '" << mbranch_name(oldn) << "' to '" << mbranch_name(newn) << "'" << std::endl;
+	messages << "Renamed branch '" << name(oldn) << "' to '" << name(newn) << "'" << std::endl;
 	notify_mbranch_change();
 	update_movie_state();
 }
 
-void mbranch_delete(const std::string& branch)
+void movie_branches::_delete(const std::string& branch)
 {
-	moviefile& mf = lsnes_instance.mlogic.get_mfile();
+	moviefile& mf = mlogic.get_mfile();
 	if(!mf.branches.count(branch))
-		(stringfmt() << "Branch '" << mbranch_name(branch) << "' does not exist.").throwex();
-	if(lsnes_instance.mlogic.get_mfile().current_branch() == branch)
-		(stringfmt() << "Can't delete current branch '" << mbranch_name(branch) << "'.").throwex();
-	lsnes_instance.mlogic.get_mfile().branches.erase(branch);
-	messages << "Deleted branch '" << mbranch_name(branch) << "'" << std::endl;
+		(stringfmt() << "Branch '" << name(branch) << "' does not exist.").throwex();
+	if(mlogic.get_mfile().current_branch() == branch)
+		(stringfmt() << "Can't delete current branch '" << name(branch) << "'.").throwex();
+	mlogic.get_mfile().branches.erase(branch);
+	messages << "Deleted branch '" << name(branch) << "'" << std::endl;
 	notify_mbranch_change();
 }
 
-std::set<std::string> mbranch_movie_branches(const std::string& filename)
+std::set<std::string> movie_branches::_movie_branches(const std::string& filename)
 {
 	moviefile::branch_extractor e(filename);
 	return e.enumerate();
 }
 
-void mbranch_import(const std::string& filename, const std::string& ibranch, const std::string& branchname, int mode)
+void movie_branches::import(const std::string& filename, const std::string& ibranch, const std::string& branchname,
+	int mode)
 {
-	auto& mv = lsnes_instance.mlogic.get_mfile();
+	auto& mv = mlogic.get_mfile();
 	if(mv.branches.count(branchname) && &mv.branches[branchname] == mv.input)
 		(stringfmt() << "Can't overwrite current branch.").throwex();
 
@@ -145,9 +151,9 @@ void mbranch_import(const std::string& filename, const std::string& ibranch, con
 	}
 }
 
-void mbranch_export(const std::string& filename, const std::string& branchname, bool binary)
+void movie_branches::_export(const std::string& filename, const std::string& branchname, bool binary)
 {
-	auto& mv = lsnes_instance.mlogic.get_mfile();
+	auto& mv = mlogic.get_mfile();
 	if(!mv.branches.count(branchname))
 		(stringfmt() << "Branch '" << branchname << "' does not exist.").throwex();
 	auto& v = mv.branches[branchname];
