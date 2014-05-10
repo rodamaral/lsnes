@@ -2,7 +2,6 @@
 #include "core/settings.hpp"
 
 settingvar::group lsnes_vset;
-settingvar::cache lsnes_vsetc(lsnes_vset);
 
 namespace
 {

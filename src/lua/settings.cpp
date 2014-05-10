@@ -1,5 +1,5 @@
 #include "lua/internal.hpp"
-#include "core/settings.hpp"
+#include "core/instance.hpp"
 
 namespace
 {
@@ -10,7 +10,7 @@ namespace
 		P(name, value);
 
 		try {
-			lsnes_vsetc.set(name, value);
+			lsnes_instance.setcache.set(name, value);
 		} catch(std::exception& e) {
 			L.pushnil();
 			L.pushstring(e.what());
@@ -27,7 +27,7 @@ namespace
 		P(name);
 
 		try {
-			std::string value = lsnes_vsetc.get(name);
+			std::string value = lsnes_instance.setcache.get(name);
 			L.pushlstring(value.c_str(), value.length());
 			return 1;
 		} catch(std::exception& e) {

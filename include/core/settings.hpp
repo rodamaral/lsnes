@@ -4,6 +4,5 @@
 #include "library/settingvar.hpp"
 
 extern settingvar::group lsnes_vset;
-extern settingvar::cache lsnes_vsetc;
 
 #endif

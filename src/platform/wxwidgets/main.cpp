@@ -190,7 +190,7 @@ end:
 	{
 		regex_results r;
 		if(r = regex("SET[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
-			lsnes_vsetc.set(r[1], r[2], true);
+			lsnes_instance.setcache.set(r[1], r[2], true);
 			messages << "Setting " << r[1] << " set to " << r[2] << std::endl;
 		} else if(r = regex("ALIAS[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
 			if(!lsnes_cmd.valid_alias_name(r[1])) {
@@ -250,7 +250,7 @@ end:
 		std::string cfgtmp = cfg + ".tmp";
 		std::ofstream cfgfile(cfgtmp.c_str());
 		//Settings.
-		for(auto i : lsnes_vsetc.get_all())
+		for(auto i : lsnes_instance.setcache.get_all())
 			cfgfile << "SET " << i.first << " " << i.second << std::endl;
 		//Aliases.
 		for(auto i : lsnes_cmd.get_aliases()) {

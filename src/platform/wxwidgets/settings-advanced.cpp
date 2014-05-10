@@ -1,4 +1,5 @@
 #include "platform/wxwidgets/settings-common.hpp"
+#include "core/instance.hpp"
 #include "core/settings.hpp"
 
 namespace
@@ -263,8 +264,8 @@ namespace
 			return;
 		std::string value;
 		std::string err;
-		value = lsnes_vsetc.get(name);
-		auto model = lsnes_vsetc.get_description(name);
+		value = lsnes_instance.setcache.get(name);
+		auto model = lsnes_instance.setcache.get_description(name);
 		try {
 			switch(model.type) {
 			case settingvar::description::T_BOOLEAN:
@@ -287,7 +288,7 @@ namespace
 		std::string errorstr;
 		runemufn([&error, &errorstr, name, value]() {
 			try {
-				lsnes_vsetc.set(name, value);
+				lsnes_instance.setcache.set(name, value);
 			} catch(std::exception& e) {
 				error = true;
 				errorstr = e.what();
@@ -323,9 +324,9 @@ namespace
 	{
 		if(closing())
 			return;
-		settings = lsnes_vsetc.get_keys();
+		settings = lsnes_instance.setcache.get_keys();
 		for(auto i : settings) {
-			values[i] = lsnes_vsetc.get(i);
+			values[i] = lsnes_instance.setcache.get(i);
 			names[i] = lsnes_vset[i].get_hname();
 		}
 		_refresh();
@@ -353,7 +354,7 @@ namespace
 			sort.insert(std::make_pair(names[i], i));
 		for(auto i : sort) {
 			//FIXME: Do something with this?
-			//auto description = lsnes_vsetc.get_description(i.second);
+			//auto description = lsnes_instance.setcache.get_description(i.second);
 			strings.push_back(towxstring(names[i.second] + " (Value: " + values[i.second] + ")"));
 			selections[k++] = i.second;
 		}

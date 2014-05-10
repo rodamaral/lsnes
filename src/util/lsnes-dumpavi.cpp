@@ -333,7 +333,7 @@ int main(int argc, char** argv)
 		regex_results r;
 		if(r = regex("--firmware-path=(.*)", i)) {
 			try {
-				lsnes_vsetc.set("firmwarepath", r[1]);
+				lsnes_instance.setcache.set("firmwarepath", r[1]);
 				std::cerr << "Set firmware path to '" << r[1] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set firmware path to '" << r[1] << "': " << e.what() << std::endl;
