@@ -230,15 +230,4 @@ private:
 	threads::lock macro_lock;
 };
 
-/**
- * Generic port controller name function.
- */
-template<unsigned controllers, const char** name>
-inline const char* generic_controller_name(unsigned controller)
-{
-	if(controller >= controllers)
-		return NULL;
-	return *name;
-}
-
 #endif
