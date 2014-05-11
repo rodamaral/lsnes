@@ -89,12 +89,14 @@ namespace
 
 integer_pool::integer_pool() throw()
 {
+	invalid = false;
 	_bits2 = 0;
 	bits = &_bits2;
 }
 
 uint64_t integer_pool::operator()() throw(std::bad_alloc)
 {
+	if(invalid) throw std::bad_alloc();
 	//If the first byte is 0xFF, we got to expand the array.
 	if(bits[0] == 0xFF) {
 		unsigned level = level_from_size(_bits.size());  //If bits.size() == 0, this correctly returns 0.
@@ -142,10 +144,16 @@ uint64_t integer_pool::operator()() throw(std::bad_alloc)
 
 void integer_pool::operator()(uint64_t num) throw()
 {
+	if(invalid) return;
 	unsigned level = level_from_size(_bits.size());  //If bits.size() == 0, this correctly returns 0.
 	for(unsigned i = level; i <= level; i--) {
 		uint64_t byte = level_base[i] + (num >> 3);
 		bits[byte] &= ~(1 << (num & 7));
 		num >>= 3;
 	}
+}
+
+integer_pool::~integer_pool() throw()
+{
+	invalid = true;
 }

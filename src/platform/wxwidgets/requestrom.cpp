@@ -147,7 +147,7 @@ namespace
 		}
 		parent->recent_roms->add(mr);
 		runemufn_async([req]() {
-			lsnes_cmd.invoke("unpause-emulator");
+			lsnes_instance.command.invoke("unpause-emulator");
 			load_new_rom(req);
 		});
 	}
@@ -389,7 +389,7 @@ namespace
 		}
 		parent->recent_roms->add(mr);
 		runemufn([req]() {
-			lsnes_cmd.invoke("unpause-emulator");
+			lsnes_instance.command.invoke("unpause-emulator");
 			load_new_rom(req);
 		});
 		return;

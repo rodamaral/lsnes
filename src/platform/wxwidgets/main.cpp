@@ -194,13 +194,13 @@ end:
 			lsnes_instance.setcache.set(r[1], r[2], true);
 			messages << "Setting " << r[1] << " set to " << r[2] << std::endl;
 		} else if(r = regex("ALIAS[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
-			if(!lsnes_cmd.valid_alias_name(r[1])) {
+			if(!lsnes_instance.command.valid_alias_name(r[1])) {
 				messages << "Illegal alias name " << r[1] << std::endl;
 				return;
 			}
-			std::string tmp = lsnes_cmd.get_alias_for(r[1]);
+			std::string tmp = lsnes_instance.command.get_alias_for(r[1]);
 			tmp = tmp + r[2] + "\n";
-			lsnes_cmd.set_alias_for(r[1], tmp);
+			lsnes_instance.command.set_alias_for(r[1], tmp);
 			messages << r[1] << " aliased to " << r[2] << std::endl;
 		} else if(r = regex("BIND[ \t]+([^/]*)/([^|]*)\\|([^ \t]+)[ \t]+(.*)", line)) {
 			std::string tmp = r[4];
@@ -254,8 +254,8 @@ end:
 		for(auto i : lsnes_instance.setcache.get_all())
 			cfgfile << "SET " << i.first << " " << i.second << std::endl;
 		//Aliases.
-		for(auto i : lsnes_cmd.get_aliases()) {
-			std::string old_alias_value = lsnes_cmd.get_alias_for(i);
+		for(auto i : lsnes_instance.command.get_aliases()) {
+			std::string old_alias_value = lsnes_instance.command.get_alias_for(i);
 			while(old_alias_value != "") {
 				std::string aliasline;
 				size_t s = old_alias_value.find_first_of("\n");

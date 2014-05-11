@@ -955,14 +955,14 @@ namespace
 
 	std::vector<char> cmp_save;
 
-	command::fnptr<> cmp_save1(lsnes_cmd, "set-cmp-save", "", "\n", []() throw(std::bad_alloc,
+	command::fnptr<> cmp_save1(lsnes_cmds, "set-cmp-save", "", "\n", []() throw(std::bad_alloc,
 		std::runtime_error) {
 		if(!internal_rom)
 			return;
 		instance->saveState(cmp_save);
 	});
 
-	command::fnptr<> cmp_save2(lsnes_cmd, "do-cmp-save", "", "\n", []() throw(std::bad_alloc,
+	command::fnptr<> cmp_save2(lsnes_cmds, "do-cmp-save", "", "\n", []() throw(std::bad_alloc,
 		std::runtime_error) {
 		std::vector<char> x;
 		if(!internal_rom)

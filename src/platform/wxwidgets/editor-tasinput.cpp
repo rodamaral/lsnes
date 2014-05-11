@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/dispatch.hpp"
@@ -581,7 +582,7 @@ void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
 		}
 		return;
 	}
-	if(key == WXK_F5) runemufn_async([this]() { lsnes_cmd.invoke("+advance-frame"); });
+	if(key == WXK_F5) runemufn_async([this]() { lsnes_instance.command.invoke("+advance-frame"); });
 }
 
 void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
@@ -695,11 +696,11 @@ void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
 			return;
 		}
 	}
-	if(key == WXK_F1) runemufn_async([this]() { lsnes_cmd.invoke("cycle-jukebox-backward"); });
-	if(key == WXK_F2) runemufn_async([this]() { lsnes_cmd.invoke("cycle-jukebox-forward"); });
-	if(key == WXK_F3) runemufn_async([this]() { lsnes_cmd.invoke("save-jukebox"); });
-	if(key == WXK_F4) runemufn_async([this]() { lsnes_cmd.invoke("load-jukebox"); });
-	if(key == WXK_F5) runemufn_async([this]() { lsnes_cmd.invoke("-advance-frame"); });
+	if(key == WXK_F1) runemufn_async([this]() { lsnes_instance.command.invoke("cycle-jukebox-backward"); });
+	if(key == WXK_F2) runemufn_async([this]() { lsnes_instance.command.invoke("cycle-jukebox-forward"); });
+	if(key == WXK_F3) runemufn_async([this]() { lsnes_instance.command.invoke("save-jukebox"); });
+	if(key == WXK_F4) runemufn_async([this]() { lsnes_instance.command.invoke("load-jukebox"); });
+	if(key == WXK_F5) runemufn_async([this]() { lsnes_instance.command.invoke("-advance-frame"); });
 }
 
 wxeditor_tasinput::control_triple* wxeditor_tasinput::find_triple(unsigned controller, unsigned control)

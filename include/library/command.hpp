@@ -11,6 +11,53 @@
 namespace command
 {
 class base;
+class factory_base;
+
+/**
+ * A set of commands.
+ */
+class set
+{
+public:
+/**
+ * Create a new set.
+ */
+	set() throw(std::bad_alloc);
+/**
+ * Destroy a set.
+ */
+	~set() throw();
+/**
+ * Add a command to set.
+ */
+	void do_register(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
+/**
+ * Remove a command from set.
+ */
+	void do_unregister(const std::string& name, factory_base* dummy) throw(std::bad_alloc);
+/**
+ * Add a notification callback.
+ *
+ * Parameter ccb: The create callback function.
+ * Parameter dcb: The destroy callback function.
+ * Returns: Callback handle.
+ */
+	uint64_t add_callback(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
+		std::function<void(set& s, const std::string& name)> dcb) throw(std::bad_alloc);
+/**
+ * Drop a notification callback.
+ *
+ * Parameter handle: The handle of callback to drop.
+ */
+	void drop_callback(uint64_t handle) throw();
+/**
+ * Obtain list of all commands so far.
+ */
+	std::map<std::string, factory_base*> get_commands();
+private:
+	std::map<std::string, factory_base*> commands;
+	threads::lock int_mutex;
+};
 
 /**
  * A group of commands (with aliases).
@@ -57,6 +104,14 @@ public:
  */
 	void do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc);
 /**
+ * Add all commands (including future ones) in given set.
+ */
+	void add_set(set& s) throw(std::bad_alloc);
+/**
+ * Drop a set of commands.
+ */
+	void drop_set(set& s) throw();
+/**
  * Set the output stream.
  */
 	void set_output(std::ostream& s);
@@ -72,6 +127,7 @@ private:
 	std::ostream* output;
 	void (*oom_panic_routine)();
 	base* builtin[1];
+	std::map<set*, uint64_t> set_handles;
 };
 
 /**
@@ -123,6 +179,36 @@ private:
 };
 
 /**
+ * A command factory.
+ */
+class factory_base
+{
+public:
+	factory_base() throw() {}
+/**
+ * Register a new command.
+ *
+ * parameter _set: The set command will be part of.
+ * parameter cmd: The command to register.
+ * throws std::bad_alloc: Not enough memory.
+ */
+	void _factory_base(set& _set, const std::string& cmd) throw(std::bad_alloc);
+/**
+ * Destructor.
+ */
+	virtual ~factory_base() throw();
+/**
+ * Make a new command.
+ */
+	virtual base* make(group& grp) = 0;
+private:
+	factory_base(const factory_base&);
+	factory_base& operator=(const factory_base&);
+	std::string commandname;
+	set* in_set;
+};
+
+/**
  * Mandatory filename
  */
 struct arg_filename
@@ -152,7 +238,7 @@ void invoke_fn(void (*fn)(args... arguments), const std::string& a);
  * Warp function pointer as command.
  */
 template<typename... args>
-class fnptr : public base
+class _fnptr : public base
 {
 public:
 /**
@@ -164,7 +250,7 @@ public:
  * parameter help: Help for the command.
  * parameter fn: Function to call on command.
  */
-	fnptr(group& group, const std::string& name, const std::string& _description,
+	_fnptr(group& group, const std::string& name, const std::string& _description,
 		const std::string& _help, void (*_fn)(args... arguments)) throw(std::bad_alloc)
 		: base(group, name)
 	{
@@ -175,7 +261,7 @@ public:
 /**
  * Destroy a commnad.
  */
-	~fnptr() throw()
+	~_fnptr() throw()
 	{
 	}
 /**
@@ -212,6 +298,50 @@ private:
 	std::string description;
 	std::string help;
 };
-}
 
+/**
+ * Function pointer command factory.
+ */
+template<typename... args>
+class fnptr : public factory_base
+{
+public:
+/**
+ * Create a new command.
+ *
+ * parameter _set: The set command will be part of.
+ * parameter name: Name of the command
+ * parameter description Description for the command
+ * parameter help: Help for the command.
+ * parameter fn: Function to call on command.
+ */
+	fnptr(set& _set, const std::string& _name, const std::string& _description,
+		const std::string& _help, void (*_fn)(args... arguments)) throw(std::bad_alloc)
+	{
+		description = _description;
+		name = _name;
+		help = _help;
+		fn = _fn;
+		_factory_base(_set, name);
+	}
+/**
+ * Destroy a commnad.
+ */
+	~fnptr() throw()
+	{
+	}
+/**
+ * Make a command.
+ */
+	base* make(group& grp) throw(std::bad_alloc)
+	{
+		return new _fnptr<args...>(grp, name, description, help, fn);
+	}
+private:
+	void (*fn)(args... arguments);
+	std::string description;
+	std::string help;
+	std::string name;
+};
+}
 #endif

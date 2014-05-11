@@ -173,21 +173,21 @@ bool multitrack_edit::any_records()
 
 namespace
 {
-	command::fnptr<> rotate_forward(lsnes_cmd, "rotate-multitrack", "Rotate multitrack",
+	command::fnptr<> rotate_forward(lsnes_cmds, "rotate-multitrack", "Rotate multitrack",
 		"Syntax: rotate-multitrack\nRotate multitrack\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().mteditor.rotate(true);
 			update_movie_state();
 		});
 
-	command::fnptr<> rotate_backward(lsnes_cmd, "rotate-multitrack-backwards", "Rotate multitrack backwards",
+	command::fnptr<> rotate_backward(lsnes_cmds, "rotate-multitrack-backwards", "Rotate multitrack backwards",
 		"Syntax: rotate-multitrack-backwards\nRotate multitrack backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().mteditor.rotate(false);
 			update_movie_state();
 		});
 
-	command::fnptr<const std::string&> set_mt(lsnes_cmd, "set-multitrack", "Set multitrack mode",
+	command::fnptr<const std::string&> set_mt(lsnes_cmds, "set-multitrack", "Set multitrack mode",
 		"Syntax: set-multitrack <controller> <mode>\nSet multitrack mode\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r = regex("(.*)[ \t]+(.*)", args);

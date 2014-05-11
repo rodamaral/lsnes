@@ -73,7 +73,7 @@ namespace
 		exit(1);
 	}
 
-	command::fnptr<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "",
+	command::fnptr<const std::string&> test4(lsnes_cmds, "panicsave-movie", "", "",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 		if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic.get_mfile(),
 			lsnes_instance.mlogic.get_rrdata());
@@ -220,8 +220,8 @@ void reached_main()
 	crandom::init();
 	new_core_flag = false;	//We'll process the static cores anyway.
 	reached_main_flag = true;
-	lsnes_cmd.set_oom_panic(OOM_panic);
-	lsnes_cmd.set_output(platform::out());
+	lsnes_instance.command.set_oom_panic(OOM_panic);
+	lsnes_instance.command.set_output(platform::out());
 	loadlib::module::run_initializers();
 	std::set_terminate(terminate_handler);
 #ifdef SIGHUP
@@ -298,7 +298,7 @@ std::string get_temp_file()
 #endif
 }
 
-command::fnptr<const std::string&> macro_test(lsnes_cmd, "test-macro", "", "",
+command::fnptr<const std::string&> macro_test(lsnes_cmds, "test-macro", "", "",
 	[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 		regex_results r = regex("([0-9]+)[ \t](.*)", args);
 		if(!r) {

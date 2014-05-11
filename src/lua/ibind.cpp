@@ -22,7 +22,7 @@ class lua_command_binding : public command::base
 {
 public:
 	lua_command_binding(lua::state& _L, const std::string& cmd, int idx)
-		: command::base(lsnes_cmd, cmd), L(_L)
+		: command::base(CORE().command, cmd), L(_L)
 	{
 		L.pushlightuserdata(this);
 		L.pushvalue(idx);
@@ -133,7 +133,7 @@ namespace
 
 		P(name);
 
-		std::string a = lsnes_cmd.get_alias_for(name);
+		std::string a = CORE().command.get_alias_for(name);
 		if(a != "")
 			L.pushlstring(a);
 		else
@@ -147,7 +147,7 @@ namespace
 
 		P(name, P.optional(value, ""));
 
-		lsnes_cmd.set_alias_for(name, value);
+		CORE().command.set_alias_for(name, value);
 		refresh_alias_binds();
 		return 0;
 	}

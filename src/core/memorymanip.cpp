@@ -164,7 +164,7 @@ namespace
 	{
 	public:
 		memorymanip_command(const std::string& cmd) throw(std::bad_alloc)
-			: command::base(lsnes_cmd, cmd)
+			: command::base(lsnes_instance.command, cmd)
 		{
 			_command = cmd;
 		}

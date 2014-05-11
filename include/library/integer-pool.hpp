@@ -12,6 +12,10 @@ public:
  */
 	integer_pool() throw();
 /**
+ * Destroy a pool.
+ */
+	~integer_pool() throw();
+/**
  * Draw a number from the pool.
  *
  * Returns: The number drawn.
@@ -76,6 +80,7 @@ private:
 	std::vector<uint8_t> _bits;
 	uint8_t _bits2;
 	uint8_t* bits;
+	bool invalid;
 };
 
 #endif

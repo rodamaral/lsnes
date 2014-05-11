@@ -241,7 +241,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 		if(run_new)
 			for(auto i : luascriptlist)
 				if(!oldscripts.count(i))
-					lsnes_cmd.invoke("run-lua " + i);
+					lsnes_instance.command.invoke("run-lua " + i);
 	});
 	EndModal(wxID_OK);
 }

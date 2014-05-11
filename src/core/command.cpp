@@ -9,7 +9,7 @@
 #include <set>
 #include <map>
 
-command::group lsnes_cmd;
+command::set lsnes_cmds;
 
 namespace
 {
@@ -20,7 +20,7 @@ namespace
 void refresh_alias_binds()
 {
 	threads::alock h(alias_ibind_mutex);
-	auto a = lsnes_cmd.get_aliases();
+	auto a = lsnes_instance.command.get_aliases();
 	for(auto i : alias_binds) {
 		if(!a.count(i.first)) {
 			delete i.second;

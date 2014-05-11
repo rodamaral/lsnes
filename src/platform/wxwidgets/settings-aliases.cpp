@@ -1,6 +1,7 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/settings-keyentry.hpp"
 #include "core/command.hpp"
+#include "core/instance.hpp"
 #include <wx/defs.h>
 
 namespace
@@ -106,14 +107,14 @@ namespace
 			return;
 		try {
 			std::string name = pick_text(this, "Enter alias name", "Enter name for the new alias:");
-			if(!lsnes_cmd.valid_alias_name(name)) {
+			if(!lsnes_instance.command.valid_alias_name(name)) {
 				show_message_ok(this, "Error", "Not a valid alias name: " + name, wxICON_EXCLAMATION);
 				throw canceled_exception();
 			}
-			std::string old_alias_value = lsnes_cmd.get_alias_for(name);
+			std::string old_alias_value = lsnes_instance.command.get_alias_for(name);
 			std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 				old_alias_value, true);
-			lsnes_cmd.set_alias_for(name, newcmd);
+			lsnes_instance.command.set_alias_for(name, newcmd);
 			refresh_alias_binds();
 			do_notify();
 		} catch(...) {
@@ -131,10 +132,10 @@ namespace
 			return;
 		}
 		try {
-			std::string old_alias_value = lsnes_cmd.get_alias_for(name);
+			std::string old_alias_value = lsnes_instance.command.get_alias_for(name);
 			std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 				old_alias_value, true);
-			lsnes_cmd.set_alias_for(name, newcmd);
+			lsnes_instance.command.set_alias_for(name, newcmd);
 			refresh_alias_binds();
 			do_notify();
 		} catch(...) {
@@ -151,7 +152,7 @@ namespace
 			refresh();
 			return;
 		}
-		lsnes_cmd.set_alias_for(name, "");
+		lsnes_instance.command.set_alias_for(name, "");
 		refresh_alias_binds();
 		do_notify();
 		refresh();
@@ -164,7 +165,7 @@ namespace
 		int n = select->GetSelection();
 		std::set<std::string> bind;
 		std::vector<wxString> choices;
-		bind = lsnes_cmd.get_aliases();
+		bind = lsnes_instance.command.get_aliases();
 		for(auto i : bind) {
 			numbers[choices.size()] = i;
 			choices.push_back(towxstring(i));

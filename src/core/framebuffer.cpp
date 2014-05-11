@@ -98,7 +98,7 @@ namespace
 		draw_special_screen(target, rl_corrupt);
 	}
 
-	command::fnptr<command::arg_filename> take_screenshot_cmd(lsnes_cmd, "take-screenshot", "Takes a screenshot",
+	command::fnptr<command::arg_filename> take_screenshot_cmd(lsnes_cmds, "take-screenshot", "Takes a screenshot",
 		"Syntax: take-screenshot <file>\nSaves screenshot to PNG file <file>\n",
 		[](command::arg_filename file) throw(std::bad_alloc, std::runtime_error) {
 			take_screenshot(file);

@@ -1,5 +1,6 @@
 #include "command.hpp"
 #include "globalwrap.hpp"
+#include "integer-pool.hpp"
 #include "minmax.hpp"
 #include "register-queue.hpp"
 #include "string.hpp"
@@ -63,7 +64,58 @@ namespace
 		exit(1);
 	}
 
+	struct set_callbacks
+	{
+		std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb;
+		std::function<void(set& s, const std::string& name)> dcb;
+	};
+
+	struct set_internal_state
+	{
+		threads::lock cb_lock;
+		std::map<uint64_t, set_callbacks> callbacks;
+		integer_pool pool;
+	};
+
+	
+	std::map<set*, set_internal_state*>* int_state;
+	threads::lock* int_state_lock;
+
+	set_internal_state& get_set_internal(set* s)
+	{
+		static threads::lock olock;
+		threads::alock hx(olock);
+		if(!int_state_lock) int_state_lock = new threads::lock;
+		if(!int_state) int_state = new std::map<set*, set_internal_state*>;
+		threads::alock h(*int_state_lock);
+		if(!int_state->count(s))
+			(*int_state)[s] = new set_internal_state;
+		return *(*int_state)[s];
+	}
+	void release_set_internal(set* s)
+	{
+		if(!int_state)
+			return;
+		threads::alock h(*int_state_lock);
+		if(!int_state->count(s))
+			return;
+		delete (*int_state)[s];
+		int_state->erase(s);
+	}
+
 	typedef register_queue<group, base> regqueue_t;
+	typedef register_queue<set, factory_base> regqueue2_t;
+}
+
+void factory_base::_factory_base(set& _set, const std::string& cmd) throw(std::bad_alloc)
+{
+	in_set = &_set;
+	regqueue2_t::do_register(*in_set, commandname = cmd, *this);
+}
+
+factory_base::~factory_base() throw()
+{
+	regqueue2_t::do_unregister(*in_set, commandname);
 }
 
 base::base(group& group, const std::string& cmd) throw(std::bad_alloc)
@@ -77,7 +129,6 @@ base::~base() throw()
 	regqueue_t::do_unregister(in_group, commandname);
 }
 
-
 std::string base::get_short_help() throw(std::bad_alloc)
 {
 	return "No description available";
@@ -86,6 +137,72 @@ std::string base::get_short_help() throw(std::bad_alloc)
 std::string base::get_long_help() throw(std::bad_alloc)
 {
 	return "No help available on command " + commandname;
+}
+
+set::set() throw(std::bad_alloc)
+{
+	regqueue2_t::do_ready(*this, true);
+}
+
+set::~set() throw()
+{
+	regqueue2_t::do_ready(*this, false);
+	release_set_internal(this);
+}
+
+void set::do_register(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
+{
+	threads::alock lock(int_mutex);
+	if(commands.count(name)) {
+		std::cerr << "WARNING: Command collision for " << name << "!" << std::endl;
+		return;
+	}
+	commands[name] = &cmd;
+	auto& istate = get_set_internal(this);
+	threads::alock lock2(istate.cb_lock);
+	for(auto i : istate.callbacks)
+		i.second.ccb(*this, name, cmd);
+}
+
+void set::do_unregister(const std::string& name, factory_base* dummy) throw(std::bad_alloc)
+{
+	threads::alock lock(int_mutex);
+	commands.erase(name);
+	auto& istate = get_set_internal(this);
+	threads::alock lock2(istate.cb_lock);
+	for(auto i : istate.callbacks)
+		i.second.dcb(*this, name);
+}
+
+uint64_t set::add_callback(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
+	std::function<void(set& s, const std::string& name)> dcb) throw(std::bad_alloc)
+{
+	threads::alock lock(int_mutex);
+	set_callbacks cb;
+	cb.ccb = ccb;
+	cb.dcb = dcb;
+	auto& istate = get_set_internal(this);
+	threads::alock lock2(istate.cb_lock);
+	uint64_t i = istate.pool();
+	try { istate.callbacks[i] = cb; } catch(...) { istate.pool(i); throw; }
+	return i;
+}
+
+void set::drop_callback(uint64_t handle) throw()
+{
+	threads::alock lock(int_mutex);
+	auto& istate = get_set_internal(this);
+	threads::alock lock2(istate.cb_lock);
+	if(istate.callbacks.count(handle)) {
+		istate.callbacks.erase(handle);
+		istate.pool(handle);
+	}
+}
+
+std::map<std::string, factory_base*> set::get_commands()
+{
+	threads::alock lock(int_mutex);
+	return commands;
 }
 
 group::group() throw(std::bad_alloc)
@@ -102,6 +219,8 @@ group::~group() throw()
 	for(size_t i = 0; i < sizeof(builtin)/sizeof(builtin[0]); i++)
 		delete builtin[i];
 	regqueue_t::do_ready(*this, false);
+	for(auto i : set_handles)
+		i.first->drop_callback(i.second);
 }
 
 void group::invoke(const std::string& cmd) throw()
@@ -264,6 +383,36 @@ void group::set_oom_panic(void (*fn)())
 		oom_panic_routine = fn;
 	else
 		oom_panic_routine = default_oom_panic;
+}
+
+void group::add_set(set& s) throw(std::bad_alloc)
+{
+	//Add the callback first in order to avoid races.
+	set_handles[&s] = s.add_callback(
+		[this](set& s, const std::string& name, factory_base& cmd) {
+			cmd.make(*this);
+		},
+		[this](set& s, const std::string& name) { 
+			threads::alock lock(this->int_mutex);
+			commands.erase(name);
+		}
+	);
+	auto cmds = s.get_commands();
+	for(auto i : cmds)
+		i.second->make(*this);
+}
+
+void group::drop_set(set& s) throw()
+{
+	threads::alock lock(int_mutex);
+	if(!set_handles.count(&s))
+		return;
+	//Drop the commands before dropping the handle.
+	auto cmds = s.get_commands();
+	for(auto i : cmds)
+		commands.erase(i.first);
+	s.drop_callback(set_handles[&s]);
+	set_handles.erase(&s);
 }
 
 template<>

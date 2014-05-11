@@ -560,7 +560,7 @@ namespace
 		for(unsigned i = 0; i < file.files.size() && i < ROM_SLOT_COUNT; i++)
 			req.files[i] = file.files[i];
 		runemufn_async([req]() {
-			lsnes_cmd.invoke("unpause-emulator");
+			lsnes_instance.command.invoke("unpause-emulator");
 			load_new_rom(req);
 		});
 	}
@@ -755,11 +755,11 @@ namespace
 					return false;
 				if(amov) std::swap(a, b);
 				runemufn_async([a, b]() {
-					lsnes_cmd.invoke("unpause-emulator");
+					lsnes_instance.command.invoke("unpause-emulator");
 					romload_request req;
 					req.packfile = a;
 					load_new_rom(req);
-					lsnes_cmd.invoke("load-smart " + b);
+					lsnes_instance.command.invoke("load-smart " + b);
 				});
 				ret = true;
 			}
@@ -774,7 +774,7 @@ namespace
 					romload_request req;
 					req.packfile = a;
 					runemufn_async([req]() {
-						lsnes_cmd.invoke("unpause-emulator");
+						lsnes_instance.command.invoke("unpause-emulator");
 						load_new_rom(req);
 					});
 					pwin->recent_roms->add(loadreq_to_multirom(req));
@@ -1740,7 +1740,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_RELOAD_ROM_IMAGE:
 		runemufn([]() {
-			lsnes_cmd.invoke("unpause-emulator");
+			lsnes_instance.command.invoke("unpause-emulator");
 			reload_current_rom();
 		});
 		return;

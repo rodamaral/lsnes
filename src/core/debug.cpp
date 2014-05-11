@@ -309,7 +309,7 @@ void debug_request_break()
 
 namespace
 {
-	command::fnptr<> callbacks_show(lsnes_cmd, "show-callbacks", "", "",
+	command::fnptr<> callbacks_show(lsnes_cmds, "show-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 		for(auto& i : read_cb)
 			for(auto& j : i.second)
@@ -328,7 +328,7 @@ namespace
 				messages << "FRAME handle=" << &j << std::endl;
 	});
 
-	command::fnptr<const std::string&> generate_event(lsnes_cmd, "generate-memory-event", "", "",
+	command::fnptr<const std::string&> generate_event(lsnes_cmds, "generate-memory-event", "", "",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 		regex_results r = regex("([^ \t]+) ([^ \t]+) (.+)", args);
 		if(!r) throw std::runtime_error("generate-memory-event: Bad arguments");
@@ -352,7 +352,7 @@ namespace
 			throw std::runtime_error("Invalid operation");
 	});
 
-	command::fnptr<const std::string&> tracelog(lsnes_cmd, "tracelog", "Trace log control",
+	command::fnptr<const std::string&> tracelog(lsnes_cmds, "tracelog", "Trace log control",
 		"Trace log control\nSyntax: tracelog <cpuid> <file>  Start tracing\nSyntax: tracelog <cpuid>  "
 		"End tracing", [](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 		regex_results r = regex("([^ \t]+)([ \t]+(.+))?", args);

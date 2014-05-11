@@ -366,7 +366,7 @@ namespace
 		}
 	}
 
-	command::fnptr<> callbacks_show_lua(lsnes_cmd, "show-lua-callbacks", "", "",
+	command::fnptr<> callbacks_show_lua(lsnes_cmds, "show-lua-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 		for(auto& i : cbs)
 			for(auto& j : i.second)

@@ -75,19 +75,19 @@ namespace
 			return std::make_pair(false, n * m);
 	}
 
-	command::fnptr<> tturbo(lsnes_cmd, "toggle-turbo", "Toggle turbo",
+	command::fnptr<> tturbo(lsnes_cmds, "toggle-turbo", "Toggle turbo",
 		"Syntax: toggle-turbo\nToggle turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			turboed = !turboed;
 		});
 
-	command::fnptr<> pturbo(lsnes_cmd, "+turbo", "Activate turbo",
+	command::fnptr<> pturbo(lsnes_cmds, "+turbo", "Activate turbo",
 		"Syntax: +turbo\nActivate turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			turboed = true;
 		});
 
-	command::fnptr<> nturbo(lsnes_cmd, "-turbo", "Deactivate turbo",
+	command::fnptr<> nturbo(lsnes_cmds, "-turbo", "Deactivate turbo",
 		"Syntax: -turbo\nDeactivate turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			turboed = false;

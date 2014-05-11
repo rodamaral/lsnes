@@ -98,7 +98,7 @@ namespace
 	};
 
 
-	command::fnptr<const std::string&> edit_subtitle(lsnes_cmd, "edit-subtitle", "Edit a subtitle",
+	command::fnptr<const std::string&> edit_subtitle(lsnes_cmds, "edit-subtitle", "Edit a subtitle",
 		"Syntax: edit-subtitle <first> <length> <text>\nAdd/Edit subtitle\n"
 		"Syntax: edit-subtitle <first> <length>\nADelete subtitle\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
@@ -116,7 +116,7 @@ namespace
 			redraw_framebuffer();
 		});
 
-	command::fnptr<> list_subtitle(lsnes_cmd, "list-subtitle", "List the subtitles",
+	command::fnptr<> list_subtitle(lsnes_cmds, "list-subtitle", "List the subtitles",
 		"Syntax: list-subtitle\nList the subtitles.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			for(auto i = CORE().mlogic.get_mfile().subtitles.rbegin(); i !=
@@ -127,7 +127,7 @@ namespace
 			}
 		});
 
-	command::fnptr<command::arg_filename> save_s(lsnes_cmd, "save-subtitle", "Save subtitles in .sub format",
+	command::fnptr<command::arg_filename> save_s(lsnes_cmds, "save-subtitle", "Save subtitles in .sub format",
 		"Syntax: save-subtitle <file>\nSaves subtitles in .sub format to <file>\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			if(CORE().mlogic.get_mfile().subtitles.empty())

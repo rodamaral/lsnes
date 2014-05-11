@@ -19,7 +19,7 @@ namespace
 		std::string disasm;
 	};
 
-	command::fnptr<const std::string&> disassemble(lsnes_cmd, "disassemble", "Disassemble code",
+	command::fnptr<const std::string&> disassemble(lsnes_cmds, "disassemble", "Disassemble code",
 		"Syntax: disassemble <kind> <addr> [<count>] [to <filename>]\nDisassemble code\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 		regex_results r = regex("([^ \t]+)[ \t]+([0-9]+|0x[0-9A-Fa-f]+)([ \t]+([0-9]+))?"

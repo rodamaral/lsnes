@@ -439,73 +439,73 @@ namespace
 		}
 	}
 
-	command::fnptr<const std::string&> button_p(lsnes_cmd, "+controller", "Press a button",
+	command::fnptr<const std::string&> button_p(lsnes_cmds, "+controller", "Press a button",
 		"Syntax: +controller<button>...\nPress a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 1, 0);
 		});
 
-	command::fnptr<const std::string&> button_r(lsnes_cmd, "-controller", "Release a button",
+	command::fnptr<const std::string&> button_r(lsnes_cmds, "-controller", "Release a button",
 		"Syntax: -controller<button>...\nRelease a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 0, 0);
 		});
 
-	command::fnptr<const std::string&> button_h(lsnes_cmd, "hold-controller", "Autohold a button",
+	command::fnptr<const std::string&> button_h(lsnes_cmds, "hold-controller", "Autohold a button",
 		"Syntax: hold-controller<button>...\nAutohold a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 1, 1);
 		});
 
-	command::fnptr<const std::string&> button_t(lsnes_cmd, "type-controller", "Type a button",
+	command::fnptr<const std::string&> button_t(lsnes_cmds, "type-controller", "Type a button",
 		"Syntax: type-controller<button>...\nType a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 1, 2);
 		});
 
-	command::fnptr<const std::string&> button_d(lsnes_cmd, "designate-position", "Set postion",
+	command::fnptr<const std::string&> button_d(lsnes_cmds, "designate-position", "Set postion",
 		"Syntax: designate-position <button>...\nDesignate position for an axis\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 0, 3);
 		});
 
-	command::fnptr<const std::string&> button_ap(lsnes_cmd, "+autofire-controller", "Start autofire",
+	command::fnptr<const std::string&> button_ap(lsnes_cmds, "+autofire-controller", "Start autofire",
 		"Syntax: +autofire-controller<button> [[<duty> ]<cyclelen>]...\nAutofire a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_autofire_action(a, 1);
 		});
 
-	command::fnptr<const std::string&> button_an(lsnes_cmd, "-autofire-controller", "End autofire",
+	command::fnptr<const std::string&> button_an(lsnes_cmds, "-autofire-controller", "End autofire",
 		"Syntax: -autofire-controller<button> [[<duty> ]<cyclelen>]...\nEnd Autofire on a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_autofire_action(a, 0);
 		});
 
-	command::fnptr<const std::string&> button_at(lsnes_cmd, "autofire-controller", "Toggle autofire",
+	command::fnptr<const std::string&> button_at(lsnes_cmds, "autofire-controller", "Toggle autofire",
 		"Syntax: autofire-controller<button> [[<duty> ]<cyclelen>]...\nToggle Autofire on a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_autofire_action(a, -1);
 		});
 
-	command::fnptr<const std::string&> button_a(lsnes_cmd, "controller-analog", "Analog action",
+	command::fnptr<const std::string&> button_a(lsnes_cmds, "controller-analog", "Analog action",
 		"Syntax: controller-analog <button> <axis>\nAnalog action\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_analog_action(a);
 		});
 
-	command::fnptr<const std::string&> macro_t(lsnes_cmd, "macro", "Toggle a macro",
+	command::fnptr<const std::string&> macro_t(lsnes_cmds, "macro", "Toggle a macro",
 		"Syntax: macro <macroname>\nToggle a macro.\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			controls.do_macro(a, 7);
 		});
 
-	command::fnptr<const std::string&> macro_e(lsnes_cmd, "+macro", "Enable a macro",
+	command::fnptr<const std::string&> macro_e(lsnes_cmds, "+macro", "Enable a macro",
 		"Syntax: +macro <macroname>\nEnable a macro.\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			controls.do_macro(a, 5);
 		});
 
-	command::fnptr<const std::string&> macro_d(lsnes_cmd, "-macro", "Disable a macro",
+	command::fnptr<const std::string&> macro_d(lsnes_cmds, "-macro", "Disable a macro",
 		"Syntax: -macro <macroname>\nDisable a macro.\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			controls.do_macro(a, 2);

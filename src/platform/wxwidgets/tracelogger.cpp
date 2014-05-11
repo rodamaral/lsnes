@@ -925,15 +925,15 @@ namespace
 		} else if(e.GetId() == wxID_SINGLESTEP) {
 			runemufn_async([this]() {
 				this->singlestepping = true;
-				lsnes_cmd.invoke("unpause-emulator");
+				lsnes_instance.command.invoke("unpause-emulator");
 			});
 		} else if(e.GetId() == wxID_FRAMEADVANCE) {
 			runemufn_async([this]() { 
-				lsnes_cmd.invoke("+advance-frame"); 
-				lsnes_cmd.invoke("-advance-frame"); 
+				lsnes_instance.command.invoke("+advance-frame"); 
+				lsnes_instance.command.invoke("-advance-frame"); 
 			});
 		} else if(e.GetId() == wxID_CONTINUE) {
-			runemufn_async([this]() { lsnes_cmd.invoke("unpause-emulator"); });
+			runemufn_async([this]() { lsnes_instance.command.invoke("unpause-emulator"); });
 		} else if(e.GetId() == wxID_BREAKPOINTS) {
 			dialog_breakpoints* d = new dialog_breakpoints(this);
 			d->ShowModal();

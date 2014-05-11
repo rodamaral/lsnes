@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "lua/internal.hpp"
 #include "core/framerate.hpp"
+#include "core/instance.hpp"
 #include "core/moviefile.hpp"
 #include "core/moviedata.hpp"
 #include "core/window.hpp"
@@ -107,7 +108,7 @@ namespace
 
 		P(text);
 
-		lsnes_cmd.invoke(text);
+		CORE().command.invoke(text);
 		return 0;
 	}
 

@@ -112,7 +112,7 @@ namespace
 		return true;
 	}
 
-	command::fnptr<const std::string&> x(lsnes_cmd, "libao-set-id", "", "",
+	command::fnptr<const std::string&> x(lsnes_cmds, "libao-set-id", "", "",
 		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
 			driver_id = parse_value<int>(value);
 		});

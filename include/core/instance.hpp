@@ -7,6 +7,7 @@
 #include "core/mbranch.hpp"
 #include "core/memorywatch.hpp"
 #include "core/multitrack.hpp"
+#include "library/command.hpp"
 #include "library/lua-base.hpp"
 #include "library/memoryspace.hpp"
 #include "library/settingvar.hpp"
@@ -31,6 +32,7 @@ struct emulator_instance
 	triplebuffer::triplebuffer<_lsnes_status> status;
 	keyboard::keyboard keyboard;
 	keyboard::mapper mapper;
+	command::group command;
 };
 
 extern emulator_instance lsnes_instance;

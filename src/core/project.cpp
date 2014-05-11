@@ -387,9 +387,9 @@ skip_rom_movie:
 				messages << "Can't set/clear watch '" << i << "': " << e.what() << std::endl;
 			}
 		lsnes_instance.commentary.load_collection(p->directory + "/" + p->prefix + ".lsvs");
-		lsnes_cmd.invoke("reset-lua");
+		CORE().command.invoke("reset-lua");
 		for(auto i : p->luascripts)
-			lsnes_cmd.invoke("run-lua " + i);
+			CORE().command.invoke("run-lua " + i);
 		load_project_macros(controls, *active_project);
 	} catch(std::exception& e) {
 		if(newmovie && !used)
@@ -705,14 +705,14 @@ namespace
 		dset.erase(depth);
 	}
 
-	command::fnptr<> list_branches(lsnes_cmd, "list-branches", "List all slot branches",
+	command::fnptr<> list_branches(lsnes_cmds, "list-branches", "List all slot branches",
 		"Syntax: list-branches\nList all slot branches.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			std::set<unsigned> dset;
 			recursive_list_branch(0, dset, 0, false);
 		});
 
-	command::fnptr<const std::string&> create_branch(lsnes_cmd, "create-branch", "Create a new slot branch",
+	command::fnptr<const std::string&> create_branch(lsnes_cmds, "create-branch", "Create a new slot branch",
 		"Syntax: create-branch <parentid> <name>\nCreate new branch named <name> under <parentid>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
@@ -732,7 +732,7 @@ namespace
 			}
 		});
 
-	command::fnptr<const std::string&> delete_branch(lsnes_cmd, "delete-branch", "Delete a slot branch",
+	command::fnptr<const std::string&> delete_branch(lsnes_cmds, "delete-branch", "Delete a slot branch",
 		"Syntax: delete-branch <id>\nDelete slot branch with id <id>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r = regex("([0-9]+)[ \t]*", args);
@@ -752,7 +752,7 @@ namespace
 			}
 		});
 
-	command::fnptr<const std::string&> set_branch(lsnes_cmd, "set-branch", "Set current slot branch",
+	command::fnptr<const std::string&> set_branch(lsnes_cmds, "set-branch", "Set current slot branch",
 		"Syntax: set-branch <id>\nSet current branch to <id>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r = regex("([0-9]+)[ \t]*", args);
@@ -773,7 +773,7 @@ namespace
 			}
 		});
 
-	command::fnptr<const std::string&> reparent_branch(lsnes_cmd, "reparent-branch", "Reparent a slot branch",
+	command::fnptr<const std::string&> reparent_branch(lsnes_cmds, "reparent-branch", "Reparent a slot branch",
 		"Syntax: reparent-branch <id> <newpid>\nReparent branch <id> to be child of <newpid>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]*", args);
@@ -795,7 +795,7 @@ namespace
 			}
 		});
 
-	command::fnptr<const std::string&> rename_branch(lsnes_cmd, "rename-branch", "Rename a slot branch",
+	command::fnptr<const std::string&> rename_branch(lsnes_cmds, "rename-branch", "Rename a slot branch",
 		"Syntax: rename-branch <id> <name>\nRename branch <id> to <name>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r = regex("([0-9]+)[ \t]+(.*)", args);

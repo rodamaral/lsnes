@@ -168,7 +168,7 @@ namespace
 		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			lsnes_cmd.invoke("repaint");
+			CORE().command.invoke("repaint");
 		}
 	}
 
@@ -205,7 +205,7 @@ namespace
 		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			lsnes_cmd.invoke("repaint");
+			CORE().command.invoke("repaint");
 		}
 		return true;
 	}
@@ -394,7 +394,7 @@ bool lua_callback_do_button(uint32_t port, uint32_t controller, uint32_t index, 
 
 namespace
 {
-	command::fnptr<const std::string&> evaluate_lua(lsnes_cmd, "evaluate-lua", "Evaluate expression in "
+	command::fnptr<const std::string&> evaluate_lua(lsnes_cmds, "evaluate-lua", "Evaluate expression in "
 		"Lua VM", "Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
@@ -402,7 +402,7 @@ namespace
 			do_eval_lua(CORE().lua, args);
 		});
 
-	command::fnptr<const std::string&> evaluate_lua2(lsnes_cmd, "L", "Evaluate expression in "
+	command::fnptr<const std::string&> evaluate_lua2(lsnes_cmds, "L", "Evaluate expression in "
 		"Lua VM", "Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
@@ -410,14 +410,14 @@ namespace
 			do_eval_lua(CORE().lua, args);
 		});
 
-	command::fnptr<command::arg_filename> run_lua(lsnes_cmd, "run-lua", "Run Lua script in Lua VM",
+	command::fnptr<command::arg_filename> run_lua(lsnes_cmds, "run-lua", "Run Lua script in Lua VM",
 		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error)
 		{
 			do_run_lua(CORE().lua, args);
 		});
 
-	command::fnptr<> reset_lua(lsnes_cmd, "reset-lua", "Reset the Lua VM",
+	command::fnptr<> reset_lua(lsnes_cmds, "reset-lua", "Reset the Lua VM",
 		"Syntax: reset-lua\nReset the Lua VM.\n",
 		[]() throw(std::bad_alloc, std::runtime_error)
 		{

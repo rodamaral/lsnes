@@ -28,6 +28,7 @@
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/cover.hpp"
@@ -1851,7 +1852,7 @@ again2:
 		return std::make_pair(ADDR_KIND_NONE, 0);
 	}
 
-	command::fnptr<command::arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",
+	command::fnptr<command::arg_filename> dump_core(lsnes_cmds, "dump-core", "No description available",
 		"No description available\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			std::vector<char> out;
@@ -1881,7 +1882,7 @@ again2:
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			lsnes_cmd.invoke("repaint");
+			CORE().command.invoke("repaint");
 		}
 	}
 
@@ -2031,14 +2032,14 @@ again2:
 
 		P(r);
 
-		lsnes_cmd.invoke("tracelog cpu " + r);
+		CORE().command.invoke("tracelog cpu " + r);
 		return 0;
 	}
 
-	command::fnptr<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",
+	command::fnptr<const std::string&> start_trace(lsnes_cmds, "set-trace", "No description available",
 		"No description available\n",
 		[](const std::string& r) throw(std::bad_alloc, std::runtime_error) {
-			lsnes_cmd.invoke("tracelog cpu " + r);
+			CORE().command.invoke("tracelog cpu " + r);
 		});
 
 #ifdef BSNES_IS_COMPAT
