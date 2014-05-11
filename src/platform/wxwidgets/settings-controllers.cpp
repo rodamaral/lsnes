@@ -1,5 +1,6 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/settings-keyentry.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "library/string.hpp"
 
@@ -228,7 +229,7 @@ namespace
 		if(closing())
 			return;
 		std::map<keyboard::ctrlrkey*, std::string> data;
-		auto x = lsnes_mapper.get_controller_keys();
+		auto x = lsnes_instance.mapper.get_controller_keys();
 		realitems.clear();
 		for(auto y : x) {
 			string_list<char> key = split_on_codepoint(y->get_name(), U'\u2023');

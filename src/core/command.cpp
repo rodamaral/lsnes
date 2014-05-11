@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "library/globalwrap.hpp"
 #include "library/threads.hpp"
@@ -30,7 +31,7 @@ void refresh_alias_binds()
 		if(i == "" || i[0] == '-')
 			continue;
 		if(!alias_binds.count(i) || alias_binds[i] == NULL)
-			alias_binds[i] = new keyboard::invbind(lsnes_mapper, i, "Alias‣" + i);
+			alias_binds[i] = new keyboard::invbind(lsnes_instance.mapper, i, "Alias‣" + i);
 	}
 }
 

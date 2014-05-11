@@ -10,6 +10,8 @@
 #include "library/lua-base.hpp"
 #include "library/memoryspace.hpp"
 #include "library/settingvar.hpp"
+#include "library/keyboard.hpp"
+#include "library/keyboard-mapper.hpp"
 
 struct emulator_instance
 {
@@ -27,6 +29,8 @@ struct emulator_instance
 	_lsnes_status status_B;
 	_lsnes_status status_C;
 	triplebuffer::triplebuffer<_lsnes_status> status;
+	keyboard::keyboard keyboard;
+	keyboard::mapper mapper;
 };
 
 extern emulator_instance lsnes_instance;

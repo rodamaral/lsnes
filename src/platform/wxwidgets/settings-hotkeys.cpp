@@ -1,6 +1,7 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/settings-keyentry.hpp"
 #include "core/command.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 
 namespace
@@ -223,7 +224,7 @@ namespace
 			return;
 		std::map<keyboard::invbind*, std::list<keyboard::keyspec>> data;
 		realitems.clear();
-		auto x = lsnes_mapper.get_inverses();
+		auto x = lsnes_instance.mapper.get_inverses();
 		for(auto y : x) {
 			string_list<char> key = split_on_codepoint(y->getname(), U'\u2023');
 			names[key] = y->getname();

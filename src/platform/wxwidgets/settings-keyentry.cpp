@@ -1,5 +1,6 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/settings-keyentry.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 
 namespace
@@ -107,7 +108,7 @@ void press_button_dialog::dismiss_with(const std::string& _k)
 				if(lch == '+' || lch == '-')
 					k = k.substr(0, k.length() - 1);
 			}
-			keyboard::key& key = lsnes_kbd.lookup_key(k);
+			keyboard::key& key = lsnes_instance.keyboard.lookup_key(k);
 			if(key.get_type() != keyboard::KBD_KEYTYPE_AXIS)
 				return;
 		} catch(...) {
@@ -135,8 +136,8 @@ key_entry_dialog::key_entry_dialog(wxWindow* parent, const std::string& title, c
 
 	cleared = false;
 	std::set<std::string> x;
-	mods = lsnes_kbd.all_modifiers();
-	keys = lsnes_kbd.all_keys();
+	mods = lsnes_instance.keyboard.all_modifiers();
+	keys = lsnes_instance.keyboard.all_keys();
 	for(auto i : keys) {
 		std::string kclass = i->get_class();
 		if(!x.count(kclass))

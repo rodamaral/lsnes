@@ -1,4 +1,5 @@
 #include "lua/internal.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/command.hpp"
 #include <vector>
@@ -70,7 +71,7 @@ private:
 };
 
 lua_inverse_bind::lua_inverse_bind(lua::state& L, const std::string& name, const std::string& cmd)
-	: ikey(lsnes_mapper, cmd, "Lua‣" + name)
+	: ikey(CORE().mapper, cmd, "Lua‣" + name)
 {
 }
 
@@ -100,16 +101,16 @@ namespace
 		P(P.optional(target, ""));
 
 		L.newtable();
-		for(auto key : lsnes_mapper.get_bindings()) {
+		for(auto key : CORE().mapper.get_bindings()) {
 			std::string _key = key;
-			std::string cmd = lsnes_mapper.get(key);
+			std::string cmd = CORE().mapper.get(key);
 			if(target != "" && cmd != target)
 				continue;
 			L.pushlstring(_key.c_str(), _key.length());
 			L.pushlstring(cmd.c_str(), cmd.length());
 			L.rawset(-3);
 		}
-		for(auto key : lsnes_mapper.get_controller_keys()) {
+		for(auto key : CORE().mapper.get_controller_keys()) {
 			for(unsigned i = 0;; i++) {
 				std::string _key = key->get_string(i);
 				if(_key == "")

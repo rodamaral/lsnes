@@ -1,4 +1,5 @@
 #include "platform/wxwidgets/settings-common.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 
 namespace
@@ -116,7 +117,7 @@ namespace
 			wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
 	{
 		//Grab keys to prevent the joystick driver from running who knows what commands.
-		lsnes_kbd.set_exclusive(&keygrabber);
+		lsnes_instance.keyboard.set_exclusive(&keygrabber);
 
 		Centre();
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -163,7 +164,7 @@ namespace
 	{
 		for(auto i : tabs)
 			i->notify_close();
-		lsnes_kbd.set_exclusive(NULL);
+		lsnes_instance.keyboard.set_exclusive(NULL);
 	}
 
 	bool wxeditor_esettings2::ShouldPreventAppExit() const

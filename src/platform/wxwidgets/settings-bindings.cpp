@@ -1,5 +1,6 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/settings-keyentry.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include <wx/defs.h>
 
@@ -121,7 +122,7 @@ namespace
 
 			std::string newcommand = pick_text(this, "New binding", "Enter command for binding:", "");
 			try {
-				lsnes_mapper.set(name, newcommand);
+				lsnes_instance.mapper.set(name, newcommand);
 			} catch(std::exception& e) {
 				wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
 					wxICON_EXCLAMATION);
@@ -141,11 +142,11 @@ namespace
 			return;
 		}
 		try {
-			std::string old_command_value = lsnes_mapper.get(name);
+			std::string old_command_value = lsnes_instance.mapper.get(name);
 			std::string newcommand = pick_text(this, "Edit binding", "Enter new command for binding:",
 				old_command_value);
 			try {
-				lsnes_mapper.set(name, newcommand);
+				lsnes_instance.mapper.set(name, newcommand);
 			} catch(std::exception& e) {
 				wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
 					wxICON_EXCLAMATION);
@@ -164,7 +165,7 @@ namespace
 			refresh();
 			return;
 		}
-		try { lsnes_mapper.set(name, ""); } catch(...) {}
+		try { lsnes_instance.mapper.set(name, ""); } catch(...) {}
 		refresh();
 	}
 
@@ -175,9 +176,9 @@ namespace
 		int n = select->GetSelection();
 		std::map<std::string, std::string> bind;
 		std::vector<wxString> choices;
-		std::list<keyboard::keyspec> a = lsnes_mapper.get_bindings();
+		std::list<keyboard::keyspec> a = lsnes_instance.mapper.get_bindings();
 		for(auto i : a)
-			bind[i] = lsnes_mapper.get(i);
+			bind[i] = lsnes_instance.mapper.get(i);
 		for(auto i : bind) {
 			if(i.second == "")
 				continue;

@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "core/framerate.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/settings.hpp"
 #include "core/moviedata.hpp"
@@ -92,8 +93,8 @@ namespace
 			turboed = false;
 		});
 
-	keyboard::invbind turboh(lsnes_mapper, "+turbo", "Speed‣Turbo hold");
-	keyboard::invbind turbot(lsnes_mapper, "toggle-turbo", "Speed‣Turbo toggle");
+	keyboard::invbind turboh(lsnes_instance.mapper, "+turbo", "Speed‣Turbo hold");
+	keyboard::invbind turbot(lsnes_instance.mapper, "toggle-turbo", "Speed‣Turbo toggle");
 }
 
 

@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 #include "library/globalwrap.hpp"
 #include "core/keymapper.hpp"
 #include "core/memorymanip.hpp"
@@ -16,9 +17,6 @@
 #include <map>
 #include <sstream>
 #include <set>
-
-keyboard::keyboard lsnes_kbd;
-keyboard::mapper lsnes_mapper(lsnes_kbd, lsnes_cmd);
 
 gamepad::set lsnes_gamepads;
 
@@ -55,15 +53,18 @@ void lsnes_gamepads_init()
 		if(type == 0) {
 			std::string name = (stringfmt() << "joystick" << jnum << "axis" << num).str();
 			int mode = lsnes_gamepads[jnum].get_mode(num);
-			axes[std::make_pair(jnum, num)] = new keyboard::key_axis(lsnes_kbd, name, "joystick", mode);
+			axes[std::make_pair(jnum, num)] = new keyboard::key_axis(lsnes_instance.keyboard, name,
+				"joystick", mode);
 			//Axis.
 		} else if(type == 1) {
 			std::string name = (stringfmt() << "joystick" << jnum << "button" << num).str();
-			buttons[std::make_pair(jnum, num)] = new keyboard::key_key(lsnes_kbd, name, "joystick");
+			buttons[std::make_pair(jnum, num)] = new keyboard::key_key(lsnes_instance.keyboard, name,
+				"joystick");
 			//Button.
 		} else if(type == 2) {
 			std::string name = (stringfmt() << "joystick" << jnum << "hat" << num).str();
-			hats[std::make_pair(jnum, num)] = new keyboard::key_hat(lsnes_kbd, name, "joystick");
+			hats[std::make_pair(jnum, num)] = new keyboard::key_hat(lsnes_instance.keyboard, name,
+				"joystick");
 			//Hat.
 		}
 	});

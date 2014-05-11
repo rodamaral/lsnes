@@ -1,4 +1,5 @@
 #include "library/keyboard.hpp"
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/window.hpp"
 
@@ -345,16 +346,16 @@ void initialize_wx_keyboard()
 	modifier_entry* m = modifiers;
 	while(m->name) {
 		if(m->lname)
-			m->allocated = new keyboard::modifier(lsnes_kbd, m->name, m->lname);
+			m->allocated = new keyboard::modifier(lsnes_instance.keyboard, m->name, m->lname);
 		else
-			m->allocated = new keyboard::modifier(lsnes_kbd, m->name);
+			m->allocated = new keyboard::modifier(lsnes_instance.keyboard, m->name);
 		modifier_map[m->mod] = m->allocated;
 		m++;
 	}
 	key_entry* k = keys;
 	while(k->name) {
 		if(!keys_allocated.count(k->name)) {
-			k->allocated = new keyboard::key_key(lsnes_kbd, k->name, k->clazz);
+			k->allocated = new keyboard::key_key(lsnes_instance.keyboard, k->name, k->clazz);
 			key_map[k->keynum] = k->allocated;
 			keys_allocated[k->name] = k->keynum;
 		} else

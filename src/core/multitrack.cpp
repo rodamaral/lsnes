@@ -209,8 +209,9 @@ namespace
 			update_movie_state();
 		});
 
-	keyboard::invbind _mtback(lsnes_mapper, "rotate-multitrack-backwards", "Multitrack‣Rotate backwards");
-	keyboard::invbind _mtfwd(lsnes_mapper, "rotate-multitrack", "Multitrack‣Rotate forward");
+	keyboard::invbind _mtback(lsnes_instance.mapper, "rotate-multitrack-backwards",
+		"Multitrack‣Rotate backwards");
+	keyboard::invbind _mtfwd(lsnes_instance.mapper, "rotate-multitrack", "Multitrack‣Rotate forward");
 
 	int multitrack_state(lua::state& L, lua::parameters& P)
 	{

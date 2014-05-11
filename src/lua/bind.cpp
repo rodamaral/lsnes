@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/command.hpp"
 #include "lua/internal.hpp"
@@ -11,7 +12,7 @@ namespace
 
 		P(mod, mask, key, cmd);
 
-		lsnes_mapper.bind(mod, mask, key, cmd);
+		CORE().mapper.bind(mod, mask, key, cmd);
 		return 0;
 	}
 
@@ -21,7 +22,7 @@ namespace
 
 		P(mod, mask, key);
 
-		lsnes_mapper.unbind(mod, mask, key);
+		CORE().mapper.unbind(mod, mask, key);
 		return 0;
 	}
 

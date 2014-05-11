@@ -225,7 +225,7 @@ namespace
 	int raw(lua::state& L, lua::parameters& P)
 	{
 		L.newtable();
-		for(auto i : lsnes_kbd.all_keys()) {
+		for(auto i : CORE().keyboard.all_keys()) {
 			L.pushlstring(i->get_name());
 			push_keygroup_parameters(L, *i);
 			L.settable(-3);
@@ -240,7 +240,7 @@ namespace
 
 		P(x, state);
 
-		keyboard::key* key = lsnes_kbd.try_lookup_key(x);
+		keyboard::key* key = CORE().keyboard.try_lookup_key(x);
 		if(!key)
 			throw std::runtime_error("Invalid key name");
 		bool ostate = hooked.count(x) > 0;

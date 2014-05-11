@@ -2,6 +2,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/instance.hpp"
 #include "core/joystickapi.hpp"
 #include "core/keymapper.hpp"
 #include "lua/lua.hpp"
@@ -92,8 +93,8 @@ namespace
 			}
 		});
 
-	keyboard::invbind ienable_sound(lsnes_mapper, "enable-sound on", "Sound‣Enable");
-	keyboard::invbind idisable_sound(lsnes_mapper, "enable-sound off", "Sound‣Disable");
+	keyboard::invbind ienable_sound(lsnes_instance.mapper, "enable-sound on", "Sound‣Enable");
+	keyboard::invbind idisable_sound(lsnes_instance.mapper, "enable-sound off", "Sound‣Disable");
 
 	class window_output
 	{

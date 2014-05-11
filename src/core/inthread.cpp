@@ -1708,7 +1708,7 @@ out:
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().commentary.set_active_flag(false);
 		});
-	keyboard::invbind itangent(lsnes_mapper, "+tangent", "Movie‣Voice tangent");
+	keyboard::invbind itangent(lsnes_instance.mapper, "+tangent", "Movie‣Voice tangent");
 }
 
 voice_commentary::voice_commentary()

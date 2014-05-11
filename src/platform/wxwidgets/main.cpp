@@ -207,12 +207,12 @@ end:
 			regex_results r2 = regex("(load|load-smart|load-readonly|load-preserve|load-state"
 				"|load-movie|save-state|save-movie)[ \t]+\\$\\{project\\}(.*)\\.lsmv", tmp);
 			if(r2) tmp = r2[1] + " $SLOT:" + r2[2];
-			lsnes_mapper.bind(r[1], r[2], r[3], tmp);
+			lsnes_instance.mapper.bind(r[1], r[2], r[3], tmp);
 			if(r[1] != "" || r[2] != "")
 				messages << r[1] << "/" << r[2] << " ";
 			messages << r[3] << " bound to '" << tmp << "'" << std::endl;
 		} else if(r = regex("BUTTON[ \t]+([^ \t]+)[ \t](.*)", line)) {
-			keyboard::ctrlrkey* ckey = lsnes_mapper.get_controllerkey(r[2]);
+			keyboard::ctrlrkey* ckey = lsnes_instance.mapper.get_controllerkey(r[2]);
 			if(ckey) {
 				ckey->append(r[1]);
 				messages << r[1] << " bound (button) to " << r[2] << std::endl;
@@ -270,10 +270,10 @@ end:
 			}
 		}
 		//Keybindings.
-		for(auto i : lsnes_mapper.get_bindings())
-			cfgfile << "BIND " << std::string(i) << " " << lsnes_mapper.get(i) << std::endl;
+		for(auto i : lsnes_instance.mapper.get_bindings())
+			cfgfile << "BIND " << std::string(i) << " " << lsnes_instance.mapper.get(i) << std::endl;
 		//Buttons.
-		for(auto i : lsnes_mapper.get_controller_keys()) {
+		for(auto i : lsnes_instance.mapper.get_controller_keys()) {
 			std::string b;
 			unsigned idx = 0;
 			while((b = i->get_string(idx++)) != "")

@@ -14,15 +14,6 @@
 #include "library/gamepad.hpp"
 
 /**
- * Our keyboard
- */
-extern keyboard::keyboard lsnes_kbd;
-/**
- * Our key mapper.
- */
-extern keyboard::mapper lsnes_mapper;
-
-/**
  * Gamepad HW.
  */
 extern gamepad::set lsnes_gamepads;

@@ -621,12 +621,12 @@ namespace
 	}
 
 	keyboard::mouse_calibration mouse_cal = {0};
-	keyboard::key_mouse mouse_x(lsnes_kbd, "mouse_x", "mouse", mouse_cal);
-	keyboard::key_mouse mouse_y(lsnes_kbd, "mouse_y", "mouse", mouse_cal);
-	keyboard::key_key mouse_l(lsnes_kbd, "mouse_left", "mouse");
-	keyboard::key_key mouse_m(lsnes_kbd, "mouse_center", "mouse");
-	keyboard::key_key mouse_r(lsnes_kbd, "mouse_right", "mouse");
-	keyboard::key_key mouse_i(lsnes_kbd, "mouse_inwindow", "mouse");
+	keyboard::key_mouse mouse_x(lsnes_instance.keyboard, "mouse_x", "mouse", mouse_cal);
+	keyboard::key_mouse mouse_y(lsnes_instance.keyboard, "mouse_y", "mouse", mouse_cal);
+	keyboard::key_key mouse_l(lsnes_instance.keyboard, "mouse_left", "mouse");
+	keyboard::key_key mouse_m(lsnes_instance.keyboard, "mouse_center", "mouse");
+	keyboard::key_key mouse_r(lsnes_instance.keyboard, "mouse_right", "mouse");
+	keyboard::key_key mouse_i(lsnes_instance.keyboard, "mouse_inwindow", "mouse");
 
 	std::pair<double, double> calc_scale_factors(double factor, bool ar,
 		double par)
