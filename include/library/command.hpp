@@ -13,8 +13,6 @@ namespace command
 class base;
 class factory_base;
 
-threads::lock& get_cmd_lock();
-
 /**
  * A set of commands.
  */
@@ -32,19 +30,11 @@ public:
 /**
  * Add a command to set.
  */
-	void do_register(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
-	{
-		threads::alock h(get_cmd_lock());
-		do_register_unlocked(name, cmd);
-	}
+	void do_register(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
 /**
  * Remove a command from set.
  */
-	void do_unregister(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
-	{
-		threads::alock h(get_cmd_lock());
-// 		do_unregister_unlocked(name, cmd);
-	}
+	void do_unregister(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
 /**
  * Add a notification callback and call ccb on all.
  *
@@ -55,39 +45,17 @@ public:
  */
 	uint64_t add_callback(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
 		std::function<void(set& s, const std::string& name)> dcb, std::function<void(set& s)> tcb)
-		throw(std::bad_alloc)
-	{
-		threads::alock h(get_cmd_lock());
-		return add_callback_unlocked(ccb, dcb, tcb);
-	}
+		throw(std::bad_alloc);
 /**
  * Drop a notification callback and call dcb on all.
  *
  * Parameter handle: The handle of callback to drop.
  */
-	void drop_callback(uint64_t handle) throw()
-	{
-		threads::alock h(get_cmd_lock());
-		drop_callback_unlocked(handle);
-	}
+	void drop_callback(uint64_t handle) throw();
 /**
  * Obtain list of all commands so far.
  */
-	std::map<std::string, factory_base*> get_commands()
-	{
-		threads::alock h(get_cmd_lock());
-		return get_commands_unlocked();
-	}
-/**
- * Unlocked versions of other functions.
- */
-	void do_register_unlocked(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
-	void do_unregister_unlocked(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
-	uint64_t add_callback_unlocked(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
-		std::function<void(set& s, const std::string& name)> dcb, std::function<void(set& s)> tcb)
-		throw(std::bad_alloc);
-	void drop_callback_unlocked(uint64_t handle) throw();
-	std::map<std::string, factory_base*> get_commands_unlocked();
+	std::map<std::string, factory_base*> get_commands();
 private:
 	char dummy;
 };
@@ -131,35 +99,19 @@ public:
 /**
  * Register a command.
  */
-	void do_register(const std::string& name, base& cmd) throw(std::bad_alloc)
-	{
-		threads::alock h(get_cmd_lock());
-		do_register_unlocked(name, cmd);
-	}
+	void do_register(const std::string& name, base& cmd) throw(std::bad_alloc);
 /**
  * Unregister a command.
  */
-	void do_unregister(const std::string& name, base& cmd) throw(std::bad_alloc)
-	{
-		threads::alock h(get_cmd_lock());
-		do_unregister_unlocked(name, cmd);
-	}
+	void do_unregister(const std::string& name, base& cmd) throw(std::bad_alloc);
 /**
  * Add all commands (including future ones) in given set.
  */
-	void add_set(set& s) throw(std::bad_alloc)
-	{
-		threads::alock h(get_cmd_lock());
-		add_set_unlocked(s);
-	}
+	void add_set(set& s) throw(std::bad_alloc);
 /**
  * Drop a set of commands.
  */
-	void drop_set(set& s) throw()
-	{
-		threads::alock h(get_cmd_lock());
-		drop_set_unlocked(s);
-	}
+	void drop_set(set& s) throw();
 /**
  * Set the output stream.
  */
@@ -168,13 +120,6 @@ public:
  * Set the OOM panic routine.
  */
 	void set_oom_panic(void (*fn)());
-/**
- * Unlocked versions.
- */
-	void do_register_unlocked(const std::string& name, base& cmd) throw(std::bad_alloc);
-	void do_unregister_unlocked(const std::string& name, base& cmd) throw(std::bad_alloc);
-	void add_set_unlocked(set& s) throw(std::bad_alloc);
-	void drop_set_unlocked(set& s) throw();
 private:
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;

@@ -72,7 +72,12 @@ namespace
 		std::function<void(set& s)> tcb;
 	};
 
-	threads::lock* global_lock;
+	threads::rlock* global_lock;
+	threads::rlock& get_cmd_lock()
+	{
+		if(!global_lock) global_lock = new threads::rlock;
+		return *global_lock;
+	}
 
 	struct set_internal
 	{
@@ -93,24 +98,18 @@ namespace
 	typedef stateobject::type<group, group_internal> group_internal_t;
 }
 
-threads::lock& get_cmd_lock()
-{
-	if(!global_lock) global_lock = new threads::lock;
-	return *global_lock;
-}
-
 void factory_base::_factory_base(set& _set, const std::string& cmd) throw(std::bad_alloc)
 {
-	threads::alock h(get_cmd_lock());
+	threads::arlock h(get_cmd_lock());
 	in_set = &_set;
-	in_set->do_register_unlocked(commandname = cmd, *this);
+	in_set->do_register(commandname = cmd, *this);
 }
 
 factory_base::~factory_base() throw()
 {
-	threads::alock h(get_cmd_lock());
+	threads::arlock h(get_cmd_lock());
 	if(in_set)
-		in_set->do_unregister_unlocked(commandname, *this);
+		in_set->do_unregister(commandname, *this);
 }
 
 void factory_base::set_died() throw()
@@ -123,29 +122,20 @@ base::base(group& group, const std::string& cmd, bool dynamic) throw(std::bad_al
 {
 	in_group = &group;
 	is_dynamic = dynamic;
-	if(!is_dynamic) {
-		threads::alock h(get_cmd_lock());
-		in_group->do_register_unlocked(commandname = cmd, *this);
-	} else {
-		in_group->do_register_unlocked(commandname = cmd, *this);
-	}
+	threads::arlock h(get_cmd_lock());
+	in_group->do_register(commandname = cmd, *this);
 }
 
 base::~base() throw()
 {
-	if(!is_dynamic) {
-		threads::alock h(get_cmd_lock());
-		if(in_group)
-			in_group->do_unregister_unlocked(commandname, *this);
-	} else {
-		if(in_group)
-			in_group->do_unregister_unlocked(commandname, *this);
-	}
+	threads::arlock h(get_cmd_lock());
+	if(in_group)
+		in_group->do_unregister(commandname, *this);
 }
 
 void base::group_died() throw()
 {
-	//The lock is held by assumption.
+	threads::arlock h(get_cmd_lock());
 	in_group = NULL;
 	//If dynamic, we aren't needed anymore.
 	if(is_dynamic) delete this;
@@ -169,7 +159,7 @@ set::~set() throw()
 {
 	auto state = set_internal_t::get_soft(this);
 	if(!state) return;
-	threads::alock h(get_cmd_lock());
+	threads::arlock h(get_cmd_lock());
 	//Call all DCBs on all factories.
 	for(auto i : state->commands)
 		for(auto j : state->callbacks)
@@ -184,8 +174,9 @@ set::~set() throw()
 	set_internal_t::clear(this);
 }
 
-void set::do_register_unlocked(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
+void set::do_register(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
 {
+	threads::arlock h(get_cmd_lock());
 	auto& state = set_internal_t::get(this);
 	if(state.commands.count(name)) {
 		std::cerr << "WARNING: Command collision for " << name << "!" << std::endl;
@@ -197,8 +188,9 @@ void set::do_register_unlocked(const std::string& name, factory_base& cmd) throw
 		i.second.ccb(*this, name, cmd);
 }
 
-void set::do_unregister_unlocked(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
+void set::do_unregister(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
 {
+	threads::arlock h(get_cmd_lock());
 	auto state = set_internal_t::get_soft(this);
 	if(!state) return;
 	if(!state->commands.count(name) || state->commands[name] != &cmd) return; //Not this.
@@ -208,10 +200,11 @@ void set::do_unregister_unlocked(const std::string& name, factory_base& cmd) thr
 		i.second.dcb(*this, name);
 }
 
-uint64_t set::add_callback_unlocked(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
+uint64_t set::add_callback(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
 	std::function<void(set& s, const std::string& name)> dcb, std::function<void(set& s)> tcb)
 	throw(std::bad_alloc)
 {
+	threads::arlock h(get_cmd_lock());
 	auto& state = set_internal_t::get(this);
 	set_callbacks cb;
 	cb.ccb = ccb;
@@ -230,8 +223,9 @@ uint64_t set::add_callback_unlocked(std::function<void(set& s, const std::string
 	return i;
 }
 
-void set::drop_callback_unlocked(uint64_t handle) throw()
+void set::drop_callback(uint64_t handle) throw()
 {
+	threads::arlock h(get_cmd_lock());
 	auto state = set_internal_t::get_soft(this);
 	if(!state) return;
 	if(state->callbacks.count(handle)) {
@@ -243,8 +237,9 @@ void set::drop_callback_unlocked(uint64_t handle) throw()
 	}
 }
 
-std::map<std::string, factory_base*> set::get_commands_unlocked()
+std::map<std::string, factory_base*> set::get_commands()
 {
+	threads::arlock h(get_cmd_lock());
 	auto state = set_internal_t::get_soft(this);
 	if(!state) return std::map<std::string, factory_base*>();
 	return state->commands;
@@ -262,7 +257,7 @@ group::~group() throw()
 {
 	auto state = group_internal_t::get_soft(this);
 	if(!state) return;
-	threads::alock h(get_cmd_lock());
+	threads::arlock h(get_cmd_lock());
 
 	//Notify all bases that base group died.
 	//Builtin commands delete themselves on parent group dying.
@@ -271,7 +266,7 @@ group::~group() throw()
 
 	//Drop all callbacks.
 	for(auto i : state->set_handles)
-		i.first->drop_callback_unlocked(i.second);
+		i.first->drop_callback(i.second);
 	//We assume all bases that need destroying have already been destroyed.
 	group_internal_t::clear(this);
 }
@@ -284,14 +279,14 @@ void group::invoke(const std::string& cmd) throw()
 		std::string cmd2 = strip_CR(cmd);
 		if(cmd2 == "?") {
 			//The special ? command.
-			threads::alock lock(get_cmd_lock());
+			threads::arlock lock(get_cmd_lock());
 			for(auto i : state->commands)
 				(*output) << i.first << ": " << i.second->get_short_help() << std::endl;
 			return;
 		}
 		if(firstchar(cmd2) == '?') {
 			//?command.
-			threads::alock lock(get_cmd_lock());
+			threads::arlock lock(get_cmd_lock());
 			std::string rcmd = cmd2.substr(1, min(cmd2.find_first_of(" \t"), cmd2.length()));
 			if(firstchar(rcmd) != '*') {
 				//This may be an alias.
@@ -320,7 +315,7 @@ void group::invoke(const std::string& cmd) throw()
 		if(may_be_alias_expanded) {
 			std::list<std::string> aexp;
 			{
-				threads::alock lock(get_cmd_lock());
+				threads::arlock lock(get_cmd_lock());
 				if(!aliases.count(cmd))
 					goto not_alias;
 				aexp = aliases[cmd2];
@@ -336,7 +331,7 @@ not_alias:
 			std::string args = cmd2.substr(min(cmd2.find_first_not_of(" \t", split), cmd2.length()));
 			base* cmdh = NULL;
 			{
-				threads::alock lock(get_cmd_lock());
+				threads::arlock lock(get_cmd_lock());
 				if(!state->commands.count(rcmd)) {
 					(*output) << "Unknown command '" << rcmd << "'" << std::endl;
 					return;
@@ -363,7 +358,7 @@ not_alias:
 
 std::set<std::string> group::get_aliases() throw(std::bad_alloc)
 {
-	threads::alock lock(get_cmd_lock());
+	threads::arlock lock(get_cmd_lock());
 	std::set<std::string> r;
 	for(auto i : aliases)
 		r.insert(i.first);
@@ -372,7 +367,7 @@ std::set<std::string> group::get_aliases() throw(std::bad_alloc)
 
 std::string group::get_alias_for(const std::string& aname) throw(std::bad_alloc)
 {
-	threads::alock lock(get_cmd_lock());
+	threads::arlock lock(get_cmd_lock());
 	if(!valid_alias_name(aname))
 		return "";
 	if(aliases.count(aname)) {
@@ -386,7 +381,7 @@ std::string group::get_alias_for(const std::string& aname) throw(std::bad_alloc)
 
 void group::set_alias_for(const std::string& aname, const std::string& avalue) throw(std::bad_alloc)
 {
-	threads::alock lock(get_cmd_lock());
+	threads::arlock lock(get_cmd_lock());
 	if(!valid_alias_name(aname))
 		return;
 	std::list<std::string> newlist;
@@ -413,16 +408,18 @@ bool group::valid_alias_name(const std::string& aliasname) throw(std::bad_alloc)
 	return true;
 }
 
-void group::do_register_unlocked(const std::string& name, base& cmd) throw(std::bad_alloc)
+void group::do_register(const std::string& name, base& cmd) throw(std::bad_alloc)
 {
+	threads::arlock h(get_cmd_lock());
 	auto& state = group_internal_t::get(this);
 	if(state.commands.count(name))
 		std::cerr << "WARNING: Command collision for " << name << "!" << std::endl;
 	state.commands[name] = &cmd;
 }
 
-void group::do_unregister_unlocked(const std::string& name, base& cmd) throw(std::bad_alloc)
+void group::do_unregister(const std::string& name, base& cmd) throw(std::bad_alloc)
 {
+	threads::arlock h(get_cmd_lock());
 	auto state = group_internal_t::get_soft(this);
 	if(!state) return;
 	if(!state->commands.count(name) || state->commands[name] != &cmd) return;
@@ -442,14 +439,15 @@ void group::set_oom_panic(void (*fn)())
 		oom_panic_routine = default_oom_panic;
 }
 
-void group::add_set_unlocked(set& s) throw(std::bad_alloc)
+void group::add_set(set& s) throw(std::bad_alloc)
 {
+	threads::arlock h(get_cmd_lock());
 	auto& state = group_internal_t::get(this);
 	if(state.set_handles.count(&s))
 		return;
 	state.set_handles[&s] = 0xFFFFFFFFFFFFFFFF;
 	try {
-		state.set_handles[&s] = s.add_callback_unlocked(
+		state.set_handles[&s] = s.add_callback(
 			[this](set& s, const std::string& name, factory_base& cmd) {
 				cmd.make(*this);
 			}, [this](set& s, const std::string& name) { 
@@ -467,14 +465,15 @@ void group::add_set_unlocked(set& s) throw(std::bad_alloc)
 	}
 }
 
-void group::drop_set_unlocked(set& s) throw()
+void group::drop_set(set& s) throw()
 {
+	threads::arlock h(get_cmd_lock());
 	auto state = group_internal_t::get_soft(this);
 	if(!state) return;
 	if(!state->set_handles.count(&s))
 		return;
 	//Drop the callback. This unregisters all.
-	s.drop_callback_unlocked(state->set_handles[&s]);
+	s.drop_callback(state->set_handles[&s]);
 	state->set_handles.erase(&s);
 }
 

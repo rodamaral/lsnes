@@ -19,7 +19,9 @@ namespace threads
 typedef std::thread thread;
 typedef std::condition_variable cv;
 typedef std::mutex lock;
+typedef std::recursive_mutex rlock;
 typedef std::unique_lock<std::mutex> alock;
+typedef std::unique_lock<std::recursive_mutex> arlock;
 typedef std::chrono::microseconds ustime;
 typedef std::thread::id id;
 inline void cv_timed_wait(cv& c, alock& m, const ustime& t)
@@ -34,7 +36,9 @@ inline id this_id()
 typedef boost::thread thread;
 typedef boost::condition_variable cv;
 typedef boost::mutex lock;
+typedef boost::recursive_mutex rlock;
 typedef boost::unique_lock<boost::mutex> alock;
+typedef boost::unique_lock<boost::recursive_mutex> arlock;
 typedef boost::posix_time::microseconds ustime;
 typedef boost::thread::id id;
 inline void cv_timed_wait(cv& c, alock& m, const ustime& t)
