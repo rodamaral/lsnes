@@ -2,6 +2,7 @@
 #include "core/joystickapi.hpp"
 #include "core/keymapper.hpp"
 #include "core/window.hpp"
+#include "library/minmax.hpp"
 #include "library/string.hpp"
 
 #include <unistd.h>
@@ -289,7 +290,7 @@ namespace
 	volatile bool quit_signaled = false;
 	volatile bool quit_ack = false;
 
-#define POLL_WAIT 20000
+#define POLL_WAIT 50000
 
 	struct _joystick_driver drv = {
 		.init = []() -> void {
@@ -302,9 +303,25 @@ namespace
 		},
 		.thread_fn = []() -> void {
 			while(!quit_signaled) {
+				fd_set rfds;
+				int limit = 0;
+				for(auto fd : gamepad_map) {
+					limit = max(limit, fd.first + 1);
+					FD_SET(fd.first, &rfds);
+				}
+				if(!limit) {
+					usleep(POLL_WAIT);
+					continue;
+				}
+				struct timeval tv;
+				tv.tv_sec = 0;
+				tv.tv_usec = POLL_WAIT;
+				int r = select(limit, &rfds, NULL, NULL, &tv);
+				if(r <= 0)
+					continue;
 				for(auto fd : gamepad_map)
-					while(read_one_input_event(fd.first));
-				usleep(POLL_WAIT);
+					if(FD_ISSET(fd.first, &rfds))
+						while(read_one_input_event(fd.first));
 			}
 			quit_ack = true;
 		},
