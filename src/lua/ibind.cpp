@@ -22,7 +22,7 @@ class lua_command_binding : public command::base
 {
 public:
 	lua_command_binding(lua::state& _L, const std::string& cmd, int idx)
-		: command::base(CORE().command, cmd), L(_L)
+		: command::base(CORE().command, cmd, false), L(_L)
 	{
 		L.pushlightuserdata(this);
 		L.pushvalue(idx);

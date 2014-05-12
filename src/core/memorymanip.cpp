@@ -163,8 +163,8 @@ namespace
 	class memorymanip_command : public command::base
 	{
 	public:
-		memorymanip_command(const std::string& cmd) throw(std::bad_alloc)
-			: command::base(lsnes_instance.command, cmd)
+		memorymanip_command(command::group& grp, const std::string& cmd) throw(std::bad_alloc)
+			: command::base(grp, cmd, true)
 		{
 			_command = cmd;
 		}
@@ -219,8 +219,8 @@ namespace
 	class read_command : public memorymanip_command
 	{
 	public:
-		read_command(const std::string& cmd) throw(std::bad_alloc)
-			: memorymanip_command(cmd)
+		read_command(command::group& grp, const std::string& cmd) throw(std::bad_alloc)
+			: memorymanip_command(grp, cmd)
 		{
 		}
 		~read_command() throw() {}
@@ -254,9 +254,9 @@ namespace
 	class write_command : public memorymanip_command
 	{
 	public:
-		write_command(const std::string& cmd)
+		write_command(command::group& grp, const std::string& cmd)
 			throw(std::bad_alloc)
-			: memorymanip_command(cmd)
+			: memorymanip_command(grp, cmd)
 		{
 		}
 		~write_command() throw() {}
@@ -281,9 +281,9 @@ namespace
 	class writef_command : public memorymanip_command
 	{
 	public:
-		writef_command(const std::string& cmd)
+		writef_command(command::group& grp, const std::string& cmd)
 			throw(std::bad_alloc)
-			: memorymanip_command(cmd)
+			: memorymanip_command(grp, cmd)
 		{
 		}
 		~writef_command() throw() {}
@@ -301,29 +301,49 @@ namespace
 		}
 	};
 
-	read_command<uint8_t, &memory_space::read<uint8_t>, false> ru1("read-byte");
-	read_command<uint16_t, &memory_space::read<uint16_t>, false> ru2("read-word");
-	read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, false> ru3("read-hword");
-	read_command<uint32_t, &memory_space::read<uint32_t>, false> ru4("read-dword");
-	read_command<uint64_t, &memory_space::read<uint64_t>, false> ru8("read-qword");
-	read_command<uint8_t, &memory_space::read<uint8_t>, true> rh1("read-byte-hex");
-	read_command<uint16_t, &memory_space::read<uint16_t>, true> rh2("read-word-hex");
-	read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, true> rh3("read-hword-hex");
-	read_command<uint32_t, &memory_space::read<uint32_t>, true> rh4("read-dword-hex");
-	read_command<uint64_t, &memory_space::read<uint64_t>, true> rh8("read-qword-hex");
-	read_command<int8_t, &memory_space::read<int8_t>, false> rs1("read-sbyte");
-	read_command<int16_t, &memory_space::read<int16_t>, false> rs2("read-sword");
-	read_command<ss_int24_t, &memory_space::read<ss_int24_t>, false> rs3("read-shword");
-	read_command<int32_t, &memory_space::read<int32_t>, false> rs4("read-sdword");
-	read_command<float, &memory_space::read<float>, false> rf4("read-float");
-	read_command<double, &memory_space::read<double>, false> rf8("read-double");
-	write_command<uint8_t, -128, 0xFF, &memory_space::write<uint8_t>> w1("write-byte");
-	write_command<uint16_t, -32768, 0xFFFF, &memory_space::write<uint16_t>> w2("write-word");
-	write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>> w3("write-hword");
-	write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL, &memory_space::write<uint32_t>> w4("write-dword");
+	command::byname_factory<read_command<uint8_t, &memory_space::read<uint8_t>, false>> ru1(lsnes_cmds,
+		"read-byte");
+	command::byname_factory<read_command<uint16_t, &memory_space::read<uint16_t>, false>> ru2(lsnes_cmds,
+		"read-word");
+	command::byname_factory<read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, false>> ru3(lsnes_cmds, 
+		"read-hword");
+	command::byname_factory<read_command<uint32_t, &memory_space::read<uint32_t>, false>> ru4(lsnes_cmds,
+		"read-dword");
+	command::byname_factory<read_command<uint64_t, &memory_space::read<uint64_t>, false>> ru8(lsnes_cmds,
+		"read-qword");
+	command::byname_factory<read_command<uint8_t, &memory_space::read<uint8_t>, true>> rh1(lsnes_cmds,
+		"read-byte-hex");
+	command::byname_factory<read_command<uint16_t, &memory_space::read<uint16_t>, true>> rh2(lsnes_cmds,
+		"read-word-hex");
+	command::byname_factory<read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, true>>
+		rh3(lsnes_cmds, "read-hword-hex");
+	command::byname_factory<read_command<uint32_t, &memory_space::read<uint32_t>, true>> rh4(lsnes_cmds,
+		"read-dword-hex");
+	command::byname_factory<read_command<uint64_t, &memory_space::read<uint64_t>, true>> rh8(lsnes_cmds,
+		"read-qword-hex");
+	command::byname_factory<read_command<int8_t, &memory_space::read<int8_t>, false>> rs1(lsnes_cmds,
+		"read-sbyte");
+	command::byname_factory<read_command<int16_t, &memory_space::read<int16_t>, false>> rs2(lsnes_cmds,
+		"read-sword");
+	command::byname_factory<read_command<ss_int24_t, &memory_space::read<ss_int24_t>, false>> rs3(lsnes_cmds,
+		"read-shword");
+	command::byname_factory<read_command<int32_t, &memory_space::read<int32_t>, false>> rs4(lsnes_cmds,
+		"read-sdword");
+	command::byname_factory<read_command<float, &memory_space::read<float>, false>> rf4(lsnes_cmds,
+		"read-float");
+	command::byname_factory<read_command<double, &memory_space::read<double>, false>> rf8(lsnes_cmds,
+		"read-double");
+	command::byname_factory<write_command<uint8_t, -128, 0xFF, &memory_space::write<uint8_t>>> w1(lsnes_cmds,
+		"write-byte");
+	command::byname_factory<write_command<uint16_t, -32768, 0xFFFF, &memory_space::write<uint16_t>>>
+		w2(lsnes_cmds, "write-word");
+	command::byname_factory<write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>>> 
+		w3(lsnes_cmds, "write-hword");
+	command::byname_factory<write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL, &memory_space::write<uint32_t>>>
+		w4(lsnes_cmds, "write-dword");
 	//Just straight writing the constant would cause a warning.
-	write_command<uint64_t, -9223372036854775807LL-1, 0xFFFFFFFFFFFFFFFFULL, &memory_space::write<uint64_t>>
-		w8("write-qword");
-	writef_command<float, &memory_space::write<float>> wf4("write-float");
-	writef_command<double, &memory_space::write<double>> wf8("write-double");
+	command::byname_factory<write_command<uint64_t, -9223372036854775807LL-1, 0xFFFFFFFFFFFFFFFFULL,
+		&memory_space::write<uint64_t>>> w8(lsnes_cmds, "write-qword");
+	command::byname_factory<writef_command<float, &memory_space::write<float>>> wf4(lsnes_cmds, "write-float");
+	command::byname_factory<writef_command<double, &memory_space::write<double>>> wf8(lsnes_cmds, "write-double");
 }

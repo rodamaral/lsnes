@@ -13,6 +13,8 @@ namespace command
 class base;
 class factory_base;
 
+threads::lock& get_cmd_lock();
+
 /**
  * A set of commands.
  */
@@ -30,33 +32,64 @@ public:
 /**
  * Add a command to set.
  */
-	void do_register(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
+	void do_register(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
+	{
+		threads::alock h(get_cmd_lock());
+		do_register_unlocked(name, cmd);
+	}
 /**
  * Remove a command from set.
  */
-	void do_unregister(const std::string& name, factory_base* dummy) throw(std::bad_alloc);
+	void do_unregister(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
+	{
+		threads::alock h(get_cmd_lock());
+// 		do_unregister_unlocked(name, cmd);
+	}
 /**
- * Add a notification callback.
+ * Add a notification callback and call ccb on all.
  *
  * Parameter ccb: The create callback function.
  * Parameter dcb: The destroy callback function.
+ * Parameter tcb: The terminate callback function.
  * Returns: Callback handle.
  */
 	uint64_t add_callback(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
-		std::function<void(set& s, const std::string& name)> dcb) throw(std::bad_alloc);
+		std::function<void(set& s, const std::string& name)> dcb, std::function<void(set& s)> tcb)
+		throw(std::bad_alloc)
+	{
+		threads::alock h(get_cmd_lock());
+		return add_callback_unlocked(ccb, dcb, tcb);
+	}
 /**
- * Drop a notification callback.
+ * Drop a notification callback and call dcb on all.
  *
  * Parameter handle: The handle of callback to drop.
  */
-	void drop_callback(uint64_t handle) throw();
+	void drop_callback(uint64_t handle) throw()
+	{
+		threads::alock h(get_cmd_lock());
+		drop_callback_unlocked(handle);
+	}
 /**
  * Obtain list of all commands so far.
  */
-	std::map<std::string, factory_base*> get_commands();
+	std::map<std::string, factory_base*> get_commands()
+	{
+		threads::alock h(get_cmd_lock());
+		return get_commands_unlocked();
+	}
+/**
+ * Unlocked versions of other functions.
+ */
+	void do_register_unlocked(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
+	void do_unregister_unlocked(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
+	uint64_t add_callback_unlocked(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
+		std::function<void(set& s, const std::string& name)> dcb, std::function<void(set& s)> tcb)
+		throw(std::bad_alloc);
+	void drop_callback_unlocked(uint64_t handle) throw();
+	std::map<std::string, factory_base*> get_commands_unlocked();
 private:
-	std::map<std::string, factory_base*> commands;
-	threads::lock int_mutex;
+	char dummy;
 };
 
 /**
@@ -98,19 +131,35 @@ public:
 /**
  * Register a command.
  */
-	void do_register(const std::string& name, base& cmd) throw(std::bad_alloc);
+	void do_register(const std::string& name, base& cmd) throw(std::bad_alloc)
+	{
+		threads::alock h(get_cmd_lock());
+		do_register_unlocked(name, cmd);
+	}
 /**
  * Unregister a command.
  */
-	void do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc);
+	void do_unregister(const std::string& name, base& cmd) throw(std::bad_alloc)
+	{
+		threads::alock h(get_cmd_lock());
+		do_unregister_unlocked(name, cmd);
+	}
 /**
  * Add all commands (including future ones) in given set.
  */
-	void add_set(set& s) throw(std::bad_alloc);
+	void add_set(set& s) throw(std::bad_alloc)
+	{
+		threads::alock h(get_cmd_lock());
+		add_set_unlocked(s);
+	}
 /**
  * Drop a set of commands.
  */
-	void drop_set(set& s) throw();
+	void drop_set(set& s) throw()
+	{
+		threads::alock h(get_cmd_lock());
+		drop_set_unlocked(s);
+	}
 /**
  * Set the output stream.
  */
@@ -119,15 +168,19 @@ public:
  * Set the OOM panic routine.
  */
 	void set_oom_panic(void (*fn)());
+/**
+ * Unlocked versions.
+ */
+	void do_register_unlocked(const std::string& name, base& cmd) throw(std::bad_alloc);
+	void do_unregister_unlocked(const std::string& name, base& cmd) throw(std::bad_alloc);
+	void add_set_unlocked(set& s) throw(std::bad_alloc);
+	void drop_set_unlocked(set& s) throw();
 private:
-	std::map<std::string, base*> commands;
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
-	threads::lock int_mutex;
 	std::ostream* output;
 	void (*oom_panic_routine)();
 	base* builtin[1];
-	std::map<set*, uint64_t> set_handles;
 };
 
 /**
@@ -141,9 +194,10 @@ public:
  *
  * parameter group: The group command will be part of.
  * parameter cmd: The command to register.
+ * parameter dynamic: Should the object be freed when its parent group dies?
  * throws std::bad_alloc: Not enough memory.
  */
-	base(group& group, const std::string& cmd) throw(std::bad_alloc);
+	base(group& group, const std::string& cmd, bool dynamic) throw(std::bad_alloc);
 
 /**
  * Deregister a command.
@@ -171,11 +225,18 @@ public:
  * Get name of command.
  */
 	const std::string& get_name() { return commandname; }
+/**
+ * Notify that the parent group died.
+ *
+ * Note: Assumed to be called with global lock held.
+ */
+	void group_died() throw();
 private:
 	base(const base&);
 	base& operator=(const base&);
 	std::string commandname;
-	group& in_group;
+	group* in_group;
+	bool is_dynamic;
 };
 
 /**
@@ -201,6 +262,12 @@ public:
  * Make a new command.
  */
 	virtual base* make(group& grp) = 0;
+/**
+ * Notify that the parent set died.
+ *
+ * Note: Assumed to be called with global lock held.
+ */
+	void set_died() throw();
 private:
 	factory_base(const factory_base&);
 	factory_base& operator=(const factory_base&);
@@ -249,10 +316,11 @@ public:
  * parameter description Description for the command
  * parameter help: Help for the command.
  * parameter fn: Function to call on command.
+ * parameter dynamic: Should the object be freed when its parent group dies?
  */
 	_fnptr(group& group, const std::string& name, const std::string& _description,
-		const std::string& _help, void (*_fn)(args... arguments)) throw(std::bad_alloc)
-		: base(group, name)
+		const std::string& _help, void (*_fn)(args... arguments), bool dynamic = false) throw(std::bad_alloc)
+		: base(group, name, dynamic)
 	{
 		description = _description;
 		help = _help;
@@ -335,12 +403,44 @@ public:
  */
 	base* make(group& grp) throw(std::bad_alloc)
 	{
-		return new _fnptr<args...>(grp, name, description, help, fn);
+		return new _fnptr<args...>(grp, name, description, help, fn, true);
 	}
 private:
 	void (*fn)(args... arguments);
 	std::string description;
 	std::string help;
+	std::string name;
+};
+
+/**
+ * Generic byname factory.
+ */
+template<typename T>
+class byname_factory : public factory_base
+{
+public:
+/**
+ * Create a new factory.
+ */
+	byname_factory(set& s, const std::string& _name)
+	{
+		name = _name;
+		_factory_base(s, name);
+	}
+/**
+ * Destroy.
+ */
+	~byname_factory() throw()
+	{
+	}
+/**
+ * Make a command.
+ */
+	base* make(group& grp) throw(std::bad_alloc)
+	{
+		return new T(grp, name);
+	}
+private:
 	std::string name;
 };
 }
