@@ -292,6 +292,11 @@ namespace
 
 #define POLL_WAIT 50000
 
+	void do_fd_zero(fd_set& s)
+	{
+		FD_ZERO(&s);
+	}
+
 	struct _joystick_driver drv = {
 		.init = []() -> void {
 			probe_all_joysticks();
@@ -304,6 +309,7 @@ namespace
 		.thread_fn = []() -> void {
 			while(!quit_signaled) {
 				fd_set rfds;
+				do_fd_zero(rfds);
 				int limit = 0;
 				for(auto fd : gamepad_map) {
 					limit = max(limit, fd.first + 1);
