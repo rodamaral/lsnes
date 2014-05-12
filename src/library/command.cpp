@@ -65,13 +65,6 @@ namespace
 		exit(1);
 	}
 
-	struct set_callbacks
-	{
-		std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb;
-		std::function<void(set& s, const std::string& name)> dcb;
-		std::function<void(set& s)> tcb;
-	};
-
 	threads::rlock* global_lock;
 	threads::rlock& get_cmd_lock()
 	{
@@ -81,19 +74,22 @@ namespace
 
 	struct set_internal
 	{
-		std::map<uint64_t, set_callbacks> callbacks;
-		integer_pool pool;
+		std::set<set_listener*> callbacks;
 		std::map<std::string, factory_base*> commands;
 	};
 
 	struct group_internal
 	{
 		std::map<std::string, base*> commands;
-		std::map<set*, uint64_t> set_handles;
+		std::set<set*> set_handles;
 	};
 
 	typedef stateobject::type<set, set_internal> set_internal_t;
 	typedef stateobject::type<group, group_internal> group_internal_t;
+}
+
+set_listener::~set_listener()
+{
 }
 
 void factory_base::_factory_base(set& _set, const std::string& cmd) throw(std::bad_alloc)
@@ -161,10 +157,10 @@ set::~set() throw()
 	//Call all DCBs on all factories.
 	for(auto i : state->commands)
 		for(auto j : state->callbacks)
-			j.second.dcb(*this, i.first);
+			j->destroy(*this, i.first);
 	//Call all TCBs.
 	for(auto j : state->callbacks)
-		j.second.tcb(*this);
+		j->kill(*this);
 	//Notify all factories that base set died.
 	for(auto i : state->commands)
 		i.second->set_died();
@@ -183,7 +179,7 @@ void set::do_register(const std::string& name, factory_base& cmd) throw(std::bad
 	state.commands[name] = &cmd;
 	//Call all CCBs on this.
 	for(auto i : state.callbacks)
-		i.second.ccb(*this, name, cmd);
+		i->create(*this, name, cmd);
 }
 
 void set::do_unregister(const std::string& name, factory_base& cmd) throw(std::bad_alloc)
@@ -195,43 +191,30 @@ void set::do_unregister(const std::string& name, factory_base& cmd) throw(std::b
 	state->commands.erase(name);
 	//Call all DCBs on this.
 	for(auto i : state->callbacks)
-		i.second.dcb(*this, name);
+		i->destroy(*this, name);
 }
 
-uint64_t set::add_callback(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
-	std::function<void(set& s, const std::string& name)> dcb, std::function<void(set& s)> tcb)
+void set::add_callback(set_listener& listener)
 	throw(std::bad_alloc)
 {
 	threads::arlock h(get_cmd_lock());
 	auto& state = set_internal_t::get(this);
-	set_callbacks cb;
-	cb.ccb = ccb;
-	cb.dcb = dcb;
-	cb.tcb = tcb;
-	uint64_t i = state.pool();
-	try {
-		state.callbacks[i] = cb;
-	} catch(...) {
-		state.pool(i);
-		throw;
-	}
+	state.callbacks.insert(&listener);
 	//To avoid races, call CCBs on all factories for this.
 	for(auto j : state.commands)
-		ccb(*this, j.first, *j.second);
-	return i;
+		listener.create(*this, j.first, *j.second);
 }
 
-void set::drop_callback(uint64_t handle) throw()
+void set::drop_callback(set_listener& listener) throw()
 {
 	threads::arlock h(get_cmd_lock());
 	auto state = set_internal_t::get_soft(this);
 	if(!state) return;
-	if(state->callbacks.count(handle)) {
+	if(state->callbacks.count(&listener)) {
 		//To avoid races, call DCBs on all factories for this.
 		for(auto j : state->commands)
-			state->callbacks[handle].dcb(*this, j.first);
-		state->callbacks.erase(handle);
-		state->pool(handle);
+			listener.destroy(*this, j.first);
+		state->callbacks.erase(&listener);
 	}
 }
 
@@ -244,6 +227,7 @@ std::map<std::string, factory_base*> set::get_commands()
 }
 
 group::group() throw(std::bad_alloc)
+	: _listener(*this)
 {
 	oom_panic_routine = default_oom_panic;
 	output = &std::cerr;
@@ -264,7 +248,7 @@ group::~group() throw()
 
 	//Drop all callbacks.
 	for(auto i : state->set_handles)
-		i.first->drop_callback(i.second);
+		i->drop_callback(_listener);
 	//We assume all bases that need destroying have already been destroyed.
 	group_internal_t::clear(this);
 }
@@ -441,23 +425,10 @@ void group::add_set(set& s) throw(std::bad_alloc)
 {
 	threads::arlock h(get_cmd_lock());
 	auto& state = group_internal_t::get(this);
-	if(state.set_handles.count(&s))
-		return;
-	state.set_handles[&s] = 0xFFFFFFFFFFFFFFFF;
+	if(state.set_handles.count(&s)) return;
 	try {
-		state.set_handles[&s] = s.add_callback(
-			[this](set& s, const std::string& name, factory_base& cmd) {
-				cmd.make(*this);
-			}, [this](set& s, const std::string& name) { 
-				auto state = group_internal_t::get_soft(this);
-				if(!state) return;
-				state->commands.erase(name);
-			}, [this](set& s) {
-				auto state = group_internal_t::get_soft(this);
-				if(!state) return;
-				state->set_handles.erase(&s);
-			}
-		);
+		state.set_handles.insert(&s);
+		s.add_callback(_listener);
 	} catch(...) {
 		state.set_handles.erase(&s);
 	}
@@ -468,10 +439,39 @@ void group::drop_set(set& s) throw()
 	threads::arlock h(get_cmd_lock());
 	auto state = group_internal_t::get_soft(this);
 	if(!state) return;
-	if(!state->set_handles.count(&s))
-		return;
 	//Drop the callback. This unregisters all.
-	s.drop_callback(state->set_handles[&s]);
+	s.drop_callback(_listener);
+	state->set_handles.erase(&s);
+}
+
+group::listener::listener(group& _grp)
+	: grp(_grp)
+{
+}
+
+group::listener::~listener()
+{
+}
+
+void group::listener::create(set& s, const std::string& name, factory_base& cmd)
+{
+	threads::arlock h(get_cmd_lock());
+	cmd.make(grp);
+}
+
+void group::listener::destroy(set& s, const std::string& name)
+{
+	threads::arlock h(get_cmd_lock());
+	auto state = group_internal_t::get_soft(&grp);
+	if(!state) return;
+	state->commands.erase(name);
+}
+
+void group::listener::kill(set& s)
+{
+	threads::arlock h(get_cmd_lock());
+	auto state = group_internal_t::get_soft(&grp);
+	if(!state) return;
 	state->set_handles.erase(&s);
 }
 

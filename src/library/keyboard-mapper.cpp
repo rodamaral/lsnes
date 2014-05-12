@@ -16,22 +16,19 @@ namespace
 		return *global_lock;
 	}
 
-	struct set_callbacks
-	{
-		std::function<void(invbind_set& s, const std::string& name, invbind_info& cmd)> ccb;
-		std::function<void(invbind_set& s, const std::string& name)> dcb;
-		std::function<void(invbind_set& s)> tcb;
-	};
-
 	struct set_internal
 	{
 		std::map<std::string, invbind_info*> invbinds;
-		std::map<uint64_t, set_callbacks> callbacks;
-		integer_pool pool;
+		std::set<set_listener*> callbacks;
 	};
 
 	typedef stateobject::type<invbind_set, set_internal> set_internal_t;
 }
+
+set_listener::~set_listener()
+{
+}
+
 std::string mapper::fixup_command_polarity(std::string cmd, bool polarity) throw(std::bad_alloc)
 {
 	if(cmd == "" || cmd == "*")
@@ -166,7 +163,7 @@ keyboard& mapper::get_keyboard() throw()
 }
 
 mapper::mapper(keyboard& _kbd, command::group& _domain) throw(std::bad_alloc)
-	: kbd(_kbd), domain(_domain)
+	: _listener(*this), kbd(_kbd), domain(_domain)
 {
 	register_queue<mapper, invbind>::do_ready(*this, true);
 	register_queue<mapper, ctrlrkey>::do_ready(*this, true);
@@ -178,6 +175,8 @@ mapper::~mapper() throw()
 	threads::arlock u(get_keymap_lock());
 	for(auto i : ibinds)
 		i.second->mapper_died();
+	for(auto i : invbind_set_cbs)
+		i->drop_callback(_listener);
 	register_queue<mapper, invbind>::do_ready(*this, false);
 	register_queue<mapper, ctrlrkey>::do_ready(*this, false);
 }
@@ -412,21 +411,10 @@ std::list<ctrlrkey*> mapper::get_controllerkeys_kbdkey(key* kbdkey)
 void mapper::add_invbind_set(invbind_set& set)
 {
 	threads::arlock u(get_keymap_lock());
-	if(invbind_set_cbs.count(&set))
-		return;
-	invbind_set_cbs[&set] = 0xFFFFFFFFFFFFFFFF;
+	if(invbind_set_cbs.count(&set)) return;
 	try {
-		invbind_set_cbs[&set] = set.add_callback(
-			[this](invbind_set& s, const std::string& name, invbind_info& ib) {
-				ib.make(*this);
-			}, [this](invbind_set& s, const std::string& name) { 
-				if(dtor_running) return;
-				ibinds.erase(name);
-			}, [this](invbind_set& s) {
-				if(dtor_running) return;
-				this->invbind_set_cbs.erase(&s);
-			}
-		);
+		invbind_set_cbs.insert(&set);
+		set.add_callback(_listener);
 	} catch(...) {
 		invbind_set_cbs.erase(&set);
 	}
@@ -434,12 +422,39 @@ void mapper::add_invbind_set(invbind_set& set)
 
 void mapper::drop_invbind_set(invbind_set& set)
 {
-	threads::arlock u(get_keymap_lock());
-	if(!invbind_set_cbs.count(&set))
-		return;
+	threads::arlock h(get_keymap_lock());
 	//Drop the callback. This unregisters all.
-	set.drop_callback(invbind_set_cbs[&set]);
+	set.drop_callback(_listener);
 	invbind_set_cbs.erase(&set);
+}
+
+mapper::listener::listener(mapper& _grp)
+	: grp(_grp)
+{
+}
+
+mapper::listener::~listener()
+{
+}
+
+void mapper::listener::create(invbind_set& s, const std::string& name, invbind_info& ibinfo)
+{
+	threads::arlock h(get_keymap_lock());
+	ibinfo.make(grp);
+}
+
+void mapper::listener::destroy(invbind_set& s, const std::string& name)
+{
+	threads::arlock h(get_keymap_lock());
+	if(grp.dtor_running) return;
+	grp.ibinds.erase(name);
+}
+
+void mapper::listener::kill(invbind_set& s)
+{
+	threads::arlock h(get_keymap_lock());
+	if(grp.dtor_running) return;
+	grp.invbind_set_cbs.erase(&s);
 }
 
 invbind::invbind(mapper& kmapper, const std::string& _command, const std::string& _name, bool dynamic)
@@ -533,10 +548,10 @@ invbind_set::~invbind_set()
 	//Call all DCBs on all factories.
 	for(auto i : state->invbinds)
 		for(auto j : state->callbacks)
-			j.second.dcb(*this, i.first);
+			j->destroy(*this, i.first);
 	//Call all TCBs.
 	for(auto j : state->callbacks)
-		j.second.tcb(*this);
+		j->kill(*this);
 	//Notify all factories that base set died.
 	for(auto i : state->invbinds)
 		i.second->set_died();
@@ -555,7 +570,7 @@ void invbind_set::do_register(const std::string& name, invbind_info& info)
 	state.invbinds[name] = &info;
 	//Call all CCBs on this.
 	for(auto i : state.callbacks)
-		i.second.ccb(*this, name, info);
+		i->create(*this, name, info);
 }
 
 void invbind_set::do_unregister(const std::string& name, invbind_info& info)
@@ -567,43 +582,29 @@ void invbind_set::do_unregister(const std::string& name, invbind_info& info)
 	state->invbinds.erase(name);
 	//Call all DCBs on this.
 	for(auto i : state->callbacks)
-		i.second.dcb(*this, name);
+		i->destroy(*this, name);
 }
 
-uint64_t invbind_set::add_callback(std::function<void(invbind_set& s, const std::string& name, invbind_info& ib)> ccb,
-	std::function<void(invbind_set& s, const std::string& name)> dcb,
-	std::function<void(invbind_set& s)> tcb) throw(std::bad_alloc)
+void invbind_set::add_callback(set_listener& listener) throw(std::bad_alloc)
 {
 	threads::arlock u(get_keymap_lock());
 	auto& state = set_internal_t::get(this);
-	set_callbacks cb;
-	cb.ccb = ccb;
-	cb.dcb = dcb;
-	cb.tcb = tcb;
-	uint64_t i = state.pool();
-	try {
-		state.callbacks[i] = cb;
-	} catch(...) {
-		state.pool(i);
-		throw;
-	}
+	state.callbacks.insert(&listener);
 	//To avoid races, call CCBs on all factories for this.
 	for(auto j : state.invbinds)
-		ccb(*this, j.first, *j.second);
-	return i;
+		listener.create(*this, j.first, *j.second);
 }
 
-void invbind_set::drop_callback(uint64_t handle)
+void invbind_set::drop_callback(set_listener& listener)
 {
 	threads::arlock u(get_keymap_lock());
 	auto state = set_internal_t::get_soft(this);
 	if(!state) return;
-	if(state->callbacks.count(handle)) {
+	if(state->callbacks.count(&listener)) {
 		//To avoid races, call DCBs on all factories for this.
 		for(auto j : state->invbinds)
-			state->callbacks[handle].dcb(*this, j.first);
-		state->callbacks.erase(handle);
-		state->pool(handle);
+			listener.destroy(*this, j.first);
+		state->callbacks.erase(&listener);
 	}
 }
 

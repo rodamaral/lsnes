@@ -74,6 +74,32 @@ struct keyspec
 };
 
 class invbind_set;
+class invbind_info;
+
+/**
+ * Set add/drop listener.
+ */
+class set_listener
+{
+public:
+/**
+ * Dtor.
+ */
+	virtual ~set_listener();
+/**
+ * New item in set.
+ */
+	virtual void create(invbind_set& s, const std::string& name, invbind_info& ibinfo) = 0;
+/**
+ * Deleted item from set.
+ */
+	virtual void destroy(invbind_set& s, const std::string& name) = 0;
+/**
+ * Destroyed the entiere set.
+ */
+	virtual void kill(invbind_set& s) = 0;
+};
+
 
 /**
  * Keyboard mapper. Maps keyboard keys into commands.
@@ -215,6 +241,17 @@ private:
 		key* _key;
 		unsigned subkey;
 	};
+	class listener : public set_listener
+	{
+	public:
+		listener(mapper& _grp);
+		~listener();
+		void create(invbind_set& s, const std::string& name, invbind_info& ibinfo);
+		void destroy(invbind_set& s, const std::string& name);
+		void kill(invbind_set& s);
+	private:
+		mapper& grp;
+	} _listener;
 	void change_command(const keyspec& spec, const std::string& old, const std::string& newc);
 	void on_key_event(modifier_set& mods, key& key, event& event);
 	void on_key_event_subkey(modifier_set& mods, key& key, unsigned skey, bool polarity);
@@ -224,7 +261,7 @@ private:
 	std::map<std::string, ctrlrkey*> ckeys;
 	std::map<triplet, std::string> bindings;
 	std::set<key*> listening;
-	std::map<invbind_set*, uint64_t> invbind_set_cbs;
+	std::set<invbind_set*> invbind_set_cbs;
 	keyboard& kbd;
 	command::group& domain;
 	bool dtor_running;
@@ -257,13 +294,11 @@ public:
 /**
  * Add a callback on new invese bind.
  */
-	uint64_t add_callback(std::function<void(invbind_set& s, const std::string& name, invbind_info& ib)> ccb,
-		std::function<void(invbind_set& s, const std::string& name)> dcb,
-		std::function<void(invbind_set& s)> tcb) throw(std::bad_alloc);
+	void add_callback(set_listener& listener) throw(std::bad_alloc);
 /**
  * Drop a callback on new inverse bind.
  */
-	void drop_callback(uint64_t handle);
+	void drop_callback(set_listener& listener);
 };
 
 /**

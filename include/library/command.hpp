@@ -10,8 +10,33 @@
 
 namespace command
 {
+class set;
 class base;
 class factory_base;
+
+/**
+ * Set add/drop listener.
+ */
+class set_listener
+{
+public:
+/**
+ * Dtor.
+ */
+	virtual ~set_listener();
+/**
+ * New item in set.
+ */
+	virtual void create(set& s, const std::string& name, factory_base& cmd) = 0;
+/**
+ * Deleted item from set.
+ */
+	virtual void destroy(set& s, const std::string& name) = 0;
+/**
+ * Destroyed the entiere set.
+ */
+	virtual void kill(set& s) = 0;
+};
 
 /**
  * A set of commands.
@@ -38,20 +63,15 @@ public:
 /**
  * Add a notification callback and call ccb on all.
  *
- * Parameter ccb: The create callback function.
- * Parameter dcb: The destroy callback function.
- * Parameter tcb: The terminate callback function.
- * Returns: Callback handle.
+ * Parameter listener: The listener to add.
  */
-	uint64_t add_callback(std::function<void(set& s, const std::string& name, factory_base& cmd)> ccb,
-		std::function<void(set& s, const std::string& name)> dcb, std::function<void(set& s)> tcb)
-		throw(std::bad_alloc);
+	void add_callback(set_listener& listener) throw(std::bad_alloc);
 /**
  * Drop a notification callback and call dcb on all.
  *
- * Parameter handle: The handle of callback to drop.
+ * Parameter listener: The listener to drop.
  */
-	void drop_callback(uint64_t handle) throw();
+	void drop_callback(set_listener& listener) throw();
 /**
  * Obtain list of all commands so far.
  */
@@ -121,6 +141,17 @@ public:
  */
 	void set_oom_panic(void (*fn)());
 private:
+	class listener : public set_listener
+	{
+	public:
+		listener(group& _grp);
+		~listener();
+		void create(set& s, const std::string& name, factory_base& cmd);
+		void destroy(set& s, const std::string& name);
+		void kill(set& s);
+	private:
+		group& grp;
+	} _listener;
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
 	std::ostream* output;
