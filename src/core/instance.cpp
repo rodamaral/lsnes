@@ -1,6 +1,7 @@
 #include "core/instance.hpp"
 #include "core/settings.hpp"
 #include "core/command.hpp"
+#include "core/keymapper.hpp"
 
 emulator_instance::emulator_instance()
 	: setcache(lsnes_vset), subtitles(&mlogic), mbranch(&mlogic), mteditor(&mlogic),
@@ -10,6 +11,7 @@ emulator_instance::emulator_instance()
 	status_B.valid = false;
 	status_C.valid = false;
 	command.add_set(lsnes_cmds);
+	mapper.add_invbind_set(lsnes_invbinds);
 }
 
 emulator_instance lsnes_instance;

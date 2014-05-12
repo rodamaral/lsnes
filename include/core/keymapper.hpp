@@ -14,6 +14,10 @@
 #include "library/gamepad.hpp"
 
 /**
+ * Inverse bindings set.
+ */
+extern keyboard::invbind_set lsnes_invbinds;
+/**
  * Gamepad HW.
  */
 extern gamepad::set lsnes_gamepads;

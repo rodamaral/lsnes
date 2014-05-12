@@ -93,8 +93,8 @@ namespace
 			}
 		});
 
-	keyboard::invbind ienable_sound(lsnes_instance.mapper, "enable-sound on", "Sound‣Enable");
-	keyboard::invbind idisable_sound(lsnes_instance.mapper, "enable-sound off", "Sound‣Disable");
+	keyboard::invbind_info ienable_sound(lsnes_invbinds, "enable-sound on", "Sound‣Enable");
+	keyboard::invbind_info idisable_sound(lsnes_invbinds, "enable-sound off", "Sound‣Disable");
 
 	class window_output
 	{

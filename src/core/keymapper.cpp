@@ -18,6 +18,7 @@
 #include <sstream>
 #include <set>
 
+keyboard::invbind_set lsnes_invbinds;
 gamepad::set lsnes_gamepads;
 
 namespace

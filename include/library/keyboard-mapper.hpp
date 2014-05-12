@@ -73,6 +73,7 @@ struct keyspec
 	std::string key;
 };
 
+class invbind_set;
 
 /**
  * Keyboard mapper. Maps keyboard keys into commands.
@@ -187,6 +188,14 @@ public:
  * Returns: The fixed command, or "" if nothing should be run.
  */
 	static std::string fixup_command_polarity(std::string cmd, bool polarity) throw(std::bad_alloc);
+/**
+ * Add a set of inverse binds.
+ */
+	void add_invbind_set(invbind_set& set);
+/**
+ * Drop a set of inverse binds.
+ */
+	void drop_invbind_set(invbind_set& set);
 private:
 	struct triplet
 	{
@@ -215,9 +224,79 @@ private:
 	std::map<std::string, ctrlrkey*> ckeys;
 	std::map<triplet, std::string> bindings;
 	std::set<key*> listening;
+	std::map<invbind_set*, uint64_t> invbind_set_cbs;
 	keyboard& kbd;
 	command::group& domain;
-	threads::lock mlock;
+	bool dtor_running;
+};
+
+class invbind_info;
+
+/**
+ * Inverse bind set.
+ */
+class invbind_set
+{
+public:
+/**
+ * Create a set.
+ */
+	invbind_set();
+/**
+ * Destructor.
+ */
+	~invbind_set();
+/**
+ * Register a inverse bind.
+ */
+	void do_register(const std::string& name, invbind_info& info);
+/**
+ * Unregister a inverse bind.
+ */
+	void do_unregister(const std::string& name, invbind_info& info);
+/**
+ * Add a callback on new invese bind.
+ */
+	uint64_t add_callback(std::function<void(invbind_set& s, const std::string& name, invbind_info& ib)> ccb,
+		std::function<void(invbind_set& s, const std::string& name)> dcb,
+		std::function<void(invbind_set& s)> tcb) throw(std::bad_alloc);
+/**
+ * Drop a callback on new inverse bind.
+ */
+	void drop_callback(uint64_t handle);
+};
+
+/**
+ * Inverse bind info.
+ */
+class invbind_info
+{
+public:
+/**
+ * Create inverse bind.
+ *
+ * Parameter set: The set to be in.
+ * Parameter _command: Command this is for.
+ * Parameter _name: Name of inverse key.
+ */
+	invbind_info(invbind_set& set, const std::string& _command, const std::string& _name)
+		throw(std::bad_alloc);
+/**
+ * Destructor.
+ */
+	~invbind_info() throw();
+/**
+ * Make inverse bind out of this.
+ */
+	invbind* make(mapper& m);
+/**
+ * Notify set dying.
+ */
+	void set_died();
+private:
+	invbind_set* in_set;
+	std::string command;
+	std::string name;
 };
 
 /**
@@ -233,7 +312,7 @@ public:
  * Parameter command: Command this is for.
  * Parameter name: Name of inverse key.
  */
-	invbind(mapper& kmapper, const std::string& command, const std::string& name)
+	invbind(mapper& kmapper, const std::string& command, const std::string& name, bool dynamic = false)
 		throw(std::bad_alloc);
 /**
  * Destructor.
@@ -264,16 +343,20 @@ public:
  * Returns: The name.
  */
 	std::string getname() throw(std::bad_alloc);
+/**
+ * Notify mapper dying.
+ */
+	void mapper_died();
 private:
 	friend class mapper;
 	invbind(const invbind&);
 	invbind& operator=(const invbind&);
 	void addkey(const keyspec& keyspec);
-	mapper& _mapper;
+	mapper* _mapper;
 	std::string cmd;
 	std::string oname;
 	std::vector<keyspec> specs;
-	threads::lock mlock;
+	bool is_dynamic;
 };
 
 /**
@@ -337,7 +420,6 @@ private:
 	std::string oname;
 	std::vector<std::pair<key*, unsigned>> keys;
 	bool axis;
-	threads::lock mlock;
 };
 }
 

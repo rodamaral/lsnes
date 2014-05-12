@@ -1,10 +1,37 @@
 #include "command.hpp"
+#include "integer-pool.hpp"
 #include "keyboard-mapper.hpp"
 #include "register-queue.hpp"
+#include "stateobject.hpp"
 #include "string.hpp"
 
 namespace keyboard
 {
+namespace
+{
+	threads::rlock* global_lock;
+	threads::rlock& get_keymap_lock()
+	{
+		if(!global_lock) global_lock = new threads::rlock;
+		return *global_lock;
+	}
+
+	struct set_callbacks
+	{
+		std::function<void(invbind_set& s, const std::string& name, invbind_info& cmd)> ccb;
+		std::function<void(invbind_set& s, const std::string& name)> dcb;
+		std::function<void(invbind_set& s)> tcb;
+	};
+
+	struct set_internal
+	{
+		std::map<std::string, invbind_info*> invbinds;
+		std::map<uint64_t, set_callbacks> callbacks;
+		integer_pool pool;
+	};
+
+	typedef stateobject::type<invbind_set, set_internal> set_internal_t;
+}
 std::string mapper::fixup_command_polarity(std::string cmd, bool polarity) throw(std::bad_alloc)
 {
 	if(cmd == "" || cmd == "*")
@@ -69,7 +96,7 @@ bool keyspec::operator!=(const keyspec& keyspec)
 
 std::set<invbind*> mapper::get_inverses() throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	std::set<invbind*> r;
 	for(auto i : ibinds)
 		r.insert(i.second);
@@ -78,7 +105,7 @@ std::set<invbind*> mapper::get_inverses() throw(std::bad_alloc)
 
 invbind* mapper::get_inverse(const std::string& command) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	if(ibinds.count(command))
 		return ibinds[command];
 	else
@@ -87,7 +114,7 @@ invbind* mapper::get_inverse(const std::string& command) throw(std::bad_alloc)
 
 std::set<ctrlrkey*> mapper::get_controller_keys() throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	std::set<ctrlrkey*> r;
 	for(auto i : ckeys)
 		r.insert(i.second);
@@ -96,7 +123,7 @@ std::set<ctrlrkey*> mapper::get_controller_keys() throw(std::bad_alloc)
 
 ctrlrkey* mapper::get_controllerkey(const std::string& command) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	if(ckeys.count(command))
 		return ckeys[command];
 	else
@@ -105,31 +132,31 @@ ctrlrkey* mapper::get_controllerkey(const std::string& command) throw(std::bad_a
 
 void mapper::do_register(const std::string& name, invbind& ibind) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	ibinds[name] = &ibind;
 	//Search for matches.
 	for(auto i : bindings)
 		if(i.second == ibind.cmd) {
-			threads::alock u2(ibind.mlock);
 			ibind.specs.push_back(i.first.as_keyspec());
 		}
 }
 
 void mapper::do_unregister(const std::string& name, invbind* dummy) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	if(dtor_running) return;
+	threads::arlock u(get_keymap_lock());
 	ibinds.erase(name);
 }
 
 void mapper::do_register(const std::string& name, ctrlrkey& ckey) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	ckeys[name] = &ckey;
 }
 
 void mapper::do_unregister(const std::string& name, ctrlrkey* dummy) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	ckeys.erase(name);
 }
 
@@ -147,6 +174,10 @@ mapper::mapper(keyboard& _kbd, command::group& _domain) throw(std::bad_alloc)
 
 mapper::~mapper() throw()
 {
+	dtor_running = true;
+	threads::arlock u(get_keymap_lock());
+	for(auto i : ibinds)
+		i.second->mapper_died();
 	register_queue<mapper, invbind>::do_ready(*this, false);
 	register_queue<mapper, ctrlrkey>::do_ready(*this, false);
 }
@@ -223,7 +254,7 @@ keyspec mapper::triplet::as_keyspec() const throw(std::bad_alloc)
 
 std::list<keyspec> mapper::get_bindings() throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	std::list<keyspec> r;
 	for(auto i : bindings)
 		r.push_back(i.first.as_keyspec());
@@ -243,7 +274,7 @@ void mapper::bind(std::string mod, std::string modmask, std::string keyname, std
 	spec.mask = modmask;
 	spec.key = keyname;
 	triplet t(kbd, spec);
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	if(bindings.count(t))
 		throw std::runtime_error("Key is already bound");
 	if(!listening.count(t._key)) {
@@ -265,7 +296,7 @@ void mapper::unbind(std::string mod, std::string modmask, std::string keyname) t
 	spec.mask = modmask;
 	spec.key = keyname;
 	triplet t(kbd, spec);
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	if(!bindings.count(t))
 		throw std::runtime_error("Key is not bound");
 	//No harm at leaving listeners listening.
@@ -279,7 +310,7 @@ void mapper::unbind(std::string mod, std::string modmask, std::string keyname) t
 std::string mapper::get(const keyspec& keyspec) throw(std::bad_alloc)
 {
 	triplet t(kbd, keyspec);
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	if(!bindings.count(t))
 		return "";
 	return bindings[t];
@@ -287,21 +318,19 @@ std::string mapper::get(const keyspec& keyspec) throw(std::bad_alloc)
 
 void mapper::change_command(const keyspec& spec, const std::string& old, const std::string& newc)
 {
+	threads::arlock u(get_keymap_lock());
 	if(old != "" && ibinds.count(old)) {
 		auto& i = ibinds[old];
 		{
-			threads::alock u2(i->mlock);
 			i->specs.clear();
 		}
 		for(auto j : bindings)
 			if(j.second == i->cmd && j.first.as_keyspec() != spec) {
-				threads::alock u2(i->mlock);
 				i->specs.push_back(j.first.as_keyspec());
 			}
 	}
 	if(newc != "" && ibinds.count(newc)) {
 		auto& i = ibinds[newc];
-		threads::alock u2(i->mlock);
 		i->specs.push_back(spec);
 	}
 }
@@ -310,7 +339,7 @@ void mapper::set(const keyspec& keyspec, const std::string& cmd) throw(std::bad_
 	std::runtime_error)
 {
 	triplet t(kbd, keyspec);
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	if(!listening.count(t._key)) {
 		t._key->add_listener(*this, false);
 		listening.insert(t._key);
@@ -366,7 +395,7 @@ mapper::triplet::triplet(keyboard& k, const keyspec& spec)
 std::list<ctrlrkey*> mapper::get_controllerkeys_kbdkey(key* kbdkey)
 	throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	std::list<ctrlrkey*> r;
 	for(auto i : ckeys) {
 		for(unsigned j = 0;; j++) {
@@ -380,21 +409,55 @@ std::list<ctrlrkey*> mapper::get_controllerkeys_kbdkey(key* kbdkey)
 	return r;
 }
 
-invbind::invbind(mapper& kmapper, const std::string& _command, const std::string& _name)
-	throw(std::bad_alloc)
-	: _mapper(kmapper), cmd(_command), oname(_name)
+void mapper::add_invbind_set(invbind_set& set)
 {
-	register_queue<mapper, invbind>::do_register(_mapper, cmd, *this);
+	threads::arlock u(get_keymap_lock());
+	if(invbind_set_cbs.count(&set))
+		return;
+	invbind_set_cbs[&set] = 0xFFFFFFFFFFFFFFFF;
+	try {
+		invbind_set_cbs[&set] = set.add_callback(
+			[this](invbind_set& s, const std::string& name, invbind_info& ib) {
+				ib.make(*this);
+			}, [this](invbind_set& s, const std::string& name) { 
+				if(dtor_running) return;
+				ibinds.erase(name);
+			}, [this](invbind_set& s) {
+				if(dtor_running) return;
+				this->invbind_set_cbs.erase(&s);
+			}
+		);
+	} catch(...) {
+		invbind_set_cbs.erase(&set);
+	}
+}
+
+void mapper::drop_invbind_set(invbind_set& set)
+{
+	threads::arlock u(get_keymap_lock());
+	if(!invbind_set_cbs.count(&set))
+		return;
+	//Drop the callback. This unregisters all.
+	set.drop_callback(invbind_set_cbs[&set]);
+	invbind_set_cbs.erase(&set);
+}
+
+invbind::invbind(mapper& kmapper, const std::string& _command, const std::string& _name, bool dynamic)
+	throw(std::bad_alloc)
+	: _mapper(&kmapper), cmd(_command), oname(_name)
+{
+	is_dynamic = dynamic;
+	register_queue<mapper, invbind>::do_register(*_mapper, cmd, *this);
 }
 
 invbind::~invbind() throw()
 {
-	register_queue<mapper, invbind>::do_unregister(_mapper, cmd);
+	register_queue<mapper, invbind>::do_unregister(*_mapper, cmd);
 }
 
 keyspec invbind::get(unsigned index) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	if(index >= specs.size())
 		return keyspec();
 	return specs[index];
@@ -402,25 +465,146 @@ keyspec invbind::get(unsigned index) throw(std::bad_alloc)
 
 void invbind::clear(unsigned index) throw(std::bad_alloc)
 {
+	threads::arlock u(get_keymap_lock());
 	keyspec unbind;
 	{
-		threads::alock u(mlock);
 		if(index >= specs.size())
 			return;
 		unbind = specs[index];
 	}
-	if(unbind)
-		_mapper.set(unbind, "");
+	if(unbind && _mapper)
+		_mapper->set(unbind, "");
 }
 
 void invbind::append(const keyspec& keyspec) throw(std::bad_alloc)
 {
-	_mapper.set(keyspec, cmd);
+	threads::arlock u(get_keymap_lock());
+	_mapper->set(keyspec, cmd);
 }
 
 std::string invbind::getname() throw(std::bad_alloc)
 {
 	return oname;
+}
+
+void invbind::mapper_died()
+{
+	threads::arlock u(get_keymap_lock());
+	_mapper = NULL;
+	if(is_dynamic) delete this;
+}
+
+invbind_info::invbind_info(invbind_set& set, const std::string& _command, const std::string& _name)
+	throw(std::bad_alloc)
+	: in_set(&set)
+{
+	command = _command;
+	name = _name;
+	in_set->do_register(command, *this);
+}
+
+invbind_info::~invbind_info() throw()
+{
+	threads::arlock u(get_keymap_lock());
+	if(in_set)
+		in_set->do_unregister(command, *this);
+}
+
+invbind* invbind_info::make(mapper& m)
+{
+	return new invbind(m, command, name, true);
+}
+
+void invbind_info::set_died()
+{
+	threads::arlock u(get_keymap_lock());
+	in_set = NULL;
+}
+
+invbind_set::invbind_set()
+{
+}
+
+invbind_set::~invbind_set()
+{
+	auto state = set_internal_t::get_soft(this);
+	if(!state) return;
+	threads::arlock u(get_keymap_lock());
+	//Call all DCBs on all factories.
+	for(auto i : state->invbinds)
+		for(auto j : state->callbacks)
+			j.second.dcb(*this, i.first);
+	//Call all TCBs.
+	for(auto j : state->callbacks)
+		j.second.tcb(*this);
+	//Notify all factories that base set died.
+	for(auto i : state->invbinds)
+		i.second->set_died();
+	//We assume factories look after themselves, so we don't destroy those.
+	set_internal_t::clear(this);
+}
+
+void invbind_set::do_register(const std::string& name, invbind_info& info)
+{
+	threads::arlock u(get_keymap_lock());
+	auto& state = set_internal_t::get(this);
+	if(state.invbinds.count(name)) {
+		std::cerr << "WARNING: Command collision for " << name << "!" << std::endl;
+		return;
+	}
+	state.invbinds[name] = &info;
+	//Call all CCBs on this.
+	for(auto i : state.callbacks)
+		i.second.ccb(*this, name, info);
+}
+
+void invbind_set::do_unregister(const std::string& name, invbind_info& info)
+{
+	threads::arlock u(get_keymap_lock());
+	auto state = set_internal_t::get_soft(this);
+	if(!state) return;
+	if(!state->invbinds.count(name) || state->invbinds[name] != &info) return; //Not this.
+	state->invbinds.erase(name);
+	//Call all DCBs on this.
+	for(auto i : state->callbacks)
+		i.second.dcb(*this, name);
+}
+
+uint64_t invbind_set::add_callback(std::function<void(invbind_set& s, const std::string& name, invbind_info& ib)> ccb,
+	std::function<void(invbind_set& s, const std::string& name)> dcb,
+	std::function<void(invbind_set& s)> tcb) throw(std::bad_alloc)
+{
+	threads::arlock u(get_keymap_lock());
+	auto& state = set_internal_t::get(this);
+	set_callbacks cb;
+	cb.ccb = ccb;
+	cb.dcb = dcb;
+	cb.tcb = tcb;
+	uint64_t i = state.pool();
+	try {
+		state.callbacks[i] = cb;
+	} catch(...) {
+		state.pool(i);
+		throw;
+	}
+	//To avoid races, call CCBs on all factories for this.
+	for(auto j : state.invbinds)
+		ccb(*this, j.first, *j.second);
+	return i;
+}
+
+void invbind_set::drop_callback(uint64_t handle)
+{
+	threads::arlock u(get_keymap_lock());
+	auto state = set_internal_t::get_soft(this);
+	if(!state) return;
+	if(state->callbacks.count(handle)) {
+		//To avoid races, call DCBs on all factories for this.
+		for(auto j : state->invbinds)
+			state->callbacks[handle].dcb(*this, j.first);
+		state->callbacks.erase(handle);
+		state->pool(handle);
+	}
 }
 
 ctrlrkey::ctrlrkey(mapper& kmapper, const std::string& _command, const std::string& _name,
@@ -438,7 +622,7 @@ ctrlrkey::~ctrlrkey() throw()
 
 std::pair<key*, unsigned> ctrlrkey::get(unsigned index) throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	if(index >= keys.size())
 		return std::make_pair(reinterpret_cast<key*>(NULL), 0);
 	return keys[index];
@@ -457,7 +641,7 @@ std::string ctrlrkey::get_string(unsigned index) throw(std::bad_alloc)
 
 void ctrlrkey::append(key* _key, unsigned _subkey) throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	//Search for duplicates.
 	std::pair<key*, unsigned> mkey = std::make_pair(_key, _subkey);
 	for(auto i : keys)
@@ -470,7 +654,7 @@ void ctrlrkey::append(key* _key, unsigned _subkey) throw()
 
 void ctrlrkey::remove(key* _key, unsigned _subkey) throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keymap_lock());
 	std::pair<key*, unsigned> mkey = std::make_pair(_key, _subkey);
 	for(auto i = keys.begin(); i != keys.end(); i++) {
 		if(*i == mkey) {
@@ -490,6 +674,7 @@ void ctrlrkey::append(const std::string& _key) throw(std::bad_alloc, std::runtim
 std::pair<key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const std::string& name,
 	bool axis) throw(std::bad_alloc, std::runtime_error)
 {
+	threads::arlock u(get_keymap_lock());
 	if(name == "")
 		return std::make_pair((key*)NULL, 0);
 	//Try direct lookup first.
