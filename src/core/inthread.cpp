@@ -72,12 +72,22 @@ namespace
 
 	struct voicesub_state
 	{
+		voicesub_state()
+		{
+			current_time = 0;
+			time_jump = false;
+			active_flag = false;
+			last_frame_number = 0;
+			last_rate = 0;
+			current_collection = NULL;
+			int_task = NULL;
+		}
 		//Recording active flag.
-		volatile bool active_flag = false;
+		volatile bool active_flag;
 		//Last seen frame number.
-		uint64_t last_frame_number = 0;
+		uint64_t last_frame_number;
 		//Last seen rate.
-		double last_rate = 0;
+		double last_rate;
 		//Mutex protecting current_time and time_jump.
 		threads::lock time_mutex;
 		//The current time.
@@ -1455,8 +1465,8 @@ out:
 
 	void voicesub_state::update_time()
 	{
-		uint64_t sampletime;
-		bool jumping;
+		uint64_t sampletime = 0;
+		bool jumping = false;
 		{
 			threads::alock m(time_mutex);
 			sampletime = current_time;
