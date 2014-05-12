@@ -81,7 +81,6 @@ namespace
 
 	struct set_internal
 	{
-		threads::lock lock;
 		std::map<uint64_t, set_callbacks> callbacks;
 		integer_pool pool;
 		std::map<std::string, factory_base*> commands;
@@ -89,7 +88,6 @@ namespace
 
 	struct group_internal
 	{
-		threads::lock lock;
 		std::map<std::string, base*> commands;
 		std::map<set*, uint64_t> set_handles;
 	};
