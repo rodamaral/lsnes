@@ -1,13 +1,12 @@
 #ifndef _library__keyboard__hpp__included__
 #define _library__keyboard__hpp__included__
 
-#include "register-queue.hpp"
-#include "threads.hpp"
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 #include <list>
+#include <stdexcept>
 
 namespace keyboard
 {
@@ -68,7 +67,7 @@ public:
  *
  * Parameter name: The name of the modifier.
  */
-	void do_unregister(const std::string& name, modifier* dummy) throw();
+	void do_unregister(const std::string& name, modifier& mod) throw();
 /**
  * Lookup key by name.
  *
@@ -102,7 +101,7 @@ public:
  *
  * Parameter name: The name of the key.
  */
-	void do_unregister(const std::string& name, key* dummy) throw();
+	void do_unregister(const std::string& name, key& mod) throw();
 /**
  * Set exclusive listener for all keys at once.
  */
@@ -118,9 +117,6 @@ public:
 private:
 	keyboard(const keyboard&);
 	keyboard& operator=(const keyboard&);
-	std::map<std::string, modifier*> modifiers;
-	std::map<std::string, key*> keys;
-	threads::lock mlock;
 	key* current_key;
 };
 
@@ -139,7 +135,7 @@ public:
 	modifier(keyboard& keyb, const std::string& _name) throw(std::bad_alloc)
 		: kbd(keyb), name(_name)
 	{
-		register_queue<keyboard, modifier>::do_register(kbd, name, *this);
+		keyb.do_register(name, *this);
 	}
 /**
  * Create a linked modifier in group.
@@ -151,14 +147,14 @@ public:
 	modifier(keyboard& keyb, const std::string& _name, const std::string& _link) throw(std::bad_alloc)
 		: kbd(keyb), name(_name), link(_link)
 	{
-		register_queue<keyboard, modifier>::do_register(kbd, name, *this);
+		keyb.do_register(name, *this);
 	}
 /**
  * Destructor.
  */
 	~modifier() throw()
 	{
-		register_queue<keyboard, modifier>::do_unregister(kbd, name);
+		kbd.do_unregister(name, *this);
 	}
 /**
  * Get associated keyboard.
@@ -580,10 +576,6 @@ protected:
  * Parameter event: The event to pass.
  */
 	void call_listeners(modifier_set& mods, event& event);
-/**
- * Mutex protecting state.
- */
-	mutable threads::lock mlock;
 private:
 	key(key&);
 	key& operator=(key&);

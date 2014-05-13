@@ -1,18 +1,40 @@
 #include "keyboard.hpp"
+#include "stateobject.hpp"
+#include "threads.hpp"
 #include <iostream>
 
 namespace keyboard
 {
-void keyboard::do_register(const std::string& name, modifier& mod) throw(std::bad_alloc)
-{
-	threads::alock u(mlock);
-	modifiers[name] = &mod;
+namespace {
+	threads::rlock* global_lock;
+	threads::rlock& get_keyboard_lock()
+	{
+		if(!global_lock) global_lock = new threads::rlock;
+		return *global_lock;
+	}
+
+	struct keyboard_internal
+	{
+		std::map<std::string, modifier*> modifiers;
+		std::map<std::string, key*> keys;
+	};
+	typedef stateobject::type<keyboard, keyboard_internal> keyboard_internal_t;
 }
 
-void keyboard::do_unregister(const std::string& name, modifier* mod) throw()
+void keyboard::do_register(const std::string& name, modifier& mod) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
-	modifiers.erase(name);
+	threads::arlock u(get_keyboard_lock());
+	auto& state = keyboard_internal_t::get(this);
+	if(state.modifiers.count(name)) return;
+	state.modifiers[name] = &mod;
+}
+
+void keyboard::do_unregister(const std::string& name, modifier& mod) throw()
+{
+	threads::arlock u(get_keyboard_lock());
+	auto state = keyboard_internal_t::get_soft(this);
+	if(!state || !state->modifiers.count(name) || state->modifiers[name] != &mod) return;
+	state->modifiers.erase(name);
 }
 
 modifier& keyboard::lookup_modifier(const std::string& name) throw(std::runtime_error)
@@ -25,31 +47,38 @@ modifier& keyboard::lookup_modifier(const std::string& name) throw(std::runtime_
 
 modifier* keyboard::try_lookup_modifier(const std::string& name) throw()
 {
-	threads::alock u(mlock);
-	if(!modifiers.count(name))
+	threads::arlock u(get_keyboard_lock());
+	auto state = keyboard_internal_t::get_soft(this);
+	if(!state || !state->modifiers.count(name))
 		return NULL;
-	return modifiers[name];
+	return state->modifiers[name];
 }
 
 std::list<modifier*> keyboard::all_modifiers() throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
+	auto state = keyboard_internal_t::get_soft(this);
 	std::list<modifier*> r;
-	for(auto i : modifiers)
-		r.push_back(i.second);
+	if(!state)
+		for(auto i : state->modifiers)
+			r.push_back(i.second);
 	return r;
 }
 
 void keyboard::do_register(const std::string& name, key& key) throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
-	keys[name] = &key;
+	threads::arlock u(get_keyboard_lock());
+	auto& state = keyboard_internal_t::get(this);
+	if(state.keys.count(name)) return;
+	state.keys[name] = &key;
 }
 
-void keyboard::do_unregister(const std::string& name, key* dummy) throw()
+void keyboard::do_unregister(const std::string& name, key& key) throw()
 {
-	threads::alock u(mlock);
-	keys.erase(name);
+	threads::arlock u(get_keyboard_lock());
+	auto state = keyboard_internal_t::get_soft(this);
+	if(!state || !state->keys.count(name) || state->keys[name] != &key) return;
+	state->keys.erase(name);
 }
 
 key& keyboard::lookup_key(const std::string& name) throw(std::runtime_error)
@@ -62,50 +91,55 @@ key& keyboard::lookup_key(const std::string& name) throw(std::runtime_error)
 
 key* keyboard::try_lookup_key(const std::string& name) throw()
 {
-	threads::alock u(mlock);
-	if(!keys.count(name))
+	threads::arlock u(get_keyboard_lock());
+	auto state = keyboard_internal_t::get_soft(this);
+	if(!state || !state->keys.count(name))
 		return NULL;
-	return keys[name];
+	return state->keys[name];
 }
 
 std::list<key*> keyboard::all_keys() throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
+	auto state = keyboard_internal_t::get_soft(this);
 	std::list<key*> r;
-	for(auto i : keys)
-		r.push_back(i.second);
+	if(!state)
+		for(auto i : state->keys)
+			r.push_back(i.second);
 	return r;
 }
 
 void keyboard::set_exclusive(event_listener* listener) throw()
 {
-	threads::alock u(mlock);
-	for(auto i : keys)
-		i.second->set_exclusive(listener);
+	threads::arlock u(get_keyboard_lock());
+	auto state = keyboard_internal_t::get_soft(this);
+	if(state)
+		for(auto i : state->keys)
+			i.second->set_exclusive(listener);
 }
 
 void keyboard::set_current_key(key* key) throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	current_key = key;
 }
 
 key* keyboard::get_current_key() throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	return current_key;
 }
 
 keyboard::keyboard() throw(std::bad_alloc)
 {
-	register_queue<keyboard, modifier>::do_ready(*this, true);
-	register_queue<keyboard, key>::do_ready(*this, true);
 }
 
 keyboard::~keyboard() throw()
 {
-	register_queue<keyboard, modifier>::do_ready(*this, false);
-	register_queue<keyboard, key>::do_ready(*this, false);
+	threads::arlock u(get_keyboard_lock());
+	auto state = keyboard_internal_t::get_soft(this);
+	if(!state) return;
+	keyboard_internal_t::clear(this);
 }
 
 void modifier_set::add(modifier& mod, bool really) throw(std::bad_alloc)
@@ -256,7 +290,7 @@ event_listener::~event_listener() throw() {}
 
 key::~key() throw()
 {
-	register_queue<keyboard, key>::do_unregister(kbd, name);
+	kbd.do_unregister(name, *this);
 }
 
 event_key::event_key(uint32_t chngmask)
@@ -302,7 +336,7 @@ key::key(keyboard& keyb, const std::string& _name, const std::string& _clazz,
 	:  kbd(keyb), clazz(_clazz), name(_name), type(_type)
 {
 	exclusive_listener = NULL;
-	register_queue<keyboard, key>::do_register(kbd, name, *this);
+	kbd.do_register(name, *this);
 }
 
 void key::add_listener(event_listener& listener, bool analog) throw(std::bad_alloc)
@@ -323,7 +357,7 @@ void key::remove_listener(event_listener& listener) throw()
 
 void key::set_exclusive(event_listener* listener) throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	exclusive_listener = listener;
 }
 
@@ -331,9 +365,9 @@ void key::call_listeners(modifier_set& mods, event& event)
 {
 	kbd.set_current_key(this);
 	bool digital = (event.get_change_mask() & 0xAAAAAAAAUL) != 0;
-	mlock.lock();
+	get_keyboard_lock().lock();
 	if(exclusive_listener) {
-		mlock.unlock();
+		get_keyboard_lock().unlock();
 		exclusive_listener->on_key_event(mods, *this, event);
 		kbd.set_current_key(NULL);
 		return;
@@ -344,9 +378,9 @@ void key::call_listeners(modifier_set& mods, event& event)
 		if(itr2 == digital_listeners.end())
 			break;
 		itr = *itr2;
-		mlock.unlock();
+		get_keyboard_lock().unlock();
 		itr->on_key_event(mods, *this, event);
-		mlock.lock();
+		get_keyboard_lock().lock();
 	}
 	itr = NULL;
 	while(true) {
@@ -354,11 +388,11 @@ void key::call_listeners(modifier_set& mods, event& event)
 		if(itr2 == analog_listeners.end())
 			break;
 		itr = *itr2;
-		mlock.unlock();
+		get_keyboard_lock().unlock();
 		itr->on_key_event(mods, *this, event);
-		mlock.lock();
+		get_keyboard_lock().lock();
 	}
-	mlock.unlock();
+	get_keyboard_lock().unlock();
 	kbd.set_current_key(NULL);
 }
 
@@ -389,13 +423,13 @@ void key_key::set_state(modifier_set mods, int32_t _state) throw()
 {
 	uint32_t change = _state ? 1 : 0;
 	bool edge = false;
-	mlock.lock();
+	get_keyboard_lock().lock();
 	if(state != _state) {
 		state = _state;
 		change |= 2;
 		edge = true;
 	}
-	mlock.unlock();
+	get_keyboard_lock().unlock();
 	if(edge) {
 		event_key e(change);
 		call_listeners(mods, e);
@@ -425,7 +459,7 @@ void key_hat::set_state(modifier_set mods, int32_t _state) throw()
 	state &= 15;
 	uint32_t change = 0;
 	bool edge = false;
-	mlock.lock();
+	get_keyboard_lock().lock();
 	if(state != _state) {
 		int32_t schange = state ^ _state;
 		state = _state;
@@ -439,7 +473,7 @@ void key_hat::set_state(modifier_set mods, int32_t _state) throw()
 		if(schange & 8) change |= 128;
 		edge = true;
 	}
-	mlock.unlock();
+	get_keyboard_lock().unlock();
 	if(edge) {
 		event_hat e(change);
 		call_listeners(mods, e);
@@ -472,13 +506,13 @@ key_axis::~key_axis() throw() {}
 
 int32_t key_axis::get_state() const throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	return rawstate;
 }
 
 int32_t key_axis::get_state_digital() const throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	if(rawstate <= -32768 * last_tolerance)
 		return -1;
 	if(rawstate >= 32767 * last_tolerance)
@@ -488,13 +522,13 @@ int32_t key_axis::get_state_digital() const throw()
 
 int key_axis::get_mode() const throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	return _mode;
 }
 
 std::vector<std::string> key_axis::get_subkeys() throw(std::bad_alloc)
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	std::vector<std::string> r;
 	if(_mode == 0)
 		r.push_back("");
@@ -511,7 +545,7 @@ void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 	int32_t state;
 	uint32_t change = 0;
 	int dold = 0, dnew = 0;
-	mlock.lock();
+	get_keyboard_lock().lock();
 	if(rawstate != _rawstate) {
 		dold = digitalstate;
 		rawstate = _rawstate;
@@ -531,7 +565,7 @@ void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 			change |= 8;
 		edge = true;
 	}
-	mlock.unlock();
+	get_keyboard_lock().unlock();
 	if(edge) {
 		event_axis e(state, change);
 		call_listeners(mods, e);
@@ -540,7 +574,7 @@ void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 
 void key_axis::set_mode(int mode, double tolerance) throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	_mode = mode;
 	last_tolerance = tolerance;
 }
@@ -558,7 +592,7 @@ int32_t key_mouse::get_state_digital() const throw() { return 0; }
 
 int32_t key_mouse::get_state() const throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	return cal.get_calibrated_value(rawstate);
 }
 
@@ -569,7 +603,7 @@ std::vector<std::string> key_mouse::get_subkeys() throw(std::bad_alloc)
 
 mouse_calibration key_mouse::get_calibration() const throw()
 {
-	threads::alock u(mlock);
+	threads::arlock u(get_keyboard_lock());
 	mouse_calibration tmp = cal;
 	return tmp;
 }
@@ -579,14 +613,14 @@ void key_mouse::set_state(modifier_set mods, int32_t _rawstate) throw()
 	bool edge = false;
 	int32_t state;
 	mouse_calibration _cal;
-	mlock.lock();
+	get_keyboard_lock().lock();
 	if(rawstate != _rawstate) {
 		rawstate = _rawstate;
 		state = cal.get_calibrated_value(rawstate);
 		_cal = cal;
 		edge = true;
 	}
-	mlock.unlock();
+	get_keyboard_lock().unlock();
 	if(edge) {
 		event_mouse e(state, _cal);
 		call_listeners(mods, e);
@@ -595,10 +629,10 @@ void key_mouse::set_state(modifier_set mods, int32_t _rawstate) throw()
 
 void key_mouse::set_calibration(mouse_calibration _cal) throw()
 {
-	mlock.lock();
+	get_keyboard_lock().lock();
 	cal = _cal;
 	int32_t state = cal.get_calibrated_value(rawstate);
-	mlock.unlock();
+	get_keyboard_lock().unlock();
 	event_mouse e(state, _cal);
 	modifier_set mods;
 	call_listeners(mods, e);
