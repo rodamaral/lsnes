@@ -17,8 +17,13 @@
 #include <list>
 #include <set>
 #include "json.hpp"
-#include "binarystream.hpp"
 #include "integer-pool.hpp"
+
+namespace binarystream
+{
+	class input;
+	class output;
+}
 
 /**
  * Memory to allocate for controller frame.

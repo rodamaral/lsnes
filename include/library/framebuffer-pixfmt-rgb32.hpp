@@ -1,7 +1,7 @@
 #ifndef _library__framebuffer_pixfmt_rgb32__hpp__included__
 #define _library__framebuffer_pixfmt_rgb32__hpp__included__
 
-#include "framebuffer.hpp"
+#include "framebuffer-pixfmt.hpp"
 
 namespace framebuffer
 {

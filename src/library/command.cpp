@@ -2,9 +2,9 @@
 #include "globalwrap.hpp"
 #include "integer-pool.hpp"
 #include "minmax.hpp"
-#include "register-queue.hpp"
 #include "stateobject.hpp"
 #include "string.hpp"
+#include "threads.hpp"
 #include "zip.hpp"
 #include <iostream>
 #include <cstdlib>

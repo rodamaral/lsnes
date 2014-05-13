@@ -1,7 +1,9 @@
-#include "controller-parse.hpp"
-#include "string.hpp"
-#include "assembler.hpp"
 #include "arch-detect.hpp"
+#include "assembler.hpp"
+#include "controller-data.hpp"
+#include "controller-parse.hpp"
+#include "json.hpp"
+#include "string.hpp"
 #include <algorithm>
 
 namespace

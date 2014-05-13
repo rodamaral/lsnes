@@ -1,3 +1,4 @@
+#include "framebuffer-font2.hpp"
 #include "memorywatch-fb.hpp"
 #include "utf8.hpp"
 #include "minmax.hpp"

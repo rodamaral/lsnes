@@ -1,5 +1,6 @@
 #include "command.hpp"
 #include "integer-pool.hpp"
+#include "keyboard.hpp"
 #include "keyboard-mapper.hpp"
 #include "register-queue.hpp"
 #include "stateobject.hpp"

@@ -1,3 +1,4 @@
+#include "binarystream.hpp"
 #include "controller-data.hpp"
 #include "threads.hpp"
 #include "minmax.hpp"

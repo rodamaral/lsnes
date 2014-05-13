@@ -1,9 +1,15 @@
 #ifndef _library__controller_parse__hpp__included__
 #define _library__controller_parse__hpp__included__
 
-#include "controller-data.hpp"
 #include "assembler.hpp"
-#include "json.hpp"
+
+class port_controller_set;
+class port_type;
+
+namespace JSON
+{
+	class node;
+}
 
 struct port_controller_set* pcs_from_json(const JSON::node& root, const std::string& ptr);
 std::vector<port_controller_set*> pcs_from_json_array(const JSON::node& root, const std::string& ptr);

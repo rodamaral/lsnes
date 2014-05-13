@@ -8,6 +8,7 @@
 #include "core/window.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/directory.hpp"
+#include "library/framebuffer-font2.hpp"
 #include "library/string.hpp"
 #include "library/int24.hpp"
 #include "library/mathexpr-ntype.hpp"

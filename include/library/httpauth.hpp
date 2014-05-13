@@ -1,7 +1,6 @@
 #ifndef _library__httpauth__hpp__included__
 #define _library__httpauth__hpp__included__
 
-#include "curve25519.hpp"
 #include "skein.hpp"
 #include <string>
 #include <cstring>

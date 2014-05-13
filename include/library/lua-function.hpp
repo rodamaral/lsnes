@@ -1,12 +1,10 @@
 #ifndef _library__lua_function__hpp__included__
 #define _library__lua_function__hpp__included__
 
-#include "lua-base.hpp"
-#include "lua-pin.hpp"
-
 namespace lua
 {
 class parameters;
+class state;
 
 /**
  * Group of functions.

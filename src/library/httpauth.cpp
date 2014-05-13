@@ -1,3 +1,4 @@
+#include "curve25519.hpp"
 #include "hex.hpp"
 #include "httpauth.hpp"
 #include "string.hpp"

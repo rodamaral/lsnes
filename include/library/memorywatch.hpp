@@ -2,10 +2,11 @@
 #define _library__memorywatch__hpp__included__
 
 #include "mathexpr.hpp"
-#include "memoryspace.hpp"
 #include <list>
 #include <set>
 #include <map>
+
+class memory_space;
 
 /**
  * Read memory operator.

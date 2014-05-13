@@ -1,4 +1,5 @@
 #include "framebuffer-pixfmt-rgb15.hpp"
+#include "framebuffer.hpp"
 
 namespace framebuffer
 {

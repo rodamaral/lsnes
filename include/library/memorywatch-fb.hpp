@@ -4,7 +4,11 @@
 #include "framebuffer.hpp"
 #include "memorywatch.hpp"
 #include "mathexpr.hpp"
-#include "framebuffer-font2.hpp"
+
+namespace framebuffer
+{
+	class font2;
+}
 
 struct memorywatch_output_fb : public memorywatch_item_printer
 {

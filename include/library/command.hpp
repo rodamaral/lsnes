@@ -6,7 +6,6 @@
 #include <set>
 #include <map>
 #include <list>
-#include "threads.hpp"
 
 namespace command
 {

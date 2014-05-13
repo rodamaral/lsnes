@@ -1,4 +1,6 @@
+#include "framebuffer-font2.hpp"
 #include "memorywatch.hpp"
+#include "memoryspace.hpp"
 #include "int24.hpp"
 #include "mathexpr-error.hpp"
 #include <sstream>

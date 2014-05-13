@@ -1,12 +1,13 @@
 #ifndef _library__memorysearch__hpp__included__
 #define _library__memorysearch__hpp__included__
 
-#include "memoryspace.hpp"
 #include <string>
 #include <list>
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
+
+class memory_space;
 
 /**
  * Context for memory search. Each individual context is independent.

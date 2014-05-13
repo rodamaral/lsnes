@@ -1,3 +1,4 @@
+#include "memoryspace.hpp"
 #include "memorysearch.hpp"
 #include "eatarg.hpp"
 #include "minmax.hpp"
