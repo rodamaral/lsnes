@@ -218,14 +218,6 @@ void set::drop_callback(set_listener& listener) throw()
 	}
 }
 
-std::map<std::string, factory_base*> set::get_commands()
-{
-	threads::arlock h(get_cmd_lock());
-	auto state = set_internal_t::get_soft(this);
-	if(!state) return std::map<std::string, factory_base*>();
-	return state->commands;
-}
-
 group::group() throw(std::bad_alloc)
 	: _listener(*this)
 {

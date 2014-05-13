@@ -72,10 +72,6 @@ public:
  * Parameter listener: The listener to drop.
  */
 	void drop_callback(set_listener& listener) throw();
-/**
- * Obtain list of all commands so far.
- */
-	std::map<std::string, factory_base*> get_commands();
 private:
 	char dummy;
 };
