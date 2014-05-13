@@ -1,5 +1,4 @@
 #include "interface/setting.hpp"
-#include "library/register-queue.hpp"
 #include "library/string.hpp"
 
 core_setting_value::core_setting_value(const core_setting_value_param& p) throw(std::bad_alloc)

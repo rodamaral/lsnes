@@ -3,7 +3,6 @@
 #include "interface/callbacks.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
-#include "library/register-queue.hpp"
 #include <set>
 #include <map>
 #include <string>
