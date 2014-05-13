@@ -128,7 +128,7 @@ public:
 /**
  * Unregister a setting.
  */
-	void do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc);
+	void do_unregister(const std::string& name, base& _setting) throw(std::bad_alloc);
 /**
  * Fire listener.
  */
@@ -142,6 +142,9 @@ public:
  */
 	void drop_set(set& s);
 private:
+/**
+ * Set listener.
+ */
 	class xlistener : public set_listener
 	{
 	public:
@@ -153,10 +156,6 @@ private:
 	private:
 		group& grp;
 	} _listener;
-	std::map<std::string, class base*> settings;
-	std::set<struct listener*> listeners;
-	std::set<struct set*> sets_listened;
-	bool dtor_running;
 };
 
 /**

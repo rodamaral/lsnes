@@ -1,5 +1,4 @@
 #include "settingvar.hpp"
-#include "register-queue.hpp"
 #include "stateobject.hpp"
 
 namespace settingvar
@@ -7,7 +6,6 @@ namespace settingvar
 namespace
 {
 	threads::rlock* global_lock;
-	typedef register_queue<group, base> regqueue_t;
 
 	struct set_internal
 	{
@@ -15,7 +13,15 @@ namespace
 		std::set<set_listener*> callbacks;
 	};
 
+	struct group_internal
+	{
+		std::map<std::string, class base*> settings;
+		std::set<struct listener*> listeners;
+		std::set<struct set*> sets_listened;
+	};
+
 	typedef stateobject::type<set, set_internal> set_internal_t;
+	typedef stateobject::type<group, group_internal> group_internal_t;
 }
 
 threads::rlock& get_setting_lock()
@@ -35,36 +41,38 @@ set_listener::~set_listener() throw()
 group::group() throw(std::bad_alloc)
 	: _listener(*this)
 {
-	dtor_running = false;
-	regqueue_t::do_ready(*this, true);
 }
 
 group::~group() throw()
 {
-	dtor_running = true;
 	threads::arlock h(get_setting_lock());
-	regqueue_t::do_ready(*this, false);
-	for(auto i : settings)
+	auto state = group_internal_t::get_soft(this);
+	if(!state) return;
+	for(auto i : state->settings)
 		i.second->group_died();
-	for(auto i : sets_listened)
+	for(auto i : state->sets_listened)
 		i->drop_callback(_listener);
+	group_internal_t::clear(this);
 }
 
 std::set<std::string> group::get_settings_set() throw(std::bad_alloc)
 {
 	threads::arlock h(get_setting_lock());
+	auto state = group_internal_t::get_soft(this);
 	std::set<std::string> x;
-	for(auto i : settings)
-		x.insert(i.first);
+	if(state)
+		for(auto i : state->settings)
+			x.insert(i.first);
 	return x;
 }
 
 base& group::operator[](const std::string& name)
 {
 	threads::arlock h(get_setting_lock());
-	if(!settings.count(name))
+	auto state = group_internal_t::get_soft(this);
+	if(!state || !state->settings.count(name))
 		throw std::runtime_error("No such setting");
-	return *settings[name];
+	return *state->settings[name];
 }
 
 void group::fire_listener(base& var) throw()
@@ -72,7 +80,9 @@ void group::fire_listener(base& var) throw()
 	std::set<listener*> l;
 	{
 		threads::arlock h(get_setting_lock());
-		for(auto i : listeners)
+		auto state = group_internal_t::get_soft(this);
+		if(!state) return;
+		for(auto i : state->listeners)
 			l.insert(i);
 	}
 	for(auto i : l)
@@ -85,45 +95,55 @@ void group::fire_listener(base& var) throw()
 void group::add_listener(struct listener& listener) throw(std::bad_alloc)
 {
 	threads::arlock h(get_setting_lock());
-	listeners.insert(&listener);
+	auto& state = group_internal_t::get(this);
+	state.listeners.insert(&listener);
 }
 
 void group::remove_listener(struct listener& listener) throw(std::bad_alloc)
 {
 	threads::arlock h(get_setting_lock());
-	listeners.erase(&listener);
+	auto state = group_internal_t::get_soft(this);
+	if(state)
+		state->listeners.erase(&listener);
 }
 
 void group::do_register(const std::string& name, base& _setting) throw(std::bad_alloc)
 {
 	threads::arlock h(get_setting_lock());
-	settings[name] = &_setting;
+	auto& state = group_internal_t::get(this);
+	if(state.settings.count(name)) return;
+	state.settings[name] = &_setting;
 }
 
-void group::do_unregister(const std::string& name, base* dummy) throw(std::bad_alloc)
+void group::do_unregister(const std::string& name, base& _setting) throw(std::bad_alloc)
 {
 	threads::arlock h(get_setting_lock());
-	settings.erase(name);
+	auto state = group_internal_t::get_soft(this);
+	if(!state || !state->settings.count(name) || state->settings[name] != &_setting) return;
+	state->settings.erase(name);
 }
 
 void group::add_set(set& s) throw(std::bad_alloc)
 {
 	threads::arlock u(get_setting_lock());
-	if(sets_listened.count(&s)) return;
+	auto& state = group_internal_t::get(this);
+	if(state.sets_listened.count(&s)) return;
 	try {
-		sets_listened.insert(&s);
+		state.sets_listened.insert(&s);
 		s.add_callback(_listener);
 	} catch(...) {
-		sets_listened.erase(&s);
+		state.sets_listened.erase(&s);
 	}
 }
 
 void group::drop_set(set& s)
 {
 	threads::arlock h(get_setting_lock());
+	auto state = group_internal_t::get_soft(this);
+	if(!state) return;
 	//Drop the callback. This unregisters all.
 	s.drop_callback(_listener);
-	sets_listened.erase(&s);
+	state->sets_listened.erase(&s);
 }
 
 group::xlistener::xlistener(group& _grp)
@@ -144,15 +164,17 @@ void group::xlistener::create(set& s, const std::string& name, superbase& sb)
 void group::xlistener::destroy(set& s, const std::string& name)
 {
 	threads::arlock h(get_setting_lock());
-	if(grp.dtor_running) return;
-	grp.settings.erase(name);
+	auto state = group_internal_t::get_soft(&grp);
+	if(state)
+		state->settings.erase(name);
 }
 
 void group::xlistener::kill(set& s)
 {
 	threads::arlock h(get_setting_lock());
-	if(grp.dtor_running) return;
-	grp.sets_listened.erase(&s);
+	auto state = group_internal_t::get_soft(&grp);
+	if(state)
+		state->sets_listened.erase(&s);
 }
 
 set::set()
@@ -231,14 +253,14 @@ base::base(group& _group, const std::string& _iname, const std::string& _hname, 
 	throw(std::bad_alloc)
 	: sgroup(&_group), iname(_iname), hname(_hname), is_dynamic(dynamic)
 {
-	regqueue_t::do_register(*sgroup, iname, *this);
+	sgroup->do_register(iname, *this);
 }
 
 base::~base() throw()
 {
 	threads::arlock u(get_setting_lock());
 	if(sgroup)
-		regqueue_t::do_unregister(*sgroup, iname);
+		sgroup->do_unregister(iname, *this);
 }
 
 void base::group_died()
