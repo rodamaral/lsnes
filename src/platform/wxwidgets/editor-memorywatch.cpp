@@ -123,11 +123,11 @@ public:
 	void on_cancel(wxCommandEvent& e);
 	void enable_condenable2(wxCommandEvent& e);
 private:
-	void enable_for_pos(lsnes_memorywatch_printer::position_category p);
+	void enable_for_pos(memwatch_printer::position_category p);
 	void enable_for_addr(bool is_addr);
 	void enable_for_vma(bool free, uint64_t _base, uint64_t _size);
 	void enable_condenable();
-	lsnes_memorywatch_printer::position_category get_poscategory();
+	memwatch_printer::position_category get_poscategory();
 	label_control<wxComboBox> type;
 	label_control<wxTextCtrl> expr;
 	label_control<wxTextCtrl> format;
@@ -299,7 +299,7 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, const std::string& 
 		this);
 	top_s->Add(s12, 0, wxGROW);
 
-	lsnes_memorywatch_item it;
+	memwatch_item it;
 	bool had_it = false;
 	try {
 		it = lsnes_instance.mwatch.get(name);
@@ -320,9 +320,9 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, const std::string& 
 		endianess->SetSelection(it.endianess + 1);
 		addrbase->SetValue(towxstring(hex::to<uint64_t>(it.addr_base)));
 		addrsize->SetValue(towxstring(hex::to<uint64_t>(it.addr_size)));
-		if(it.printer.position == lsnes_memorywatch_printer::PC_DISABLED) position->SetSelection(0);
-		if(it.printer.position == lsnes_memorywatch_printer::PC_MEMORYWATCH) position->SetSelection(1);
-		if(it.printer.position == lsnes_memorywatch_printer::PC_ONSCREEN) position->SetSelection(2);
+		if(it.printer.position == memwatch_printer::PC_DISABLED) position->SetSelection(0);
+		if(it.printer.position == memwatch_printer::PC_MEMORYWATCH) position->SetSelection(1);
+		if(it.printer.position == memwatch_printer::PC_ONSCREEN) position->SetSelection(2);
 		switch(it.bytes) {
 		case 0: type->SetSelection(0); break;
 		case 1: type->SetSelection(it.signed_flag ? 1 : 2); break;
@@ -353,36 +353,36 @@ bool wxeditor_memorywatch::ShouldPreventAppExit() const
 	return false;
 }
 
-lsnes_memorywatch_printer::position_category wxeditor_memorywatch::get_poscategory()
+memwatch_printer::position_category wxeditor_memorywatch::get_poscategory()
 {
-	if(position->GetSelection() == 0) return lsnes_memorywatch_printer::PC_DISABLED;
-	if(position->GetSelection() == 1) return lsnes_memorywatch_printer::PC_MEMORYWATCH;
-	if(position->GetSelection() == 2) return lsnes_memorywatch_printer::PC_ONSCREEN;
-	return lsnes_memorywatch_printer::PC_DISABLED; //NOTREACHED.
+	if(position->GetSelection() == 0) return memwatch_printer::PC_DISABLED;
+	if(position->GetSelection() == 1) return memwatch_printer::PC_MEMORYWATCH;
+	if(position->GetSelection() == 2) return memwatch_printer::PC_ONSCREEN;
+	return memwatch_printer::PC_DISABLED; //NOTREACHED.
 }
 
-void wxeditor_memorywatch::enable_for_pos(lsnes_memorywatch_printer::position_category p)
+void wxeditor_memorywatch::enable_for_pos(memwatch_printer::position_category p)
 {
-	bool full_disable = (p == lsnes_memorywatch_printer::PC_DISABLED);
+	bool full_disable = (p == memwatch_printer::PC_DISABLED);
 	cond_enable->Enable(!full_disable);
 	enabled->Enable(cond_enable->GetValue() && !full_disable);
-	xpos.enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	ypos.enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	alt_origin_x->Enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	alt_origin_y->Enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	cliprange_x->Enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	cliprange_y->Enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	font.enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	font_sel->Enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	fg_color.enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	bg_color.enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
-	halo_color.enable(p == lsnes_memorywatch_printer::PC_ONSCREEN);
+	xpos.enable(p == memwatch_printer::PC_ONSCREEN);
+	ypos.enable(p == memwatch_printer::PC_ONSCREEN);
+	alt_origin_x->Enable(p == memwatch_printer::PC_ONSCREEN);
+	alt_origin_y->Enable(p == memwatch_printer::PC_ONSCREEN);
+	cliprange_x->Enable(p == memwatch_printer::PC_ONSCREEN);
+	cliprange_y->Enable(p == memwatch_printer::PC_ONSCREEN);
+	font.enable(p == memwatch_printer::PC_ONSCREEN);
+	font_sel->Enable(p == memwatch_printer::PC_ONSCREEN);
+	fg_color.enable(p == memwatch_printer::PC_ONSCREEN);
+	bg_color.enable(p == memwatch_printer::PC_ONSCREEN);
+	halo_color.enable(p == memwatch_printer::PC_ONSCREEN);
 }
 
 void wxeditor_memorywatch::enable_condenable()
 {
-	lsnes_memorywatch_printer::position_category p = get_poscategory();
-	bool full_disable = (p == lsnes_memorywatch_printer::PC_DISABLED);
+	memwatch_printer::position_category p = get_poscategory();
+	bool full_disable = (p == memwatch_printer::PC_DISABLED);
 	enabled->Enable(cond_enable->GetValue() && !full_disable);
 }
 
@@ -450,7 +450,7 @@ void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 
 void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 {
-	lsnes_memorywatch_item it;
+	memwatch_item it;
 	it.expr = tostdstring(expr->GetValue());
 	it.format = tostdstring(format->GetValue());
 	it.printer.cond_enable = cond_enable->GetValue();
@@ -471,10 +471,10 @@ void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 			wxICON_EXCLAMATION);
 		return;
 	}
-	if(position->GetSelection() == 0) it.printer.position = lsnes_memorywatch_printer::PC_DISABLED;
-	else if(position->GetSelection() == 1) it.printer.position = lsnes_memorywatch_printer::PC_MEMORYWATCH;
-	else if(position->GetSelection() == 2) it.printer.position = lsnes_memorywatch_printer::PC_ONSCREEN;
-	else it.printer.position = lsnes_memorywatch_printer::PC_MEMORYWATCH;
+	if(position->GetSelection() == 0) it.printer.position = memwatch_printer::PC_DISABLED;
+	else if(position->GetSelection() == 1) it.printer.position = memwatch_printer::PC_MEMORYWATCH;
+	else if(position->GetSelection() == 2) it.printer.position = memwatch_printer::PC_ONSCREEN;
+	else it.printer.position = memwatch_printer::PC_MEMORYWATCH;
 	it.signed_flag = false;
 	it.float_flag = false;
 	switch(type->GetSelection()) {

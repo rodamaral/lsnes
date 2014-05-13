@@ -98,7 +98,7 @@ namespace
 	void dummy_target_fn(const std::string& n, const std::string& v) {}
 }
 
-lsnes_memorywatch_printer::lsnes_memorywatch_printer()
+memwatch_printer::memwatch_printer()
 {
 	position = PC_MEMORYWATCH;
 	cond_enable = false;
@@ -111,7 +111,7 @@ lsnes_memorywatch_printer::lsnes_memorywatch_printer()
 	onscreen_halo_color = 0;
 }
 
-JSON::node lsnes_memorywatch_printer::serialize()
+JSON::node memwatch_printer::serialize()
 {
 	JSON::node ndata(JSON::object);
 	switch(position) {
@@ -134,7 +134,7 @@ JSON::node lsnes_memorywatch_printer::serialize()
 	return ndata;
 }
 
-void lsnes_memorywatch_printer::unserialize(const JSON::node& node)
+void memwatch_printer::unserialize(const JSON::node& node)
 {
 	std::string _position = json_string_default(node, "position", "");
 	if(_position == "disabled") position = PC_DISABLED;
@@ -155,7 +155,7 @@ void lsnes_memorywatch_printer::unserialize(const JSON::node& node)
 	onscreen_halo_color = json_signed_default(node, "onscreen_halo_color", false);
 }
 
-gcroot_pointer<memorywatch_item_printer> lsnes_memorywatch_printer::get_printer_obj(
+gcroot_pointer<memorywatch_item_printer> memwatch_printer::get_printer_obj(
 	std::function<gcroot_pointer<mathexpr>(const std::string& n)> vars)
 {
 	gcroot_pointer<memorywatch_item_printer> ptr;
@@ -220,7 +220,7 @@ gcroot_pointer<memorywatch_item_printer> lsnes_memorywatch_printer::get_printer_
 	return ptr;
 }
 
-lsnes_memorywatch_item::lsnes_memorywatch_item()
+memwatch_item::memwatch_item()
 {
 	bytes = 0;
 	signed_flag = false;
@@ -232,7 +232,7 @@ lsnes_memorywatch_item::lsnes_memorywatch_item()
 	mspace = &lsnes_instance.memory;
 }
 
-JSON::node lsnes_memorywatch_item::serialize()
+JSON::node memwatch_item::serialize()
 {
 	JSON::node ndata(JSON::object);
 	ndata["printer"] = printer.serialize();
@@ -248,12 +248,12 @@ JSON::node lsnes_memorywatch_item::serialize()
 	return ndata;
 }
 
-void lsnes_memorywatch_item::unserialize(const JSON::node& node)
+void memwatch_item::unserialize(const JSON::node& node)
 {
 	if(node.type_of("printer") == JSON::object)
 		printer.unserialize(node["printer"]);
 	else
-		printer = lsnes_memorywatch_printer();
+		printer = memwatch_printer();
 	expr = json_string_default(node, "expr", "0");
 	format = json_string_default(node, "format", "");
 	bytes = json_unsigned_default(node, "bytes", 0);
@@ -265,7 +265,7 @@ void lsnes_memorywatch_item::unserialize(const JSON::node& node)
 	addr_size = json_unsigned_default(node, "addr_size", 0);
 }
 
-memorywatch_memread_oper* lsnes_memorywatch_item::get_memread_oper()
+memorywatch_memread_oper* memwatch_item::get_memread_oper()
 {
 	if(!bytes)
 		return NULL;
@@ -281,7 +281,7 @@ memorywatch_memread_oper* lsnes_memorywatch_item::get_memread_oper()
 	return o;
 }
 
-void lsnes_memorywatch_item::compatiblity_unserialize(const std::string& item)
+void memwatch_item::compatiblity_unserialize(const std::string& item)
 {
 	regex_results r;
 	if(!(r = regex("C0x([0-9A-Fa-f]{1,16})z([bBwWoOdDqQfF])(H([0-9A-Ga-g]))?", item)))
@@ -330,7 +330,7 @@ void lsnes_memorywatch_item::compatiblity_unserialize(const std::string& item)
 	expr = (stringfmt() << "0x" << std::hex << addr).str();
 	scale_div = 1;
 	mspace = &lsnes_instance.memory;	
-	printer.position = lsnes_memorywatch_printer::PC_MEMORYWATCH;
+	printer.position = memwatch_printer::PC_MEMORYWATCH;
 	printer.cond_enable = false;
 	printer.enabled = "true";
 	printer.onscreen_xpos = "0";
@@ -345,7 +345,7 @@ void lsnes_memorywatch_item::compatiblity_unserialize(const std::string& item)
 	printer.onscreen_halo_color = 0;
 }
 
-std::set<std::string> lsnes_memorywatch_set::enumerate()
+std::set<std::string> memwatch_set::enumerate()
 {
 	std::set<std::string> r;
 	for(auto& i : items)
@@ -353,9 +353,9 @@ std::set<std::string> lsnes_memorywatch_set::enumerate()
 	return r;
 }
 
-void lsnes_memorywatch_set::clear(const std::string& name)
+void memwatch_set::clear(const std::string& name)
 {
-	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	std::map<std::string, memwatch_item> nitems = items;
 	nitems.erase(name);
 	rebuild(nitems);
 	std::swap(items, nitems);
@@ -367,9 +367,9 @@ void lsnes_memorywatch_set::clear(const std::string& name)
 	redraw_framebuffer();
 }
 
-void lsnes_memorywatch_set::set(const std::string& name, const std::string& item)
+void memwatch_set::set(const std::string& name, const std::string& item)
 {
-	lsnes_memorywatch_item _item;
+	memwatch_item _item;
 	if(item != "" && item[0] != '{') {
 		//Compatiblity.
 		try {
@@ -383,14 +383,14 @@ void lsnes_memorywatch_set::set(const std::string& name, const std::string& item
 	set(name, _item);
 }
 
-lsnes_memorywatch_item& lsnes_memorywatch_set::get(const std::string& name)
+memwatch_item& memwatch_set::get(const std::string& name)
 {
 	if(!items.count(name))
 		throw std::runtime_error("No such memory watch named '" + name + "'");
 	return items[name];
 }
 
-std::string lsnes_memorywatch_set::get_string(const std::string& name, JSON::printer* printer)
+std::string memwatch_set::get_string(const std::string& name, JSON::printer* printer)
 {
 	auto& x = get(name);
 	auto y = x.serialize();
@@ -398,7 +398,7 @@ std::string lsnes_memorywatch_set::get_string(const std::string& name, JSON::pri
 	return z;
 }
 
-void lsnes_memorywatch_set::watch(struct framebuffer::queue& rq)
+void memwatch_set::watch(struct framebuffer::queue& rq)
 {
 	//Set framebuffer for all FB watches.
 	watch_set.foreach([&rq](memorywatch_item& i) {
@@ -410,9 +410,9 @@ void lsnes_memorywatch_set::watch(struct framebuffer::queue& rq)
 	erase_unused_watches();
 }
 
-bool lsnes_memorywatch_set::rename(const std::string& oldname, const std::string& newname)
+bool memwatch_set::rename(const std::string& oldname, const std::string& newname)
 {
-	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	std::map<std::string, memwatch_item> nitems = items;
 	if(nitems.count(newname))
 		return false;
 	if(!nitems.count(oldname))
@@ -425,9 +425,9 @@ bool lsnes_memorywatch_set::rename(const std::string& oldname, const std::string
 	return true;
 }
 
-void lsnes_memorywatch_set::set(const std::string& name, lsnes_memorywatch_item& item)
+void memwatch_set::set(const std::string& name, memwatch_item& item)
 {
-	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	std::map<std::string, memwatch_item> nitems = items;
 	nitems[name] = item;
 	rebuild(nitems);
 	std::swap(items, nitems);
@@ -439,14 +439,14 @@ void lsnes_memorywatch_set::set(const std::string& name, lsnes_memorywatch_item&
 	redraw_framebuffer();
 }
 
-std::string lsnes_memorywatch_set::get_value(const std::string& name)
+std::string memwatch_set::get_value(const std::string& name)
 {
 	return watch_set.get(name).get_value();
 }
 
-void lsnes_memorywatch_set::set_multi(std::list<std::pair<std::string, lsnes_memorywatch_item>>& list)
+void memwatch_set::set_multi(std::list<std::pair<std::string, memwatch_item>>& list)
 {
-	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	std::map<std::string, memwatch_item> nitems = items;
 	for(auto& i : list)
 		nitems[i.first] = i.second;
 	rebuild(nitems);
@@ -460,20 +460,20 @@ void lsnes_memorywatch_set::set_multi(std::list<std::pair<std::string, lsnes_mem
 	redraw_framebuffer();
 }
 
-void lsnes_memorywatch_set::set_multi(std::list<std::pair<std::string, std::string>>& list)
+void memwatch_set::set_multi(std::list<std::pair<std::string, std::string>>& list)
 {
-	std::list<std::pair<std::string, lsnes_memorywatch_item>> _list;
+	std::list<std::pair<std::string, memwatch_item>> _list;
 	for(auto& i: list) {
-		lsnes_memorywatch_item it;
+		memwatch_item it;
 		it.unserialize(JSON::node(i.second));
 		_list.push_back(std::make_pair(i.first, it));
 	}
 	set_multi(_list);
 }
 
-void lsnes_memorywatch_set::clear_multi(const std::set<std::string>& names)
+void memwatch_set::clear_multi(const std::set<std::string>& names)
 {
-	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	std::map<std::string, memwatch_item> nitems = items;
 	for(auto& i : names)
 		nitems.erase(i);
 	rebuild(nitems);
@@ -487,7 +487,7 @@ void lsnes_memorywatch_set::clear_multi(const std::set<std::string>& names)
 	redraw_framebuffer();
 }
 
-void lsnes_memorywatch_set::rebuild(std::map<std::string, lsnes_memorywatch_item>& nitems)
+void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 {
 	{
 		memorywatch_set new_set;
@@ -541,13 +541,13 @@ void lsnes_memorywatch_set::rebuild(std::map<std::string, lsnes_memorywatch_item
 	garbage_collectable::do_gc();
 }
 
-void lsnes_memorywatch_set::memorywatch_output(const std::string& name, const std::string& value)
+void memwatch_set::memorywatch_output(const std::string& name, const std::string& value)
 {
 	used_memorywatches[name] = true;
 	window_vars[name] = utf8::to32(value);
 }
 
-void lsnes_memorywatch_set::erase_unused_watches()
+void memwatch_set::erase_unused_watches()
 {
 	for(auto& i : used_memorywatches) {
 		if(!i.second)
@@ -555,5 +555,3 @@ void lsnes_memorywatch_set::erase_unused_watches()
 		i.second = false;
 	}
 }
-
-lsnes_memorywatch_set lsnes_memorywatch;

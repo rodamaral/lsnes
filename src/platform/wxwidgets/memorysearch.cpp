@@ -1043,7 +1043,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 					<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 				if(n == "")
 					continue;
-				lsnes_memorywatch_item e;
+				memwatch_item e;
 				e.expr = (stringfmt() << addr).str();
 				bool is_hex = hexmode2->GetValue();
 				e.bytes = watch_properties[typecode].len;

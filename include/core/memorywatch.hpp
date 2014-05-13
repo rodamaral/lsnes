@@ -7,19 +7,15 @@
 #include "library/memorywatch.hpp"
 #include "library/json.hpp"
 
-std::set<std::string> get_watches() throw(std::bad_alloc);
-std::string get_watchexpr_for(const std::string& w) throw(std::bad_alloc);
-void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std::bad_alloc);
-
 /**
  * lsnes memory watch printer variables.
  */
-struct lsnes_memorywatch_printer
+struct memwatch_printer
 {
 /**
  * Ctor.
  */
-	lsnes_memorywatch_printer();
+	memwatch_printer();
 /**
  * Serialize the printer to JSON value.
  */
@@ -56,12 +52,12 @@ struct lsnes_memorywatch_printer
 /**
  * lsnes memory watch item.
  */
-struct lsnes_memorywatch_item
+struct memwatch_item
 {
 /**
  * Ctor.
  */
-	lsnes_memorywatch_item();
+	memwatch_item();
 /**
  * Serialize the item to JSON value.
  */
@@ -81,7 +77,7 @@ struct lsnes_memorywatch_item
  */
 	void compatiblity_unserialize(const std::string& item);
 	//Fields
-	lsnes_memorywatch_printer printer;	//The printer.
+	memwatch_printer printer;	//The printer.
 	std::string expr;			//The main expression.
 	std::string format;			//Format.
 	unsigned bytes;				//Number of bytes to read (0 => Not memory read operator).
@@ -94,12 +90,12 @@ struct lsnes_memorywatch_item
 	memory_space* mspace;			//Memory space to read.
 };
 
-struct lsnes_memorywatch_set
+struct memwatch_set
 {
 /**
  * Get the specified memory watch item.
  */
-	lsnes_memorywatch_item& get(const std::string& name);
+	memwatch_item& get(const std::string& name);
 /**
  * Get the specified memory watch item as JSON serialization.
  *
@@ -113,7 +109,7 @@ struct lsnes_memorywatch_set
  * Parameter name: The name of the new item.
  * Parameter item: The item to insert. Fields are shallow-copied.
  */
-	void set(const std::string& name, lsnes_memorywatch_item& item);
+	void set(const std::string& name, memwatch_item& item);
 /**
  * Set the specified memory watch item from JSON serialization. Fills the runtime variables.
  *
@@ -126,7 +122,7 @@ struct lsnes_memorywatch_set
  *
  * Parameter list: The list of items.
  */
-	void set_multi(std::list<std::pair<std::string, lsnes_memorywatch_item>>& list);
+	void set_multi(std::list<std::pair<std::string, memwatch_item>>& list);
 /**
  * Set multiple items at once from JSON descriptions.
  *
@@ -172,8 +168,8 @@ struct lsnes_memorywatch_set
  */
 	const std::map<std::string, std::u32string>& get_window_vars() { return window_vars; }
 private:
-	void rebuild(std::map<std::string, lsnes_memorywatch_item>& nitems);
-	std::map<std::string, lsnes_memorywatch_item> items;
+	void rebuild(std::map<std::string, memwatch_item>& nitems);
+	std::map<std::string, memwatch_item> items;
 	std::map<std::string, std::u32string> window_vars;
 	std::map<std::string, bool> used_memorywatches;
 	void erase_unused_watches();

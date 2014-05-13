@@ -20,7 +20,7 @@ struct emulator_instance
 	movie_logic mlogic;
 	memory_space memory;
 	lua::state lua;
-	lsnes_memorywatch_set mwatch;
+	memwatch_set mwatch;
 	settingvar::group settings;
 	settingvar::cache setcache;
 	voice_commentary commentary;

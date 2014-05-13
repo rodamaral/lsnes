@@ -502,7 +502,7 @@ public:
 				<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 			if(n == "")
 				return;
-			lsnes_memorywatch_item e;
+			memwatch_item e;
 			e.expr = (stringfmt() << addr).str();
 			e.format = datatypes[curtype].format;
 			e.bytes = datatypes[curtype].len;
