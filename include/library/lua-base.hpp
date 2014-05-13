@@ -387,25 +387,12 @@ public:
 /**
  * Enumerate all callbacks.
  */
-	std::list<callback_list*> get_callbacks()
-	{
-		if(master)
-			return master->get_callbacks();
-		std::list<callback_list*> r;
-		for(auto i : callbacks)
-			r.push_back(i.second);
-		return r;
-	}
-
-	void do_register(const std::string& name, callback_list& callback)
-	{
-		callbacks[name] = &callback;
-	}
-
-	void do_unregister(const std::string& name, callback_list* dummy)
-	{
-		callbacks.erase(name);
-	}
+	std::list<callback_list*> get_callbacks();
+/**
+ * Register/Unregister a callback list.
+ */
+	void do_register(const std::string& name, callback_list& callback);
+	void do_unregister(const std::string& name, callback_list& callback);
 
 	//All kinds of Lua API functions.
 	void pop(int n) { lua_pop(lua_handle, n); }
@@ -466,9 +453,6 @@ private:
 	void (*oom_handler)();
 	state* master;
 	lua_State* lua_handle;
-	std::set<std::pair<function_group*, int>> function_groups;
-	std::set<std::pair<class_group*, int>> class_groups;
-	std::map<std::string, callback_list*> callbacks;
 	state(state&);
 	state& operator=(state&);
 };

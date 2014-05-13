@@ -27,7 +27,7 @@ public:
 /**
  * Drop a function from group.
  */
-	void do_unregister(const std::string& name, function* dummy);
+	void do_unregister(const std::string& name, function& dummy);
 /**
  * Request callbacks on all currently registered functions.
  */
@@ -44,10 +44,7 @@ public:
  */
 	void drop_callback(int handle);
 private:
-	int next_handle;
-	std::map<std::string, function*> functions;
-	std::map<int, std::function<void(std::string, function*)>> callbacks;
-	std::map<int, std::function<void(function_group*)>> dcallbacks;
+	char dummy;
 };
 
 /**

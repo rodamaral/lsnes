@@ -30,7 +30,7 @@ public:
 /**
  * Drop a class from group.
  */
-	void do_unregister(const std::string& name, class_base* dummy);
+	void do_unregister(const std::string& name, class_base& fun);
 /**
  * Request callbacks on all currently registered functions.
  */
@@ -47,10 +47,7 @@ public:
  */
 	void drop_callback(int handle);
 private:
-	int next_handle;
-	std::map<std::string, class_base*> classes;
-	std::map<int, std::function<void(std::string, class_base*)>> callbacks;
-	std::map<int, std::function<void(class_group*)>> dcallbacks;
+	char dummy;
 };
 
 struct class_ops

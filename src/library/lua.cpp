@@ -3,12 +3,58 @@
 #include "lua-function.hpp"
 #include "lua-params.hpp"
 #include "lua-pin.hpp"
-#include "register-queue.hpp"
+#include "stateobject.hpp"
+#include "threads.hpp"
 #include <iostream>
 #include <cassert>
 
 namespace lua
 {
+namespace
+{
+	threads::rlock* global_lock;
+	threads::rlock& get_lua_lock()
+	{
+		if(!global_lock) global_lock = new threads::rlock;
+		return *global_lock;
+	}
+
+	struct state_internal
+	{
+		std::map<std::string, state::callback_list*> callbacks;
+		std::set<std::pair<function_group*, int>> function_groups;
+		std::set<std::pair<class_group*, int>> class_groups;
+	};
+
+	struct fgroup_internal
+	{
+		fgroup_internal()
+		{
+			next_handle = 0;
+		}
+		std::map<std::string, function*> functions;
+		int next_handle;
+		std::map<int, std::function<void(std::string, function*)>> callbacks;
+		std::map<int, std::function<void(function_group*)>> dcallbacks;
+	};
+
+	struct cgroup_internal
+	{
+		cgroup_internal()
+		{
+			next_handle = 0;
+		}
+		int next_handle;
+		std::map<std::string, class_base*> classes;
+		std::map<int, std::function<void(std::string, class_base*)>> callbacks;
+		std::map<int, std::function<void(class_group*)>> dcallbacks;
+	};
+
+	typedef stateobject::type<state, state_internal> state_internal_t;
+	typedef stateobject::type<function_group, fgroup_internal> fgroup_internal_t;
+	typedef stateobject::type<class_group, cgroup_internal> cgroup_internal_t;
+}
+
 std::unordered_map<std::type_index, void*>& class_types()
 {
 	static std::unordered_map<std::type_index, void*> x;
@@ -254,11 +300,6 @@ namespace
 	{
 		fun->register_state(L);
 	}
-
-	typedef register_queue<state, function> regqueue_t;
-	typedef register_queue<state, state::callback_list> regqueue2_t;
-	typedef register_queue<function_group, function> regqueue3_t;
-	typedef register_queue<class_group, class_base> regqueue4_t;
 }
 
 state::state() throw(std::bad_alloc)
@@ -266,7 +307,6 @@ state::state() throw(std::bad_alloc)
 	master = NULL;
 	lua_handle = NULL;
 	oom_handler = builtin_oom;
-	regqueue2_t::do_ready(*this, true);
 }
 
 state::state(state& _master, lua_State* L)
@@ -279,13 +319,16 @@ state::~state() throw()
 {
 	if(master)
 		return;
-	for(auto i : function_groups)
+	threads::arlock h(get_lua_lock());
+	auto state = state_internal_t::get_soft(this);
+	if(!state) return;
+	for(auto i : state->function_groups)
 		i.first->drop_callback(i.second);
-	for(auto i : class_groups)
+	for(auto i : state->class_groups)
 		i.first->drop_callback(i.second);
-	regqueue2_t::do_ready(*this, false);
 	if(lua_handle)
 		lua_close(lua_handle);
+	state_internal_t::clear(this);
 }
 
 void state::builtin_oom()
@@ -310,12 +353,12 @@ void* state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
 function::function(function_group& _group, const std::string& func) throw(std::bad_alloc)
 	: group(_group)
 {
-	regqueue3_t::do_register(group, fname = func, *this);
+	group.do_register(fname = func, *this);
 }
 
 function::~function() throw()
 {
-	regqueue3_t::do_unregister(group, fname);
+	group.do_unregister(fname, *this);
 }
 
 class_base::class_base(class_group& _group, const std::string& _name)
@@ -327,19 +370,22 @@ class_base::class_base(class_group& _group, const std::string& _name)
 class_base::~class_base() throw()
 {
 	if(registered)
-		regqueue4_t::do_unregister(group, name);
+		group.do_unregister(name, *this);
 }
 
 void state::reset() throw(std::bad_alloc, std::runtime_error)
 {
 	if(master)
 		return master->reset();
+	threads::arlock h(get_lua_lock());
+	auto state = state_internal_t::get_soft(this);
+	if(!state) return;
 	if(lua_handle) {
 		lua_State* tmp = lua_newstate(state::builtin_alloc, this);
 		if(!tmp)
 			throw std::runtime_error("Can't re-initialize Lua interpretter");
 		lua_close(lua_handle);
-		for(auto& i : callbacks)
+		for(auto& i : state->callbacks)
 			i.second->clear();
 		lua_handle = tmp;
 	} else {
@@ -348,11 +394,11 @@ void state::reset() throw(std::bad_alloc, std::runtime_error)
 		if(!lua_handle)
 			throw std::runtime_error("Can't initialize Lua interpretter");
 	}
-	for(auto i : function_groups)
+	for(auto i : state->function_groups)
 		i.first->request_callback([this](std::string name, function* func) -> void {
 			register_function(*this, name, func);
 		});
-	for(auto i : class_groups)
+	for(auto i : state->class_groups)
 		i.first->request_callback([this](std::string name, class_base* clazz) -> void {
 			register_class(*this, name, clazz);
 		});
@@ -369,13 +415,18 @@ void state::deinit() throw()
 
 void state::add_function_group(function_group& group)
 {
-	function_groups.insert(std::make_pair(&group, group.add_callback([this](const std::string& name,
+	threads::arlock h(get_lua_lock());
+	auto& state = state_internal_t::get(this);
+	state.function_groups.insert(std::make_pair(&group, group.add_callback([this](const std::string& name,
 		function* func) -> void {
 		this->function_callback(name, func);
 	}, [this](function_group* x) {
-		for(auto i = this->function_groups.begin(); i != this->function_groups.end();)
+		threads::arlock h(get_lua_lock());
+		auto state = state_internal_t::get_soft(this);
+		if(!state) return;
+		for(auto i = state->function_groups.begin(); i != state->function_groups.end();)
 			if(i->first == x)
-				i = this->function_groups.erase(i);
+				i = state->function_groups.erase(i);
 			else
 				i++;
 	})));
@@ -383,13 +434,18 @@ void state::add_function_group(function_group& group)
 
 void state::add_class_group(class_group& group)
 {
-	class_groups.insert(std::make_pair(&group, group.add_callback([this](const std::string& name,
+	threads::arlock h(get_lua_lock());
+	auto& state = state_internal_t::get(this);
+	state.class_groups.insert(std::make_pair(&group, group.add_callback([this](const std::string& name,
 		class_base* clazz) -> void {
 		this->class_callback(name, clazz);
 	}, [this](class_group* x) {
-		for(auto i = this->class_groups.begin(); i != this->class_groups.end();)
+		threads::arlock h(get_lua_lock());
+		auto state = state_internal_t::get_soft(this);
+		if(!state) return;
+		for(auto i = state->class_groups.begin(); i != state->class_groups.end();)
 			if(i->first == x)
-				i = this->class_groups.erase(i);
+				i = state->class_groups.erase(i);
 			else
 				i++;
 	})));
@@ -429,15 +485,44 @@ bool state::do_once(void* key)
 	}
 }
 
+std::list<state::callback_list*> state::get_callbacks()
+{
+	if(master)
+		return master->get_callbacks();
+	threads::arlock h(get_lua_lock());
+	auto state = state_internal_t::get_soft(this);
+	std::list<callback_list*> r;
+	if(state)
+		for(auto i : state->callbacks)
+			r.push_back(i.second);
+	return r;
+}
+
+void state::do_register(const std::string& name, callback_list& callback)
+{
+	threads::arlock h(get_lua_lock());
+	auto& state = state_internal_t::get(this);
+	if(state.callbacks.count(name)) return;
+	state.callbacks[name] = &callback;
+}
+
+void state::do_unregister(const std::string& name, callback_list& callback)
+{
+	threads::arlock h(get_lua_lock());
+	auto state = state_internal_t::get_soft(this);
+	if(state && state->callbacks.count(name) && state->callbacks[name] == &callback)
+		state->callbacks.erase(name);
+}
+
 state::callback_list::callback_list(state& _L, const std::string& _name, const std::string& fncbname)
 	: L(_L), name(_name), fn_cbname(fncbname)
 {
-	regqueue2_t::do_register(L, name, *this);
+	L.do_register(name, *this);
 }
 
 state::callback_list::~callback_list()
 {
-	regqueue2_t::do_unregister(L, name);
+	L.do_unregister(name, *this);
 	if(!L.handle())
 		return;
 	for(auto& i : callbacks) {
@@ -474,99 +559,130 @@ void state::callback_list::_unregister(state& _L)
 
 function_group::function_group()
 {
-	next_handle = 0;
-	regqueue3_t::do_ready(*this, true);
 }
 
 function_group::~function_group()
 {
-	for(auto i : dcallbacks)
+	threads::arlock h(get_lua_lock());
+	auto state = fgroup_internal_t::get_soft(this);
+	if(!state) return;
+	for(auto i : state->dcallbacks)
 		i.second(this);
-	regqueue3_t::do_ready(*this, false);
+	fgroup_internal_t::clear(this);
 }
 
 void function_group::request_callback(std::function<void(std::string, function*)> cb)
 {
-	for(auto i : functions)
+	threads::arlock h(get_lua_lock());
+	auto state = fgroup_internal_t::get_soft(this);
+	if(!state) return;
+	for(auto i : state->functions)
 		cb(i.first, i.second);
 }
 
 int function_group::add_callback(std::function<void(std::string, function*)> cb,
 	std::function<void(function_group*)> dcb)
 {
-	int handle = next_handle++;
-	callbacks[handle] = cb;
-	dcallbacks[handle] = dcb;
-	for(auto i : functions)
+	threads::arlock h(get_lua_lock());
+	auto& state = fgroup_internal_t::get(this);
+	int handle = state.next_handle++;
+	state.callbacks[handle] = cb;
+	state.dcallbacks[handle] = dcb;
+	for(auto i : state.functions)
 		cb(i.first, i.second);
 	return handle;
 }
 
 void function_group::drop_callback(int handle)
 {
-	callbacks.erase(handle);
+	threads::arlock h(get_lua_lock());
+	auto state = fgroup_internal_t::get_soft(this);
+	if(!state) return;
+	state->callbacks.erase(handle);
 }
 
 void function_group::do_register(const std::string& name, function& fun)
 {
-	functions[name] = &fun;
-	for(auto i : callbacks)
+	threads::arlock h(get_lua_lock());
+	auto& state = fgroup_internal_t::get(this);
+	if(state.functions.count(name)) return;
+	state.functions[name] = &fun;
+	for(auto i : state.callbacks)
 		i.second(name, &fun);
 }
 
-void function_group::do_unregister(const std::string& name, function* dummy)
+void function_group::do_unregister(const std::string& name, function& fun)
 {
-	functions.erase(name);
-	for(auto i : callbacks)
+	threads::arlock h(get_lua_lock());
+	auto state = fgroup_internal_t::get_soft(this);
+	if(!state) return;
+	if(state && state->functions.count(name) && state->functions[name] == &fun)
+		state->functions.erase(name);
+	for(auto i : state->callbacks)
 		i.second(name, NULL);
 }
 
 class_group::class_group()
 {
-	next_handle = 0;
-	regqueue4_t::do_ready(*this, true);
 }
 
 class_group::~class_group()
 {
-	for(auto i : dcallbacks)
+	threads::arlock h(get_lua_lock());
+	auto state = cgroup_internal_t::get_soft(this);
+	if(!state) return;
+	for(auto i : state->dcallbacks)
 		i.second(this);
-	regqueue4_t::do_ready(*this, false);
+	cgroup_internal_t::clear(this);
 }
 
 void class_group::request_callback(std::function<void(std::string, class_base*)> cb)
 {
-	for(auto i : classes)
+	threads::arlock h(get_lua_lock());
+	auto state = cgroup_internal_t::get_soft(this);
+	if(!state) return;
+	for(auto i : state->classes)
 		cb(i.first, i.second);
 }
 
 int class_group::add_callback(std::function<void(std::string, class_base*)> cb,
 	std::function<void(class_group*)> dcb)
 {
-	int handle = next_handle++;
-	callbacks[handle] = cb;
-	dcallbacks[handle] = dcb;
-	for(auto i : classes)
+	threads::arlock h(get_lua_lock());
+	auto& state = cgroup_internal_t::get(this);
+	int handle = state.next_handle++;
+	state.callbacks[handle] = cb;
+	state.dcallbacks[handle] = dcb;
+	for(auto i : state.classes)
 		cb(i.first, i.second);
 	return handle;
 }
 
 void class_group::drop_callback(int handle)
 {
-	callbacks.erase(handle);
+	threads::arlock h(get_lua_lock());
+	auto state = cgroup_internal_t::get_soft(this);
+	if(!state) return;
+	state->callbacks.erase(handle);
 }
 
 void class_group::do_register(const std::string& name, class_base& fun)
 {
-	classes[name] = &fun;
-	for(auto i : callbacks)
+	threads::arlock h(get_lua_lock());
+	auto& state = cgroup_internal_t::get(this);
+	if(state.classes.count(name)) return;
+	state.classes[name] = &fun;
+	for(auto i : state.callbacks)
 		i.second(name, &fun);
 }
 
-void class_group::do_unregister(const std::string& name, class_base* dummy)
+void class_group::do_unregister(const std::string& name, class_base& fun)
 {
-	classes.erase(name);
-	for(auto i : callbacks)
+	threads::arlock h(get_lua_lock());
+	auto state = cgroup_internal_t::get_soft(this);
+	if(!state || !state->classes.count(name) || state->classes[name] != &fun) return;
+	state->classes.erase(name);
+	for(auto i : state->callbacks)
 		i.second(name, NULL);
 }
 
@@ -745,7 +861,7 @@ again2:
 
 void class_base::delayed_register()
 {
-	regqueue4_t::do_register(group, name, *this);
+	group.do_register(name, *this);
 }
 
 functions::functions(function_group& grp, const std::string& basetable, std::initializer_list<entry> fnlist)
