@@ -31,9 +31,9 @@ void update_movie_state();
 
 namespace
 {
-	settingvar::variable<settingvar::model_int<0, 9>> savecompression(lsnes_vset, "savecompression",
+	settingvar::supervariable<settingvar::model_int<0, 9>> savecompression(lsnes_setgrp, "savecompression",
 		"Movie‣Saving‣Compression",  7);
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> readonly_load_preserves(lsnes_vset,
+	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> readonly_load_preserves(lsnes_setgrp,
 		"preserve_on_readonly_load", "Movie‣Loading‣Preserve on readonly load", true);
 	threads::lock mprefix_lock;
 	std::string mprefix;
@@ -140,7 +140,7 @@ std::string translate_name_mprefix(std::string original, int& binary, int save)
 	regex_results r = regex("\\$SLOT:(.*)", original);
 	if(r) {
 		if(binary < 0)
-			binary = jukebox_dflt_binary ? 1 : 0;
+			binary = jukebox_dflt_binary(lsnes_instance.settings) ? 1 : 0;
 		if(p) {
 			uint64_t branch = p->get_current_branch();
 			std::string branch_str;
@@ -161,7 +161,8 @@ std::string translate_name_mprefix(std::string original, int& binary, int save)
 		}
 	} else {
 		if(binary < 0)
-			binary = (save ? save_dflt_binary : movie_dflt_binary) ? 1 : 0;
+			binary = (save ? save_dflt_binary(lsnes_instance.settings) :
+				movie_dflt_binary(lsnes_instance.settings)) ? 1 : 0;
 		return original;
 	}
 }
@@ -226,7 +227,8 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 			target.authors = prj->authors;
 		}
 		target.active_macros = controls.get_macro_frames();
-		target.save(filename2, savecompression, binary > 0, lsnes_instance.mlogic.get_rrdata());
+		target.save(filename2, savecompression(CORE().settings), binary > 0,
+			lsnes_instance.mlogic.get_rrdata());
 		uint64_t took = get_utime() - origtime;
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved state " << kind << " '" << filename2 << "' in " << took << " microseconds."
@@ -267,7 +269,8 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 			target.authors = prj->authors;
 		}
 		target.active_macros.clear();
-		target.save(filename2, savecompression, binary > 0, lsnes_instance.mlogic.get_rrdata());
+		target.save(filename2, savecompression(lsnes_instance.settings), binary > 0,
+			lsnes_instance.mlogic.get_rrdata());
 		uint64_t took = get_utime() - origtime;
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved movie " << kind << " '" << filename2 << "' in " << took << " microseconds."
@@ -644,7 +647,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	warn_roms(_movie, our_rom, will_load_state);
 
 	//In certain conditions, trun LOAD_STATE_CURRENT into LOAD_STATE_PRESERVE.
-	if(lmode == LOAD_STATE_CURRENT && current_mode && readonly_load_preserves)
+	if(lmode == LOAD_STATE_CURRENT && current_mode && readonly_load_preserves(CORE().settings))
 		lmode = LOAD_STATE_PRESERVE;
 	//If movie file changes, turn LOAD_STATE_CURRENT into LOAD_STATE_RO
 	if(lmode == LOAD_STATE_CURRENT && lsnes_instance.mlogic.get_mfile().projectid != _movie.projectid)

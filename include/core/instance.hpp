@@ -21,6 +21,7 @@ struct emulator_instance
 	memory_space memory;
 	lua::state lua;
 	lsnes_memorywatch_set mwatch;
+	settingvar::group settings;
 	settingvar::cache setcache;
 	voice_commentary commentary;
 	subtitle_commentary subtitles;

@@ -29,6 +29,7 @@
 #include "core/dispatch.hpp"
 #include "core/settings.hpp"
 #include "core/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "core/window.hpp"
 #include "interface/callbacks.hpp"
 #include "interface/cover.hpp"
@@ -51,9 +52,9 @@
 
 namespace
 {
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> output_native(lsnes_vset,
+	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> output_native(lsnes_setgrp,
 		"gambatte-native-sound", "Gambatte‣Sound Output at native rate", false);
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> gbchawk_timings(lsnes_vset,
+	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> gbchawk_timings(lsnes_setgrp,
 		"gambatte-gbchawk-fuckup", "Gambatte‣Use Fucked up GBCHawk timings", false);
 
 	bool do_reset_flag = false;
@@ -560,7 +561,7 @@ namespace
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(262144, 4389); }
 		double c_get_PAR() { return 1.0; }
 		std::pair<uint32_t, uint32_t> c_audio_rate() {
-			if(output_native)
+			if(output_native(CORE().settings))
 				return std::make_pair(2097152, 1);
 			else
 				return std::make_pair(32768, 1);
@@ -636,8 +637,8 @@ namespace
 		void c_emulate() {
 			if(!internal_rom)
 				return;
-			bool timings_fucked_up = gbchawk_timings;
-			bool native_rate = output_native;
+			bool timings_fucked_up = gbchawk_timings(CORE().settings);
+			bool native_rate = output_native(CORE().settings);
 			int16_t reset = ecore_callbacks->get_input(0, 0, 1);
 			if(reset) {
 				instance->reset();

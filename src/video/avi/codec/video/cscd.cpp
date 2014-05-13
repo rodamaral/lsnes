@@ -1,4 +1,5 @@
 #include "video/avi/codec.hpp"
+#include "core/instance.hpp"
 #include "core/settings.hpp"
 #include "library/zlibstream.hpp"
 #include <limits>
@@ -10,9 +11,9 @@
 
 namespace
 {
-	settingvar::variable<settingvar::model_int<0,9>> clvl(lsnes_vset, "avi-cscd-compression",
+	settingvar::supervariable<settingvar::model_int<0,9>> clvl(lsnes_setgrp, "avi-cscd-compression",
 		"AVI‣CSCD‣Compression", 7);
-	settingvar::variable<settingvar::model_int<0,999999999>> kint(lsnes_vset, "avi-cscd-keyint",
+	settingvar::supervariable<settingvar::model_int<0,999999999>> kint(lsnes_setgrp, "avi-cscd-keyint",
 		"AVI‣CSCD‣Keyframe interval", 0);
 
 	struct avi_codec_cscd : public avi_video_codec
@@ -135,5 +136,7 @@ namespace
 	}
 
 	avi_video_codec_type rgb("cscd", "Camstudio video codec",
-		[]() -> avi_video_codec* { return new avi_codec_cscd(clvl, kint);});
+		[]() -> avi_video_codec* {
+			return new avi_codec_cscd(clvl(CORE().settings), kint(CORE().settings));
+		});
 }

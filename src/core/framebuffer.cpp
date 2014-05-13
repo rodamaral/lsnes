@@ -105,13 +105,14 @@ namespace
 			messages << "Saved PNG screenshot" << std::endl;
 		});
 
-	settingvar::variable<settingvar::model_int<0, 8191>> dtb(lsnes_vset, "top-border", "UI‣Top padding", 0);
-	settingvar::variable<settingvar::model_int<0, 8191>> dbb(lsnes_vset, "bottom-border",
+	settingvar::supervariable<settingvar::model_int<0, 8191>> dtb(lsnes_setgrp, "top-border",
+		"UI‣Top padding", 0);
+	settingvar::supervariable<settingvar::model_int<0, 8191>> dbb(lsnes_setgrp, "bottom-border",
 		"UI‣Bottom padding", 0);
-	settingvar::variable<settingvar::model_int<0, 8191>> dlb(lsnes_vset, "left-border",
+	settingvar::supervariable<settingvar::model_int<0, 8191>> dlb(lsnes_setgrp, "left-border",
 		"UI‣Left padding", 0);
-	settingvar::variable<settingvar::model_int<0, 8191>> drb(lsnes_vset, "right-border", "UI‣Right padding",
-		0);
+	settingvar::supervariable<settingvar::model_int<0, 8191>> drb(lsnes_setgrp, "right-border",
+		"UI‣Right padding", 0);
 
 	bool last_redraw_no_lua = false;
 }
@@ -170,10 +171,10 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	ri.fbuf = todraw;
 	ri.hscl = hscl;
 	ri.vscl = vscl;
-	ri.lgap = max(lrc.left_gap, (unsigned)dlb);
-	ri.rgap = max(lrc.right_gap, (unsigned)drb);
-	ri.tgap = max(lrc.top_gap, (unsigned)dtb);
-	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb);
+	ri.lgap = max(lrc.left_gap, (unsigned)dlb(CORE().settings));
+	ri.rgap = max(lrc.right_gap, (unsigned)drb(CORE().settings));
+	ri.tgap = max(lrc.top_gap, (unsigned)dtb(CORE().settings));
+	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb(CORE().settings));
 	CORE().mwatch.watch(ri.rq);
 	buffering.put_write();
 	notify_screen_update();

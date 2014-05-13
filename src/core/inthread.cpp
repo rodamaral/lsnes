@@ -65,10 +65,10 @@ namespace
 	class bitrate_tracker;
 	class inthread_th;
 
-	settingvar::variable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_bitrate(lsnes_vset,
+	settingvar::supervariable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_bitrate(lsnes_setgrp,
 		"opus-bitrate", "commentary‣Bitrate", OPUS_BITRATE);
-	settingvar::variable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_max_bitrate(lsnes_vset,
-		"opus-max-bitrate", "commentary‣Max bitrate", OPUS_MAX_BITRATE);
+	settingvar::supervariable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_max_bitrate(
+		lsnes_setgrp, "opus-max-bitrate", "commentary‣Max bitrate", OPUS_MAX_BITRATE);
 
 	struct voicesub_state
 	{
@@ -588,7 +588,7 @@ out:
 			throw std::runtime_error("Only mono streams are supported");
 		uint64_t samples = serialization::u64l(header + 8);
 		opus::encoder enc(opus::samplerate::r48k, false, opus::application::voice);
-		enc.ctl(opus::bitrate(opus_bitrate.get()));
+		enc.ctl(opus::bitrate(opus_bitrate(lsnes_instance.settings)));
 		int32_t pregap = enc.ctl(opus::lookahead);
 		pregap_length = pregap;
 		for(uint64_t i = 0; i < samples + pregap; i += OPUS_BLOCK_SIZE) {
@@ -615,7 +615,8 @@ out:
 			for(size_t j = bs; j < OPUS_BLOCK_SIZE; j++)
 				tmp[j] = 0;
 			try {
-				const size_t opus_out_max2 = opus_max_bitrate.get() * OPUS_BLOCK_SIZE / 384000;
+				const size_t opus_out_max2 = opus_max_bitrate(lsnes_instance.settings) *
+					OPUS_BLOCK_SIZE / 384000;
 				size_t r = enc.encode(tmp, OPUS_BLOCK_SIZE, tmpi, opus_out_max2);
 				write(OPUS_BLOCK_SIZE / 120, tmpi, r);
 				brtrack.submit(r, bs);
@@ -1446,7 +1447,7 @@ out:
 			cblock = 120;
 		else
 			return;		//No valid data to compress.
-		const size_t opus_out_max2 = opus_max_bitrate.get() * cblock / 384000;
+		const size_t opus_out_max2 = opus_max_bitrate(lsnes_instance.settings) * cblock / 384000;
 		try {
 			size_t c = e.encode(buf, cblock, opus_output, opus_out_max2);
 			//Successfully compressed a block.
@@ -1529,7 +1530,7 @@ out:
 			return;
 		try {
 			e.ctl(opus::reset);
-			e.ctl(opus::bitrate(opus_bitrate.get()));
+			e.ctl(opus::bitrate(opus_bitrate(lsnes_instance.settings)));
 			brtrack.reset();
 			uint64_t ctime;
 			{
@@ -1621,7 +1622,7 @@ out:
 				return;
 
 			opus::encoder oenc(opus::samplerate::r48k, false, opus::application::voice);
-			oenc.ctl(opus::bitrate(opus_bitrate.get()));
+			oenc.ctl(opus::bitrate(opus_bitrate(lsnes_instance.settings)));
 			audioapi_resampler rin;
 			audioapi_resampler rout;
 			const unsigned buf_max = 6144;	//These buffers better be large.

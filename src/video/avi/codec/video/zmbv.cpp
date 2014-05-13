@@ -1,4 +1,5 @@
 #include "video/avi/codec.hpp"
+#include "core/instance.hpp"
 #include "core/settings.hpp"
 #include "library/zlibstream.hpp"
 #include <zlib.h>
@@ -12,15 +13,15 @@
 
 namespace
 {
-	settingvar::variable<settingvar::model_int<0,9>> clvl(lsnes_vset, "avi-zmbv-compression",
+	settingvar::supervariable<settingvar::model_int<0,9>> clvl(lsnes_setgrp, "avi-zmbv-compression",
 		"AVI‣ZMBV‣Compression", 7);
-	settingvar::variable<settingvar::model_int<0,999999999>> kint(lsnes_vset, "avi-zmbv-keyint",
+	settingvar::supervariable<settingvar::model_int<0,999999999>> kint(lsnes_setgrp, "avi-zmbv-keyint",
 		"AVI‣ZMBV‣Keyframe interval", 299);
-	settingvar::variable<settingvar::model_int<8,64>> bwv(lsnes_vset, "avi-zmbv-blockw", "AVI‣ZMBV‣Block width",
-		16);
-	settingvar::variable<settingvar::model_int<8,64>> bhv(lsnes_vset, "avi-zmbv-blockh", "AVI‣ZMBV‣Block height",
-		16);
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> fullsearch(lsnes_vset,
+	settingvar::supervariable<settingvar::model_int<8,64>> bwv(lsnes_setgrp, "avi-zmbv-blockw",
+		"AVI‣ZMBV‣Block width", 16);
+	settingvar::supervariable<settingvar::model_int<8,64>> bhv(lsnes_setgrp, "avi-zmbv-blockh",
+		"AVI‣ZMBV‣Block height", 16);
+	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> fsrch(lsnes_setgrp,
 		"avi-zmbv-fullsearch", "AVI‣ZMBV‣Full search (slow)", false);
 
 	//Motion vector.
@@ -37,7 +38,7 @@ namespace
 	//The main ZMBV decoder state.
 	struct avi_codec_zmbv : public avi_video_codec
 	{
-		avi_codec_zmbv(uint32_t _level, uint32_t maxpframes, uint32_t _bw, uint32_t _bh);
+		avi_codec_zmbv(uint32_t _level, uint32_t maxpframes, uint32_t _bw, uint32_t _bh, bool _fullsearch);
 		~avi_codec_zmbv();
 		avi_video_codec::format reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
 		void frame(uint32_t* data, uint32_t stride);
@@ -61,6 +62,8 @@ namespace
 		//Size of one block.
 		uint32_t bw;
 		uint32_t bh;
+		//Full search flag.
+		bool fullsearch;
 		//Motion vector buffer, one motion vector for each block, in left-to-right, top-to-bottom order.
 		std::vector<motion> mv;
 		//Pixel buffer (2 full frames and one block).
@@ -241,12 +244,14 @@ compress:
 		return _level;
 	}
 
-	avi_codec_zmbv::avi_codec_zmbv(uint32_t _level, uint32_t maxpframes, uint32_t _bw, uint32_t _bh)
+	avi_codec_zmbv::avi_codec_zmbv(uint32_t _level, uint32_t maxpframes, uint32_t _bw, uint32_t _bh,
+		bool _fullsearch)
 		: z(getzlevel(_level))
 	{
 		bh = _bh;
 		bw = _bw;
 		max_pframes = maxpframes;
+		fullsearch = _fullsearch;
 	}
 
 	avi_video_codec::format avi_codec_zmbv::reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d)
@@ -345,5 +350,8 @@ compress:
 
 	//ZMBV encoder factory object.
 	avi_video_codec_type rgb("zmbv", "Zip Motion Blocks Video codec",
-		[]() -> avi_video_codec* { return new avi_codec_zmbv(clvl, kint, bwv, bhv);});
+		[]() -> avi_video_codec* {
+			return new avi_codec_zmbv(clvl(CORE().settings), kint(CORE().settings), bwv(CORE().settings),
+				bhv(CORE().settings), fsrch(CORE().settings));
+		});
 }

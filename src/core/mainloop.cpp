@@ -47,22 +47,22 @@
 void update_movie_state();
 time_t random_seed_value = 0;
 
-settingvar::variable<settingvar::model_bool<settingvar::yes_no>> jukebox_dflt_binary(lsnes_vset,
+settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> jukebox_dflt_binary(lsnes_setgrp,
 	"jukebox-default-binary", "Movie‣Saving‣Saveslots binary", true);
-settingvar::variable<settingvar::model_bool<settingvar::yes_no>> movie_dflt_binary(lsnes_vset, "movie-default-binary",
-	"Movie‣Saving‣Movies binary", false);
-settingvar::variable<settingvar::model_bool<settingvar::yes_no>> save_dflt_binary(lsnes_vset,
+settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> movie_dflt_binary(lsnes_setgrp,
+	"movie-default-binary", "Movie‣Saving‣Movies binary", false);
+settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> save_dflt_binary(lsnes_setgrp,
 	"savestate-default-binary", "Movie‣Saving‣Savestates binary", false);
 
 namespace
 {
-	settingvar::variable<settingvar::model_int<0,999999>> advance_timeout_first(lsnes_vset, "advance-timeout",
-		"Delays‣First frame advance", 500);
-	settingvar::variable<settingvar::model_int<0,999999>> advance_timeout_subframe(lsnes_vset,
+	settingvar::supervariable<settingvar::model_int<0,999999>> advance_timeout_first(lsnes_setgrp,
+		"advance-timeout", "Delays‣First frame advance", 500);
+	settingvar::supervariable<settingvar::model_int<0,999999>> advance_timeout_subframe(lsnes_setgrp,
 		"advance-subframe-timeout", "Delays‣Subframe advance", 100);
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> pause_on_end(lsnes_vset, "pause-on-end",
-		"Movie‣Pause on end", false);
-	settingvar::variable<settingvar::model_int<0,999999999>> jukebox_size(lsnes_vset, "jukebox-size",
+	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> pause_on_end(lsnes_setgrp,
+		"pause-on-end", "Movie‣Pause on end", false);
+	settingvar::supervariable<settingvar::model_int<0,999999999>> jukebox_size(lsnes_setgrp, "jukebox-size",
 		"Movie‣Number of save slots", 12);
 
 	enum advance_mode
@@ -175,9 +175,9 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		if(amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance) {
 				if(!advanced_once)
-					platform::wait(advance_timeout_first * 1000);
+					platform::wait(advance_timeout_first(CORE().settings) * 1000);
 				else
-					platform::wait(advance_timeout_subframe * 1000);
+					platform::wait(advance_timeout_subframe(CORE().settings) * 1000);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
@@ -205,9 +205,9 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 			if(!cancel_advance) {
 				uint64_t wait = 0;
 				if(!advanced_once)
-					wait = advance_timeout_first * 1000;
+					wait = advance_timeout_first(CORE().settings) * 1000;
 				else if(amode == ADVANCE_SUBFRAME)
-					wait = advance_timeout_subframe * 1000;
+					wait = advance_timeout_subframe(CORE().settings) * 1000;
 				else
 					wait = to_wait_frame(get_utime());
 				platform::wait(wait);
@@ -220,7 +220,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 			}
 			platform::set_paused(amode == ADVANCE_PAUSE);
 		} else if(amode == ADVANCE_AUTO && CORE().mlogic.get_movie().readonly_mode() &&
-			pause_on_end && !stop_at_frame_active) {
+			pause_on_end(CORE().settings) && !stop_at_frame_active) {
 			if(CORE().mlogic.get_movie().get_current_frame() ==
 				CORE().mlogic.get_movie().get_frame_count()) {
 				stop_at_frame_active = false;
@@ -286,16 +286,18 @@ namespace
 
 	struct jukebox_size_listener : public settingvar::listener
 	{
-		jukebox_size_listener() { lsnes_vset.add_listener(*this); }
-		~jukebox_size_listener() throw() {lsnes_vset.remove_listener(*this); };
-		void on_setting_change(settingvar::group& grp, const settingvar::base& val)
+		jukebox_size_listener(settingvar::group& _grp) : grp(_grp) { grp.add_listener(*this); }
+		~jukebox_size_listener() throw() { grp.remove_listener(*this); };
+		void on_setting_change(settingvar::group& _grp, const settingvar::base& val)
 		{
 			if(val.get_iname() == "jukebox-size") {
-				if(save_jukebox_pointer >= (size_t)jukebox_size)
+				if(save_jukebox_pointer >= (size_t)jukebox_size(_grp))
 					save_jukebox_pointer = 0;
 			}
 			update_movie_state();
 		}
+	private:
+		settingvar::group& grp;
 	};
 }
 
@@ -353,7 +355,7 @@ void update_movie_state()
 			else
 				_status.mode = 'F';
 		}
-		if(jukebox_size > 0) {
+		if(jukebox_size(CORE().settings) > 0) {
 			_status.saveslot_valid = true;
 			int tmp = -1;
 			std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, -1);
@@ -593,13 +595,14 @@ namespace
 	command::fnptr<> save_jukebox_prev(lsnes_cmds, "cycle-jukebox-backward", "Cycle save jukebox backwards",
 		"Syntax: cycle-jukebox-backward\nCycle save jukebox backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(jukebox_size == 0)
+			size_t jbsize = jukebox_size(CORE().settings);
+			if(jbsize == 0)
 				return;
 			if(save_jukebox_pointer == 0)
-				save_jukebox_pointer = jukebox_size - 1;
+				save_jukebox_pointer = jbsize - 1;
 			else
 				save_jukebox_pointer--;
-			if(save_jukebox_pointer >= (size_t)jukebox_size)
+			if(save_jukebox_pointer >= (size_t)jbsize)
 				save_jukebox_pointer = 0;
 			update_movie_state();
 		});
@@ -607,13 +610,14 @@ namespace
 	command::fnptr<> save_jukebox_next(lsnes_cmds, "cycle-jukebox-forward", "Cycle save jukebox forwards",
 		"Syntax: cycle-jukebox-forward\nCycle save jukebox forwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(jukebox_size == 0)
+			size_t jbsize = jukebox_size(CORE().settings);
+			if(jbsize == 0)
 				return;
-			if(save_jukebox_pointer + 1 >= (size_t)jukebox_size)
+			if(save_jukebox_pointer + 1 >= (size_t)jbsize)
 				save_jukebox_pointer = 0;
 			else
 				save_jukebox_pointer++;
-			if(save_jukebox_pointer >= (size_t)jukebox_size)
+			if(save_jukebox_pointer >= (size_t)jbsize)
 				save_jukebox_pointer = 0;
 			update_movie_state();
 		});
@@ -624,7 +628,7 @@ namespace
 			if(!regex_match("[1-9][0-9]{0,8}", args))
 				throw std::runtime_error("Bad slot number");
 			uint32_t slot = parse_value<uint32_t>(args);
-			if(slot >= (size_t)jukebox_size)
+			if(slot >= (size_t)jukebox_size(CORE().settings))
 				throw std::runtime_error("Bad slot number");
 			save_jukebox_pointer = slot - 1;
 			update_movie_state();
@@ -633,7 +637,7 @@ namespace
 	command::fnptr<> load_jukebox(lsnes_cmds, "load-jukebox", "Load save from jukebox",
 		"Syntax: load-jukebox\nLoad save from jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(jukebox_size == 0)
+			if(jukebox_size(CORE().settings) == 0)
 				throw std::runtime_error("No slot selected");
 			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_CURRENT);
 		});
@@ -641,7 +645,7 @@ namespace
 	command::fnptr<> load_jukebox_readwrite(lsnes_cmds, "load-jukebox-readwrite", "Load save from jukebox in"
 		" read-write mode", "Syntax: load-jukebox-readwrite\nLoad save from jukebox in read-write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(jukebox_size == 0)
+			if(jukebox_size(CORE().settings) == 0)
 				throw std::runtime_error("No slot selected");
 			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_RW);
 		});
@@ -649,7 +653,7 @@ namespace
 	command::fnptr<> load_jukebox_readonly(lsnes_cmds, "load-jukebox-readonly", "Load save from jukebox in "
 		"read-only mode", "Syntax: load-jukebox-readonly\nLoad save from jukebox in read-only mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(jukebox_size == 0)
+			if(jukebox_size(CORE().settings) == 0)
 				throw std::runtime_error("No slot selected");
 			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_RO);
 		});
@@ -657,7 +661,7 @@ namespace
 	command::fnptr<> load_jukebox_preserve(lsnes_cmds, "load-jukebox-preserve", "Load save from jukebox, "
 		"preserving input", "Syntax: load-jukebox-preserve\nLoad save from jukebox, preserving input\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(jukebox_size == 0)
+			if(jukebox_size(CORE().settings) == 0)
 				throw std::runtime_error("No slot selected");
 			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_PRESERVE);
 		});
@@ -665,7 +669,7 @@ namespace
 	command::fnptr<> load_jukebox_movie(lsnes_cmds, "load-jukebox-movie", "Load save from jukebox as movie",
 		"Syntax: load-jukebox-movie\nLoad save from jukebox as movie\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(jukebox_size == 0)
+			if(jukebox_size(CORE().settings) == 0)
 				throw std::runtime_error("No slot selected");
 			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_MOVIE);
 		});
@@ -673,7 +677,7 @@ namespace
 	command::fnptr<> save_jukebox_c(lsnes_cmds, "save-jukebox", "Save save to jukebox",
 		"Syntax: save-jukebox\nSave save to jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(jukebox_size == 0)
+			if(jukebox_size(CORE().settings) == 0)
 				throw std::runtime_error("No slot selected");
 			mark_pending_save(save_jukebox_name(save_jukebox_pointer), SAVE_STATE, -1);
 		});
@@ -873,20 +877,20 @@ namespace
 
 	command::fnptr<> tpon(lsnes_cmds, "toggle-pause-on-end", "Toggle pause on end", "Toggle pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			bool tmp = pause_on_end;
-			pause_on_end.set(!tmp);
+			bool tmp = pause_on_end(CORE().settings);
+			pause_on_end(CORE().settings, !tmp);
 			messages << "Pause-on-end is now " << (tmp ? "OFF" : "ON") << std::endl;
 		});
 
 	command::fnptr<> spon(lsnes_cmds, "set-pause-on-end", "Set pause on end", "Set pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			pause_on_end.set(true);
+			pause_on_end(CORE().settings, true);
 			messages << "Pause-on-end is now ON" << std::endl;
 		});
 
 	command::fnptr<> cpon(lsnes_cmds, "clear-pause-on-end", "Clear pause on end", "Clear pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			pause_on_end.set(false);
+			pause_on_end(CORE().settings, false);
 			messages << "Pause-on-end is now OFF" << std::endl;
 		});
 
@@ -1226,7 +1230,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	//Basic initialization.
 	dispatch_set_error_streams(&messages.getstream());
 	emulation_thread = threads::this_id();
-	jukebox_size_listener jlistener;
+	jukebox_size_listener jlistener(CORE().settings);
 	CORE().commentary.init();
 	init_special_screens();
 	our_rom = rom;

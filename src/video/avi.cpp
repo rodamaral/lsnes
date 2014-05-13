@@ -9,6 +9,7 @@
 #include "library/minmax.hpp"
 #include "library/workthread.hpp"
 #include "core/misc.hpp"
+#include "core/instance.hpp"
 #include "core/settings.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
@@ -82,30 +83,31 @@ namespace
 		return 48000;
 	}
 
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> dump_large(lsnes_vset, "avi-large",
+	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> dump_large(lsnes_setgrp, "avi-large",
 		"AVI‣Large dump", false);
-	settingvar::variable<settingvar::model_int<0, 32>> fixed_xfact(lsnes_vset, "avi-xfactor",
+	settingvar::supervariable<settingvar::model_int<0, 32>> fixed_xfact(lsnes_setgrp, "avi-xfactor",
 		"AVI‣Fixed X factor", 0);
-	settingvar::variable<settingvar::model_int<0, 32>> fixed_yfact(lsnes_vset, "avi-yfactor",
+	settingvar::supervariable<settingvar::model_int<0, 32>> fixed_yfact(lsnes_setgrp, "avi-yfactor",
 		"AVI‣Fixed Y factor", 0);
-	settingvar::variable<settingvar::model_int<0, 8191>> dtb(lsnes_vset, "avi-top-border", "AVI‣Top padding", 0);
-	settingvar::variable<settingvar::model_int<0, 8191>> dbb(lsnes_vset, "avi-bottom-border",
+	settingvar::supervariable<settingvar::model_int<0, 8191>> dtb(lsnes_setgrp, "avi-top-border",
+		"AVI‣Top padding", 0);
+	settingvar::supervariable<settingvar::model_int<0, 8191>> dbb(lsnes_setgrp, "avi-bottom-border",
 		"AVI‣Bottom padding", 0);
-	settingvar::variable<settingvar::model_int<0, 8191>> dlb(lsnes_vset, "avi-left-border",
+	settingvar::supervariable<settingvar::model_int<0, 8191>> dlb(lsnes_setgrp, "avi-left-border",
 		"AVI‣Left padding", 0);
-	settingvar::variable<settingvar::model_int<0, 8191>> drb(lsnes_vset, "avi-right-border", "AVI‣Right padding",
-		0);
-	settingvar::variable<settingvar::model_int<0, 999999999>> max_frames_per_segment(lsnes_vset, "avi-maxframes",
-		"AVI‣Max frames per segment", 0);
+	settingvar::supervariable<settingvar::model_int<0, 8191>> drb(lsnes_setgrp, "avi-right-border",
+		"AVI‣Right padding", 0);
+	settingvar::supervariable<settingvar::model_int<0, 999999999>> max_frames_per_segment(lsnes_setgrp,
+		"avi-maxframes", "AVI‣Max frames per segment", 0);
 #ifdef WITH_SECRET_RABBIT_CODE
 	settingvar::enumeration soundrates {"nearest-common", "round-down", "round-up", "multiply",
 		"High quality 44.1kHz", "High quality 48kHz"};
-	settingvar::variable<settingvar::model_enumerated<&soundrates>> soundrate_setting(lsnes_vset, "avi-soundrate",
-		"AVI‣Sound mode", 5);
+	settingvar::supervariable<settingvar::model_enumerated<&soundrates>> soundrate_setting(lsnes_setgrp,
+		"avi-soundrate", "AVI‣Sound mode", 5);
 #else
 	settingvar::enumeration soundrates {"nearest-common", "round-down", "round-up", "multiply"};
-	settingvar::variable<settingvar::model_enumerated<&soundrates>> soundrate_setting(lsnes_vset, "avi-soundrate",
-		"AVI‣Sound mode", 2);
+	settingvar::supervariable<settingvar::model_enumerated<&soundrates>> soundrate_setting(lsnes_setgrp,
+		"avi-soundrate", "AVI‣Sound mode", 2);
 #endif
 
 	std::pair<avi_video_codec_type*, avi_audio_codec_type*> find_codecs(const std::string& mode)
@@ -332,17 +334,18 @@ again:
 			: information_dispatch("dump-avi-int")
 		{
 			enable_send_sound();
+			unsigned srate_setting = soundrate_setting(CORE().settings);
 			chans = info.audio_chans = 2;
 			soundrate = get_sound_rate();
 			audio_record_rate = info.sample_rate = get_rate(soundrate.first, soundrate.second,
-				soundrate_setting);
+				srate_setting);
 			worker = new avi_worker(info);
 			soxdumper = new sox_dumper(info.prefix + ".sox", static_cast<double>(soundrate.first) /
 				soundrate.second, 2);
 			dcounter = 0;
 			have_dumped_frame = false;
 			resampler_w = NULL;
-			if(soundrate_setting == 4 || soundrate_setting == 5) {
+			if(srate_setting == 4 || srate_setting == 5) {
 				double ratio = 1.0 * audio_record_rate * soundrate.second / soundrate.first;
 				sbuffer_fill = 0;
 				sbuffer.resize(RESAMPLE_BUFFER * chans);
@@ -361,14 +364,17 @@ again:
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			uint32_t hscl = 1, vscl = 1;
-			if(fixed_xfact != 0 && fixed_yfact != 0) {
-				hscl = fixed_xfact;
-				vscl = fixed_yfact;
-			} else if(dump_large) {
+			unsigned fxfact = fixed_xfact(CORE().settings);
+			unsigned fyfact = fixed_yfact(CORE().settings);
+			if(fxfact != 0 && fyfact != 0) {
+				hscl = fxfact;
+				vscl = fyfact;
+			} else if(dump_large(CORE().settings)) {
 				rpair(hscl, vscl) = our_rom.rtype->get_scale_factors(_frame.get_width(),
 					_frame.get_height());
 			}
-			if(!render_video_hud(dscr, _frame, hscl, vscl, dlb, dtb, drb, dbb, waitfn)) {
+			if(!render_video_hud(dscr, _frame, hscl, vscl, dlb(CORE().settings), dtb(CORE().settings),
+				drb(CORE().settings), dbb(CORE().settings), waitfn)) {
 				akill += killed_audio_length(fps_n, fps_d, akillfrac);
 				return;
 			}
@@ -504,7 +510,7 @@ again:
 			struct avi_info info;
 			info.audio_chans = 2;
 			info.sample_rate = 32000;
-			info.max_frames = max_frames_per_segment;
+			info.max_frames = max_frames_per_segment(CORE().settings);
 			info.prefix = prefix;
 			rpair(vcodec, acodec) = find_codecs(mode);
 			info.vcodec = vcodec->get_instance();

@@ -175,7 +175,7 @@ namespace
 	threads::thread* emulation_thread;
 	bool status_updated = false;
 
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(lsnes_vset,
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(lsnes_instance.settings,
 		"background-audio", "GUI‣Enable background audio", true);
 
 	class _status_timer : public wxTimer
@@ -1412,7 +1412,8 @@ namespace
 				p.types.push_back(filedialog_type_entry("Savestates [all branches]", "*." + ext +
 					";*." + ext + ".backup", ext));
 			}
-			p.default_type = save ? (state ? save_dflt_binary : movie_dflt_binary) : 0;
+			p.default_type = save ? (state ? save_dflt_binary(lsnes_instance.settings) :
+				movie_dflt_binary(lsnes_instance.settings)) : 0;
 			return p;
 		}
 		std::pair<std::string, std::string> output(const filedialog_output_params& p, bool save) const

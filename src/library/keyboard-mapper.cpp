@@ -165,6 +165,7 @@ keyboard& mapper::get_keyboard() throw()
 mapper::mapper(keyboard& _kbd, command::group& _domain) throw(std::bad_alloc)
 	: _listener(*this), kbd(_kbd), domain(_domain)
 {
+	dtor_running = false;
 	register_queue<mapper, invbind>::do_ready(*this, true);
 	register_queue<mapper, ctrlrkey>::do_ready(*this, true);
 }

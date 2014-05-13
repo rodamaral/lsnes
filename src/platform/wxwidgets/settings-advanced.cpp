@@ -52,7 +52,7 @@ namespace
 	};
 
 	wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
-		: settings_tab(parent), _listener(lsnes_vset, *this)
+		: settings_tab(parent), _listener(lsnes_instance.settings, *this)
 	{
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);

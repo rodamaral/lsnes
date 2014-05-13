@@ -1,6 +1,7 @@
 #include "video/avi/codec.hpp"
 #include "library/minmax.hpp"
 #include "library/zlibstream.hpp"
+#include "core/instance.hpp"
 #include "core/settings.hpp"
 #include <limits>
 #include <cassert>
@@ -14,9 +15,9 @@ const void* check;
 
 namespace
 {
-	settingvar::variable<settingvar::model_int<0,9>> clvl(lsnes_vset, "avi-tscc-compression",
+	settingvar::supervariable<settingvar::model_int<0,9>> clvl(lsnes_setgrp, "avi-tscc-compression",
 		"AVI‣TSCC‣Compression", 7);
-	settingvar::variable<settingvar::model_int<0,999999999>> kint(lsnes_vset, "avi-tscc-keyint",
+	settingvar::supervariable<settingvar::model_int<0,999999999>> kint(lsnes_setgrp, "avi-tscc-keyint",
 		"AVI‣TSCC‣Keyframe interval", 299);
 
 	struct msrle_compressor
@@ -176,7 +177,7 @@ namespace
 
 	struct avi_codec_tscc : public avi_video_codec
 	{
-		avi_codec_tscc(unsigned level);
+		avi_codec_tscc(unsigned level, unsigned _keyint);
 		~avi_codec_tscc();
 		avi_video_codec::format reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
 		void frame(uint32_t* data, uint32_t stride);
@@ -206,9 +207,10 @@ namespace
 		return _level;
 	}
 
-	avi_codec_tscc::avi_codec_tscc(unsigned compression)
+	avi_codec_tscc::avi_codec_tscc(unsigned compression, unsigned _keyint)
 		: z(getzlevel(compression))
 	{
+		max_pframes = _keyint;
 		frameno = 0;
 	}
 
@@ -307,5 +309,7 @@ namespace
 	}
 
 	avi_video_codec_type rgb("tscc", "TSCC video codec",
-		[]() -> avi_video_codec* { return new avi_codec_tscc(clvl);});
+		[]() -> avi_video_codec* {
+			return new avi_codec_tscc(clvl(CORE().settings), kint(CORE().settings));
+		});
 }

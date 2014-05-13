@@ -13,6 +13,10 @@ namespace settingvar
 class base;
 class group;
 class description;
+class set;
+class superbase;
+
+threads::rlock& get_setting_lock();
 
 /**
  * A settings listener.
@@ -27,6 +31,64 @@ struct listener
  * Listen for setting changing value.
  */
 	virtual void on_setting_change(group& _group, const base& val) = 0;
+};
+
+/**
+ * Set add/drop listener.
+ */
+class set_listener
+{
+public:
+/**
+ * Dtor.
+ */
+	virtual ~set_listener();
+/**
+ * New item in set.
+ */
+	virtual void create(set& s, const std::string& name, superbase& svar) = 0;
+/**
+ * Deleted item from set.
+ */
+	virtual void destroy(set& s, const std::string& name) = 0;
+/**
+ * Destroyed the entiere set.
+ */
+	virtual void kill(set& s) = 0;
+};
+
+/**
+ * A set of setting variables.
+ */
+class set
+{
+public:
+/**
+ * Create a set.
+ */
+	set();
+/**
+ * Destructor.
+ */
+	~set();
+/**
+ * Register a supervariable.
+ */
+	void do_register(const std::string& name, superbase& info);
+/**
+ * Unregister a supervariable.
+ */
+	void do_unregister(const std::string& name, superbase& info);
+/**
+ * Add a callback on new supervariable.
+ */
+	void add_callback(set_listener& listener) throw(std::bad_alloc);
+/**
+ * Drop a callback on new supervariable.
+ */
+	void drop_callback(set_listener& listener);
+private:
+	char dummy;
 };
 
 /**
@@ -71,10 +133,30 @@ public:
  * Fire listener.
  */
 	void fire_listener(base& var) throw();
+/**
+ * Add a set of settings.
+ */
+	void add_set(set& s) throw(std::bad_alloc);
+/**
+ * Remove a set of settings.
+ */
+	void drop_set(set& s);
 private:
+	class xlistener : public set_listener
+	{
+	public:
+		xlistener(group& _grp);
+		~xlistener();
+		void create(set& s, const std::string& name, superbase& sb);
+		void destroy(set& s, const std::string& name);
+		void kill(set& s);
+	private:
+		group& grp;
+	} _listener;
 	std::map<std::string, class base*> settings;
 	std::set<struct listener*> listeners;
-	threads::lock lock;
+	std::set<struct set*> sets_listened;
+	bool dtor_running;
 };
 
 /**
@@ -134,7 +216,6 @@ public:
 	std::string get_hname(const std::string& name) throw(std::bad_alloc, std::runtime_error);
 private:
 	group& grp;
-	threads::lock lock;
 	std::map<std::string, std::string> badcache;
 };
 
@@ -182,6 +263,33 @@ struct description
 template<class T> static class description& description_get(T dummy);
 
 /**
+ * Supervariable.
+ */
+class superbase
+{
+public:
+/**
+ * Constructor.
+ */
+	void _superbase(set& _s, const std::string& iname) throw(std::bad_alloc);
+/**
+ * Destructor.
+ */
+	virtual ~superbase() throw();
+/**
+ * Make a variable.
+ */
+	virtual base* make(group& grp) = 0;
+/**
+ * Notify set death.
+ */
+	void set_died();
+private:
+	set* s;
+	std::string iname;
+};
+
+/**
  * Setting variable.
  */
 class base
@@ -190,8 +298,7 @@ public:
 /**
  * Constructor.
  */
-	base(group& _group, const std::string& iname, const std::string& hname)
-		throw(std::bad_alloc);
+	base(group& _group, const std::string& iname, const std::string& hname, bool dynamic) throw(std::bad_alloc);
 /**
  * Destructor.
  */
@@ -213,13 +320,17 @@ public:
  * Get setting description.
  */
 	virtual const description& get_description() const throw() = 0;
+/**
+ * Notify group death.
+ */
+	void group_died();
 protected:
 	base(const base&);
 	base& operator=(const base&);
-	group& sgroup;
+	group* sgroup;
 	std::string iname;
 	std::string hname;
-	mutable threads::lock lock;
+	bool is_dynamic;
 };
 
 /**
@@ -235,8 +346,8 @@ public:
  * Constructor.
  */
 	variable(group& sgroup, const std::string& iname, const std::string& hname,
-		valtype_t defaultvalue)
-		: base(sgroup, iname, hname)
+		valtype_t defaultvalue, bool dynamic = false)
+		: base(sgroup, iname, hname, dynamic)
 	{
 		value = defaultvalue;
 	}
@@ -252,17 +363,17 @@ public:
 	void str(const std::string& val) throw(std::runtime_error, std::bad_alloc)
 	{
 		{
-			threads::alock h(lock);
+			threads::arlock h(get_setting_lock());
 			value = model::read(val);
 		}
-		sgroup.fire_listener(*this);
+		sgroup->fire_listener(*this);
 	}
 /**
  * Get setting.
  */
 	std::string str() const throw(std::runtime_error, std::bad_alloc)
 	{
-		threads::alock h(lock);
+		threads::arlock h(get_setting_lock());
 		return model::write(value);
 	}
 /**
@@ -271,19 +382,19 @@ public:
 	void set(valtype_t _value) throw(std::runtime_error, std::bad_alloc)
 	{
 		{
-			threads::alock h(lock);
+			threads::arlock h(get_setting_lock());
 			if(!model::valid(value))
 				throw std::runtime_error("Invalid value");
 			value = _value;
 		}
-		sgroup.fire_listener(*this);
+		sgroup->fire_listener(*this);
 	}
 /**
  * Get setting.
  */
 	valtype_t get() throw(std::bad_alloc)
 	{
-		threads::alock h(lock);
+		threads::arlock h(get_setting_lock());
 		return model::transform(value);
 	}
 /**
@@ -303,6 +414,69 @@ public:
 private:
 	valtype_t value;
 	model dummy;
+};
+
+/**
+ * Supervariable with model.
+ */
+template<class model> class supervariable : public superbase
+{
+	typedef typename model::valtype_t valtype_t;
+	supervariable(const supervariable<model>&);
+	supervariable<model>& operator=(const supervariable<model>&);
+public:
+/**
+ * Constructor.
+ */
+	supervariable(set& _s, const std::string& _iname, const std::string& _hname, valtype_t _defaultvalue)
+		throw(std::bad_alloc)
+		: s(_s)
+	{
+		iname = _iname;
+		hname = _hname;
+		defaultvalue = _defaultvalue;
+		_superbase(_s, iname);
+	}
+/**
+ * Destructor.
+ */
+	~supervariable() throw()
+	{
+	}
+/**
+ * Make a variable.
+ */
+	base* make(group& grp)
+	{
+		return new variable<model>(grp, iname, hname, defaultvalue, true);
+	}
+/**
+ * Read value in instance.
+ */
+	valtype_t operator()(group& grp)
+	{
+		base* b = &grp[iname];
+		variable<model>* m = dynamic_cast<variable<model>*>(b);
+		if(!m)
+			throw std::runtime_error("No such setting in target group");
+		return m->get();
+	}
+/**
+ * Write value in instance.
+ */
+	void operator()(group& grp, valtype_t val)
+	{
+		base* b = &grp[iname];
+		variable<model>* m = dynamic_cast<variable<model>*>(b);
+		if(!m)
+			throw std::runtime_error("No such setting in target group");
+		m->set(val);
+	}
+private:
+	set& s;
+	std::string iname;
+	std::string hname;
+	valtype_t defaultvalue;
 };
 
 /**

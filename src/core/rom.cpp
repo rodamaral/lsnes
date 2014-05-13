@@ -44,7 +44,7 @@ namespace
 {
 	uint16_t null_cover_fbmem[512 * 448];
 
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> savestate_no_check(lsnes_vset,
+	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> savestate_no_check(lsnes_setgrp,
 		"dont-check-savestate", "Movie‣Loading‣Don't check savestates", false);
 
 	//Framebuffer.
@@ -675,7 +675,7 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 
 	if(buf.size() < 32)
 		throw std::runtime_error("Savestate corrupt");
-	if(!savestate_no_check) {
+	if(!savestate_no_check(CORE().settings)) {
 		unsigned char tmp[32];
 #ifdef USE_LIBGCRYPT_SHA256
 		gcry_md_hash_buffer(GCRY_MD_SHA256, tmp, &buf[0], buf.size() - 32);

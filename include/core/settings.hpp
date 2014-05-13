@@ -3,6 +3,6 @@
 
 #include "library/settingvar.hpp"
 
-extern settingvar::group lsnes_vset;
+extern settingvar::set lsnes_setgrp;
 
 #endif

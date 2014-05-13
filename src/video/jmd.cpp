@@ -1,5 +1,6 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/serialization.hpp"
@@ -19,7 +20,8 @@
 
 namespace
 {
-	settingvar::variable<settingvar::model_int<0,9>> clevel(lsnes_vset, "jmd-compression", "JMD‣Compression", 7);
+	settingvar::supervariable<settingvar::model_int<0,9>> clevel(lsnes_setgrp, "jmd-compression",
+		"JMD‣Compression", 7);
 	uint64_t akill = 0;
 	double akillfrac = 0;
 
@@ -35,7 +37,7 @@ namespace
 			: information_dispatch("dump-jmd")
 		{
 			enable_send_sound();
-			complevel = clevel;
+			complevel = clevel(CORE().settings);
 			if(tcp_flag) {
 				jmd = &(socket_address(filename).connect());
 				deleter = socket_address::deleter();
@@ -424,7 +426,7 @@ namespace
 				x << "Error starting JMD dump: " << e.what();
 				throw std::runtime_error(x.str());
 			}
-			messages << "Dumping to " << prefix << " at level " << clevel << std::endl;
+			messages << "Dumping to " << prefix << " at level " << clevel(CORE().settings) << std::endl;
 			information_dispatch::do_dumper_update();
 			akill = 0;
 			akillfrac = 0;
