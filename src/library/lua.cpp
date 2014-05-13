@@ -615,9 +615,8 @@ void function_group::do_unregister(const std::string& name, function& fun)
 {
 	threads::arlock h(get_lua_lock());
 	auto state = fgroup_internal_t::get_soft(this);
-	if(!state) return;
-	if(state && state->functions.count(name) && state->functions[name] == &fun)
-		state->functions.erase(name);
+	if(!state || !state->functions.count(name) || state->functions[name] != &fun) return;
+	state->functions.erase(name);
 	for(auto i : state->callbacks)
 		i.second(name, NULL);
 }
