@@ -188,7 +188,7 @@ public:
 /**
  * Unregister inverse bind.
  */
-	void do_unregister(const std::string& name, invbind* dummy) throw(std::bad_alloc);
+	void do_unregister(const std::string& name, invbind& bind) throw(std::bad_alloc);
 /**
  * Register controller key.
  */
@@ -196,7 +196,7 @@ public:
 /**
  * Unregister inverse bind.
  */
-	void do_unregister(const std::string& name, ctrlrkey* dummy) throw(std::bad_alloc);
+	void do_unregister(const std::string& name, ctrlrkey& ckey) throw(std::bad_alloc);
 /**
  * Get keyboard.
  */
@@ -221,7 +221,9 @@ public:
  * Drop a set of inverse binds.
  */
 	void drop_invbind_set(invbind_set& set);
-private:
+/**
+ * Key triplet.
+ */
 	struct triplet
 	{
 		triplet(modifier_set mod, modifier_set mask, key& kkey, unsigned subkey);
@@ -240,6 +242,7 @@ private:
 		key* _key;
 		unsigned subkey;
 	};
+private:
 	class listener : public set_listener
 	{
 	public:
@@ -256,14 +259,9 @@ private:
 	void on_key_event_subkey(modifier_set& mods, key& key, unsigned skey, bool polarity);
 	mapper(const mapper&);
 	mapper& operator=(const mapper&);
-	std::map<std::string, invbind*> ibinds;
-	std::map<std::string, ctrlrkey*> ckeys;
-	std::map<triplet, std::string> bindings;
 	std::set<key*> listening;
-	std::set<invbind_set*> invbind_set_cbs;
 	keyboard& kbd;
 	command::group& domain;
-	bool dtor_running;
 };
 
 class invbind_info;
