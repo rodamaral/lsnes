@@ -75,30 +75,62 @@ struct keyspec
 class invbind_set;
 class invbind_info;
 
+class invbind_info;
+
 /**
- * Set add/drop listener.
+ * Inverse bind set.
  */
-class set_listener
+class invbind_set
 {
 public:
 /**
+ * Set add/drop listener.
+ */
+	class listener
+	{
+	public:
+/**
  * Dtor.
  */
-	virtual ~set_listener();
+		virtual ~listener();
 /**
  * New item in set.
  */
-	virtual void create(invbind_set& s, const std::string& name, invbind_info& ibinfo) = 0;
+		virtual void create(invbind_set& s, const std::string& name, invbind_info& ibinfo) = 0;
 /**
  * Deleted item from set.
  */
-	virtual void destroy(invbind_set& s, const std::string& name) = 0;
+		virtual void destroy(invbind_set& s, const std::string& name) = 0;
 /**
  * Destroyed the entiere set.
  */
-	virtual void kill(invbind_set& s) = 0;
+		virtual void kill(invbind_set& s) = 0;
+	};
+/**
+ * Create a set.
+ */
+	invbind_set();
+/**
+ * Destructor.
+ */
+	~invbind_set();
+/**
+ * Register a inverse bind.
+ */
+	void do_register(const std::string& name, invbind_info& info);
+/**
+ * Unregister a inverse bind.
+ */
+	void do_unregister(const std::string& name, invbind_info& info);
+/**
+ * Add a callback on new invese bind.
+ */
+	void add_callback(listener& listener) throw(std::bad_alloc);
+/**
+ * Drop a callback on new inverse bind.
+ */
+	void drop_callback(listener& listener);
 };
-
 
 /**
  * Keyboard mapper. Maps keyboard keys into commands.
@@ -243,7 +275,7 @@ public:
 		unsigned subkey;
 	};
 private:
-	class listener : public set_listener
+	class listener : public invbind_set::listener
 	{
 	public:
 		listener(mapper& _grp);
@@ -264,39 +296,6 @@ private:
 	command::group& domain;
 };
 
-class invbind_info;
-
-/**
- * Inverse bind set.
- */
-class invbind_set
-{
-public:
-/**
- * Create a set.
- */
-	invbind_set();
-/**
- * Destructor.
- */
-	~invbind_set();
-/**
- * Register a inverse bind.
- */
-	void do_register(const std::string& name, invbind_info& info);
-/**
- * Unregister a inverse bind.
- */
-	void do_unregister(const std::string& name, invbind_info& info);
-/**
- * Add a callback on new invese bind.
- */
-	void add_callback(set_listener& listener) throw(std::bad_alloc);
-/**
- * Drop a callback on new inverse bind.
- */
-	void drop_callback(set_listener& listener);
-};
 
 /**
  * Inverse bind info.

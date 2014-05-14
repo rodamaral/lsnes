@@ -74,7 +74,7 @@ namespace
 
 	struct set_internal
 	{
-		std::set<set_listener*> callbacks;
+		std::set<set::listener*> callbacks;
 		std::map<std::string, factory_base*> commands;
 	};
 
@@ -88,7 +88,7 @@ namespace
 	typedef stateobject::type<group, group_internal> group_internal_t;
 }
 
-set_listener::~set_listener()
+set::listener::~listener()
 {
 }
 
@@ -194,7 +194,7 @@ void set::do_unregister(const std::string& name, factory_base& cmd) throw(std::b
 		i->destroy(*this, name);
 }
 
-void set::add_callback(set_listener& listener)
+void set::add_callback(set::listener& listener)
 	throw(std::bad_alloc)
 {
 	threads::arlock h(get_cmd_lock());
@@ -205,7 +205,7 @@ void set::add_callback(set_listener& listener)
 		listener.create(*this, j.first, *j.second);
 }
 
-void set::drop_callback(set_listener& listener) throw()
+void set::drop_callback(set::listener& listener) throw()
 {
 	threads::arlock h(get_cmd_lock());
 	auto state = set_internal_t::get_soft(this);

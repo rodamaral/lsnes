@@ -19,7 +19,7 @@ namespace
 	struct set_internal
 	{
 		std::map<std::string, invbind_info*> invbinds;
-		std::set<set_listener*> callbacks;
+		std::set<invbind_set::listener*> callbacks;
 	};
 
 	struct mapper_internal
@@ -34,7 +34,7 @@ namespace
 	typedef stateobject::type<mapper, mapper_internal> mapper_internal_t;
 }
 
-set_listener::~set_listener()
+invbind_set::listener::~listener()
 {
 }
 
@@ -632,7 +632,7 @@ void invbind_set::do_unregister(const std::string& name, invbind_info& info)
 		i->destroy(*this, name);
 }
 
-void invbind_set::add_callback(set_listener& listener) throw(std::bad_alloc)
+void invbind_set::add_callback(invbind_set::listener& listener) throw(std::bad_alloc)
 {
 	threads::arlock u(get_keymap_lock());
 	auto& state = set_internal_t::get(this);
@@ -642,7 +642,7 @@ void invbind_set::add_callback(set_listener& listener) throw(std::bad_alloc)
 		listener.create(*this, j.first, *j.second);
 }
 
-void invbind_set::drop_callback(set_listener& listener)
+void invbind_set::drop_callback(invbind_set::listener& listener)
 {
 	threads::arlock u(get_keymap_lock());
 	auto state = set_internal_t::get_soft(this);

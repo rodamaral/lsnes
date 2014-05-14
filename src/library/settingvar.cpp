@@ -10,7 +10,7 @@ namespace
 	struct set_internal
 	{
 		std::map<std::string, superbase*> supervars;
-		std::set<set_listener*> callbacks;
+		std::set<set::listener*> callbacks;
 	};
 
 	struct group_internal
@@ -34,7 +34,7 @@ listener::~listener() throw()
 {
 }
 
-set_listener::~set_listener() throw()
+set::listener::~listener() throw()
 {
 }
 
@@ -226,7 +226,7 @@ void set::do_unregister(const std::string& name, superbase& info)
 		i->destroy(*this, name);
 }
 
-void set::add_callback(set_listener& listener) throw(std::bad_alloc)
+void set::add_callback(set::listener& listener) throw(std::bad_alloc)
 {
 	threads::arlock u(get_setting_lock());
 	auto& state = set_internal_t::get(this);
@@ -236,7 +236,7 @@ void set::add_callback(set_listener& listener) throw(std::bad_alloc)
 		listener.create(*this, j.first, *j.second);
 }
 
-void set::drop_callback(set_listener& listener)
+void set::drop_callback(set::listener& listener)
 {
 	threads::arlock u(get_setting_lock());
 	auto state = set_internal_t::get_soft(this);

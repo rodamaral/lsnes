@@ -14,35 +14,34 @@ class base;
 class factory_base;
 
 /**
- * Set add/drop listener.
- */
-class set_listener
-{
-public:
-/**
- * Dtor.
- */
-	virtual ~set_listener();
-/**
- * New item in set.
- */
-	virtual void create(set& s, const std::string& name, factory_base& cmd) = 0;
-/**
- * Deleted item from set.
- */
-	virtual void destroy(set& s, const std::string& name) = 0;
-/**
- * Destroyed the entiere set.
- */
-	virtual void kill(set& s) = 0;
-};
-
-/**
  * A set of commands.
  */
 class set
 {
 public:
+/**
+ * Set add/drop listener.
+ */
+	class listener
+	{
+	public:
+/**
+ * Dtor.
+ */
+		virtual ~listener();
+/**
+ * New item in set.
+ */
+		virtual void create(set& s, const std::string& name, factory_base& cmd) = 0;
+/**
+ * Deleted item from set.
+ */
+		virtual void destroy(set& s, const std::string& name) = 0;
+/**
+ * Destroyed the entiere set.
+ */
+		virtual void kill(set& s) = 0;
+	};
 /**
  * Create a new set.
  */
@@ -64,13 +63,13 @@ public:
  *
  * Parameter listener: The listener to add.
  */
-	void add_callback(set_listener& listener) throw(std::bad_alloc);
+	void add_callback(listener& listener) throw(std::bad_alloc);
 /**
  * Drop a notification callback and call dcb on all.
  *
  * Parameter listener: The listener to drop.
  */
-	void drop_callback(set_listener& listener) throw();
+	void drop_callback(listener& listener) throw();
 private:
 	char dummy;
 };
@@ -136,7 +135,7 @@ public:
  */
 	void set_oom_panic(void (*fn)());
 private:
-	class listener : public set_listener
+	class listener : public set::listener
 	{
 	public:
 		listener(group& _grp);
