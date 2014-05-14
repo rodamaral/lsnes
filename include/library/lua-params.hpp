@@ -57,7 +57,7 @@ template<typename T> void arg_helper(state& L, lua::objpin<T>& x, int idx, const
 
 template<> void arg_helper(state& L, framebuffer::color& x, int idx, const std::string& fname)
 {
-	x = lua_get_fb_color(L, idx, fname);
+	x = get_fb_color(L, idx, fname);
 }
 
 template<> void arg_helper(state& L, skipped_parameter_tag& x, int idx, const std::string& fname)
@@ -105,7 +105,7 @@ template<typename U> void arg_helper(state& L, optional_parameter_tag<std::strin
 template<typename U> void arg_helper(state& L, optional_parameter_tag<framebuffer::color, U>& x, int idx,
 	const std::string& fname)
 {
-	x.target = lua_get_fb_color(L, idx, fname, x.dflt);
+	x.target = get_fb_color(L, idx, fname, x.dflt);
 	delete &x;
 }
 

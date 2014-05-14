@@ -47,7 +47,7 @@ template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct
 	uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap, void(*fn)())
 {
 	bool lua_kill_video = false;
-	struct lua_render_context lrc;
+	struct lua::render_context lrc;
 	framebuffer::queue rq;
 	lrc.left_gap = lgap;
 	lrc.right_gap = rgap;

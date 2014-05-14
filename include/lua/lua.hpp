@@ -11,8 +11,8 @@
 
 void init_lua() throw();
 void quit_lua() throw();
-void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthethic) throw();
-void lua_callback_do_video(struct lua_render_context* ctx, bool& kill_frame, uint32_t& hscl, uint32_t& vscl) throw();
+void lua_callback_do_paint(struct lua::render_context* ctx, bool non_synthethic) throw();
+void lua_callback_do_video(struct lua::render_context* ctx, bool& kill_frame, uint32_t& hscl, uint32_t& vscl) throw();
 void lua_callback_do_input(controller_frame& data, bool subframe) throw();
 void lua_callback_do_reset() throw();
 void lua_callback_do_frame() throw();

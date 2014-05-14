@@ -156,7 +156,7 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	vscl = g.second;
 	render_info& ri = buffering.get_write();
 	ri.rq.clear();
-	struct lua_render_context lrc;
+	struct lua::render_context lrc;
 	lrc.left_gap = 0;
 	lrc.right_gap = 0;
 	lrc.bottom_gap = 0;

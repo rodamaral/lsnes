@@ -5,8 +5,8 @@
 
 namespace
 {
-	lua_render_context* saved = NULL;
-	lua_render_context* last = NULL;
+	lua::render_context* saved = NULL;
+	lua::render_context* last = NULL;
 	bool redirect = false;
 
 	struct lua_renderqueue
@@ -14,7 +14,7 @@ namespace
 		lua_renderqueue(lua::state& L, uint32_t width, uint32_t height) throw();
 		static size_t overcommit(uint32_t width, uint32_t height) { return 0; }
 		~lua_renderqueue() throw() {}
-		lua_render_context* get() { return &lctx; }
+		lua::render_context* get() { return &lctx; }
 		std::string print()
 		{
 			size_t s = rqueue.get_object_count();
@@ -26,7 +26,7 @@ namespace
 		{
 			if(!lua_render_ctx) return 0;
 
-			lua_render_context* ptr = get();
+			lua::render_context* ptr = get();
 			if(ptr->top_gap != std::numeric_limits<uint32_t>::max())
 				lua_render_ctx->top_gap = ptr->top_gap;
 			if(ptr->right_gap != std::numeric_limits<uint32_t>::max())
@@ -51,7 +51,7 @@ namespace
 		}
 		int clear(lua::state& L, lua::parameters& P)
 		{
-			lua_render_context* ptr = get();
+			lua::render_context* ptr = get();
 			ptr->top_gap = std::numeric_limits<uint32_t>::max();
 			ptr->right_gap = std::numeric_limits<uint32_t>::max();
 			ptr->bottom_gap = std::numeric_limits<uint32_t>::max();
@@ -65,7 +65,7 @@ namespace
 
 			P(q);
 
-			lua_render_context* ptr = q->get();
+			lua::render_context* ptr = q->get();
 			if(!redirect || last != lua_render_ctx)
 				saved = lua_render_ctx;
 			lua_render_ctx = last = ptr;
@@ -102,7 +102,7 @@ namespace
 			return (v + 1) ? v : 0;
 		}
 		framebuffer::queue rqueue;
-		lua_render_context lctx;
+		lua::render_context lctx;
 	};
 
 	lua_renderqueue::lua_renderqueue(lua::state& L, uint32_t width, uint32_t height) throw()
@@ -149,10 +149,10 @@ namespace
 	}, &lua_renderqueue::print);
 }
 
-void lua_renderq_run(lua_render_context* ctx, void* _sctx)
+void lua_renderq_run(lua::render_context* ctx, void* _sctx)
 {
 	lua_renderqueue* sctx = (lua_renderqueue*)_sctx;
-	lua_render_context* ptr = sctx->get();
+	lua::render_context* ptr = sctx->get();
 	if(ptr->top_gap != std::numeric_limits<uint32_t>::max())
 		ctx->top_gap = ptr->top_gap;
 	if(ptr->right_gap != std::numeric_limits<uint32_t>::max())

@@ -30,7 +30,7 @@ public:
 	void set(uint64_t f, uint64_t l, const std::string& x);
 	static std::string s_unescape(std::string x);
 	static std::string s_escape(std::string x);
-	void render(lua_render_context& ctx);
+	void render(lua::render_context& ctx);
 private:
 	movie_logic& mlogic;
 };

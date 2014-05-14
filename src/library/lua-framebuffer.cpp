@@ -2,7 +2,9 @@
 #include "framebuffer.hpp"
 #include "lua-framebuffer.hpp"
 
-framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string& fname) throw(std::bad_alloc,
+namespace lua
+{
+framebuffer::color get_fb_color(lua::state& L, int index, const std::string& fname) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	if(L.type(index) == LUA_TSTRING)
@@ -15,7 +17,7 @@ framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string&
 	return 0; //NOTREACHED
 }
 
-framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string& fname, int64_t dflt)
+framebuffer::color get_fb_color(lua::state& L, int index, const std::string& fname, int64_t dflt)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	if(L.type(index) == LUA_TSTRING)
@@ -28,4 +30,5 @@ framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string&
 		(stringfmt() << "Expected argument #" << index << " to " << fname
 			<< " be string, number or nil").throwex();
 	return 0; //NOTREACHED
+}
 }

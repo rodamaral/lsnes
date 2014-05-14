@@ -25,7 +25,7 @@ extern lua::class_group lua_class_memory;
 extern lua::class_group lua_class_fileio;
 
 void push_keygroup_parameters(lua::state& L, keyboard::key& p);
-extern lua_render_context* lua_render_ctx;
+extern lua::render_context* lua_render_ctx;
 extern controller_frame* lua_input_controllerdata;
 extern bool* lua_kill_frame;
 extern uint32_t* lua_hscl;
@@ -34,7 +34,7 @@ extern uint64_t lua_idle_hook_time;
 extern uint64_t lua_timer_hook_time;
 
 extern void* synchronous_paint_ctx;
-void lua_renderq_run(lua_render_context* ctx, void* synchronous_paint_ctx);
+void lua_renderq_run(lua::render_context* ctx, void* synchronous_paint_ctx);
 uint64_t lua_get_vmabase(const std::string& vma);
 uint64_t lua_get_read_address(lua::parameters& P);
 

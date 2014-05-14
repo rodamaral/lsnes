@@ -8,7 +8,7 @@ namespace
 {
 	std::map<std::string, std::u32string> lua_watch_vars;
 
-	template<uint32_t lua_render_context::*gap, bool delta>
+	template<uint32_t lua::render_context::*gap, bool delta>
 	int lua_gui_set_gap(lua::state& L, lua::parameters& P)
 	{
 		int32_t g;
@@ -118,14 +118,14 @@ namespace
 	}
 
 	lua::functions guicore_fns(lua_func_misc, "gui", {
-		{"left_gap", lua_gui_set_gap<&lua_render_context::left_gap, false>},
-		{"right_gap", lua_gui_set_gap<&lua_render_context::right_gap, false>},
-		{"top_gap", lua_gui_set_gap<&lua_render_context::top_gap, false>},
-		{"bottom_gap", lua_gui_set_gap<&lua_render_context::bottom_gap, false>},
-		{"delta_left_gap", lua_gui_set_gap<&lua_render_context::left_gap, true>},
-		{"delta_right_gap", lua_gui_set_gap<&lua_render_context::right_gap, true>},
-		{"delta_top_gap", lua_gui_set_gap<&lua_render_context::top_gap, true>},
-		{"delta_bottom_gap", lua_gui_set_gap<&lua_render_context::bottom_gap, true>},
+		{"left_gap", lua_gui_set_gap<&lua::render_context::left_gap, false>},
+		{"right_gap", lua_gui_set_gap<&lua::render_context::right_gap, false>},
+		{"top_gap", lua_gui_set_gap<&lua::render_context::top_gap, false>},
+		{"bottom_gap", lua_gui_set_gap<&lua::render_context::bottom_gap, false>},
+		{"delta_left_gap", lua_gui_set_gap<&lua::render_context::left_gap, true>},
+		{"delta_right_gap", lua_gui_set_gap<&lua::render_context::right_gap, true>},
+		{"delta_top_gap", lua_gui_set_gap<&lua::render_context::top_gap, true>},
+		{"delta_bottom_gap", lua_gui_set_gap<&lua::render_context::bottom_gap, true>},
 		{"resolution", resolution},
 		{"repaint", repaint},
 		{"subframe_update", subframe_update},

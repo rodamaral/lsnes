@@ -201,7 +201,7 @@ std::string subtitle_commentary::s_unescape(std::string x)
 	return y;
 }
 
-void subtitle_commentary::render(lua_render_context& ctx)
+void subtitle_commentary::render(lua::render_context& ctx)
 {
 	if(!mlogic || mlogic.get_mfile().subtitles.empty())
 		return;

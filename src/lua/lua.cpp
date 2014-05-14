@@ -94,7 +94,7 @@ void push_keygroup_parameters(lua::state& L, keyboard::key& p)
 	}
 }
 
-lua_render_context* lua_render_ctx = NULL;
+lua::render_context* lua_render_ctx = NULL;
 controller_frame* lua_input_controllerdata = NULL;
 
 namespace
@@ -252,7 +252,7 @@ namespace
 		run_lua_fragment(L);
 	}
 
-	void run_synchronous_paint(struct lua_render_context* ctx)
+	void run_synchronous_paint(struct lua::render_context* ctx)
 	{
 		if(!synchronous_paint_ctx)
 			return;
@@ -290,13 +290,13 @@ namespace
 	DEFINE_CB(latch);
 }
 
-void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) throw()
+void lua_callback_do_paint(struct lua::render_context* ctx, bool non_synthetic) throw()
 {
 	run_synchronous_paint(ctx);
 	run_callback(on_paint, lua::state::store_tag(lua_render_ctx, ctx), lua::state::boolean_tag(non_synthetic));
 }
 
-void lua_callback_do_video(struct lua_render_context* ctx, bool& kill_frame, uint32_t& hscl, uint32_t& vscl) throw()
+void lua_callback_do_video(struct lua::render_context* ctx, bool& kill_frame, uint32_t& hscl, uint32_t& vscl) throw()
 {
 	run_callback(on_video, lua::state::store_tag(lua_render_ctx, ctx), lua::state::store_tag(lua_kill_frame,
 		&kill_frame), lua::state::store_tag(lua_hscl, &hscl), lua::state::store_tag(lua_vscl, &vscl));
