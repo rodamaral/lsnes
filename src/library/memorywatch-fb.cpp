@@ -156,15 +156,15 @@ void output_fb::show(const std::string& iname, const std::string& val)
 		if(cond_enable) {
 			enabled->reset();
 			auto e = enabled->evaluate();
-			if(!e.type->toboolean(e.value))
+			if(!e.type->toboolean(e._value))
 				return;
 		}
 		pos_x->reset();
 		pos_y->reset();
 		auto x = pos_x->evaluate();
 		auto y = pos_y->evaluate();
-		p.x = x.type->tosigned(x.value);
-		p.y = y.type->tosigned(y.value);
+		p.x = x.type->tosigned(x._value);
+		p.y = y.type->tosigned(y._value);
 		p.alt_origin_x = alt_origin_x;
 		p.alt_origin_y = alt_origin_y;
 		p.cliprange_x = cliprange_x;

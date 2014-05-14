@@ -4,7 +4,9 @@
 #include <string>
 #include <stdexcept>
 
-class mathexpr_error : public std::runtime_error
+namespace mathexpr
+{
+class error : public std::runtime_error
 {
 public:
 	enum errorcode
@@ -22,11 +24,12 @@ public:
 		FORMAT,			//Bad format string.
 		UNKNOWN,		//Unknown error.
 	};
-	mathexpr_error(errorcode code, const std::string& message);
+	error(errorcode code, const std::string& message);
 	errorcode get_code();
 	const char* get_short_error();
 private:
 	errorcode code;
 };
+}
 
 #endif

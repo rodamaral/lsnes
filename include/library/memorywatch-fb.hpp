@@ -21,9 +21,9 @@ struct output_fb : public item_printer
 	void show(const std::string& iname, const std::string& val);
 	void reset();
 	bool cond_enable;
-	gcroot_pointer<mathexpr> enabled;
-	gcroot_pointer<mathexpr> pos_x;
-	gcroot_pointer<mathexpr> pos_y;
+	gcroot_pointer<mathexpr::mathexpr> enabled;
+	gcroot_pointer<mathexpr::mathexpr> pos_x;
+	gcroot_pointer<mathexpr::mathexpr> pos_y;
 	bool alt_origin_x;
 	bool alt_origin_y;
 	bool cliprange_x;

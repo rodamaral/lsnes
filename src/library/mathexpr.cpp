@@ -3,67 +3,69 @@
 #include <set>
 #include <map>
 
-mathexpr_operinfo::mathexpr_operinfo(std::string funcname)
+namespace mathexpr
+{
+operinfo::operinfo(std::string funcname)
 	: fnname(funcname), is_operator(false), operands(0), precedence(0), rtl(false)
 {
 }
-mathexpr_operinfo::mathexpr_operinfo(std::string opername, unsigned _operands, int _percedence, bool _rtl)
+operinfo::operinfo(std::string opername, unsigned _operands, int _percedence, bool _rtl)
 	: fnname(opername), is_operator(true), operands(_operands), precedence(_percedence), rtl(_rtl)
 {
 }
-mathexpr_operinfo::~mathexpr_operinfo()
+operinfo::~operinfo()
 {
 }
 
-mathexpr_typeinfo::~mathexpr_typeinfo()
+typeinfo::~typeinfo()
 {
 }
 
-mathexpr::mathexpr(mathexpr_typeinfo* _type)
+mathexpr::mathexpr(typeinfo* _type)
 	: type(*_type)
 {
 	owns_operator = false;
 	state = UNDEFINED;
-	value = NULL;
-	fn = (mathexpr_operinfo*)0xDEADBEEF;
+	_value = NULL;
+	fn = (operinfo*)0xDEADBEEF;
 }
 
-mathexpr::mathexpr(mathexpr_typeinfo* _type, gcroot_pointer<mathexpr> fwd)
+mathexpr::mathexpr(typeinfo* _type, gcroot_pointer<mathexpr> fwd)
 	: type(*_type)
 {
 	owns_operator = false;
 	state = FORWARD;
-	value = type.allocate();
+	_value = type.allocate();
 	arguments.push_back(&*fwd);
 	fn = NULL;
 }
 
-mathexpr::mathexpr(mathexpr_value _value)
-	: type(*_value.type)
+mathexpr::mathexpr(value _val)
+	: type(*_val.type)
 {
 	owns_operator = false;
 	state = FIXED;
-	value = type.copy_allocate(_value.value);
+	_value = type.copy_allocate(_val._value);
 	fn = NULL;
 }
 
-mathexpr::mathexpr(mathexpr_typeinfo* _type, const std::string& _value, bool string)
+mathexpr::mathexpr(typeinfo* _type, const std::string& _val, bool string)
 	: type(*_type)
 {
 	owns_operator = false;
 	state = FIXED;
-	value = type.parse(_value, string);
+	_value = type.parse(_val, string);
 	fn = NULL;
 }
 
-mathexpr::mathexpr(mathexpr_typeinfo* _type, mathexpr_operinfo* _fn, std::vector<gcroot_pointer<mathexpr>> _args,
+mathexpr::mathexpr(typeinfo* _type, operinfo* _fn, std::vector<gcroot_pointer<mathexpr>> _args,
 	bool _owns_operator)
 	: type(*_type), fn(_fn), owns_operator(_owns_operator)
 {
 	try {
 		for(auto& i : _args)
 			arguments.push_back(&*i);
-		value = type.allocate();
+		_value = type.allocate();
 		state = TO_BE_EVALUATED;
 	} catch(...) {
 		if(owns_operator)
@@ -76,7 +78,7 @@ mathexpr::~mathexpr()
 {
 	if(owns_operator && fn)
 		delete fn;
-	type.deallocate(value);
+	type.deallocate(_value);
 }
 
 void mathexpr::reset()
@@ -93,9 +95,9 @@ void mathexpr::reset()
 }
 
 mathexpr::mathexpr(const mathexpr& m)
-	: state(m.state), type(m.type), fn(m.fn), error(m.error), arguments(m.arguments)
+	: state(m.state), type(m.type), fn(m.fn), _error(m._error), arguments(m.arguments)
 {
-	value = m.value ? type.copy_allocate(m.value) : NULL;
+	_value = m._value ? type.copy_allocate(m._value) : NULL;
 	if(state == EVALUATING) state = TO_BE_EVALUATED;
 }
 
@@ -103,31 +105,31 @@ mathexpr& mathexpr::operator=(const mathexpr& m)
 {
 	if(this == &m)
 		return *this;
-	std::string _error = m.error;
+	std::string _xerror = m._error;
 	std::vector<mathexpr*> _arguments = m.arguments;
-	if(m.value) {
-		if(!value)
-			value = m.type.copy_allocate(m.value);
+	if(m._value) {
+		if(!_value)
+			_value = m.type.copy_allocate(m._value);
 		else
-			m.type.copy(value, m.value);
-	} else if(value) {
-		m.type.deallocate(value);
-		value = NULL;
+			m.type.copy(_value, m._value);
+	} else if(_value) {
+		m.type.deallocate(_value);
+		_value = NULL;
 	} else
-		value = NULL;
+		_value = NULL;
 	type = m.type;
 	fn = m.fn;
 	state = m.state;
 	owns_operator = m.owns_operator;
 	m.owns_operator = false;
 	std::swap(arguments, _arguments);
-	std::swap(error, _error);
+	std::swap(_error, _xerror);
 	return *this;
 }
 
-mathexpr_value mathexpr::evaluate()
+value mathexpr::evaluate()
 {
-	mathexpr_value ret;
+	value ret;
 	ret.type = &type;
 	switch(state) {
 	case TO_BE_EVALUATED:
@@ -135,57 +137,57 @@ mathexpr_value mathexpr::evaluate()
 		try {
 			for(auto i : arguments) {
 				if(&i->type != &type) {
-					throw mathexpr_error(mathexpr_error::TYPE_MISMATCH,
+					throw error(error::TYPE_MISMATCH,
 						"Types for function mismatch");
 				}
 			}
 			state = EVALUATING;
-			std::vector<std::function<mathexpr_value()>> promises;
+			std::vector<std::function<value()>> promises;
 			for(auto i : arguments) {
 				mathexpr* m = i;
 				promises.push_back([m]() { return m->evaluate(); });
 			}
-			mathexpr_value tmp;
+			value tmp;
 			tmp.type = &type;
-			tmp.value = value;
+			tmp._value = _value;
 			fn->evaluate(tmp, promises);
 			state = EVALUATED;
-		} catch(mathexpr_error& e) {
+		} catch(error& e) {
 			state = FAILED;
 			errcode = e.get_code();
-			error = e.what();
+			_error = e.what();
 			throw;
 		} catch(std::exception& e) {
 			state = FAILED;
-			errcode = mathexpr_error::UNKNOWN;
-			error = e.what();
+			errcode = error::UNKNOWN;
+			_error = e.what();
 			throw;
 		} catch(...) {
 			state = FAILED;
-			errcode = mathexpr_error::UNKNOWN;
-			error = "Unknown error";
+			errcode = error::UNKNOWN;
+			_error = "Unknown error";
 			throw;
 		}
-		ret.value = value;
+		ret._value = _value;
 		return ret;
 	case EVALUATING:
 	case FORWARD_EVALING:
 		//Circular dependency.
-		mark_error_and_throw(mathexpr_error::CIRCULAR, "Circular dependency");
+		mark_error_and_throw(error::CIRCULAR, "Circular dependency");
 	case EVALUATED:
 	case FIXED:
 	case FORWARD_EVALD:
-		ret.value = value;
+		ret._value = _value;
 		return ret;
 	case UNDEFINED:
-		throw mathexpr_error(mathexpr_error::UNDEFINED, "Undefined variable");
+		throw error(error::UNDEFINED, "Undefined variable");
 	case FAILED:
-		throw mathexpr_error(errcode, error);
+		throw error(errcode, _error);
 	case FORWARD:
 		try {
 			state = FORWARD_EVALING;
-			mathexpr_value v = arguments[0]->evaluate();
-			type.copy(value, v.value);
+			value v = arguments[0]->evaluate();
+			type.copy(_value, v._value);
 			state = FORWARD_EVALD;
 			return v;
 		} catch(...) {
@@ -193,7 +195,7 @@ mathexpr_value mathexpr::evaluate()
 			throw;
 		}
 	}
-	throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+	throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 }
 
 void mathexpr::trace()
@@ -202,17 +204,17 @@ void mathexpr::trace()
 		i->mark();
 }
 
-void mathexpr::mark_error_and_throw(mathexpr_error::errorcode _errcode, const std::string& _error)
+void mathexpr::mark_error_and_throw(error::errorcode _errcode, const std::string& _xerror)
 {
 	if(state == EVALUATING) {
 		state = FAILED;
 		errcode = _errcode;
-		error = _error;
+		_error = _xerror;
 	}
 	if(state == FORWARD_EVALING) {
 		state = FORWARD;
 	}
-	throw mathexpr_error(_errcode, _error);
+	throw error(_errcode, _error);
 }
 
 namespace
@@ -265,13 +267,13 @@ namespace
 
 	struct operations_set
 	{
-		operations_set(std::set<mathexpr_operinfo*>& ops)
+		operations_set(std::set<operinfo*>& ops)
 			: operations(ops)
 		{
 		}
-		mathexpr_operinfo* find_function(const std::string& name)
+		operinfo* find_function(const std::string& name)
 		{
-			mathexpr_operinfo* fn = NULL;
+			operinfo* fn = NULL;
 			for(auto j : operations) {
 				if(name == j->fnname && !j->is_operator)
 					fn = j;
@@ -279,7 +281,7 @@ namespace
 			if(!fn) throw std::runtime_error("No such function '" + name + "'");
 			return fn;
 		}
-		mathexpr_operinfo* find_operator(const std::string& name, unsigned arity)
+		operinfo* find_operator(const std::string& name, unsigned arity)
 		{
 			for(auto j : operations) {
 				if(name == j->fnname && j->is_operator && j->operands == arity)
@@ -288,7 +290,7 @@ namespace
 			return NULL;
 		}
 	private:
-		std::set<mathexpr_operinfo*>& operations;
+		std::set<operinfo*>& operations;
 	};
 
 	struct subexpression
@@ -356,10 +358,10 @@ namespace
 		expr_or_op(std::string o) : op(o), typei(NULL) {}
 		gcroot_pointer<mathexpr> expr;
 		std::string op;
-		mathexpr_operinfo* typei;
+		operinfo* typei;
 	};
 
-	gcroot_pointer<mathexpr> parse_rec(mathexpr_typeinfo& _type, std::vector<expr_or_op>& operands,
+	gcroot_pointer<mathexpr> parse_rec(typeinfo& _type, std::vector<expr_or_op>& operands,
 		size_t first, size_t last)
 	{
 		if(operands.empty())
@@ -401,14 +403,14 @@ namespace
 		return operands[first].expr;
 	}
 
-	gcroot_pointer<mathexpr> parse_rec(mathexpr_typeinfo& _type, std::vector<subexpression>& ss,
-		std::set<mathexpr_operinfo*>& operations,
+	gcroot_pointer<mathexpr> parse_rec(typeinfo& _type, std::vector<subexpression>& ss,
+		std::set<operinfo*>& operations,
 		std::function<gcroot_pointer<mathexpr>(const std::string&)> vars, size_t first, size_t last)
 	{
 		operations_set opset(operations);
 		std::vector<expr_or_op> operands;
 		std::vector<gcroot_pointer<mathexpr>> args;
-		mathexpr_operinfo* fn;
+		operinfo* fn;
 		for(size_t i = first; i < last; i++) {
 			size_t l = find_last_in_sub(ss, i);
 			if(l >= last) throw std::runtime_error("Internal error: Improper nesting");
@@ -486,7 +488,7 @@ namespace
 		return parse_rec(_type, operands, 0, operands.size());
 	}
 
-	void tokenize(const std::string& expr, std::set<mathexpr_operinfo*>& operations,
+	void tokenize(const std::string& expr, std::set<operinfo*>& operations,
 		std::vector<subexpression>& tokenization)
 	{
 		for(size_t i = 0; i < expr.length();) {
@@ -613,7 +615,7 @@ namespace
 	}
 }
 
-gcroot_pointer<mathexpr> mathexpr::parse(mathexpr_typeinfo& _type, const std::string& expr,
+gcroot_pointer<mathexpr> mathexpr::parse(typeinfo& _type, const std::string& expr,
 	std::function<gcroot_pointer<mathexpr>(const std::string&)> vars)
 {
 	if(expr == "")
@@ -622,4 +624,5 @@ gcroot_pointer<mathexpr> mathexpr::parse(mathexpr_typeinfo& _type, const std::st
 	std::vector<subexpression> tokenization;
 	tokenize(expr, operations, tokenization);
 	return parse_rec(_type, tokenization, operations, vars, 0, tokenization.size());
+}
 }

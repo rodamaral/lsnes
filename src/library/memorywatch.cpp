@@ -3,6 +3,7 @@
 #include "memoryspace.hpp"
 #include "int24.hpp"
 #include "mathexpr-error.hpp"
+#include "mathexpr.hpp"
 #include <sstream>
 #include "string.hpp"
 
@@ -17,31 +18,31 @@ namespace
 }
 
 memread_oper::memread_oper()
-	: mathexpr_operinfo("(readmemory)")
+	: operinfo("(readmemory)")
 {
 }
 
 memread_oper::~memread_oper() {}
 
-void memread_oper::evaluate(mathexpr_value target, std::vector<std::function<mathexpr_value()>> promises)
+void memread_oper::evaluate(mathexpr::value target, std::vector<std::function<mathexpr::value()>> promises)
 {
 	if(promises.size() != 1)
-		throw mathexpr_error(mathexpr_error::ARGCOUNT, "Memory read operator takes 1 argument");
+		throw mathexpr::error(mathexpr::error::ARGCOUNT, "Memory read operator takes 1 argument");
 	static const int system_endian = memory_space::get_system_endian();
 	uint64_t addr;
-	mathexpr_value val;
+	mathexpr::value val;
 	try {
 		val = promises[0]();
-		void* res = val.value;
+		void* res = val._value;
 		addr = val.type->tounsigned(res);
 		if(addr_size)
 			addr %= addr_size;
 		addr += addr_base;
 	} catch(std::exception& e) {
-		throw mathexpr_error(mathexpr_error::ADDR, e.what());
+		throw mathexpr::error(mathexpr::error::ADDR, e.what());
 	}
 	if(bytes > 8)
-		throw mathexpr_error(mathexpr_error::SIZE, "Memory read size out of range");
+		throw mathexpr::error(mathexpr::error::SIZE, "Memory read size out of range");
 	char buf[8];
 	mspace->read_range(addr, buf, bytes);
 	//Endian swap if needed.
@@ -51,49 +52,49 @@ void memread_oper::evaluate(mathexpr_value target, std::vector<std::function<mat
 	switch(bytes) {
 	case 1:
 		if(float_flag)
-			throw mathexpr_error(mathexpr_error::SIZE, "1 byte floats not supported");
+			throw mathexpr::error(mathexpr::error::SIZE, "1 byte floats not supported");
 		else if(signed_flag)
-			target.type->parse_s(target.value, *(const int8_t*)buf);
+			target.type->parse_s(target._value, *(const int8_t*)buf);
 		else
-			target.type->parse_u(target.value, *(const uint8_t*)buf);
+			target.type->parse_u(target._value, *(const uint8_t*)buf);
 		break;
 	case 2:
 		if(float_flag)
-			throw mathexpr_error(mathexpr_error::SIZE, "2 byte floats not supported");
+			throw mathexpr::error(mathexpr::error::SIZE, "2 byte floats not supported");
 		else if(signed_flag)
-			target.type->parse_s(target.value, *pointer_cast<int16_t>(buf));
+			target.type->parse_s(target._value, *pointer_cast<int16_t>(buf));
 		else
-			target.type->parse_u(target.value, *pointer_cast<uint16_t>(buf));
+			target.type->parse_u(target._value, *pointer_cast<uint16_t>(buf));
 		break;
 	case 3:
 		if(float_flag)
-			throw mathexpr_error(mathexpr_error::SIZE, "3 byte floats not supported");
+			throw mathexpr::error(mathexpr::error::SIZE, "3 byte floats not supported");
 		else if(signed_flag)
-			target.type->parse_s(target.value, *pointer_cast<ss_int24_t>(buf));
+			target.type->parse_s(target._value, *pointer_cast<ss_int24_t>(buf));
 		else
-			target.type->parse_u(target.value, *pointer_cast<ss_uint24_t>(buf));
+			target.type->parse_u(target._value, *pointer_cast<ss_uint24_t>(buf));
 		break;
 	case 4:
 		if(float_flag)
-			target.type->parse_f(target.value, *pointer_cast<float>(buf));
+			target.type->parse_f(target._value, *pointer_cast<float>(buf));
 		else if(signed_flag)
-			target.type->parse_s(target.value, *pointer_cast<int32_t>(buf));
+			target.type->parse_s(target._value, *pointer_cast<int32_t>(buf));
 		else
-			target.type->parse_u(target.value, *pointer_cast<uint32_t>(buf));
+			target.type->parse_u(target._value, *pointer_cast<uint32_t>(buf));
 		break;
 	case 8:
 		if(float_flag)
-			target.type->parse_f(target.value, *pointer_cast<double>(buf));
+			target.type->parse_f(target._value, *pointer_cast<double>(buf));
 		else if(signed_flag)
-			target.type->parse_s(target.value, *pointer_cast<int64_t>(buf));
+			target.type->parse_s(target._value, *pointer_cast<int64_t>(buf));
 		else
-			target.type->parse_u(target.value, *pointer_cast<uint64_t>(buf));
+			target.type->parse_u(target._value, *pointer_cast<uint64_t>(buf));
 		break;
 	default:
-		throw mathexpr_error(mathexpr_error::SIZE, "Memory address size not supported");
+		throw mathexpr::error(mathexpr::error::SIZE, "Memory address size not supported");
 	}
 	if(scale_div > 1)
-		target.type->scale(target.value, scale_div);
+		target.type->scale(target._value, scale_div);
 }
 
 namespace
@@ -144,10 +145,10 @@ std::string item::get_value()
 {
 	if(format == "") {
 		//Default.
-		mathexpr_format fmt;
-		fmt.type = mathexpr_format::DEFAULT;
-		mathexpr_value v = expr->evaluate();
-		return v.type->format(v.value, fmt);
+		mathexpr::_format fmt;
+		fmt.type = mathexpr::_format::DEFAULT;
+		mathexpr::value v = expr->evaluate();
+		return v.type->format(v._value, fmt);
 	}
 	std::ostringstream out;
 	for(size_t i = 0; i < format.length(); i++) {
@@ -163,7 +164,7 @@ std::string item::get_value()
 				out << '%';
 				continue;
 			}
-			mathexpr_format fmt;
+			mathexpr::_format fmt;
 			fmt.showsign = false;
 			fmt.fillzeros = false;
 			fmt.width = -1;
@@ -171,7 +172,7 @@ std::string item::get_value()
 			fmt.uppercasehex = false;
 			auto r = regex("([+0]*)([1-9][0-9]*)?(\\.(0|[1-9][0-9]*))?([bBdiosuxX])", p);
 			if(!r) {
-				throw mathexpr_error(mathexpr_error::FORMAT, "Bad format placeholder");
+				throw mathexpr::error(mathexpr::error::FORMAT, "Bad format placeholder");
 				continue;
 			}
 			std::string flags = r[1];
@@ -192,18 +193,18 @@ std::string item::get_value()
 					fmt.precision = parse_value<int>(r[4]);
 				} catch(...) {}
 			switch(r[5][0]) {
-			case 'b': fmt.type = mathexpr_format::BINARY; break;
-			case 'B': fmt.type = mathexpr_format::BOOLEAN; break;
-			case 'd': fmt.type = mathexpr_format::DECIMAL; break;
-			case 'i': fmt.type = mathexpr_format::DECIMAL; break;
-			case 'o': fmt.type = mathexpr_format::OCTAL; break;
-			case 's': fmt.type = mathexpr_format::STRING; break;
-			case 'u': fmt.type = mathexpr_format::DECIMAL; break;
-			case 'x': fmt.type = mathexpr_format::HEXADECIMAL; break;
-			case 'X': fmt.type = mathexpr_format::HEXADECIMAL; fmt.uppercasehex = true; break;
+			case 'b': fmt.type = mathexpr::_format::BINARY; break;
+			case 'B': fmt.type = mathexpr::_format::BOOLEAN; break;
+			case 'd': fmt.type = mathexpr::_format::DECIMAL; break;
+			case 'i': fmt.type = mathexpr::_format::DECIMAL; break;
+			case 'o': fmt.type = mathexpr::_format::OCTAL; break;
+			case 's': fmt.type = mathexpr::_format::STRING; break;
+			case 'u': fmt.type = mathexpr::_format::DECIMAL; break;
+			case 'x': fmt.type = mathexpr::_format::HEXADECIMAL; break;
+			case 'X': fmt.type = mathexpr::_format::HEXADECIMAL; fmt.uppercasehex = true; break;
 			}
-			mathexpr_value v = expr->evaluate();
-			out << v.type->format(v.value, fmt);
+			mathexpr::value v = expr->evaluate();
+			out << v.type->format(v._value, fmt);
 		}
 	}
 	return out.str();
@@ -216,7 +217,7 @@ void item::show(const std::string& n)
 		x = get_value();
 	} catch(std::bad_alloc& e) {
 		throw;
-	} catch(mathexpr_error& e) {
+	} catch(mathexpr::error& e) {
 		x = e.get_short_error();
 	} catch(std::runtime_error& e) {
 		x = e.what();

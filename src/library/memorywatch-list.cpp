@@ -21,7 +21,7 @@ void output_list::show(const std::string& iname, const std::string& val)
 		try {
 			enabled->reset();
 			auto e = enabled->evaluate();
-			if(!e.type->toboolean(e.value))
+			if(!e.type->toboolean(e._value))
 				return;
 		} catch(...) {
 			return;

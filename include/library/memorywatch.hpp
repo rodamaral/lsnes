@@ -13,7 +13,7 @@ namespace memorywatch
 /**
  * Read memory operator.
  */
-struct memread_oper : public mathexpr_operinfo
+struct memread_oper : public mathexpr::operinfo
 {
 /**
  * Ctor
@@ -28,7 +28,7 @@ struct memread_oper : public mathexpr_operinfo
  *
  * Note: The first promise is for the address.
  */
-	void evaluate(mathexpr_value target, std::vector<std::function<mathexpr_value()>> promises);
+	void evaluate(mathexpr::value target, std::vector<std::function<mathexpr::value()>> promises);
 	//Fields.
 	unsigned bytes;		//Number of bytes to read.
 	bool signed_flag;	//Is signed?
@@ -71,7 +71,7 @@ struct item
  *
  * Parameter t: The type of the result.
  */
-	item(mathexpr_typeinfo& t)
+	item(mathexpr::typeinfo& t)
 		: expr(gcroot_pointer_object_tag(), &t)
 	{
 	}
@@ -86,9 +86,9 @@ struct item
  */
 	void show(const std::string& iname);
 	//Fields.
-	gcroot_pointer<item_printer> printer;	//Printer to use.
-	gcroot_pointer<mathexpr> expr;				//Expression to watch.
-	std::string format;					//Formatting to use.
+	gcroot_pointer<item_printer> printer;		//Printer to use.
+	gcroot_pointer<mathexpr::mathexpr> expr;	//Expression to watch.
+	std::string format;				//Formatting to use.
 };
 
 /**

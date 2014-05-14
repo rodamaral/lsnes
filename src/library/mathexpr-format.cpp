@@ -1,6 +1,8 @@
 #include "mathexpr-format.hpp"
 #include "string.hpp"
 
+namespace mathexpr
+{
 namespace
 {
 	std::string pad(const std::string& orig, int width, bool zeropad, bool nosign)
@@ -48,7 +50,7 @@ namespace
 		return y;
 	}
 
-	std::string format_float_base(double v, mathexpr_format fmt, unsigned base)
+	std::string format_float_base(double v, _format fmt, unsigned base)
 	{
 		bool exponential = false;
 		std::string out;
@@ -85,7 +87,7 @@ again:
 		return out;
 	}
 
-	std::string format_float_10(double v, mathexpr_format fmt)
+	std::string format_float_10(double v, _format fmt)
 	{
 		std::string format;
 		format += "%";
@@ -104,39 +106,39 @@ again:
 	}
 }
 
-std::string math_format_bool(bool v, mathexpr_format fmt)
+std::string format_bool(bool v, _format fmt)
 {
-	if(fmt.type == mathexpr_format::BOOLEAN)
+	if(fmt.type == _format::BOOLEAN)
 		return pad(v ? "true" : "false", fmt.width, false, true);
-	return math_format_unsigned(v ? 1 : 0, fmt);
+	return format_unsigned(v ? 1 : 0, fmt);
 }
 
-std::string math_format_unsigned(uint64_t v, mathexpr_format fmt)
+std::string format_unsigned(uint64_t v, _format fmt)
 {
-	if(fmt.type == mathexpr_format::BOOLEAN)
+	if(fmt.type == _format::BOOLEAN)
 		return pad(v ? "true" : "false", fmt.width, false, true);
-	if(fmt.type == mathexpr_format::STRING)
+	if(fmt.type == _format::STRING)
 		return "<#Badformat>";
-	if(fmt.type == mathexpr_format::DEFAULT)
+	if(fmt.type == _format::DEFAULT)
 		return (stringfmt() << v).str();
 	std::ostringstream _out;
 	switch(fmt.type) {
-	case mathexpr_format::BINARY:
+	case _format::BINARY:
 		_out << int_to_bits(v);
 		break;
-	case mathexpr_format::OCTAL:
+	case _format::OCTAL:
 		_out << std::oct << v;
 		break;
-	case mathexpr_format::DECIMAL:
+	case _format::DECIMAL:
 		_out << v;
 		break;
-	case mathexpr_format::HEXADECIMAL:
+	case _format::HEXADECIMAL:
 		if(fmt.uppercasehex) _out << std::uppercase;
 		_out << std::hex << v;
 		break;
-	case mathexpr_format::BOOLEAN:
-	case mathexpr_format::STRING:
-	case mathexpr_format::DEFAULT:
+	case _format::BOOLEAN:
+	case _format::STRING:
+	case _format::DEFAULT:
 		;
 	}
 	std::string out = _out.str();
@@ -150,35 +152,35 @@ std::string math_format_unsigned(uint64_t v, mathexpr_format fmt)
 	return pad(out, fmt.width, fmt.fillzeros, false);
 }
 
-std::string math_format_signed(int64_t v, mathexpr_format fmt)
+std::string format_signed(int64_t v, _format fmt)
 {
-	if(fmt.type == mathexpr_format::BOOLEAN)
+	if(fmt.type == _format::BOOLEAN)
 		return pad(v ? "true" : "false", fmt.width, false, true);
-	if(fmt.type == mathexpr_format::STRING)
+	if(fmt.type == _format::STRING)
 		return "<#Badformat>";
-	if(fmt.type == mathexpr_format::DEFAULT)
+	if(fmt.type == _format::DEFAULT)
 		return (stringfmt() << v).str();
 	std::ostringstream _out;
 	switch(fmt.type) {
-	case mathexpr_format::BINARY:
+	case _format::BINARY:
 		if(v < 0) _out << "-";
 		_out << int_to_bits(std::abs(v));
 		break;
-	case mathexpr_format::OCTAL:
+	case _format::OCTAL:
 		if(v < 0) _out << "-";
 		_out << std::oct << std::abs(v);
 		break;
-	case mathexpr_format::DECIMAL:
+	case _format::DECIMAL:
 		_out << v;
 		break;
-	case mathexpr_format::HEXADECIMAL:
+	case _format::HEXADECIMAL:
 		if(v < 0) _out << "-";
 		if(fmt.uppercasehex) _out << std::uppercase;
 		_out << std::hex << std::abs(v);
 		break;
-	case mathexpr_format::BOOLEAN:
-	case mathexpr_format::STRING:
-	case mathexpr_format::DEFAULT:
+	case _format::BOOLEAN:
+	case _format::STRING:
+	case _format::DEFAULT:
 		;
 	}
 	std::string out = _out.str();
@@ -192,65 +194,66 @@ std::string math_format_signed(int64_t v, mathexpr_format fmt)
 	return pad(out, fmt.width, fmt.fillzeros, false);
 }
 
-std::string math_format_float(double v, mathexpr_format fmt)
+std::string format_float(double v, _format fmt)
 {
-	if(fmt.type == mathexpr_format::BOOLEAN)
+	if(fmt.type == _format::BOOLEAN)
 		return pad(v ? "true" : "false", fmt.width, false, true);
-	if(fmt.type == mathexpr_format::STRING)
+	if(fmt.type == _format::STRING)
 		return "<#Badformat>";
-	if(fmt.type == mathexpr_format::DEFAULT)
+	if(fmt.type == _format::DEFAULT)
 		return (stringfmt() << v).str();
 	std::string out;
 	switch(fmt.type) {
-	case mathexpr_format::BINARY:
+	case _format::BINARY:
 		//out = format_float_base(v, fmt, 2);
 		//break;
 		return "<#Badbase>";
-	case mathexpr_format::OCTAL:
+	case _format::OCTAL:
 		//out = format_float_base(v, fmt, 8);
 		//break;
 		return "<#Badbase>";
-	case mathexpr_format::DECIMAL:
+	case _format::DECIMAL:
 		//out = format_float_base(v, fmt, 10);
 		out = format_float_10(v, fmt);
 		break;
-	case mathexpr_format::HEXADECIMAL:
+	case _format::HEXADECIMAL:
 		//out = format_float_base(v, fmt, 16);
 		//break;
 		return "<#Badbase>";
-	case mathexpr_format::BOOLEAN:
-	case mathexpr_format::STRING:
-	case mathexpr_format::DEFAULT:
+	case _format::BOOLEAN:
+	case _format::STRING:
+	case _format::DEFAULT:
 		;
 	}
 	return pad(out, fmt.width, fmt.fillzeros, false);
 }
 
-std::string math_format_complex(double vr, double vi, mathexpr_format fmt)
+std::string format_complex(double vr, double vi, _format fmt)
 {
-	if(fmt.type == mathexpr_format::BOOLEAN)
+	if(fmt.type == _format::BOOLEAN)
 		return pad((vr || vi) ? "true" : "false", fmt.width, false, true);
-	if(fmt.type == mathexpr_format::STRING)
+	if(fmt.type == _format::STRING)
 		return "<#Badformat>";
-	if(fmt.type == mathexpr_format::DEFAULT) {
+	if(fmt.type == _format::DEFAULT) {
 		if(vi >= 0)
 			return (stringfmt() << vr << "+" << vi << "i").str();
 		else
 			return (stringfmt() << vr << vi << "i").str();
 	}
-	std::string xr = math_format_float(vr, fmt);
+	std::string xr = format_float(vr, fmt);
 	fmt.showsign = true;
-	std::string xi = math_format_float(vi, fmt);
+	std::string xi = format_float(vi, fmt);
 	return xr + xi + "i";
 }
 
-std::string math_format_string(std::string v, mathexpr_format fmt)
+std::string format_string(std::string v, _format fmt)
 {
-	if(fmt.type == mathexpr_format::BOOLEAN)
+	if(fmt.type == _format::BOOLEAN)
 		return pad((v != "") ? "true" : "false", fmt.width, false, true);
-	if(fmt.type != mathexpr_format::STRING)
+	if(fmt.type != _format::STRING)
 		return "<#Badformat>";
 	if(fmt.precision > 0 && (ssize_t)v.length() > fmt.precision)
 		v = v.substr(0, fmt.precision);
 	return pad(v, fmt.width, false, true);
+}
 }

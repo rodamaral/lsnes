@@ -3,6 +3,9 @@
 
 #include "mathexpr.hpp"
 
-struct mathexpr_typeinfo* expression_value();
+namespace mathexpr
+{
+struct typeinfo* expression_value();
+}
 
 #endif

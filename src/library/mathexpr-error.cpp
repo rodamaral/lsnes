@@ -1,16 +1,18 @@
 #include "mathexpr-error.hpp"
 
-mathexpr_error::mathexpr_error(errorcode _code, const std::string& message)
+namespace mathexpr
+{
+error::error(errorcode _code, const std::string& message)
 	: std::runtime_error(message), code(_code)
 {
 }
 
-mathexpr_error::errorcode mathexpr_error::get_code()
+error::errorcode error::get_code()
 {
 	return code;
 }
 
-const char* mathexpr_error::get_short_error()
+const char* error::get_short_error()
 {
 	switch(code) {
 	case UNDEFINED:		return "#Undefined";
@@ -27,4 +29,5 @@ const char* mathexpr_error::get_short_error()
 	case UNKNOWN:		return "#???";
 	default:		return "#Unknownerr";
 	};
+}
 }

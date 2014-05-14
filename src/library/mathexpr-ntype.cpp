@@ -5,11 +5,13 @@
 #include <iostream>
 #include <map>
 
+namespace mathexpr
+{
 namespace
 {
 	void throw_domain(const std::string& err)
 	{
-		throw mathexpr_error(mathexpr_error::WDOMAIN, err);
+		throw error(error::WDOMAIN, err);
 	}
 
 	template<typename T> int _cmp_values(T a, T b)
@@ -99,7 +101,7 @@ namespace
 			case T_FLOAT:		return v_float;
 			case T_COMPLEX:		return v_float;
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		int64_t as_signed() const
 		{
@@ -109,7 +111,7 @@ namespace
 			case T_FLOAT:		return v_float;
 			case T_COMPLEX:		return v_float;
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		uint64_t as_unsigned() const
 		{
@@ -119,7 +121,7 @@ namespace
 			case T_FLOAT:		return v_float;
 			case T_COMPLEX:		return v_float;
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		std::string tostring()
 		{
@@ -139,7 +141,7 @@ namespace
 					return (stringfmt() << v_float << "+" << v_imag << "*i").str();
 				return (stringfmt() << v_float).str();
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		uint64_t tounsigned()
 		{
@@ -175,17 +177,17 @@ namespace
 			case T_FLOAT:		return (v_float != 0);
 			case T_COMPLEX:		return (v_float != 0) || (v_imag != 0);
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
-		std::string format(mathexpr_format fmt)
+		std::string format(_format fmt)
 		{
 			switch(type) {
-			case T_UNSIGNED: return math_format_unsigned(v_unsigned, fmt);
-			case T_SIGNED: return math_format_signed(v_signed, fmt);
-			case T_FLOAT: return math_format_float(v_float, fmt);
-			case T_COMPLEX: return math_format_complex(v_float, v_imag, fmt);
+			case T_UNSIGNED: return format_unsigned(v_unsigned, fmt);
+			case T_SIGNED: return format_signed(v_signed, fmt);
+			case T_FLOAT: return format_float(v_float, fmt);
+			case T_COMPLEX: return format_complex(v_float, v_imag, fmt);
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Don't know how to print numeric type");
+			throw error(error::INTERNAL, "Don't know how to print numeric type");
 		}
 		expr_val_numeric operator~() const
 		{
@@ -195,7 +197,7 @@ namespace
 			case T_FLOAT:		throw_domain("Bit operations are only for integers");
 			case T_COMPLEX:		throw_domain("Bit operations are only for integers");
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		expr_val_numeric operator&(const expr_val_numeric& b) const
 		{
@@ -235,7 +237,7 @@ namespace
 			case T_SIGNED:		return expr_val_numeric(signed_tag(), -v_signed);
 			case T_FLOAT:		return expr_val_numeric(float_tag(), -v_float);
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		expr_val_numeric operator+(const expr_val_numeric& b) const
 		{
@@ -275,23 +277,23 @@ namespace
 			if(type == T_COMPLEX || b.type == T_COMPLEX) {
 				double div = b.as_float() * b.as_float() + b.v_imag * b.v_imag;
 				if(div == 0)
-					throw mathexpr_error(mathexpr_error::DIV_BY_0, "Division by 0");
+					throw error(error::DIV_BY_0, "Division by 0");
 				return expr_val_numeric(complex_tag(),
 					(as_float() * b.as_float() + v_imag * b.v_imag) / div,
 					(v_imag * b.as_float() - as_float() * b.v_imag) / div);
 			}
 			if(type == T_FLOAT || b.type == T_FLOAT) {
 				if(b.as_float() == 0)
-					throw mathexpr_error(mathexpr_error::DIV_BY_0, "Division by 0");
+					throw error(error::DIV_BY_0, "Division by 0");
 				return expr_val_numeric(float_tag(), as_float() / b.as_float());
 			}
 			if(type == T_SIGNED || b.type == T_SIGNED) {
 				if(b.as_signed() == 0)
-					throw mathexpr_error(mathexpr_error::DIV_BY_0, "Division by 0");
+					throw error(error::DIV_BY_0, "Division by 0");
 				return expr_val_numeric(signed_tag(), as_signed() / b.as_signed());
 			}
 			if(b.as_unsigned() == 0)
-				throw mathexpr_error(mathexpr_error::DIV_BY_0, "Division by 0");
+				throw error(error::DIV_BY_0, "Division by 0");
 			return expr_val_numeric(unsigned_tag(), as_unsigned() / b.as_unsigned());
 		}
 		expr_val_numeric operator%(const expr_val_numeric& b) const
@@ -302,11 +304,11 @@ namespace
 				throw_domain("Remainder is only for integers");
 			if(type == T_SIGNED || b.type == T_SIGNED) {
 				if(b.as_signed() == 0)
-					throw mathexpr_error(mathexpr_error::DIV_BY_0, "Division by 0");
+					throw error(error::DIV_BY_0, "Division by 0");
 				return expr_val_numeric(signed_tag(), as_signed() / b.as_signed());
 			}
 			if(b.as_unsigned() == 0)
-				throw mathexpr_error(mathexpr_error::DIV_BY_0, "Division by 0");
+				throw error(error::DIV_BY_0, "Division by 0");
 			return expr_val_numeric(unsigned_tag(), as_unsigned() / b.as_unsigned());
 		}
 		expr_val_numeric log() const
@@ -314,13 +316,13 @@ namespace
 			if(type == T_COMPLEX) {
 				double mag = as_float() * as_float() + v_imag * v_imag;
 				if(mag == 0)
-					throw mathexpr_error(mathexpr_error::LOG_BY_0, "Can't take logarithm of 0");
+					throw error(error::LOG_BY_0, "Can't take logarithm of 0");
 				double r = 0.5 * ::log(mag);
 				double i = ::atan2(v_imag, as_float());
 				return expr_val_numeric(complex_tag(), r, i);
 			}
 			if(as_float() == 0)
-				throw mathexpr_error(mathexpr_error::LOG_BY_0, "Can't take logarithm of 0");
+				throw error(error::LOG_BY_0, "Can't take logarithm of 0");
 			if(as_float() <= 0)
 				return expr_val_numeric(complex_tag(), ::log(std::abs(as_float())), 4 * ::atan(1));
 			return expr_val_numeric(float_tag(), ::log(as_float()));
@@ -535,7 +537,7 @@ namespace
 				case T_FLOAT:
 					return _cmp_float_unsigned(a.v_unsigned, b.v_float);
 				case T_COMPLEX:
-					throw mathexpr_error(mathexpr_error::INTERNAL,
+					throw error(error::INTERNAL,
 						"Internal error (shouldn't be here)");
 				}
 			case T_SIGNED:
@@ -551,7 +553,7 @@ namespace
 				case T_FLOAT:
 					return _cmp_float_signed(a.v_signed, b.v_float);
 				case T_COMPLEX:
-					throw mathexpr_error(mathexpr_error::INTERNAL,
+					throw error(error::INTERNAL,
 						"Internal error (shouldn't be here)");
 				}
 			case T_FLOAT:
@@ -567,13 +569,13 @@ namespace
 						return 1;
 					return 0;
 				case T_COMPLEX:
-					throw mathexpr_error(mathexpr_error::INTERNAL,
+					throw error(error::INTERNAL,
 						"Internal error (shouldn't be here)");
 				}
 			case T_COMPLEX:
-				throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+				throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		static expr_val_numeric x_unsigned(expr_val_numeric a)
 		{
@@ -631,7 +633,7 @@ namespace
 			case T_SIGNED:   return expr_val_numeric(signed_tag(), ::abs(v_signed));
 			case T_UNSIGNED: return expr_val_numeric(unsigned_tag(), v_unsigned);
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		expr_val_numeric arg() const
 		{
@@ -698,15 +700,15 @@ namespace
 				type = T_NUMERIC;
 			}
 		}
-		expr_val(mathexpr_typeinfo_wrapper<expr_val>::unsigned_tag t, uint64_t v)
+		expr_val(typeinfo_wrapper<expr_val>::unsigned_tag t, uint64_t v)
 			: type(T_NUMERIC), v_numeric(expr_val_numeric::unsigned_tag(), v)
 		{
 		}
-		expr_val(mathexpr_typeinfo_wrapper<expr_val>::signed_tag t, int64_t v)
+		expr_val(typeinfo_wrapper<expr_val>::signed_tag t, int64_t v)
 			: type(T_NUMERIC), v_numeric(expr_val_numeric::signed_tag(), v)
 		{
 		}
-		expr_val(mathexpr_typeinfo_wrapper<expr_val>::float_tag t, double v)
+		expr_val(typeinfo_wrapper<expr_val>::float_tag t, double v)
 			: type(T_NUMERIC), v_numeric(expr_val_numeric::float_tag(), v)
 		{
 		}
@@ -735,7 +737,7 @@ namespace
 			case T_STRING:
 				return v_string;
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		uint64_t tounsigned()
 		{
@@ -765,18 +767,18 @@ namespace
 			case T_STRING:
 				return (v_string.length() != 0);
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		static expr_val op_lnot(std::vector<std::function<expr_val&()>> promises)
 		{
 			if(promises.size() != 1)
-				throw mathexpr_error(mathexpr_error::ARGCOUNT, "logical not takes 1 argument");
+				throw error(error::ARGCOUNT, "logical not takes 1 argument");
 			return expr_val(boolean_tag(), !(promises[0]().toboolean()));
 		}
 		static expr_val op_lor(std::vector<std::function<expr_val&()>> promises)
 		{
 			if(promises.size() != 2)
-				throw mathexpr_error(mathexpr_error::ARGCOUNT, "logical or takes 2 arguments");
+				throw error(error::ARGCOUNT, "logical or takes 2 arguments");
 			if(promises[0]().toboolean())
 				return expr_val(boolean_tag(), true);
 			return expr_val(boolean_tag(), promises[1]().toboolean());
@@ -784,7 +786,7 @@ namespace
 		static expr_val op_land(std::vector<std::function<expr_val&()>> promises)
 		{
 			if(promises.size() != 2)
-				throw mathexpr_error(mathexpr_error::ARGCOUNT, "logical and takes 2 arguments");
+				throw error(error::ARGCOUNT, "logical and takes 2 arguments");
 			if(!(promises[0]().toboolean()))
 				return expr_val(boolean_tag(), false);
 			return expr_val(boolean_tag(), promises[1]().toboolean());
@@ -802,7 +804,7 @@ namespace
 				else
 					return promises[2]();
 			} else
-				throw mathexpr_error(mathexpr_error::ARGCOUNT, "if takes 2 or 3 arguments");
+				throw error(error::ARGCOUNT, "if takes 2 or 3 arguments");
 		}
 		static expr_val fun_select(std::vector<std::function<expr_val&()>> promises)
 		{
@@ -822,7 +824,7 @@ namespace
 			expr_val_numeric one(expr_val_numeric::float_tag(), 1);
 			for(auto& i : v) {
 				if(i.type != T_NUMERIC)
-					throw mathexpr_error(mathexpr_error::WDOMAIN, "pyth requires numeric args");
+					throw error(error::WDOMAIN, "pyth requires numeric args");
 				n = n + one * i.v_numeric * i.v_numeric;
 			}
 			return n.sqrt();
@@ -867,7 +869,7 @@ namespace
 		static expr_val op_binary(std::vector<std::function<expr_val&()>> promises)
 		{
 			if(promises.size() != 2)
-				throw mathexpr_error(mathexpr_error::ARGCOUNT, "Operation takes 2 arguments");
+				throw error(error::ARGCOUNT, "Operation takes 2 arguments");
 			expr_val a = promises[0]();
 			expr_val b = promises[1]();
 			return T(a, b);
@@ -876,7 +878,7 @@ namespace
 		static expr_val op_unary(std::vector<std::function<expr_val&()>> promises)
 		{
 			if(promises.size() != 1)
-				throw mathexpr_error(mathexpr_error::ARGCOUNT, "Operation takes 1 argument");
+				throw error(error::ARGCOUNT, "Operation takes 1 argument");
 			expr_val a = promises[0]();
 			return T(a);
 		}
@@ -887,7 +889,7 @@ namespace
 				return T(promises[0]());
 			if(promises.size() == 2)
 				return U(promises[0](), promises[1]());
-			throw mathexpr_error(mathexpr_error::ARGCOUNT, "Operation takes 1 or 2 arguments");
+			throw error(error::ARGCOUNT, "Operation takes 1 or 2 arguments");
 		}
 		static expr_val bnot(expr_val a)
 		{
@@ -962,7 +964,7 @@ namespace
 			case T_STRING: return (a.v_string == b.v_string);
 			case T_NUMERIC: return (a.v_numeric == b.v_numeric);
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		static expr_val eq(expr_val a, expr_val b)
 		{
@@ -981,7 +983,7 @@ namespace
 			case T_STRING:		return _cmp_values(a.v_string, b.v_string);
 			case T_NUMERIC:		return expr_val_numeric::_cmp(a.v_numeric, b.v_numeric);
 			}
-			throw mathexpr_error(mathexpr_error::INTERNAL, "Internal error (shouldn't be here)");
+			throw error(error::INTERNAL, "Internal error (shouldn't be here)");
 		}
 		template<expr_val_numeric(*T)(expr_val_numeric v)>
 		static expr_val x_nconv(expr_val a)
@@ -1004,7 +1006,7 @@ namespace
 		{
 			return expr_val(boolean_tag(), _cmp(a, b) > 0);
 		}
-		std::string format_string(std::string val, mathexpr_format fmt)
+		std::string format_string(std::string val, _format fmt)
 		{
 			if((int)val.length() > fmt.precision && fmt.precision >= 0)
 				val = val.substr(0, fmt.precision);
@@ -1012,7 +1014,7 @@ namespace
 				val = " " + val;
 			return val;
 		}
-		std::string print_bool_numeric(bool val, mathexpr_format fmt)
+		std::string print_bool_numeric(bool val, _format fmt)
 		{
 			std::string out = val ? "1" : "0";
 			if(fmt.precision > 0) {
@@ -1024,19 +1026,19 @@ namespace
 				out = ((fmt.fillzeros) ? "0" : " ") + out;
 			return out;
 		}
-		std::string format(mathexpr_format fmt)
+		std::string format(_format fmt)
 		{
 			switch(type) {
-			case T_BOOLEAN: return math_format_bool(v_boolean, fmt);
+			case T_BOOLEAN: return format_bool(v_boolean, fmt);
 			case T_NUMERIC: return v_numeric.format(fmt);
-			case T_STRING: return math_format_string(v_string, fmt);
+			case T_STRING: return format_string(v_string, fmt);
 			default:
 				return "#Notprintable";
 			}
 		}
-		static std::set<mathexpr_operinfo*> operations()
+		static std::set<operinfo*> operations()
 		{
-			static mathexpr_operinfo_set<expr_val> x({
+			static operinfo_set<expr_val> x({
 				{"-", expr_val::op_unary<expr_val::neg>, true, 1, -3, true},
 				{"!", expr_val::op_lnot, true, 1, -3, true},
 				{"~", expr_val::op_unary<expr_val::bnot>, true, 1, -3, true},
@@ -1105,48 +1107,9 @@ namespace
 	};
 }
 
-struct mathexpr_typeinfo* expression_value()
+struct typeinfo* expression_value()
 {
-	static mathexpr_typeinfo_wrapper<expr_val> expession_value_obj;
+	static typeinfo_wrapper<expr_val> expession_value_obj;
 	return &expession_value_obj;
 }
-
-#ifdef TEST_MATHEXPR
-int main2(int argc, char** argv)
-{
-	std::map<const std::string, gcroot_pointer<mathexpr>> vars;
-	std::function<gcroot_pointer<mathexpr>(const std::string&)> vars_fn = [&vars](const std::string& n) ->
-		gcroot_pointer<mathexpr> {
-		if(!vars.count(n))
-			vars.insert(std::make_pair(n, gcroot_pointer<mathexpr>(expression_value())));
-		gcroot_pointer<mathexpr>& tmp = vars.find(n)->second;
-		return tmp;
-	};
-	for(int i = 1; i < argc; i++) {
-		regex_results r = regex("([^=]+)=(.*)", argv[i]);
-		if(!r)
-			throw std::runtime_error("Bad argument '" + std::string(argv[i]) + "'");
-		*vars_fn(r[1]) = *mathexpr::parse(*expression_value(), r[2], vars_fn);
-	}
-	garbage_collectable::do_gc();
-	garbage_collectable::do_gc();
-	for(auto i : vars) {
-		try {
-			auto v = i.second->evaluate();
-			std::cout << i.first << " --> " << v.type->tostring(v.value) << std::endl;
-		} catch(std::exception& e) {
-			std::cout << i.first << " --> " << e.what() << std::endl;
-		}
-	}
-	return 0;
 }
-
-int main(int argc, char** argv)
-{
-	int r = main2(argc, argv);
-	garbage_collectable::do_gc();
-	return r;
-}
-
-
-#endif

@@ -3,11 +3,14 @@
 
 #include "mathexpr.hpp"
 
-std::string math_format_bool(bool v, mathexpr_format fmt);
-std::string math_format_unsigned(uint64_t v, mathexpr_format fmt);
-std::string math_format_signed(int64_t v, mathexpr_format fmt);
-std::string math_format_float(double v, mathexpr_format fmt);
-std::string math_format_complex(double vr, double vi, mathexpr_format fmt);
-std::string math_format_string(std::string v, mathexpr_format fmt);
+namespace mathexpr
+{
+std::string format_bool(bool v, _format fmt);
+std::string format_unsigned(uint64_t v, _format fmt);
+std::string format_signed(int64_t v, _format fmt);
+std::string format_float(double v, _format fmt);
+std::string format_complex(double vr, double vi, _format fmt);
+std::string format_string(std::string v, _format fmt);
+}
 
 #endif

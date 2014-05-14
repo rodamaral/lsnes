@@ -155,7 +155,7 @@ void memwatch_printer::unserialize(const JSON::node& node)
 }
 
 gcroot_pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
-	std::function<gcroot_pointer<mathexpr>(const std::string& n)> vars)
+	std::function<gcroot_pointer<mathexpr::mathexpr>(const std::string& n)> vars)
 {
 	gcroot_pointer<memorywatch::item_printer> ptr;
 	memorywatch::output_list* l;
@@ -173,9 +173,9 @@ gcroot_pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
 		l->cond_enable = cond_enable;
 		try {
 			if(l->cond_enable)
-				l->enabled = mathexpr::parse(*expression_value(), _enabled, vars);
+				l->enabled = mathexpr::mathexpr::parse(*mathexpr::expression_value(), _enabled, vars);
 			else
-				l->enabled = mathexpr::parse(*expression_value(), "true", vars);
+				l->enabled = mathexpr::mathexpr::parse(*mathexpr::expression_value(), "true", vars);
 		} catch(std::exception& e) {
 			(stringfmt() << "Error while parsing conditional: " << e.what()).throwex();
 		}
@@ -191,13 +191,13 @@ gcroot_pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
 		try {
 			while_parsing = "conditional";
 			if(f->cond_enable)
-				f->enabled = mathexpr::parse(*expression_value(), _enabled, vars);
+				f->enabled = mathexpr::mathexpr::parse(*mathexpr::expression_value(), _enabled, vars);
 			else
-				f->enabled = mathexpr::parse(*expression_value(), "true", vars);
+				f->enabled = mathexpr::mathexpr::parse(*mathexpr::expression_value(), "true", vars);
 			while_parsing = "X position";
-			f->pos_x = mathexpr::parse(*expression_value(), onscreen_xpos, vars);
+			f->pos_x = mathexpr::mathexpr::parse(*mathexpr::expression_value(), onscreen_xpos, vars);
 			while_parsing = "Y position";
-			f->pos_y = mathexpr::parse(*expression_value(), onscreen_ypos, vars);
+			f->pos_y = mathexpr::mathexpr::parse(*mathexpr::expression_value(), onscreen_ypos, vars);
 		} catch(std::exception& e) {
 			(stringfmt() << "Error while parsing " << while_parsing << ": " << e.what()).throwex();
 		}
@@ -490,29 +490,30 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 {
 	{
 		memorywatch::set new_set;
-		std::map<std::string, gcroot_pointer<mathexpr>> vars;
-		auto vars_fn = [&vars](const std::string& n) -> gcroot_pointer<mathexpr> {
+		std::map<std::string, gcroot_pointer<mathexpr::mathexpr>> vars;
+		auto vars_fn = [&vars](const std::string& n) -> gcroot_pointer<mathexpr::mathexpr> {
 			if(!vars.count(n))
-				vars[n] = gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(),
-					expression_value());
+				vars[n] = gcroot_pointer<mathexpr::mathexpr>(gcroot_pointer_object_tag(),
+					mathexpr::expression_value());
 			return vars[n];
 		};
 		for(auto& i : nitems) {
-			mathexpr_operinfo* memread_oper = i.second.get_memread_oper();
+			mathexpr::operinfo* memread_oper = i.second.get_memread_oper();
 			try {
-				gcroot_pointer<mathexpr> rt_expr;
+				gcroot_pointer<mathexpr::mathexpr> rt_expr;
 				gcroot_pointer<memorywatch::item_printer> rt_printer;
-				std::vector<gcroot_pointer<mathexpr>> v;
+				std::vector<gcroot_pointer<mathexpr::mathexpr>> v;
 				try {
-					rt_expr = mathexpr::parse(*expression_value(), i.second.expr, vars_fn);
+					rt_expr = mathexpr::mathexpr::parse(*mathexpr::expression_value(),
+						i.second.expr, vars_fn);
 				} catch(std::exception& e) {
 					(stringfmt() << "Error while parsing address/expression: "
 						<< e.what()).throwex();
 				}
 				v.push_back(rt_expr);
 				if(memread_oper) {
-					rt_expr = gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(),
-						expression_value(), memread_oper, v, true);
+					rt_expr = gcroot_pointer<mathexpr::mathexpr>(gcroot_pointer_object_tag(),
+						mathexpr::expression_value(), memread_oper, v, true);
 					memread_oper = NULL;
 				}
 				rt_printer = i.second.printer.get_printer_obj(vars_fn);
@@ -524,7 +525,7 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 						this->watch_output(n, v);
 					});
 
-				memorywatch::item it(*expression_value());
+				memorywatch::item it(*mathexpr::expression_value());
 				*vars_fn(i.first) = *rt_expr;
 				it.expr = vars_fn(i.first);
 				it.printer = rt_printer;
