@@ -6,8 +6,12 @@
 #include "core/controllerframe.hpp"
 #include "library/movie.hpp"
 #include "library/framebuffer.hpp"
-#include "library/keyboard.hpp"
 #include "library/lua-framebuffer.hpp"
+
+namespace keyboard
+{
+	class key;
+}
 
 void init_lua() throw();
 void quit_lua() throw();
