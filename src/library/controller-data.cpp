@@ -459,6 +459,10 @@ controller_frame& controller_frame::operator=(const controller_frame& obj) throw
 	return *this;
 }
 
+controller_frame_vector::fchange_listener::~fchange_listener()
+{
+}
+
 size_t controller_frame_vector::walk_helper(size_t frame, bool sflag) throw()
 {
 	size_t ret = sflag ? frame : 0;

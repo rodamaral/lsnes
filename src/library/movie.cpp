@@ -25,7 +25,7 @@ namespace
 movie::~movie()
 {
 	if(movie_data)
-		movie_data->clear_framecount_notification(movie_data_nh);
+		movie_data->clear_framecount_notification(_listener);
 }
 
 void movie::set_all_DRDY() throw()
@@ -193,6 +193,7 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 }
 
 movie::movie() throw(std::bad_alloc)
+	: _listener(*this)
 {
 	movie_data = NULL;
 	seqno = 0;
@@ -430,23 +431,33 @@ movie::poll_flag::~poll_flag()
 
 void movie::set_movie_data(controller_frame_vector* data)
 {
-	uint64_t old_nh = movie_data_nh;
 	controller_frame_vector* old = movie_data;
 	if(data)
-		movie_data_nh = data->set_framecount_notification([this](controller_frame_vector& src,
-			uint64_t old_frames) {
-			//Recompute frame_first_subframe.
-			while(current_frame_first_subframe < movie_data->size() && current_frame > old_frames + 1) {
-				//OK, movie has been extended.
-				current_frame_first_subframe += count_changes(current_frame_first_subframe);
-				old_frames++;
-			}
-			//Nobody is this stupid, right?
-			current_frame_first_subframe = min(current_frame_first_subframe,
-				static_cast<uint64_t>(movie_data->size()));
-		});
+		data->set_framecount_notification(_listener);
 	movie_data = data;
 	clear_caches();
 	if(old)
-		old->clear_framecount_notification(old_nh);
+		old->clear_framecount_notification(_listener);
+}
+
+movie::fchange_listener::fchange_listener(movie& m)
+	: mov(m)
+{
+}
+
+movie::fchange_listener::~fchange_listener()
+{
+}
+
+void movie::fchange_listener::notify(controller_frame_vector& src, uint64_t old)
+{
+	//Recompute frame_first_subframe.
+	while(mov.current_frame_first_subframe < mov.movie_data->size() && mov.current_frame > old + 1) {
+		//OK, movie has been extended.
+		mov.current_frame_first_subframe += mov.count_changes(mov.current_frame_first_subframe);
+		old++;
+	}
+	//Nobody is this stupid, right?
+	mov.current_frame_first_subframe = min(mov.current_frame_first_subframe,
+		static_cast<uint64_t>(mov.movie_data->size()));
 }

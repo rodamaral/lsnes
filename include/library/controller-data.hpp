@@ -17,7 +17,7 @@
 #include <list>
 #include <set>
 #include "json.hpp"
-#include "integer-pool.hpp"
+#include "threads.hpp"
 
 namespace binarystream
 {
@@ -1015,6 +1015,21 @@ class controller_frame_vector
 {
 public:
 /**
+ * Framecount change listener.
+ */
+	class fchange_listener
+	{
+	public:
+/**
+ * Destructor.
+ */
+		virtual ~fchange_listener();
+/**
+ * Notify a change.
+ */
+		virtual void notify(controller_frame_vector& src, uint64_t old) = 0;
+	};
+/**
  * Construct new controller frame vector.
  */
 	controller_frame_vector() throw();
@@ -1230,29 +1245,33 @@ public:
  * Parameter cb: Callback to register.
  * Returns: Handle for callback.
  */
-	uint64_t set_framecount_notification(std::function<void(controller_frame_vector& src, uint64_t old)> cb)
+	void set_framecount_notification(fchange_listener& cb)
 	{
-		integer_pool::holder h(cb_handles);
-		on_framecount_change[h()] = cb;
-		return h.commit();
+		threads::alock h(mlock);
+		on_framecount_change.insert(&cb);
 	}
 /**
  * Clear framecount change notification.
  *
  * Parameter handle: Handle to clear.
  */
-	void clear_framecount_notification(uint64_t handle)
+	void clear_framecount_notification(fchange_listener& cb)
 	{
-		on_framecount_change.erase(handle);
-		cb_handles(handle);
+		threads::alock h(mlock);
+		on_framecount_change.erase(&cb);
 	}
 /**
  * Call framecount change notification.
  */
 	void call_framecount_notification(uint64_t oldcount)
 	{
-		for(auto& i : on_framecount_change)
-			try { i.second(*this, oldcount); } catch(...) {}
+		std::set<fchange_listener*> tmp;
+		{
+			threads::alock h(mlock);
+			tmp = on_framecount_change;
+		}
+		for(auto i : tmp)
+			try { i->notify(*this, oldcount); } catch(...) {}
 	}
 /**
  * Swap frame data.
@@ -1302,9 +1321,9 @@ private:
 	uint64_t real_frame_count;
 	uint64_t frame_count_at_freeze;
 	size_t freeze_count;
-	std::map<uint64_t, std::function<void(controller_frame_vector& src, uint64_t old)>> on_framecount_change;
-	integer_pool cb_handles;
+	std::set<fchange_listener*> on_framecount_change;
 	size_t walk_helper(size_t frame, bool sflag) throw();
+	threads::lock mlock;
 	void clear_cache()
 	{
 		cache_page_num = 0;

@@ -280,6 +280,15 @@ public:
  */
 	void set_movie_data(controller_frame_vector* data);
 private:
+	class fchange_listener : public controller_frame_vector::fchange_listener
+	{
+	public:
+		fchange_listener(movie& m);
+		~fchange_listener();
+		void notify(controller_frame_vector& src, uint64_t old);
+	private:
+		movie& mov;
+	} _listener;
 	movie(const movie& mov);
 	movie& operator=(const movie& m);
 	//Sequence number.
@@ -309,8 +318,6 @@ private:
 	//Cached subframes.
 	uint64_t cached_frame;
 	uint64_t cached_subframe;
-	//Handle for notifications.
-	uint64_t movie_data_nh;
 	//Count present subframes in frame starting from first_subframe (returns 0 if out of movie).
 	uint32_t count_changes(uint64_t first_subframe) throw();
 };
