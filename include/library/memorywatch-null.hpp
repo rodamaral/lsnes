@@ -5,12 +5,15 @@
 #include <string>
 #include <functional>
 
-struct memorywatch_output_null : public memorywatch_item_printer
+namespace memorywatch
 {
-	memorywatch_output_null();
-	~memorywatch_output_null();
+struct output_null : public item_printer
+{
+	output_null();
+	~output_null();
 	void show(const std::string& iname, const std::string& val);
 	void reset();
 };
+}
 
 #endif

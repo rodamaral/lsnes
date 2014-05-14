@@ -3,9 +3,11 @@
 #include "utf8.hpp"
 #include "minmax.hpp"
 
+namespace memorywatch
+{
 namespace
 {
-	struct memorywatch_fb_object : public framebuffer::object
+	struct fb_object : public framebuffer::object
 	{
 		struct params
 		{
@@ -20,8 +22,8 @@ namespace
 			framebuffer::color bg;
 			framebuffer::color halo;
 		};
-		memorywatch_fb_object(const params& _p, const std::string& _msg);
-		~memorywatch_fb_object() throw();
+		fb_object(const params& _p, const std::string& _msg);
+		~fb_object() throw();
 		void operator()(struct framebuffer::fb<false>& scr) throw();
 		void operator()(struct framebuffer::fb<true>& scr) throw();
 		void clone(framebuffer::queue& q) const throw(std::bad_alloc);
@@ -31,19 +33,19 @@ namespace
 		std::u32string msg;
 	};
 
-	memorywatch_fb_object::memorywatch_fb_object(const memorywatch_fb_object::params& _p, const std::string& _msg)
+	fb_object::fb_object(const fb_object::params& _p, const std::string& _msg)
 		: p(_p)
 	{
 		msg = utf8::to32(_msg);
 	}
 
-	memorywatch_fb_object::~memorywatch_fb_object() throw() {}
-	void memorywatch_fb_object::operator()(struct framebuffer::fb<false>& scr) throw() { draw(scr); }
-	void memorywatch_fb_object::operator()(struct framebuffer::fb<true>& scr) throw() { draw(scr); }
+	fb_object::~fb_object() throw() {}
+	void fb_object::operator()(struct framebuffer::fb<false>& scr) throw() { draw(scr); }
+	void fb_object::operator()(struct framebuffer::fb<true>& scr) throw() { draw(scr); }
 
-	void memorywatch_fb_object::clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
+	void fb_object::clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 
-	template<bool ext> void memorywatch_fb_object::draw(struct framebuffer::fb<ext>& scr) throw()
+	template<bool ext> void fb_object::draw(struct framebuffer::fb<ext>& scr) throw()
 	{
 		p.x += scr.get_origin_x();
 		p.y += scr.get_origin_y();
@@ -126,30 +128,30 @@ namespace
 	}
 }
 
-memorywatch_output_fb::memorywatch_output_fb()
+output_fb::output_fb()
 {
 	font = NULL;
 }
 
-memorywatch_output_fb::~memorywatch_output_fb()
+output_fb::~output_fb()
 {
 	if(dtor_cb)
 		dtor_cb(*this);
 }
 
-void memorywatch_output_fb::set_rqueue(framebuffer::queue& rqueue)
+void output_fb::set_rqueue(framebuffer::queue& rqueue)
 {
 	queue = &rqueue;
 }
 
-void memorywatch_output_fb::set_dtor_cb(std::function<void(memorywatch_output_fb&)> cb)
+void output_fb::set_dtor_cb(std::function<void(output_fb&)> cb)
 {
 	dtor_cb = cb;
 }
 
-void memorywatch_output_fb::show(const std::string& iname, const std::string& val)
+void output_fb::show(const std::string& iname, const std::string& val)
 {
-	memorywatch_fb_object::params p;
+	fb_object::params p;
 	try {
 		if(cond_enable) {
 			enabled->reset();
@@ -171,14 +173,15 @@ void memorywatch_output_fb::show(const std::string& iname, const std::string& va
 		p.fg = fg;
 		p.bg = bg;
 		p.halo = halo;
-		queue->create_add<memorywatch_fb_object>(p, val);
+		queue->create_add<fb_object>(p, val);
 	} catch(...) {
 	}
 }
 
-void memorywatch_output_fb::reset()
+void output_fb::reset()
 {
 	enabled->reset();
 	pos_x->reset();
 	pos_y->reset();
+}
 }

@@ -6,6 +6,8 @@
 #include <sstream>
 #include "string.hpp"
 
+namespace memorywatch
+{
 namespace
 {
 	template<typename T> T* pointer_cast(char* ptr)
@@ -14,14 +16,14 @@ namespace
 	}
 }
 
-memorywatch_memread_oper::memorywatch_memread_oper()
+memread_oper::memread_oper()
 	: mathexpr_operinfo("(readmemory)")
 {
 }
 
-memorywatch_memread_oper::~memorywatch_memread_oper() {}
+memread_oper::~memread_oper() {}
 
-void memorywatch_memread_oper::evaluate(mathexpr_value target, std::vector<std::function<mathexpr_value()>> promises)
+void memread_oper::evaluate(mathexpr_value target, std::vector<std::function<mathexpr_value()>> promises)
 {
 	if(promises.size() != 1)
 		throw mathexpr_error(mathexpr_error::ARGCOUNT, "Memory read operator takes 1 argument");
@@ -130,15 +132,15 @@ namespace
 	bool uppercasehex;
 */
 
-memorywatch_item_printer::~memorywatch_item_printer()
+item_printer::~item_printer()
 {
 }
 
-void memorywatch_item_printer::trace()
+void item_printer::trace()
 {
 }
 
-std::string memorywatch_item::get_value()
+std::string item::get_value()
 {
 	if(format == "") {
 		//Default.
@@ -207,7 +209,7 @@ std::string memorywatch_item::get_value()
 	return out.str();
 }
 
-void memorywatch_item::show(const std::string& n)
+void item::show(const std::string& n)
 {
 	std::string x;
 	try {
@@ -224,13 +226,13 @@ void memorywatch_item::show(const std::string& n)
 }
 
 
-memorywatch_set::~memorywatch_set()
+set::~set()
 {
 	roots.clear();
 	garbage_collectable::do_gc();
 }
 
-void memorywatch_set::reset()
+void set::reset()
 {
 	for(auto& i : roots) {
 		if(i.second.printer)
@@ -239,7 +241,7 @@ void memorywatch_set::reset()
 	}
 }
 
-void memorywatch_set::refresh()
+void set::refresh()
 {
 	for(auto& i : roots)
 		i.second.expr->reset();
@@ -247,7 +249,7 @@ void memorywatch_set::refresh()
 		i.second.show(i.first);
 }
 
-std::set<std::string> memorywatch_set::set()
+std::set<std::string> set::names_set()
 {
 	std::set<std::string> r;
 	for(auto i : roots)
@@ -255,7 +257,7 @@ std::set<std::string> memorywatch_set::set()
 	return r;
 }
 
-memorywatch_item& memorywatch_set::get(const std::string& name)
+item& set::get(const std::string& name)
 {
 	auto i = get_soft(name);
 	if(!i)
@@ -263,20 +265,20 @@ memorywatch_item& memorywatch_set::get(const std::string& name)
 	return *i;
 }
 
-memorywatch_item* memorywatch_set::get_soft(const std::string& name)
+item* set::get_soft(const std::string& name)
 {
 	if(!roots.count(name))
 		return NULL;
 	return &(roots.find(name)->second);
 }
 
-memorywatch_item* memorywatch_set::create(const std::string& name, memorywatch_item& item)
+item* set::create(const std::string& name, item& item)
 {
 	roots.insert(std::make_pair(name, item));
 	return &(roots.find(name)->second);
 }
 
-void memorywatch_set::destroy(const std::string& name)
+void set::destroy(const std::string& name)
 {
 	if(!roots.count(name))
 		return;
@@ -284,7 +286,7 @@ void memorywatch_set::destroy(const std::string& name)
 	garbage_collectable::do_gc();
 }
 
-const std::string& memorywatch_set::get_longest_name(std::function<size_t(const std::string& n)> rate)
+const std::string& set::get_longest_name(std::function<size_t(const std::string& n)> rate)
 {
 	static std::string empty;
 	size_t best_len = 0;
@@ -299,71 +301,19 @@ const std::string& memorywatch_set::get_longest_name(std::function<size_t(const 
 	return *best;
 }
 
-size_t memorywatch_set::utflength_rate(const std::string& n)
+size_t set::utflength_rate(const std::string& n)
 {
 	return utf8::strlen(n);
 }
 
-void memorywatch_set::foreach(std::function<void(memorywatch_item& item)> cb)
+void set::foreach(std::function<void(item& item)> cb)
 {
 	for(auto& i : roots)
 		cb(i.second);
 }
 
-void memorywatch_set::swap(memorywatch_set& s) throw()
+void set::swap(set& s) throw()
 {
 	std::swap(roots, s.roots);
 }
-
-#ifdef TEST_MEMORYWATCH
-#include "mathexpr-ntype.hpp"
-
-struct stdout_item_printer : public memorywatch_item_printer
-{
-	~stdout_item_printer()
-	{
-	}
-	void show(const std::string& n, const std::string& v)
-	{
-		std::cout << n << " --> " << v << std::endl;
-	}
-	void reset()
-	{
-	}
-};
-
-int main2(int argc, char** argv)
-{
-	memorywatch_set mset;
-	gcroot_pointer<memorywatch_item_printer> printer(new stdout_item_printer);
-	std::function<gcroot_pointer<mathexpr>(const std::string&)> vars_fn = [&mset]
-		(const std::string& n) -> gcroot_pointer<mathexpr> {
-		auto p = mset.get_soft(n);
-		if(!p) {
-			memorywatch_item i(*expression_value());
-			p = mset.create(n, i);
-		}
-		return p->expr;
-	};
-	for(int i = 1; i < argc; i++) {
-		regex_results r = regex("([^=]+)=\\[(.*)\\](.*)", argv[i]);
-		if(!r)
-			throw std::runtime_error("Bad argument '" + std::string(argv[i]) + "'");
-		*vars_fn(r[1]) = *mathexpr::parse(*expression_value(), r[3], vars_fn);
-		mset.get(r[1]).format = r[2];
-		mset.get(r[1]).printer = printer;
-	}
-	garbage_collectable::do_gc();
-	garbage_collectable::do_gc();
-	mset.refresh();
-	return 0;
 }
-
-int main(int argc, char** argv)
-{
-	int r = main2(argc, argv);
-	garbage_collectable::do_gc();
-	return r;
-}
-
-#endif

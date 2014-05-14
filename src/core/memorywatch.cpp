@@ -29,7 +29,6 @@
 namespace
 {
 	std::map<std::string, std::pair<framebuffer::font2*, size_t>> fonts_in_use;
-	std::map<std::string, std::u32string> memorywatch_vars;
 
 	framebuffer::font2& get_builtin_font2()
 	{
@@ -155,22 +154,22 @@ void memwatch_printer::unserialize(const JSON::node& node)
 	onscreen_halo_color = json_signed_default(node, "onscreen_halo_color", false);
 }
 
-gcroot_pointer<memorywatch_item_printer> memwatch_printer::get_printer_obj(
+gcroot_pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
 	std::function<gcroot_pointer<mathexpr>(const std::string& n)> vars)
 {
-	gcroot_pointer<memorywatch_item_printer> ptr;
-	memorywatch_output_list* l;
-	memorywatch_output_fb* f;
+	gcroot_pointer<memorywatch::item_printer> ptr;
+	memorywatch::output_list* l;
+	memorywatch::output_fb* f;
 
 	std::string _enabled = (enabled != "") ? enabled : "true";
 
 	switch(position) {
 	case PC_DISABLED:
-		ptr = gcroot_pointer<memorywatch_item_printer>(new memorywatch_output_null);
+		ptr = gcroot_pointer<memorywatch::item_printer>(new memorywatch::output_null);
 		break;
 	case PC_MEMORYWATCH:
-		ptr = gcroot_pointer<memorywatch_item_printer>(new memorywatch_output_list);
-		l = dynamic_cast<memorywatch_output_list*>(ptr.as_pointer());
+		ptr = gcroot_pointer<memorywatch::item_printer>(new memorywatch::output_list);
+		l = dynamic_cast<memorywatch::output_list*>(ptr.as_pointer());
 		l->cond_enable = cond_enable;
 		try {
 			if(l->cond_enable)
@@ -183,10 +182,10 @@ gcroot_pointer<memorywatch_item_printer> memwatch_printer::get_printer_obj(
 		l->set_output(dummy_target_fn);
 		break;
 	case PC_ONSCREEN:
-		ptr = gcroot_pointer<memorywatch_item_printer>(new memorywatch_output_fb);
-		f = dynamic_cast<memorywatch_output_fb*>(ptr.as_pointer());
+		ptr = gcroot_pointer<memorywatch::item_printer>(new memorywatch::output_fb);
+		f = dynamic_cast<memorywatch::output_fb*>(ptr.as_pointer());
 		f->font = NULL;
-		f->set_dtor_cb([](memorywatch_output_fb& obj) { put_font(obj.font); });
+		f->set_dtor_cb([](memorywatch::output_fb& obj) { put_font(obj.font); });
 		f->cond_enable = cond_enable;
 		std::string while_parsing = "(unknown)";
 		try {
@@ -265,11 +264,11 @@ void memwatch_item::unserialize(const JSON::node& node)
 	addr_size = json_unsigned_default(node, "addr_size", 0);
 }
 
-memorywatch_memread_oper* memwatch_item::get_memread_oper()
+memorywatch::memread_oper* memwatch_item::get_memread_oper()
 {
 	if(!bytes)
 		return NULL;
-	memorywatch_memread_oper* o = new memorywatch_memread_oper;
+	memorywatch::memread_oper* o = new memorywatch::memread_oper;
 	o->bytes = bytes;
 	o->signed_flag = signed_flag;
 	o->float_flag = float_flag;
@@ -401,8 +400,8 @@ std::string memwatch_set::get_string(const std::string& name, JSON::printer* pri
 void memwatch_set::watch(struct framebuffer::queue& rq)
 {
 	//Set framebuffer for all FB watches.
-	watch_set.foreach([&rq](memorywatch_item& i) {
-		memorywatch_output_fb* fb = dynamic_cast<memorywatch_output_fb*>(i.printer.as_pointer());
+	watch_set.foreach([&rq](memorywatch::item& i) {
+		memorywatch::output_fb* fb = dynamic_cast<memorywatch::output_fb*>(i.printer.as_pointer());
 		if(fb)
 			fb->set_rqueue(rq);
 	});
@@ -490,7 +489,7 @@ void memwatch_set::clear_multi(const std::set<std::string>& names)
 void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 {
 	{
-		memorywatch_set new_set;
+		memorywatch::set new_set;
 		std::map<std::string, gcroot_pointer<mathexpr>> vars;
 		auto vars_fn = [&vars](const std::string& n) -> gcroot_pointer<mathexpr> {
 			if(!vars.count(n))
@@ -502,7 +501,7 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 			mathexpr_operinfo* memread_oper = i.second.get_memread_oper();
 			try {
 				gcroot_pointer<mathexpr> rt_expr;
-				gcroot_pointer<memorywatch_item_printer> rt_printer;
+				gcroot_pointer<memorywatch::item_printer> rt_printer;
 				std::vector<gcroot_pointer<mathexpr>> v;
 				try {
 					rt_expr = mathexpr::parse(*expression_value(), i.second.expr, vars_fn);
@@ -519,13 +518,13 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 				rt_printer = i.second.printer.get_printer_obj(vars_fn);
 
 				//Set final callback for list objects (since it wasn't known on creation).
-				auto list_obj = dynamic_cast<memorywatch_output_list*>(rt_printer.as_pointer());
+				auto list_obj = dynamic_cast<memorywatch::output_list*>(rt_printer.as_pointer());
 				if(list_obj)
 					list_obj->set_output([this](const std::string& n, const std::string& v) {
-						this->memorywatch_output(n, v);
+						this->watch_output(n, v);
 					});
 
-				memorywatch_item it(*expression_value());
+				memorywatch::item it(*expression_value());
 				*vars_fn(i.first) = *rt_expr;
 				it.expr = vars_fn(i.first);
 				it.printer = rt_printer;
@@ -541,7 +540,7 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 	garbage_collectable::do_gc();
 }
 
-void memwatch_set::memorywatch_output(const std::string& name, const std::string& value)
+void memwatch_set::watch_output(const std::string& name, const std::string& value)
 {
 	used_memorywatches[name] = true;
 	window_vars[name] = utf8::to32(value);

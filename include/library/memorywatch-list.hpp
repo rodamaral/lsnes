@@ -6,10 +6,12 @@
 #include <string>
 #include <functional>
 
-struct memorywatch_output_list : public memorywatch_item_printer
+namespace memorywatch
 {
-	memorywatch_output_list();
-	~memorywatch_output_list();
+struct output_list : public item_printer
+{
+	output_list();
+	~output_list();
 	void set_output(std::function<void(const std::string& n, const std::string& v)> _fn);
 	void show(const std::string& iname, const std::string& val);
 	void reset();
@@ -18,5 +20,6 @@ struct memorywatch_output_list : public memorywatch_item_printer
 	//State variables.
 	std::function<void(const std::string& n, const std::string& v)> fn;
 };
+}
 
 #endif

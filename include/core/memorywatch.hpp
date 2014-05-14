@@ -27,7 +27,7 @@ struct memwatch_printer
 /**
  * Get a printer object corresponding to this object.
  */
-	gcroot_pointer<memorywatch_item_printer> get_printer_obj(
+	gcroot_pointer<memorywatch::item_printer> get_printer_obj(
 		std::function<gcroot_pointer<mathexpr>(const std::string& n)> vars);
 	//Fields.
 	enum position_category {
@@ -71,7 +71,7 @@ struct memwatch_item
  *
  * If bytes == 0, returns NULL.
  */
-	memorywatch_memread_oper* get_memread_oper();
+	memorywatch::memread_oper* get_memread_oper();
 /**
  * Translate compatiblity item.
  */
@@ -173,8 +173,8 @@ private:
 	std::map<std::string, std::u32string> window_vars;
 	std::map<std::string, bool> used_memorywatches;
 	void erase_unused_watches();
-	void memorywatch_output(const std::string& name, const std::string& value);
-	memorywatch_set watch_set;
+	void watch_output(const std::string& name, const std::string& value);
+	memorywatch::set watch_set;
 };
 
 #endif

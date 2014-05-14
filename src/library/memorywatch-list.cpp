@@ -1,19 +1,21 @@
 #include "memorywatch-list.hpp"
 
-memorywatch_output_list::memorywatch_output_list()
+namespace memorywatch
+{
+output_list::output_list()
 {
 }
 
-memorywatch_output_list::~memorywatch_output_list()
+output_list::~output_list()
 {
 }
 
-void memorywatch_output_list::set_output(std::function<void(const std::string& n, const std::string& v)> _fn)
+void output_list::set_output(std::function<void(const std::string& n, const std::string& v)> _fn)
 {
 	fn = _fn;
 }
 
-void memorywatch_output_list::show(const std::string& iname, const std::string& val)
+void output_list::show(const std::string& iname, const std::string& val)
 {
 	if(cond_enable) {
 		try {
@@ -28,6 +30,7 @@ void memorywatch_output_list::show(const std::string& iname, const std::string& 
 	fn(iname, val);
 }
 
-void memorywatch_output_list::reset()
+void output_list::reset()
 {
+}
 }

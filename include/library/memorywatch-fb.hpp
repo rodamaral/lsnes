@@ -10,12 +10,14 @@ namespace framebuffer
 	class font2;
 }
 
-struct memorywatch_output_fb : public memorywatch_item_printer
+namespace memorywatch
 {
-	memorywatch_output_fb();
-	~memorywatch_output_fb();
+struct output_fb : public item_printer
+{
+	output_fb();
+	~output_fb();
 	void set_rqueue(framebuffer::queue& rqueue);
-	void set_dtor_cb(std::function<void(memorywatch_output_fb&)> cb);
+	void set_dtor_cb(std::function<void(output_fb&)> cb);
 	void show(const std::string& iname, const std::string& val);
 	void reset();
 	bool cond_enable;
@@ -32,7 +34,8 @@ struct memorywatch_output_fb : public memorywatch_item_printer
 	framebuffer::color halo;
 	//State variables.
 	framebuffer::queue* queue;
-	std::function<void(memorywatch_output_fb&)> dtor_cb;
+	std::function<void(output_fb&)> dtor_cb;
 };
+}
 
 #endif

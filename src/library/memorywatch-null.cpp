@@ -1,17 +1,20 @@
 #include "memorywatch-null.hpp"
 
-memorywatch_output_null::memorywatch_output_null()
+namespace memorywatch
+{
+output_null::output_null()
 {
 }
 
-memorywatch_output_null::~memorywatch_output_null()
+output_null::~output_null()
 {
 }
 
-void memorywatch_output_null::show(const std::string& iname, const std::string& val)
+void output_null::show(const std::string& iname, const std::string& val)
 {
 }
 
-void memorywatch_output_null::reset()
+void output_null::reset()
 {
+}
 }

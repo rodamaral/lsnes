@@ -8,19 +8,21 @@
 
 class memory_space;
 
+namespace memorywatch
+{
 /**
  * Read memory operator.
  */
-struct memorywatch_memread_oper : public mathexpr_operinfo
+struct memread_oper : public mathexpr_operinfo
 {
 /**
  * Ctor
  */
-	memorywatch_memread_oper();
+	memread_oper();
 /**
  * Dtor
  */
-	~memorywatch_memread_oper();
+	~memread_oper();
 /**
  * Evaluate the operator.
  *
@@ -41,12 +43,12 @@ struct memorywatch_memread_oper : public mathexpr_operinfo
 /**
  * Memory watch item printer.
  */
-struct memorywatch_item_printer : public garbage_collectable
+struct item_printer : public garbage_collectable
 {
 /**
  * Dtor.
  */
-	virtual ~memorywatch_item_printer();
+	virtual ~item_printer();
 /**
  * Show the watched value.
  */
@@ -62,14 +64,14 @@ protected:
 /**
  * Memory watch item.
  */
-struct memorywatch_item
+struct item
 {
 /**
  * Ctor.
  *
  * Parameter t: The type of the result.
  */
-	memorywatch_item(mathexpr_typeinfo& t)
+	item(mathexpr_typeinfo& t)
 		: expr(gcroot_pointer_object_tag(), &t)
 	{
 	}
@@ -84,7 +86,7 @@ struct memorywatch_item
  */
 	void show(const std::string& iname);
 	//Fields.
-	gcroot_pointer<memorywatch_item_printer> printer;	//Printer to use.
+	gcroot_pointer<item_printer> printer;	//Printer to use.
 	gcroot_pointer<mathexpr> expr;				//Expression to watch.
 	std::string format;					//Formatting to use.
 };
@@ -92,12 +94,12 @@ struct memorywatch_item
 /**
  * A set of memory watches.
  */
-struct memorywatch_set
+struct set
 {
 /**
  * Dtor.
  */
-	~memorywatch_set();
+	~set();
 /**
  * Call reset on all items and their printers in the set.
  */
@@ -113,7 +115,7 @@ struct memorywatch_set
  */
 	const std::string& get_longest_name()
 	{
-		return get_longest_name(memorywatch_set::utflength_rate);
+		return get_longest_name(set::utflength_rate);
 	}
 /**
  * Get the longest name (by arbitrary function) in the set.
@@ -125,7 +127,7 @@ struct memorywatch_set
 /**
  * Get the set of memory watch names.
  */
-	std::set<std::string> set();
+	std::set<std::string> names_set();
 /**
  * Get specified memory watch item.
  *
@@ -133,21 +135,21 @@ struct memorywatch_set
  * Returns: The item.
  * Throws std::runtime_error: No such item in set.
  */
-	memorywatch_item& get(const std::string& name);
+	item& get(const std::string& name);
 /**
  * Get specified memory watch item (without throwing).
  *
  * Parameter name: The name of the item.
  * Returns: The item, or NULL if no such item exists.
  */
-	memorywatch_item* get_soft(const std::string& name);
+	item* get_soft(const std::string& name);
 /**
  * Create a new memory watch item.
  *
  * Parameter name: The name of the new item.
  * Parameter item: The new item. All fields are shallow-copied.
  */
-	memorywatch_item* create(const std::string& name, memorywatch_item& item);
+	item* create(const std::string& name, item& item);
 /**
  * Destroy a memory watch item.
  *
@@ -157,14 +159,15 @@ struct memorywatch_set
 /**
  * Call routine for all roots.
  */
-	void foreach(std::function<void(memorywatch_item& item)> cb);
+	void foreach(std::function<void(item& item)> cb);
 /**
  * Swap set with another.
  */
-	void swap(memorywatch_set& s) throw();
+	void swap(set& s) throw();
 private:
 	static size_t utflength_rate(const std::string& s);
-	std::map<std::string, memorywatch_item> roots;
+	std::map<std::string, item> roots;
 };
+}
 
 #endif
