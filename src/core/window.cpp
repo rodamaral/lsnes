@@ -76,8 +76,14 @@ namespace
 		});
 
 	command::fnptr<const std::string&> enable_sound(lsnes_cmds, "enable-sound", "Enable/Disable sound",
-		"Syntax: enable-sound <on/off>\nEnable or disable sound.\n",
+		"Syntax: enable-sound <on/off/toggle>\nEnable or disable sound.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			if(args == "toggle") {
+				if(!audioapi_driver_initialized())
+					throw std::runtime_error("Sound failed to initialize and is disabled");
+				platform::sound_enable(!platform::is_sound_enabled());
+				return;
+			}
 			switch(string_to_bool(args)) {
 			case 1:
 				if(!audioapi_driver_initialized())
@@ -95,6 +101,7 @@ namespace
 
 	keyboard::invbind_info ienable_sound(lsnes_invbinds, "enable-sound on", "Sound‣Enable");
 	keyboard::invbind_info idisable_sound(lsnes_invbinds, "enable-sound off", "Sound‣Disable");
+	keyboard::invbind_info itoggle_sound(lsnes_invbinds, "enable-sound toggle", "Sound‣Toggle");
 
 	class window_output
 	{
