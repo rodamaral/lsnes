@@ -59,7 +59,7 @@ std::list<modifier*> keyboard::all_modifiers() throw(std::bad_alloc)
 	threads::arlock u(get_keyboard_lock());
 	auto state = keyboard_internal_t::get_soft(this);
 	std::list<modifier*> r;
-	if(!state)
+	if(state)
 		for(auto i : state->modifiers)
 			r.push_back(i.second);
 	return r;
@@ -103,7 +103,7 @@ std::list<key*> keyboard::all_keys() throw(std::bad_alloc)
 	threads::arlock u(get_keyboard_lock());
 	auto state = keyboard_internal_t::get_soft(this);
 	std::list<key*> r;
-	if(!state)
+	if(state)
 		for(auto i : state->keys)
 			r.push_back(i.second);
 	return r;
