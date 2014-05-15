@@ -196,6 +196,9 @@ key_entry_dialog::key_entry_dialog(wxWindow* parent, const std::string& title, c
 			wxCommandEventHandler(key_entry_dialog::on_clear), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
+	if(classeslist.empty())
+		throw std::runtime_error("No keys");
+
 	set_class(tostdstring(classeslist[0]));
 
 	t_s->SetSizeHints(this);
