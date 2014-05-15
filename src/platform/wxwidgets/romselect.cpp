@@ -329,7 +329,7 @@ no_watch:
 		ok = ok && (projname->GetValue().length() > 0);
 		ok = ok && (projdir->GetValue().length() > 0);
 		ok = ok && (projpfx->GetValue().length() > 0);
-		ok = ok && file_is_directory(tostdstring(projdir->GetValue()));
+		ok = ok && directory::is_directory(tostdstring(projdir->GetValue()));
 		okbutton->Enable(ok);
 	}
 

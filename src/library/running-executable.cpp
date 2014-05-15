@@ -78,5 +78,5 @@ std::string _running_executable()
 
 std::string running_executable()
 {
-	return get_absolute_path(_running_executable());
+	return directory::absolute_path(_running_executable());
 }

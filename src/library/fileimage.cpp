@@ -40,7 +40,7 @@ namespace
 	{
 		std::string cache = filename + ".sha256";
 		if(prefixlen) cache += (stringfmt() << "-" << prefixlen).str();
-		time_t filetime = file_get_mtime(filename);
+		time_t filetime = directory::mtime(filename);
 		if(cached_entries.count(cache)) {
 			//Found the cache entry...
 			if(cached_entries[cache].first == filetime)
@@ -81,7 +81,7 @@ namespace
 	{
 		std::string cache = filename + ".sha256";
 		if(prefixlen) cache += (stringfmt() << "-" << prefixlen).str();
-		time_t filetime = file_get_mtime(filename);
+		time_t filetime = directory::mtime(filename);
 		std::ofstream out(cache);
 		cached_entries[cache] = std::make_pair(filetime, value);
 		if(!out)
@@ -93,7 +93,7 @@ namespace
 
 	uint64_t get_file_size(const std::string& filename)
 	{
-		uintmax_t size = file_get_size(filename);
+		uintmax_t size = directory::size(filename);
 		if(size == static_cast<uintmax_t>(-1))
 			return 0;
 		return size;
@@ -482,7 +482,7 @@ image::image(hash& h, const std::string& _filename, const std::string& base,
 
 	if(info.type == info::IT_FILE) {
 		filename = zip::resolverel(_filename, base);
-		filename = get_absolute_path(filename);
+		filename = directory::absolute_path(filename);
 		type = info::IT_FILE;
 		data.reset(new std::vector<char>(filename.begin(), filename.end()));
 		stripped = 0;

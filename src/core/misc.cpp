@@ -169,7 +169,7 @@ std::string get_config_path() throw(std::bad_alloc)
 	}
 	//Try to create 'lsnes'. If it exists (or is created) and is directory, great. Otherwise error out.
 	std::string lsnes_path = basedir + "/lsnes";
-	if(!ensure_directory_exists(lsnes_path)) {
+	if(!directory::ensure_exists(lsnes_path)) {
 		messages << "FATAL: Can't create configuration directory '" << lsnes_path << "'" << std::endl;
 		fatal_error();
 	}

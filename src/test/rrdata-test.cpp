@@ -7,7 +7,7 @@
 
 uint64_t get_file_size(const std::string& filename)
 {
-	uintmax_t size = file_get_size(filename);
+	uintmax_t size = directory::size(filename);
 	if(size == static_cast<uintmax_t>(-1))
 		return 0;
 	return size;

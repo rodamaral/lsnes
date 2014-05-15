@@ -142,7 +142,7 @@ void wxeditor_plugins::reload_plugins()
 	else
 		name = pluginstbl[sel].first;
 
-	auto dir = enumerate_directory(pathpfx, ".*\\." + extension);
+	auto dir = directory::enumerate(pathpfx, ".*\\." + extension);
 	plugins->Clear();
 	pluginstbl.clear();
 	for(auto i : dir) {
@@ -198,7 +198,7 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 		bool overwrite_ok = false;
 		bool first = true;
 		int counter = 2;
-		while(!overwrite_ok && file_exists(nname)) {
+		while(!overwrite_ok && directory::exists(nname)) {
 			if(first) {
 				wxMessageDialog* d3 = new wxMessageDialog(this,
 					towxstring("Plugin '" + name  + "' already exists.\n\nOverwrite?"),

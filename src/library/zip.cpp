@@ -341,7 +341,7 @@ reader::~reader() throw()
 
 reader::reader(const std::string& zipfile) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!file_is_regular(zipfile))
+	if(!directory::is_regular(zipfile))
 		throw std::runtime_error("Zipfile '" + zipfile + "' is not regular file");
 	zipstream = NULL;
 	refcnt = NULL;
@@ -694,7 +694,7 @@ std::istream& openrel(const std::string& name, const std::string& referencing_pa
 	std::string path_to_open = combine_path(name, referencing_path);
 	std::string final_path = path_to_open;
 	//Try to open this from the main OS filesystem.
-	if(file_is_regular(path_to_open)) {
+	if(directory::is_regular(path_to_open)) {
 		std::ifstream* i = new std::ifstream(path_to_open.c_str(), std::ios::binary);
 		if(i->is_open()) {
 			return *i;
@@ -713,7 +713,7 @@ std::istream& openrel(const std::string& name, const std::string& referencing_pa
 		else
 			membername = path_to_open.substr(split + 1);
 		path_to_open = path_to_open.substr(0, split);
-		if(file_is_regular(path_to_open))
+		if(directory::is_regular(path_to_open))
 			try {
 				reader r(path_to_open);
 				return r[membername];
@@ -739,7 +739,7 @@ bool file_exists(const std::string& name) throw(std::bad_alloc)
 {
 	std::string path_to_open = name;
 	std::string final_path = path_to_open;
-	if(file_is_regular(path_to_open))
+	if(directory::is_regular(path_to_open))
 		return true;
 	//Didn't succeed. Try to open as ZIP archive.
 	std::string membername;
@@ -753,7 +753,7 @@ bool file_exists(const std::string& name) throw(std::bad_alloc)
 		else
 			membername = path_to_open.substr(split + 1);
 		path_to_open = path_to_open.substr(0, split);
-		if(file_is_regular(path_to_open))
+		if(directory::is_regular(path_to_open))
 			try {
 				reader r(path_to_open);
 				return r.has_member(membername);

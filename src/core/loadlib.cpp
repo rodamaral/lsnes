@@ -141,13 +141,13 @@ namespace
 void autoload_libraries(void(*on_error)(const std::string& libname, const std::string& err, bool system))
 {
 	try {
-		auto libs = enumerate_directory(get_user_library_dir(), ".*");
+		auto libs = directory::enumerate(get_user_library_dir(), ".*");
 		load_libraries(libs, false, on_error);
 	} catch(std::exception& e) {
 		messages << e.what() << std::endl;
 	}
 	try {
-		auto libs = enumerate_directory(get_system_library_dir(), ".*");
+		auto libs = directory::enumerate(get_system_library_dir(), ".*");
 		load_libraries(libs, true, on_error);
 	} catch(std::exception& e) {
 		messages << e.what() << std::endl;

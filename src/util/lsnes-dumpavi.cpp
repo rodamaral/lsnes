@@ -37,7 +37,7 @@ namespace
 	{
 		if(!regex_match("[A-Za-z][A-Za-z0-9+.-]*:.+", origname))
 			return origname;	//File.
-		if(file_is_regular(origname))
+		if(directory::is_regular(origname))
 			return origname;	//Even exists.
 		//Okay, we need to download this.
 		auto download_in_progress = new file_download();

@@ -41,7 +41,7 @@ namespace
 		//Handle NULL font.
 		if(filename == "")
 			return &get_builtin_font2();
-		std::string abs_filename = get_absolute_path(filename);
+		std::string abs_filename = directory::absolute_path(filename);
 		if(fonts_in_use.count(abs_filename)) {
 			fonts_in_use[abs_filename].second++;
 			return fonts_in_use[abs_filename].first;

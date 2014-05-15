@@ -189,7 +189,7 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 std::string resolve_relative_path(const std::string& path)
 {
 	try {
-		return get_absolute_path(path);
+		return directory::absolute_path(path);
 	} catch(...) {
 		return path;
 	}

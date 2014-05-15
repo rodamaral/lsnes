@@ -254,7 +254,7 @@ void debug_tracelog(uint64_t proc, const std::string& filename)
 		return;
 	}
 	if(trace_outputs.count(proc)) throw std::runtime_error("Already tracelogging");
-	std::string full_filename = get_absolute_path(filename);
+	std::string full_filename = directory::absolute_path(filename);
 	bool found = false;
 	for(auto i : trace_outputs) {
 		if(i.second.first->full_filename == full_filename) {

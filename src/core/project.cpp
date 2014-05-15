@@ -410,7 +410,7 @@ std::map<std::string, std::string> project_enumerate()
 	std::set<std::string> projects;
 	std::map<std::string, std::string> projects2;
 
-	projects = enumerate_directory(get_config_path(), ".*\\.prj");
+	projects = directory::enumerate(get_config_path(), ".*\\.prj");
 	for(auto i : projects) {
 		std::string id = i;
 		size_t split;

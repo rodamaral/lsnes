@@ -9,7 +9,9 @@ namespace boost_fs = boost::filesystem3;
 namespace boost_fs = boost::filesystem;
 #endif
 
-std::set<std::string> enumerate_directory(const std::string& dir, const std::string& match)
+namespace directory
+{
+std::set<std::string> enumerate(const std::string& dir, const std::string& match)
 {
 	std::set<std::string> x;
 	DIR* d;
@@ -26,17 +28,17 @@ std::set<std::string> enumerate_directory(const std::string& dir, const std::str
 	return x;
 }
 
-std::string get_absolute_path(const std::string& relative)
+std::string absolute_path(const std::string& relative)
 {
 	return boost_fs::absolute(boost_fs::path(relative)).string();
 }
 
-uintmax_t file_get_size(const std::string& path)
+uintmax_t size(const std::string& path)
 {
 	return boost_fs::file_size(boost_fs::path(path));
 }
 
-time_t file_get_mtime(const std::string& path)
+time_t mtime(const std::string& path)
 {
 	boost::system::error_code ec;
 	time_t t = boost_fs::last_write_time(boost_fs::path(path), ec);
@@ -45,13 +47,13 @@ time_t file_get_mtime(const std::string& path)
 	return t;
 }
 
-bool file_exists(const std::string& filename)
+bool exists(const std::string& filename)
 {
 	boost::system::error_code ec;
 	return boost_fs::exists(boost_fs::path(filename), ec);
 }
 
-bool file_is_regular(const std::string& filename)
+bool is_regular(const std::string& filename)
 {
 	boost::system::error_code ec;
 	boost_fs::file_status stat = status(boost_fs::path(filename), ec);
@@ -59,14 +61,15 @@ bool file_is_regular(const std::string& filename)
 	return e;
 }
 
-bool file_is_directory(const std::string& filename)
+bool is_directory(const std::string& filename)
 {
 	boost_fs::path p(filename);
 	return boost_fs::is_directory(p);
 }
 
-bool ensure_directory_exists(const std::string& path)
+bool ensure_exists(const std::string& path)
 {
 	boost_fs::path p(path);
 	return boost_fs::create_directories(p) || boost_fs::is_directory(p);
+}
 }

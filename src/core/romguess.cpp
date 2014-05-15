@@ -50,7 +50,7 @@ namespace
 	{
 		if(!db_loaded) load_db();
 		//Database write. If there is existing entry for file, it is overwritten.
-		std::string file = get_absolute_path(_file);
+		std::string file = directory::absolute_path(_file);
 		std::pair<std::string, uint64_t> key = std::make_pair(file, prefix);
 		if(hash == "" && !our_db.count(key))
 			return;		//Already correct.

@@ -493,7 +493,7 @@ namespace
 		if(!p)
 			return "";
 		else {
-			auto files = enumerate_directory(p->directory, ".*-[0-9]+\\.png");
+			auto files = directory::enumerate(p->directory, ".*-[0-9]+\\.png");
 			std::set<std::string> numbers;
 			for(auto i : files) {
 				size_t split;

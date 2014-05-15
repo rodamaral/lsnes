@@ -30,7 +30,7 @@ std::set<std::string> filelist::enumerate()
 void filelist::add(const std::string& filename)
 {
 	auto contents = readfile();
-	int64_t ts = file_get_mtime(directory + "/" + filename);
+	int64_t ts = directory::mtime(directory + "/" + filename);
 	contents[filename] = ts;
 	writeback(contents);
 }
@@ -39,7 +39,7 @@ void filelist::remove(const std::string& filename)
 {
 	auto contents = readfile();
 	//FIXME: Do something with this?
-	//int64_t ts = file_get_mtime(directory + "/" + filename);
+	//int64_t ts = directory::mtime(directory + "/" + filename);
 	contents.erase(filename);
 	writeback(contents);
 }
@@ -70,7 +70,7 @@ std::map<std::string, int64_t> filelist::readfile()
 void filelist::check_stale(std::map<std::string, int64_t>& data)
 {
 	for(auto& i : data) {
-		int64_t ts = file_get_mtime(directory + "/" + i.first);
+		int64_t ts = directory::mtime(directory + "/" + i.first);
 		//If file timestamp does not match, mark the file as stale.
 		if(i.second != ts)
 			i.second = 0;
