@@ -6015,7 +6015,7 @@ Return number of lag frames recorded so far.
 \end_layout
 
 \begin_layout Subsection
-movie.readonly: Is in readonly mode?
+movie.readonly: Is in playback mode?
 \end_layout
 
 \begin_layout Itemize
@@ -6023,7 +6023,7 @@ Syntax: boolean movie.readonly()
 \end_layout
 
 \begin_layout Standard
-Return true if in readonly mode, false if in readwrite.
+Return true if in playback mode, false if in recording.
 \end_layout
 
 \begin_layout Subsection
@@ -6039,7 +6039,7 @@ Returns the current value of rerecord count.
 \end_layout
 
 \begin_layout Subsection
-movie.set_readwrite: Set read-write mode.
+movie.set_readwrite: Set recording mode.
 \end_layout
 
 \begin_layout Itemize
@@ -6047,7 +6047,7 @@ Syntax: none movie.set_readwrite()
 \end_layout
 
 \begin_layout Standard
-Set readwrite mode (does not cause on_readwrite callback).
+Set recording mode (does not cause on_readwrite callback).
 \end_layout
 
 \begin_layout Subsection
@@ -6109,7 +6109,7 @@ If called without argument, causes emulator to start process of setting
 \begin_layout Itemize
 If called with argument, causes emulator rewind to passed rewind point as
  soon as possible.
- Readwrite mode is implicitly activated.
+ recording mode is implicitly activated.
 \end_layout
 
 \begin_layout Standard
@@ -8052,7 +8052,7 @@ Called when system is reset.
 \end_layout
 
 \begin_layout Subsection
-on_readwrite: Entered readwrite mode
+on_readwrite: Entered recording mode
 \end_layout
 
 \begin_layout Itemize
@@ -8060,7 +8060,7 @@ Callback: on_readwrite()
 \end_layout
 
 \begin_layout Standard
-Called when moving into readwrite mode as result of 
+Called when moving into recording mode as result of 
 \begin_inset Quotes eld
 \end_inset
 
@@ -8320,11 +8320,11 @@ Called just before something would happen that could lose movie data.
 \end_layout
 
 \begin_layout Itemize
-readwrite: Switching to readwrite mode.
+readwrite: Switching to recording mode.
 \end_layout
 
 \begin_layout Itemize
-reload: ROM is being reloaded in readwrite mode.
+reload: ROM is being reloaded in recording mode.
 \end_layout
 
 \begin_layout Itemize

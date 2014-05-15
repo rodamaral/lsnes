@@ -622,7 +622,7 @@ set-rwmode
 \end_layout
 
 \begin_layout Standard
-Set read-write mode.
+Set recording mode.
 \end_layout
 
 \begin_layout Subsubsection
@@ -630,7 +630,7 @@ set-romode
 \end_layout
 
 \begin_layout Standard
-Set read-only mode
+Set playback mode
 \end_layout
 
 \begin_layout Subsubsection
@@ -638,7 +638,7 @@ toggle-rwmode
 \end_layout
 
 \begin_layout Standard
-Toggle between read-only and read-write modes.
+Toggle between playback and recording modes.
 \end_layout
 
 \begin_layout Subsubsection

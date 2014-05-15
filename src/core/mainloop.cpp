@@ -643,7 +643,7 @@ namespace
 		});
 
 	command::fnptr<> load_jukebox_readwrite(lsnes_cmds, "load-jukebox-readwrite", "Load save from jukebox in"
-		" read-write mode", "Syntax: load-jukebox-readwrite\nLoad save from jukebox in read-write mode\n",
+		" recording mode", "Syntax: load-jukebox-readwrite\nLoad save from jukebox in recording mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size(CORE().settings) == 0)
 				throw std::runtime_error("No slot selected");
@@ -651,7 +651,7 @@ namespace
 		});
 
 	command::fnptr<> load_jukebox_readonly(lsnes_cmds, "load-jukebox-readonly", "Load save from jukebox in "
-		"read-only mode", "Syntax: load-jukebox-readonly\nLoad save from jukebox in read-only mode\n",
+		"playback mode", "Syntax: load-jukebox-readonly\nLoad save from jukebox in playback mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size(CORE().settings) == 0)
 				throw std::runtime_error("No slot selected");
@@ -778,7 +778,7 @@ namespace
 		});
 
 	command::fnptr<command::arg_filename> load_readonly(lsnes_cmds, "load-readonly", "Load savestate (RO)",
-		"Syntax: load-readonly <file>\nLoads SNES state from <file> in read-only mode\n",
+		"Syntax: load-readonly <file>\nLoads SNES state from <file> in playback mode\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_RO);
 		});
@@ -838,8 +838,8 @@ namespace
 			mark_pending_save(args, SAVE_MOVIE, 0);
 		});
 
-	command::fnptr<> set_rwmode(lsnes_cmds, "set-rwmode", "Switch to read/write mode",
-		"Syntax: set-rwmode\nSwitches to read/write mode\n",
+	command::fnptr<> set_rwmode(lsnes_cmds, "set-rwmode", "Switch to recording mode",
+		"Syntax: set-rwmode\nSwitches to recording mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			lua_callback_movie_lost("readwrite");
 			CORE().mlogic.get_movie().readonly_mode(false);
@@ -848,16 +848,16 @@ namespace
 			update_movie_state();
 		});
 
-	command::fnptr<> set_romode(lsnes_cmds, "set-romode", "Switch to read-only mode",
-		"Syntax: set-romode\nSwitches to read-only mode\n",
+	command::fnptr<> set_romode(lsnes_cmds, "set-romode", "Switch to playback mode",
+		"Syntax: set-romode\nSwitches to playback mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().mlogic.get_movie().readonly_mode(true);
 			notify_mode_change(true);
 			update_movie_state();
 		});
 
-	command::fnptr<> toggle_rwmode(lsnes_cmds, "toggle-rwmode", "Toggle read/write mode",
-		"Syntax: toggle-rwmode\nToggles read/write mode\n",
+	command::fnptr<> toggle_rwmode(lsnes_cmds, "toggle-rwmode", "Toggle recording mode",
+		"Syntax: toggle-rwmode\nToggles recording mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			bool c = CORE().mlogic.get_movie().readonly_mode();
 			if(c)
@@ -939,9 +939,9 @@ namespace
 	keyboard::invbind_info ijforward(lsnes_invbinds, "cycle-jukebox-forward", "Slot select‣Cycle forwards");
 	keyboard::invbind_info iloadj(lsnes_invbinds, "load-jukebox", "Load‣Selected slot");
 	keyboard::invbind_info iloadjrw(lsnes_invbinds, "load-jukebox-readwrite",
-		"Load‣Selected slot (readwrite mode)");
+		"Load‣Selected slot (recording mode)");
 	keyboard::invbind_info iloadjro(lsnes_invbinds, "load-jukebox-readonly",
-		"Load‣Selected slot (readonly mode)");
+		"Load‣Selected slot (playback mode)");
 	keyboard::invbind_info iloadjp(lsnes_invbinds, "load-jukebox-preserve",
 		"Load‣Selected slot (preserve input)");
 	keyboard::invbind_info iloadjm(lsnes_invbinds, "load-jukebox-movie", "Load‣Selected slot (as movie)");
@@ -950,9 +950,9 @@ namespace
 	keyboard::invbind_info iadvsubframe(lsnes_invbinds, "+advance-poll", "Speed‣Advance subframe");
 	keyboard::invbind_info iskiplag(lsnes_invbinds, "advance-skiplag", "Speed‣Advance poll");
 	keyboard::invbind_info ireset(lsnes_invbinds, "reset", "System‣Reset");
-	keyboard::invbind_info iset_rwmode(lsnes_invbinds, "set-rwmode", "Movie‣Switch to read/write");
-	keyboard::invbind_info itoggle_romode(lsnes_invbinds, "set-romode", "Movie‣Switch to read-only");
-	keyboard::invbind_info itoggle_rwmode(lsnes_invbinds, "toggle-rwmode", "Movie‣Toggle read-only");
+	keyboard::invbind_info iset_rwmode(lsnes_invbinds, "set-rwmode", "Movie‣Switch to recording");
+	keyboard::invbind_info itoggle_romode(lsnes_invbinds, "set-romode", "Movie‣Switch to playback");
+	keyboard::invbind_info itoggle_rwmode(lsnes_invbinds, "toggle-rwmode", "Movie‣Toggle playback");
 	keyboard::invbind_info irepaint(lsnes_invbinds, "repaint", "System‣Repaint screen");
 	keyboard::invbind_info itogglepause(lsnes_invbinds, "toggle-pause-on-end", "Movie‣Toggle pause-on-end");
 	keyboard::invbind_info irewind_movie(lsnes_invbinds, "rewind-movie", "Movie‣Rewind movie");

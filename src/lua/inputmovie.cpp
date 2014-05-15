@@ -114,7 +114,7 @@ namespace
 	{
 		movie& m = CORE().mlogic.get_movie();
 		if(!m.readonly_mode())
-			throw std::runtime_error("Not in read-only mode");
+			throw std::runtime_error("Not in playback mode");
 		if(!allow_past_end && frame >= CORE().mlogic.get_mfile().input->size())
 			throw std::runtime_error("Index out of movie");
 		int32_t pc = get_pc_for(port, controller, button, true);

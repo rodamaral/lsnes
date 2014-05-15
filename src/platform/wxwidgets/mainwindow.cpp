@@ -1403,9 +1403,9 @@ namespace
 				p.types.push_back(filedialog_type_entry(name, "*." + ext + ";*." + ext + ".backup",
 					ext));
 			if(!save && state) {
-				p.types.push_back(filedialog_type_entry("Savestates [read only]", "*." + ext +
+				p.types.push_back(filedialog_type_entry("Savestates [playback]", "*." + ext +
 					";*." + ext + ".backup", ext));
-				p.types.push_back(filedialog_type_entry("Savestates [read-write]", "*." + ext +
+				p.types.push_back(filedialog_type_entry("Savestates [recording]", "*." + ext +
 					";*." + ext + ".backup", ext));
 				p.types.push_back(filedialog_type_entry("Savestates [preserve]", "*." + ext +
 					";*." + ext + ".backup", ext));

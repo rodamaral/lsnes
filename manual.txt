@@ -286,15 +286,15 @@ Save movie to <filename>.
 
 5.3.14 set-rwmode 
 
-Set read-write mode.
+Set recording mode.
 
 5.3.15 set-romode 
 
-Set read-only mode
+Set playback mode
 
 5.3.16 toggle-rwmode 
 
-Toggle between read-only and read-write modes.
+Toggle between playback and recording modes.
 
 5.3.17 test-1, test-2, test-3
 
