@@ -7,6 +7,7 @@
 #include "core/rom.hpp"
 #include "core/project.hpp"
 #include "core/moviedata.hpp"
+#include "library/directory.hpp"
 #include "library/skein.hpp"
 #include "library/zip.hpp"
 #include "library/json.hpp"
@@ -933,7 +934,7 @@ void upload_menu::save()
 		if(!out)
 			return;
 	}
-	zip::rename_overwrite((base + ".tmp").c_str(), base.c_str());
+	directory::rename_overwrite((base + ".tmp").c_str(), base.c_str());
 }
 
 void upload_menu::configure_entry(unsigned num, struct upload_entry entry)

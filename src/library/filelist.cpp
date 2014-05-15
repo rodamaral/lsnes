@@ -87,5 +87,5 @@ void filelist::writeback(const std::map<std::string, int64_t>& data)
 		if(i.second != 0)
 			strm << i.second << " " << i.first << std::endl;
 	strm.close();
-	zip::rename_overwrite(backingtmp.c_str(), backingfile.c_str());
+	directory::rename_overwrite(backingtmp.c_str(), backingfile.c_str());
 }

@@ -5,6 +5,7 @@
 #include "core/moviefile-common.hpp"
 #include "core/random.hpp"
 #include "library/zip.hpp"
+#include "library/directory.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
 #include "library/serialization.hpp"
@@ -229,8 +230,8 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 			(stringfmt() << "Failed to write '" << tmp << "': " << strerror(err)).throwex();
 		}
 		std::string backup = movie + ".backup";
-		zip::rename_overwrite(movie.c_str(), backup.c_str());
-		if(zip::rename_overwrite(tmp.c_str(), movie.c_str()) < 0)
+		directory::rename_overwrite(movie.c_str(), backup.c_str());
+		if(directory::rename_overwrite(tmp.c_str(), movie.c_str()) < 0)
 			throw std::runtime_error("Can't rename '" + tmp + "' -> '" + movie + "'");
 		return;
 	}

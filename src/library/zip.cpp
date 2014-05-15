@@ -14,21 +14,9 @@
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
-#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
-#include <windows.h>
-#endif
 
 namespace zip
 {
-int rename_overwrite(const char* oldname, const char* newname)
-{
-#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
-	return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING) ? 0 : -1;
-#else
-	return rename(oldname, newname);
-#endif
-}
-
 namespace
 {
 	class file_input
@@ -483,8 +471,8 @@ void writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_error
 	if(system_stream) {
 		dynamic_cast<std::ofstream*>(zipstream)->close();
 		std::string backup = zipfile_path + ".backup";
-		zip::rename_overwrite(zipfile_path.c_str(), backup.c_str());
-		if(zip::rename_overwrite(temp_path.c_str(), zipfile_path.c_str()) < 0)
+		directory::rename_overwrite(zipfile_path.c_str(), backup.c_str());
+		if(directory::rename_overwrite(temp_path.c_str(), zipfile_path.c_str()) < 0)
 			throw std::runtime_error("Can't rename '" + temp_path + "' -> '" + zipfile_path + "'");
 	}
 	committed = true;

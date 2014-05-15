@@ -255,7 +255,7 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 		if(s.st_mode & 04) s.st_mode |= 01;
 		chmod(nnamet.c_str(), s.st_mode & 0777);
 #endif
-		if(zip::rename_overwrite(nnamet.c_str(), nname.c_str())) {
+		if(directory::rename_overwrite(nnamet.c_str(), nname.c_str())) {
 			remove(nnamet.c_str());
 			show_message_ok(this, "Error", "Can't rename-over file '" + nname + "'",
 				wxICON_EXCLAMATION);
@@ -287,7 +287,7 @@ void wxeditor_plugins::on_rename(wxCommandEvent& e)
 	std::string oname = pathpfx + "/" + name + "." + extension;
 	std::string nname = pathpfx + "/" + name2 + "." + extension;
 	if(oname != nname) {
-		zip::rename_overwrite(oname.c_str(), nname.c_str());
+		directory::rename_overwrite(oname.c_str(), nname.c_str());
 	}
 	pluginstbl[sel].first = name2;
 	if(failed_plugins.count(name + "." + extension)) {

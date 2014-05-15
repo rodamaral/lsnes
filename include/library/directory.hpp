@@ -15,6 +15,7 @@ bool exists(const std::string& filename);
 bool is_regular(const std::string& filename);
 bool is_directory(const std::string& filename);
 bool ensure_exists(const std::string& path);
+int rename_overwrite(const char* oldname, const char* newname);
 }
 
 #endif

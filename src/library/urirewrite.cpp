@@ -1,3 +1,4 @@
+#include "directory.hpp"
 #include "urirewrite.hpp"
 #include "string.hpp"
 #include "zip.hpp"
@@ -84,7 +85,7 @@ void rewriter::save(const std::string& filename)
 		if(!x)
 			throw std::runtime_error("Error writing rewriter settings");
 	}
-	zip::rename_overwrite(tmpfile.c_str(), filename.c_str());
+	directory::rename_overwrite(tmpfile.c_str(), filename.c_str());
 }
 
 void rewriter::load(const std::string& filename)

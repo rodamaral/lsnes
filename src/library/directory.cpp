@@ -2,6 +2,9 @@
 #include "string.hpp"
 #include <dirent.h>
 #include <boost/filesystem.hpp>
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+#include <windows.h>
+#endif
 
 #ifdef BOOST_FILESYSTEM3
 namespace boost_fs = boost::filesystem3;
@@ -71,5 +74,14 @@ bool ensure_exists(const std::string& path)
 {
 	boost_fs::path p(path);
 	return boost_fs::create_directories(p) || boost_fs::is_directory(p);
+}
+
+int rename_overwrite(const char* oldname, const char* newname)
+{
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+	return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING) ? 0 : -1;
+#else
+	return rename(oldname, newname);
+#endif
 }
 }

@@ -21,6 +21,7 @@
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
 #include "library/crandom.hpp"
+#include "library/directory.hpp"
 #include "library/string.hpp"
 #include "library/threads.hpp"
 #include "library/utf8.hpp"
@@ -290,7 +291,7 @@ end:
 			return;
 		}
 		cfgfile.close();
-		zip::rename_overwrite(cfgtmp.c_str(), cfg.c_str());
+		directory::rename_overwrite(cfgtmp.c_str(), cfg.c_str());
 		//Last save.
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
 		lsave << last_save;

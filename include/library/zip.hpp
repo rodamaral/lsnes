@@ -442,7 +442,5 @@ private:
 	uint32_t basepos;
 	bool committed;
 };
-
-int rename_overwrite(const char* oldname, const char* newname);
 }
 #endif
