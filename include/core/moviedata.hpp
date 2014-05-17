@@ -1,8 +1,9 @@
 #ifndef _moviedata__hpp__included__
 #define _moviedata__hpp__included__
 
-#include "moviefile.hpp"
-#include "movie.hpp"
+#include "core/moviefile.hpp"
+#include "core/movie.hpp"
+#include "library/rrdata.hpp"
 
 //Load state, always switch to Readwrite.
 #define LOAD_STATE_RW 0
@@ -58,5 +59,15 @@ std::string get_mprefix_for_project();
 void set_mprefix_for_project(const std::string& pfx);
 void set_mprefix_for_project(const std::string& prjid, const std::string& pfx);
 
+class rrdata
+{
+public:
+	rrdata();
+	rrdata_set::instance operator()();
+	static std::string filename(const std::string& projectid);
+private:
+	bool init;
+	rrdata_set::instance next;
+};
 
 #endif

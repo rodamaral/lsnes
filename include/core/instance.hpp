@@ -5,6 +5,7 @@
 #include "core/emustatus.hpp"
 #include "core/inthread.hpp"
 #include "core/movie.hpp"
+#include "core/moviedata.hpp"
 #include "core/mbranch.hpp"
 #include "core/memorywatch.hpp"
 #include "core/multitrack.hpp"
@@ -36,6 +37,7 @@ struct emulator_instance
 	keyboard::mapper mapper;
 	command::group command;
 	alias_binds_manager abindmanager;
+	rrdata nrrdata;
 };
 
 extern emulator_instance lsnes_instance;

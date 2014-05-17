@@ -12,7 +12,6 @@
 #include "core/project.hpp"
 #include "core/random.hpp"
 #include "core/romguess.hpp"
-#include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "lua/lua.hpp"
 #include "library/directory.hpp"
@@ -20,7 +19,6 @@
 #include "library/minmax.hpp"
 #include "library/temporary_handle.hpp"
 #include "interface/romtype.hpp"
-
 #include <iomanip>
 #include <fstream>
 
@@ -439,9 +437,9 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		//Read-only load. This is pretty simple.
 		//Force unlazying of rrdata and count a rerecord.
 		if(lsnes_instance.mlogic.get_rrdata().is_lazy())
-			lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(
+			lsnes_instance.mlogic.get_rrdata().read_base(rrdata::filename(
 				lsnes_instance.mlogic.get_mfile().projectid), false);
-		lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
+		lsnes_instance.mlogic.get_rrdata().add(lsnes_instance.nrrdata());
 
 		port_type_set& portset = construct_movie_portset(lsnes_instance.mlogic.get_mfile(), our_rom);
 
@@ -501,8 +499,8 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		
 		//Force new lazy rrdata and count a rerecord.
 		temporary_handle<rrdata_set> rrd;
-		rrd.get()->read_base(rrdata_filename(_movie.get()->projectid), true);
-		rrd.get()->add(next_rrdata());
+		rrd.get()->read_base(rrdata::filename(_movie.get()->projectid), true);
+		rrd.get()->add(lsnes_instance.nrrdata());
 		//Movie data is lost.
 		lua_callback_movie_lost("reload");
 		try {
@@ -538,9 +536,9 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 
 	//Force unlazying of rrdata and count a rerecord.
 	if(lsnes_instance.mlogic.get_rrdata().is_lazy())
-		lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(
+		lsnes_instance.mlogic.get_rrdata().read_base(rrdata::filename(
 			lsnes_instance.mlogic.get_mfile().projectid), false);
-	lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
+	lsnes_instance.mlogic.get_rrdata().add(lsnes_instance.nrrdata());
 
 	//Enter readonly mode.
 	lsnes_instance.mlogic.get_movie().readonly_mode(true);
@@ -586,8 +584,8 @@ void do_load_state_preserve(struct moviefile& _movie)
 
 	//Count a rerecord.
 	if(lsnes_instance.mlogic.get_rrdata().is_lazy() && !_movie.lazy_project_create)
-		lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(_movie.projectid), false);
-	lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
+		lsnes_instance.mlogic.get_rrdata().read_base(rrdata::filename(_movie.projectid), false);
+	lsnes_instance.mlogic.get_rrdata().add(lsnes_instance.nrrdata());
 
 	//Negative return.
 	try {
@@ -705,15 +703,15 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	bool new_rrdata = false;
 	//Count a rerecord (against new or old movie).
 	if(!lsnes_instance.mlogic || _movie.projectid != lsnes_instance.mlogic.get_mfile().projectid) {
-		rrd.get()->read_base(rrdata_filename(_movie.projectid), _movie.lazy_project_create);
+		rrd.get()->read_base(rrdata::filename(_movie.projectid), _movie.lazy_project_create);
 		rrd.get()->read(_movie.c_rrdata);
-		rrd.get()->add(next_rrdata());
+		rrd.get()->add(lsnes_instance.nrrdata());
 		new_rrdata = true;
 	} else {
 		//Unlazy rrdata if needed.
 		if(lsnes_instance.mlogic.get_rrdata().is_lazy() && !_movie.lazy_project_create)
-			lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(_movie.projectid), false);
-		lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
+			lsnes_instance.mlogic.get_rrdata().read_base(rrdata::filename(_movie.projectid), false);
+		lsnes_instance.mlogic.get_rrdata().add(lsnes_instance.nrrdata());
 	}
 	//Negative return.
 	try {
@@ -854,10 +852,28 @@ bool do_load_state(const std::string& filename, int lmode)
 void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
 {
 	//Force unlazy rrdata.
-	lsnes_instance.mlogic.get_rrdata().read_base(rrdata_filename(lsnes_instance.mlogic.get_mfile().projectid),
+	lsnes_instance.mlogic.get_rrdata().read_base(rrdata::filename(lsnes_instance.mlogic.get_mfile().projectid),
 		false);
-	lsnes_instance.mlogic.get_rrdata().add(next_rrdata());
+	lsnes_instance.mlogic.get_rrdata().add(lsnes_instance.nrrdata());
 	lsnes_instance.mlogic.get_mfile().rtc_second = secs;
 	lsnes_instance.mlogic.get_mfile().rtc_subsecond = ssecs;
 	our_rom.load_core_state(state, true);
+}
+
+rrdata::rrdata()
+	: init(false)
+{
+}
+
+rrdata_set::instance rrdata::operator()()
+{
+	if(!init)
+		next = rrdata_set::instance(get_random_hexstring(2 * RRDATA_BYTES));
+	init = true;
+	return next++;
+}
+
+std::string rrdata::filename(const std::string& projectid)
+{
+	return get_config_path() + "/" + projectid + ".rr";
 }
