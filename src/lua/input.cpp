@@ -264,7 +264,7 @@ namespace
 
 		if(!lua_input_controllerdata)
 			return 0;
-		auto pcid = controls.lcid_to_pcid(lcid - 1);
+		auto pcid = CORE().controls.lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			throw std::runtime_error("Invalid controller for input.joyget");
 		L.newtable();
@@ -293,7 +293,7 @@ namespace
 
 		if(!lua_input_controllerdata)
 			return 0;
-		auto pcid = controls.lcid_to_pcid(lcid - 1);
+		auto pcid = CORE().controls.lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			throw std::runtime_error("Invalid controller for input.joyset");
 		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
@@ -330,13 +330,13 @@ namespace
 
 		P(lcid);
 
-		auto pcid = controls.lcid_to_pcid(lcid - 1);
+		auto pcid = CORE().controls.lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			return 0;
 		int legacy_pcid = -1;
 		for(unsigned i = 0;; i++)
 			try {
-				auto p = controls.legacy_pcid_to_pair(i);
+				auto p = CORE().controls.legacy_pcid_to_pair(i);
 				if(p.first == pcid.first && p.second == pcid.second) {
 					legacy_pcid = i;
 					break;
@@ -359,7 +359,7 @@ namespace
 
 		P(lcid);
 
-		auto pcid = controls.lcid_to_pcid(lcid - 1);
+		auto pcid = CORE().controls.lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			return 0;
 		L.pushnumber(pcid.first);
@@ -403,7 +403,7 @@ namespace
 		if(!ps || ps->controllers.size() <= controller)
 			return 0;
 		for(unsigned i = 0; i < 8; i++) {
-			auto pcid = controls.lcid_to_pcid(i);
+			auto pcid = CORE().controls.lcid_to_pcid(i);
 			if(pcid.first < 0)
 				continue;
 			if(pcid.first == (int)port && pcid.second == (int)controller) {

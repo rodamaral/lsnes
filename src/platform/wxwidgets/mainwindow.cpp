@@ -678,7 +678,7 @@ namespace
 	std::pair<int, int> UI_controller_index_by_logical(unsigned lid)
 	{
 		std::pair<int, int> ret;
-		lsnes_instance.run([&ret, lid]() { ret = controls.lcid_to_pcid(lid); });
+		lsnes_instance.run([&ret, lid]() { ret = CORE().controls.lcid_to_pcid(lid); });
 		return ret;
 	}
 

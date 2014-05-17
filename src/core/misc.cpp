@@ -306,13 +306,13 @@ command::fnptr<const std::string&> macro_test(lsnes_cmds, "test-macro", "", "",
 			return;
 		}
 		unsigned ctrl = parse_value<unsigned>(r[1]);
-		auto pcid = controls.lcid_to_pcid(ctrl);
+		auto pcid = CORE().controls.lcid_to_pcid(ctrl);
 		if(pcid.first < 0) {
 			messages << "Bad controller" << std::endl;
 			return;
 		}
 		try {
-			const port_controller* _ctrl = controls.get_blank().porttypes().port_type(pcid.first).
+			const port_controller* _ctrl = CORE().controls.get_blank().porttypes().port_type(pcid.first).
 				controller_info->get(pcid.second);
 			if(!_ctrl) {
 				messages << "No controller data for controller" << std::endl;

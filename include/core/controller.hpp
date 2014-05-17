@@ -13,7 +13,6 @@ void load_project_macros(controller_state& ctrlstate, project_info& pinfo);
 void cleanup_all_keys();
 std::pair<int, int> controller_by_name(const std::string& name);
 
-extern controller_state controls;
 extern std::map<std::string, std::string> button_keys;
 
 

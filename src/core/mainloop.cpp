@@ -241,11 +241,11 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		update_movie_state();
 	}
 	platform::flush_command_queue();
-	controller_frame tmp = controls.get(CORE().mlogic.get_movie().get_current_frame());
+	controller_frame tmp = CORE().controls.get(CORE().mlogic.get_movie().get_current_frame());
 	our_rom.rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	lua_callback_do_input(tmp, subframe);
 	CORE().mteditor.process_frame(tmp);
-	controls.commit(tmp);
+	CORE().controls.commit(tmp);
 	return tmp;
 }
 
@@ -385,7 +385,7 @@ void update_movie_state()
 			_status.rtc_valid = false;
 		}
 
-		auto mset = controls.active_macro_set();
+		auto mset = CORE().controls.active_macro_set();
 		bool mfirst = true;
 		std::ostringstream mss;
 		for(auto i: mset) {
@@ -399,11 +399,11 @@ void update_movie_state()
 		if(!CORE().mteditor.any_records())
 			c = CORE().mlogic.get_movie().get_controls();
 		else
-			c = controls.get_committed();
+			c = CORE().controls.get_committed();
 		_status.inputs.clear();
 		for(unsigned i = 0;; i++) {
-			auto pindex = controls.lcid_to_pcid(i);
-			if(pindex.first < 0 || !controls.is_present(pindex.first, pindex.second))
+			auto pindex = CORE().controls.lcid_to_pcid(i);
+			if(pindex.first < 0 || !CORE().controls.is_present(pindex.first, pindex.second))
 				break;
 			char32_t buffer[MAX_DISPLAY_LENGTH];
 			c.display(pindex.first, pindex.second, buffer);
@@ -1281,9 +1281,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			amode = ADVANCE_SKIPLAG;
 
 		if(!first_round) {
-			controls.reset_framehold();
+			CORE().controls.reset_framehold();
 			if(!macro_hold_1 && !macro_hold_2) {
-				controls.advance_macros();
+				CORE().controls.advance_macros();
 			}
 			macro_hold_2 = false;
 			CORE().mlogic.get_movie().get_pollcounters().set_framepflag(false);
@@ -1305,7 +1305,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 					amode = old_mode;
 				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
-				controls.reset_framehold();
+				CORE().controls.reset_framehold();
 				debug_fire_callback_frame(CORE().mlogic.get_movie().get_current_frame(),
 					true);
 				continue;

@@ -390,7 +390,7 @@ skip_rom_movie:
 		CORE().command.invoke("reset-lua");
 		for(auto i : p->luascripts)
 			CORE().command.invoke("run-lua " + i);
-		load_project_macros(controls, *active_project);
+		load_project_macros(CORE().controls, *active_project);
 	} catch(std::exception& e) {
 		if(newmovie && !used)
 			delete newmovie;

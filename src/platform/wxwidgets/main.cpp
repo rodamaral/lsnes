@@ -481,7 +481,7 @@ bool lsnes_app::OnInit()
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	reinitialize_buttonmap();
-	controls.set_ports(ports);
+	lsnes_instance.controls.set_ports(ports);
 
 	std::string cfgpath = get_config_path();
 	autoload_libraries([](const std::string& libname, const std::string& error, bool system) {

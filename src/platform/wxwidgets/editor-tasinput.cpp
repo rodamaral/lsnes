@@ -347,7 +347,7 @@ wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 				bool wasc = closing;
 				closing = true;
 				tasinput_open = NULL;
-				controls.tasinput_enable(false);
+				lsnes_instance.controls.tasinput_enable(false);
 				if(!wasc)
 					Destroy();
 			}
@@ -381,9 +381,9 @@ void wxeditor_tasinput::on_control(wxCommandEvent& e)
 		ystate = t.panel->get_y();
 	}
 	lsnes_instance.run_async([t, xstate, ystate]() {
-		controls.tasinput(t.port, t.controller, t.xindex, xstate);
+		lsnes_instance.controls.tasinput(t.port, t.controller, t.xindex, xstate);
 		if(t.yindex != std::numeric_limits<unsigned>::max())
-			controls.tasinput(t.port, t.controller, t.yindex, ystate);
+			lsnes_instance.controls.tasinput(t.port, t.controller, t.yindex, ystate);
 	});
 }
 
@@ -406,11 +406,11 @@ void wxeditor_tasinput::update_controls()
 	std::vector<std::string> _controller_labels;
 	lsnes_instance.run([&_inputs, &_controller_labels](){
 		std::map<std::string, unsigned> next_in_class;
-		controller_frame model = controls.get_blank();
+		controller_frame model = CORE().controls.get_blank();
 		const port_type_set& pts = model.porttypes();
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
-			auto pcid = controls.lcid_to_pcid(i);
+			auto pcid = CORE().controls.lcid_to_pcid(i);
 			if(pcid.first < 0)
 				break;
 			const port_type& pt = pts.port_type(pcid.first);
@@ -478,7 +478,7 @@ void wxeditor_tasinput::update_controls()
 				const port_controller_button& pcb = pc.buttons[k];
 				if(pcb.type == port_controller_button::TYPE_BUTTON || pcb.shadow)
 					continue;
-				controls.tasinput(pcid.first, pcid.second, k, pcb.centers ? ((int)pcb.rmin +
+				CORE().controls.tasinput(pcid.first, pcid.second, k, pcb.centers ? ((int)pcb.rmin +
 					pcb.rmax) / 2 : pcb.rmin);
 			}
 			cnum_g++;
@@ -542,7 +542,7 @@ void wxeditor_tasinput::on_wclose(wxCloseEvent& e)
 	bool wasc = closing;
 	closing = true;
 	tasinput_open = NULL;
-	controls.tasinput_enable(false);
+	lsnes_instance.controls.tasinput_enable(false);
 	if(!wasc)
 		Destroy();
 }
@@ -729,7 +729,7 @@ void wxeditor_tasinput_display(wxWindow* parent)
 	}
 	v->Show();
 	tasinput_open = v;
-	controls.tasinput_enable(true);
+	lsnes_instance.controls.tasinput_enable(true);
 }
 
 void wxwindow_tasinput_update()

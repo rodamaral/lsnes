@@ -307,17 +307,17 @@ namespace
 			return;
 		if(mode == 1) {
 			//Autohold.
-			int16_t nstate = controls.autohold2(x.port, x.controller, x.bind.control1) ^ newstate;
+			int16_t nstate = CORE().controls.autohold2(x.port, x.controller, x.bind.control1) ^ newstate;
 			if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "hold" : "unhold"))
 				return;
-			controls.autohold2(x.port, x.controller, x.bind.control1, nstate);
+			CORE().controls.autohold2(x.port, x.controller, x.bind.control1, nstate);
 			notify_autohold_update(x.port, x.controller, x.bind.control1, nstate);
 		} else if(mode == 2) {
 			//Framehold.
-			bool nstate = controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
+			bool nstate = CORE().controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
 			if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "type" : "untype"))
 				return;
-			controls.framehold2(x.port, x.controller, x.bind.control1, nstate);
+			CORE().controls.framehold2(x.port, x.controller, x.bind.control1, nstate);
 			if(nstate)
 				messages << "Holding " << name << " for the next frame" << std::endl;
 			else
@@ -326,7 +326,7 @@ namespace
 			if(lua_callback_do_button(x.port, x.controller, x.bind.control1, newstate ? "press" :
 				"release"))
 				return;
-			controls.button2(x.port, x.controller, x.bind.control1, newstate);
+			CORE().controls.button2(x.port, x.controller, x.bind.control1, newstate);
 		}
 	}
 
@@ -351,9 +351,9 @@ namespace
 		x = z.bind.xrel ? (x - g2.first / 2) : (x / 2);
 		y = z.bind.yrel ? (y - g2.second / 2) : (y / 2);
 		if(z.bind.control1 < std::numeric_limits<unsigned>::max())
-			controls.analog(z.port, z.controller, z.bind.control1, x);
+			CORE().controls.analog(z.port, z.controller, z.bind.control1, x);
 		if(z.bind.control2 < std::numeric_limits<unsigned>::max())
-			controls.analog(z.port, z.controller, z.bind.control2, y);
+			CORE().controls.analog(z.port, z.controller, z.bind.control2, y);
 	}
 
 	void do_action(const std::string& name, short state, int mode)
@@ -394,7 +394,7 @@ namespace
 		//bool centered = x.bind.centered;
 		int64_t pvalue = value + 32768;
 		_value = pvalue * (rmax - rmin) / 65535 + rmin;
-		controls.analog(x.port, x.controller, x.bind.control1, _value);
+		CORE().controls.analog(x.port, x.controller, x.bind.control1, _value);
 	}
 
 	void do_autofire_action(const std::string& a, int mode)
@@ -421,20 +421,20 @@ namespace
 			std::cerr << name << " is not a button." << std::endl;
 			return;
 		}
-		auto afire = controls.autofire2(z.port, z.controller, z.bind.control1);
+		auto afire = CORE().controls.autofire2(z.port, z.controller, z.bind.control1);
 		if(mode == 1 || (mode == -1 && afire.first == 0)) {
 			//Turn on.
 			if(lua_callback_do_button(z.port, z.controller, z.bind.control1, (stringfmt() << "autofire "
 				<< duty << " " << cyclelen).str().c_str()))
 				return;
-			controls.autofire2(z.port, z.controller, z.bind.control1, duty, cyclelen);
+			CORE().controls.autofire2(z.port, z.controller, z.bind.control1, duty, cyclelen);
 			notify_autofire_update(z.port, z.controller, z.bind.control1, duty,
 				cyclelen);
 		} else if(mode == 0 || (mode == -1 && afire.first != 0)) {
 			//Turn off.
 			if(lua_callback_do_button(z.port, z.controller, z.bind.control1, "autofire"))
 				return;
-			controls.autofire2(z.port, z.controller, z.bind.control1, 0, 1);
+			CORE().controls.autofire2(z.port, z.controller, z.bind.control1, 0, 1);
 			notify_autofire_update(z.port, z.controller, z.bind.control1, 0, 1);
 		}
 	}
@@ -496,19 +496,19 @@ namespace
 	command::fnptr<const std::string&> macro_t(lsnes_cmds, "macro", "Toggle a macro",
 		"Syntax: macro <macroname>\nToggle a macro.\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			controls.do_macro(a, 7);
+			CORE().controls.do_macro(a, 7);
 		});
 
 	command::fnptr<const std::string&> macro_e(lsnes_cmds, "+macro", "Enable a macro",
 		"Syntax: +macro <macroname>\nEnable a macro.\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			controls.do_macro(a, 5);
+			CORE().controls.do_macro(a, 5);
 		});
 
 	command::fnptr<const std::string&> macro_d(lsnes_cmds, "-macro", "Disable a macro",
 		"Syntax: -macro <macroname>\nDisable a macro.\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			controls.do_macro(a, 2);
+			CORE().controls.do_macro(a, 2);
 		});
 
 	class new_core_snoop
@@ -532,10 +532,10 @@ void reread_active_buttons()
 	std::map<std::string, unsigned> classnum;
 	active_buttons.clear();
 	for(unsigned i = 0;; i++) {
-		auto x = controls.lcid_to_pcid(i);
+		auto x = lsnes_instance.controls.lcid_to_pcid(i);
 		if(x.first < 0)
 			break;
-		const port_type& pt = controls.get_blank().get_port_type(x.first);
+		const port_type& pt = lsnes_instance.controls.get_blank().get_port_type(x.first);
 		const port_controller& ctrl = pt.controller_info->controllers[x.second];
 		if(!classnum.count(ctrl.cclass))
 			classnum[ctrl.cclass] = 1;
@@ -626,5 +626,4 @@ std::pair<int, int> controller_by_name(const std::string& name)
 	return std::make_pair(-1, -1);
 }
 
-controller_state controls;
 std::map<std::string, std::string> button_keys;

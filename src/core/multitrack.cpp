@@ -53,7 +53,7 @@ void multitrack_edit::rotate(bool forward)
 		return;
 	std::vector<std::pair<unsigned, unsigned>> x;
 	for(unsigned i = 0;; i++) {
-		auto pcid = controls.lcid_to_pcid(i);
+		auto pcid = CORE().controls.lcid_to_pcid(i);
 		if(pcid.first < 0)
 			break;
 		x.push_back(std::make_pair(pcid.first, pcid.second));

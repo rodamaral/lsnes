@@ -3,6 +3,7 @@
 
 #include <deque>
 #include "core/command.hpp"
+#include "core/controllerframe.hpp"
 #include "core/emustatus.hpp"
 #include "core/inthread.hpp"
 #include "core/movie.hpp"
@@ -89,6 +90,7 @@ struct emulator_instance
 	alias_binds_manager abindmanager;
 	rrdata nrrdata;
 	cart_mappings_refresher cmapper;
+	controller_state controls;
 	//Queue stuff.
 	threads::lock queue_lock;
 	threads::cv queue_condition;

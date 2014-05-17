@@ -265,7 +265,7 @@ namespace
 		pinfo.active_branch = 0;
 		pinfo.next_branch = 0;
 		project_copy_watches(pinfo);
-		project_copy_macros(pinfo, controls);
+		project_copy_macros(pinfo, lsnes_instance.controls);
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			pinfo.roms[i] = our_rom.romimg[i].filename;
 			pinfo.romimg_sha256[i] = m.romimg_sha256[i];

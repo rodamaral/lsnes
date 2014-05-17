@@ -84,7 +84,7 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
 	Fit();
 
 	ahreconfigure.set(notify_autohold_reconfigure, [this]() {
-		if(typeset && *typeset == controls.get_blank().porttypes())
+		if(typeset && *typeset == lsnes_instance.controls.get_blank().porttypes())
 			return;  //Don't reconfigure if no change.
 		lsnes_instance.mteditor.config_altered();
 		runuifun([this]() {
@@ -162,12 +162,12 @@ void wxeditor_multitrack::update_controls()
 	std::vector<controller_info2> info;
 	lsnes_instance.run([this, &info](){
 		std::map<std::string, unsigned> next_in_class;
-		controller_frame model = controls.get_blank();
+		controller_frame model = lsnes_instance.controls.get_blank();
 		const port_type_set& pts = model.porttypes();
 		typeset = &pts;
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
-			auto pcid = controls.lcid_to_pcid(i);
+			auto pcid = lsnes_instance.controls.lcid_to_pcid(i);
 			if(pcid.first < 0)
 				break;
 			const port_type& pt = pts.port_type(pcid.first);

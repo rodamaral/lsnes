@@ -224,7 +224,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 			target.gamename = prj->gamename;
 			target.authors = prj->authors;
 		}
-		target.active_macros = controls.get_macro_frames();
+		target.active_macros = CORE().controls.get_macro_frames();
 		target.save(filename2, savecompression(CORE().settings), binary > 0,
 			lsnes_instance.mlogic.get_rrdata());
 		uint64_t took = get_utime() - origtime;
@@ -399,15 +399,15 @@ namespace
 				our_rom.load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 			//Load the savestate and movie state.
 			//Set the core ports in order to avoid port state being reinitialized when loading.
-			controls.set_ports(portset);
+			CORE().controls.set_ports(portset);
 			our_rom.load_core_state(_movie.savestate);
 			our_rom.rtype->set_pflag(_movie.poll_flag);
-			controls.set_macro_frames(_movie.active_macros);
+			CORE().controls.set_macro_frames(_movie.active_macros);
 		} else {
 			//Reload the ROM in order to rewind to the beginning.
 			our_rom.load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 			//Load the SRAM and volatile RAM. Or anchor savestate if any.
-			controls.set_ports(portset);
+			CORE().controls.set_ports(portset);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			if(!_movie.anchor_savestate.empty()) {
@@ -418,7 +418,7 @@ namespace
 				populate_volatile_ram(_movie, vmas);
 			}	
 			our_rom.rtype->set_pflag(0);
-			controls.set_macro_frames(std::map<std::string, uint64_t>());
+			CORE().controls.set_macro_frames(std::map<std::string, uint64_t>());
 		}
 	}
 }

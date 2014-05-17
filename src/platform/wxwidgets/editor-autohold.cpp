@@ -131,18 +131,18 @@ void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
 	bool state = false;
 	lsnes_instance.run([t, newstate, &state, isaf]() {
 		if(isaf) {
-			auto _state = controls.autofire2(t.port, t.controller, t.index);
+			auto _state = CORE().controls.autofire2(t.port, t.controller, t.index);
 			state = (_state.first != 0);
 			if(lua_callback_do_button(t.port, t.controller, t.index, newstate ? "autofire 1 2" :
 				"autofire"))
 				return;
-			controls.autofire2(t.port, t.controller, t.index, newstate ? 1 : 0, newstate ? 2 : 1);
+			CORE().controls.autofire2(t.port, t.controller, t.index, newstate ? 1 : 0, newstate ? 2 : 1);
 			state = newstate;
 		} else {
-			state = controls.autohold2(t.port, t.controller, t.index);
+			state = CORE().controls.autohold2(t.port, t.controller, t.index);
 			if(lua_callback_do_button(t.port, t.controller, t.index, newstate ? "hold" : "unhold"))
 				return;
-			controls.autohold2(t.port, t.controller, t.index, newstate);
+			CORE().controls.autohold2(t.port, t.controller, t.index, newstate);
 			state = newstate;
 		}
 	});
@@ -172,11 +172,11 @@ void wxeditor_autohold::update_controls()
 	std::vector<std::string> _controller_labels;
 	lsnes_instance.run([&_autoholds, &_controller_labels](){
 		std::map<std::string, unsigned> next_in_class;
-		controller_frame model = controls.get_blank();
+		controller_frame model = CORE().controls.get_blank();
 		const port_type_set& pts = model.porttypes();
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
-			auto pcid = controls.lcid_to_pcid(i);
+			auto pcid = CORE().controls.lcid_to_pcid(i);
 			if(pcid.first < 0)
 				break;
 			const port_type& pt = pts.port_type(pcid.first);
@@ -206,8 +206,8 @@ void wxeditor_autohold::update_controls()
 				t.port = pcid.first;
 				t.controller = pcid.second;
 				t.index = k;
-				t.status = controls.autohold2(pcid.first, pcid.second, k);
-				auto h = controls.autofire2(pcid.first, pcid.second, k);
+				t.status = CORE().controls.autohold2(pcid.first, pcid.second, k);
+				auto h = CORE().controls.autofire2(pcid.first, pcid.second, k);
 				t.afstatus = (h.first > 0);
 				t.logical = cnum_g;
 				t.name = pcb.name;

@@ -21,7 +21,7 @@ namespace
 	std::map<unsigned, const port_controller*> get_controller_set()
 	{
 		std::map<unsigned, const port_controller*> r;
-		const port_type_set& s = controls.get_blank().porttypes();
+		const port_type_set& s = lsnes_instance.controls.get_blank().porttypes();
 		for(unsigned i = 0; i < s.number_of_controllers(); i++) {
 			auto g = s.lcid_to_pcid(i);
 			if(g.first < 0)
@@ -265,7 +265,7 @@ wxeditor_macro::wxeditor_macro(wxWindow* parent)
 
 void wxeditor_macro::update()
 {
-	std::set<std::string> macro_list = controls.enumerate_macro();
+	std::set<std::string> macro_list = lsnes_instance.controls.enumerate_macro();
 	std::string current;
 	int sel = macros->GetSelection();
 	int selpos = -1;
@@ -312,7 +312,7 @@ void wxeditor_macro::on_delete(wxCommandEvent& e)
 	if(sel == wxNOT_FOUND)
 		return;
 	std::string macro = macronames[sel];
-	controls.erase_macro(macro);
+	lsnes_instance.controls.erase_macro(macro);
 	update();
 }
 
@@ -331,7 +331,7 @@ void wxeditor_macro::on_add(wxCommandEvent& e)
 			_macro.macros[i.first].enabled = false;
 		}
 		if(do_edit("", _macro))
-			controls.set_macro(mname, _macro);
+			lsnes_instance.controls.set_macro(mname, _macro);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		wxMessageBox(towxstring(e.what()), _T("Error creating macro"), wxICON_EXCLAMATION | wxOK, this);
@@ -347,12 +347,12 @@ void wxeditor_macro::on_edit(wxCommandEvent& e)
 	std::string macro = macronames[sel];
 	controller_macro _macro;
 	try {
-		_macro = controls.get_macro(macro);
+		_macro = lsnes_instance.controls.get_macro(macro);
 	} catch(...) {
 		return;
 	}
 	if(do_edit(macro, _macro))
-		controls.set_macro(macro, _macro);
+		lsnes_instance.controls.set_macro(macro, _macro);
 }
 
 void wxeditor_macro::on_rename(wxCommandEvent& e)
@@ -365,7 +365,7 @@ void wxeditor_macro::on_rename(wxCommandEvent& e)
 		std::string mname = pick_text(this, "Rename macro", "Enter new name for the macro:", "");
 		if(mname == "")
 			return;
-		controls.rename_macro(macro, mname);
+		lsnes_instance.controls.rename_macro(macro, mname);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		wxMessageBox(towxstring(e.what()), _T("Error renaming macro"), wxICON_EXCLAMATION | wxOK, this);
@@ -382,7 +382,7 @@ void wxeditor_macro::on_load(wxCommandEvent& e)
 		std::string file = choose_file_load(this, "Load macro from", project_otherpath(), filetype_macro);
 		std::vector<char> contents = zip::readrel(file, "");
 		controller_macro m(JSON::node(std::string(contents.begin(), contents.end())));
-		controls.set_macro(mname, m);
+		lsnes_instance.controls.set_macro(mname, m);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		wxMessageBox(towxstring(e.what()), _T("Error loading macro"), wxICON_EXCLAMATION | wxOK, this);
@@ -398,7 +398,7 @@ void wxeditor_macro::on_save(wxCommandEvent& e)
 	std::string macro = macronames[sel];
 	controller_macro* _macro;
 	try {
-		_macro = &controls.get_macro(macro);
+		_macro = &lsnes_instance.controls.get_macro(macro);
 	} catch(...) {
 		return;
 	}
