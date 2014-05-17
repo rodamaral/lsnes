@@ -504,7 +504,7 @@ void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 	}
 	bool did_error = false;
 	std::string error;
-	runemufn([this, &it, &did_error, &error]() {
+	lsnes_instance.run([this, &it, &did_error, &error]() {
 		try {
 			lsnes_instance.mwatch.set(name, it);
 		} catch(std::exception& e) {
@@ -622,7 +622,7 @@ void wxeditor_memorywatches::on_rename(wxCommandEvent& e)
 	try {
 		bool exists = false;
 		std::string newname = pick_text(this, "Rename watch", "Enter New name for watch:");
-		runemufn([watch, newname, &exists]() {
+		lsnes_instance.run([watch, newname, &exists]() {
 			exists = !lsnes_instance.mwatch.rename(watch, newname);
 		});
 		if(exists)
@@ -638,7 +638,7 @@ void wxeditor_memorywatches::on_delete(wxCommandEvent& e)
 {
 	std::string watch = tostdstring(watches->GetStringSelection());
 	if(watch != "")
-		runemufn([watch]() { lsnes_instance.mwatch.clear(watch); });
+		lsnes_instance.run([watch]() { lsnes_instance.mwatch.clear(watch); });
 	refresh();
 	on_memorywatch_change(e);
 }
@@ -668,7 +668,7 @@ void wxeditor_memorywatches::on_close(wxCommandEvent& e)
 void wxeditor_memorywatches::refresh()
 {
 	std::set<std::string> bind;
-	runemufn([&bind]() {
+	lsnes_instance.run([&bind]() {
 		bind = lsnes_instance.mwatch.enumerate();
 	});
 	watches->Clear();

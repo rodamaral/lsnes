@@ -158,7 +158,7 @@ namespace
 	{
 		std::map<std::string, std::pair<uint64_t, uint64_t>> regions;
 		std::set<std::string> disasms;
-		runemufn([&regions, &disasms]() {
+		lsnes_instance.run([&regions, &disasms]() {
 			for(auto i : lsnes_instance.memory.get_regions())
 				regions[i->name] = std::make_pair(i->base, i->size);
 			disasms = disassembler::list();
@@ -320,7 +320,7 @@ namespace
 			std::string _vma = tostdstring(vma->GetStringSelection());
 			if(_endian <= 0 || _endian > 3) {
 				_endian = 1;
-				runemufn([&_endian, _vma]() {
+				lsnes_instance.run([&_endian, _vma]() {
 					for(auto i : lsnes_instance.memory.get_regions()) {
 						if(i->name == _vma) {
 							_endian = i->endian + 2;
@@ -350,7 +350,7 @@ namespace
 		uint64_t base = 0;
 		if(vma->GetSelection() && vma->GetSelection() != wxNOT_FOUND) {
 			std::string _vma = tostdstring(vma->GetStringSelection());
-			runemufn([&base, _vma]() {
+			lsnes_instance.run([&base, _vma]() {
 				for(auto i : lsnes_instance.memory.get_regions()) {
 					if(i->name == _vma) {
 						base = i->base;
@@ -578,7 +578,7 @@ namespace
 				return;
 		}
 		if(trace_active)
-			runemufn([this]() { kill_debug_hooks(); });
+			lsnes_instance.run([this]() { kill_debug_hooks(); });
 		trace_active = false;
 		if(!closing)
 			Destroy();
@@ -714,7 +714,7 @@ namespace
 	void wxwin_tracelog::on_enabled(wxCommandEvent& e)
 	{
 		bool enable = enabled->GetValue();
-		runemufn([this, enable]() {
+		lsnes_instance.run([this, enable]() {
 			if(enable) {
 				threads::alock h(buffer_mutex);
 				broken = broken2;
@@ -848,7 +848,7 @@ namespace
 					return;
 			}
 			if(trace_active) {
-				runemufn([this]() { this->kill_debug_hooks(); });
+				lsnes_instance.run([this]() { this->kill_debug_hooks(); });
 			}
 			trace_active = false;
 			Destroy();
@@ -923,17 +923,17 @@ namespace
 			}
 			scroll_pane(find_line);
 		} else if(e.GetId() == wxID_SINGLESTEP) {
-			runemufn_async([this]() {
+			lsnes_instance.run_async([this]() {
 				this->singlestepping = true;
 				lsnes_instance.command.invoke("unpause-emulator");
 			});
 		} else if(e.GetId() == wxID_FRAMEADVANCE) {
-			runemufn_async([this]() { 
+			lsnes_instance.run_async([this]() { 
 				lsnes_instance.command.invoke("+advance-frame"); 
 				lsnes_instance.command.invoke("-advance-frame"); 
 			});
 		} else if(e.GetId() == wxID_CONTINUE) {
-			runemufn_async([this]() { lsnes_instance.command.invoke("unpause-emulator"); });
+			lsnes_instance.run_async([this]() { lsnes_instance.command.invoke("unpause-emulator"); });
 		} else if(e.GetId() == wxID_BREAKPOINTS) {
 			dialog_breakpoints* d = new dialog_breakpoints(this);
 			d->ShowModal();
@@ -1037,7 +1037,7 @@ back:
 	std::set<std::pair<uint64_t, debug_type>> wxwin_tracelog::get_breakpoints()
 	{
 		std::set<std::pair<uint64_t, debug_type>> ret;
-		runemufn([this, &ret]() {
+		lsnes_instance.run([this, &ret]() {
 			for(auto i : rwx_breakpoints)
 				ret.insert(i.first);
 		});
@@ -1306,13 +1306,13 @@ back:
 			uint64_t addr = d->get_address();
 			uint64_t count = d->get_count();
 			d->Destroy();
-			runemufn_async([this, disasm, addr, count]() {
+			lsnes_instance.run_async([this, disasm, addr, count]() {
 				this->run_disassembler(disasm, addr, count);
 			});
 		} else if(e.GetId() == wxID_GOTO) {
 			try {
 				std::string to = pick_text(this, "Goto", "Enter address to go to:", "");
-				runemufn_async([this, to]() {
+				lsnes_instance.run_async([this, to]() {
 					uint64_t addr;
 					uint64_t base = 0;
 					std::string vma;
@@ -1416,7 +1416,7 @@ back:
 			uint64_t count = d->get_count();
 			d->Destroy();
 			auto pp = p;
-			runemufn_async([pp, disasm, addr, count]() {
+			lsnes_instance.run_async([pp, disasm, addr, count]() {
 				pp->run_disassembler(disasm, addr, count);
 			});
 			//Delete entries in (rbase, addr) if addr = base.
@@ -1804,7 +1804,7 @@ back:
 		}
 		rpair(addr, dtype) = d->get_result();
 		d->Destroy();
-		runemufn_async([this, addr, dtype]() { pwin->add_breakpoint(addr, dtype); });
+		lsnes_instance.run_async([this, addr, dtype]() { pwin->add_breakpoint(addr, dtype); });
 		auto ent = std::make_pair(addr, dtype);
 		std::string line = format_line(ent);
 		unsigned insert_pos = get_insert_pos(ent);
@@ -1821,7 +1821,7 @@ back:
 		debug_type dtype;
 		addr = listsyms[idx].first;
 		dtype = listsyms[idx].second;
-		runemufn_async([this, addr, dtype]() { pwin->remove_breakpoint(addr, dtype); });
+		lsnes_instance.run_async([this, addr, dtype]() { pwin->remove_breakpoint(addr, dtype); });
 		brklist->Delete(idx);
 		listsyms.erase(listsyms.begin() + idx);
 	}

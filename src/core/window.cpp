@@ -33,40 +33,10 @@
 #define MAXMESSAGES 5000
 #define INIT_WIN_SIZE 6
 
-namespace
-{
-	volatile bool _system_thread_available = false;
-}
-
-keypress::keypress()
-{
-	key1 = NULL;
-	key2 = NULL;
-	value = 0;
-}
-
-keypress::keypress(keyboard::modifier_set mod, keyboard::key& _key, short _value)
-{
-	modifiers = mod;
-	key1 = &_key;
-	key2 = NULL;
-	value = _value;
-}
-
-keypress::keypress(keyboard::modifier_set mod, keyboard::key& _key, keyboard::key& _key2, short _value)
-{
-	modifiers = mod;
-	key1 = &_key;
-	key2 = &_key2;
-	value = _value;
-}
-
 volatile bool platform::do_exit_dummy_event_loop = false;
 
 namespace
 {
-	bool queue_function_run = false;
-
 	command::fnptr<> identify_key(lsnes_cmds, "show-plugins", "Show plugins in use",
 		"Syntax: show-plugins\nShows plugins in use.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -261,68 +231,10 @@ void platform::fatal_error() throw()
 
 namespace
 {
-	threads::lock queue_lock;
-	threads::cv queue_condition;
-	std::deque<keypress> keypresses;
-	std::deque<std::string> commands;
-	std::deque<std::pair<void(*)(void*), void*>> functions;
 	volatile bool normal_pause;
 	volatile bool modal_pause;
 	volatile uint64_t continue_time;
-	volatile uint64_t next_function;
-	volatile uint64_t functions_executed;
 
-	void init_threading()
-	{
-	}
-
-	void internal_run_queues(bool unlocked) throw()
-	{
-		init_threading();
-		if(!unlocked)
-			queue_lock.lock();
-		try {
-			//Flush keypresses.
-			while(!keypresses.empty()) {
-				keypress k = keypresses.front();
-				keypresses.pop_front();
-				queue_lock.unlock();
-				if(k.key1)
-					k.key1->set_state(k.modifiers, k.value);
-				if(k.key2)
-					k.key2->set_state(k.modifiers, k.value);
-				queue_lock.lock();
-				queue_function_run = true;
-			}
-			//Flush commands.
-			while(!commands.empty()) {
-				std::string c = commands.front();
-				commands.pop_front();
-				queue_lock.unlock();
-				lsnes_instance.command.invoke(c);
-				queue_lock.lock();
-				queue_function_run = true;
-			}
-			//Flush functions.
-			while(!functions.empty()) {
-				std::pair<void(*)(void*), void*> f = functions.front();
-				functions.pop_front();
-				queue_lock.unlock();
-				f.first(f.second);
-				queue_lock.lock();
-				++functions_executed;
-				queue_function_run = true;
-			}
-			queue_condition.notify_all();
-		} catch(std::bad_alloc& e) {
-			OOM_panic();
-		} catch(std::exception& e) {
-			std::cerr << "Fault inside platform::run_queues(): " << e.what() << std::endl;
-			exit(1);
-		}
-		if(!unlocked)
-			queue_lock.unlock();
-	}
 
 	uint64_t on_idle_time;
 	uint64_t on_timer_time;
@@ -330,7 +242,7 @@ namespace
 	{
 		on_idle_time = lua_timed_hook(LUA_TIMED_HOOK_IDLE);
 		on_timer_time = lua_timed_hook(LUA_TIMED_HOOK_TIMER);
-		queue_function_run = false;
+		lsnes_instance.queue_function_run = false;
 	}
 }
 
@@ -338,31 +250,28 @@ namespace
 
 void platform::dummy_event_loop() throw()
 {
-	init_threading();
 	while(!do_exit_dummy_event_loop) {
-		threads::alock h(queue_lock);
-		internal_run_queues(true);
-		threads::cv_timed_wait(queue_condition, h, threads::ustime(MAXWAIT));
+		threads::alock h(lsnes_instance.queue_lock);
+		lsnes_instance.run_queue(true);
+		threads::cv_timed_wait(lsnes_instance.queue_condition, h, threads::ustime(MAXWAIT));
 		random_mix_timing_entropy();
 	}
 }
 
 void platform::exit_dummy_event_loop() throw()
 {
-	init_threading();
 	do_exit_dummy_event_loop = true;
-	threads::alock h(queue_lock);
-	queue_condition.notify_all();
+	threads::alock h(lsnes_instance.queue_lock);
+	lsnes_instance.queue_condition.notify_all();
 	usleep(200000);
 }
 
 void platform::flush_command_queue() throw()
 {
 	reload_lua_timers();
-	queue_function_run = false;
+	lsnes_instance.queue_function_run = false;
 	if(modal_pause || normal_pause)
 		freeze_time(get_utime());
-	init_threading();
 	bool run_idle = false;
 	while(true) {
 		uint64_t now = get_utime();
@@ -375,11 +284,11 @@ void platform::flush_command_queue() throw()
 			reload_lua_timers();
 			run_idle = false;
 		}
-		threads::alock h(queue_lock);
-		internal_run_queues(true);
+		threads::alock h(lsnes_instance.queue_lock);
+		lsnes_instance.run_queue(true);
 		if(!pausing_allowed)
 			break;
-		if(queue_function_run)
+		if(lsnes_instance.queue_function_run)
 			reload_lua_timers();
 		now = get_utime();
 		uint64_t waitleft = 0;
@@ -396,7 +305,7 @@ void platform::flush_command_queue() throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				threads::cv_timed_wait(queue_condition, h, threads::ustime(waitleft));
+				threads::cv_timed_wait(lsnes_instance.queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -416,7 +325,6 @@ void platform::wait(uint64_t usec) throw()
 {
 	reload_lua_timers();
 	continue_time = get_utime() + usec;
-	init_threading();
 	bool run_idle = false;
 	while(true) {
 		uint64_t now = get_utime();
@@ -429,9 +337,9 @@ void platform::wait(uint64_t usec) throw()
 			run_idle = false;
 			reload_lua_timers();
 		}
-		threads::alock h(queue_lock);
-		internal_run_queues(true);
-		if(queue_function_run)
+		threads::alock h(lsnes_instance.queue_lock);
+		lsnes_instance.run_queue(true);
+		if(lsnes_instance.queue_function_run)
 			reload_lua_timers();
 		//If usec is 0, never wait (waitleft can be nonzero if time counting screws up).
 		if(!usec)
@@ -450,7 +358,7 @@ void platform::wait(uint64_t usec) throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				threads::cv_timed_wait(queue_condition, h, threads::ustime(waitleft));
+				threads::cv_timed_wait(lsnes_instance.queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -460,10 +368,9 @@ void platform::wait(uint64_t usec) throw()
 
 void platform::cancel_wait() throw()
 {
-	init_threading();
 	continue_time = 0;
-	threads::alock h(queue_lock);
-	queue_condition.notify_all();
+	threads::alock h(lsnes_instance.queue_lock);
+	lsnes_instance.queue_condition.notify_all();
 }
 
 void platform::set_modal_pause(bool enable) throw()
@@ -471,48 +378,9 @@ void platform::set_modal_pause(bool enable) throw()
 	modal_pause = enable;
 }
 
-void platform::queue(const keypress& k) throw(std::bad_alloc)
-{
-	init_threading();
-	threads::alock h(queue_lock);
-	keypresses.push_back(k);
-	queue_condition.notify_all();
-}
-
-void platform::queue(const std::string& c) throw(std::bad_alloc)
-{
-	init_threading();
-	threads::alock h(queue_lock);
-	commands.push_back(c);
-	queue_condition.notify_all();
-}
-
-void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc)
-{
-	if(!_system_thread_available) {
-		f(arg);
-		return;
-	}
-	init_threading();
-	threads::alock h(queue_lock);
-	++next_function;
-	functions.push_back(std::make_pair(f, arg));
-	queue_condition.notify_all();
-	if(sync)
-		while(functions_executed < next_function && _system_thread_available) {
-			threads::cv_timed_wait(queue_condition, h, threads::ustime(10000));
-			random_mix_timing_entropy();
-		}
-}
-
 void platform::run_queues() throw()
 {
-	internal_run_queues(false);
-}
-
-void platform::system_thread_available(bool av) throw()
-{
-	_system_thread_available = av;
+	lsnes_instance.run_queue(false);
 }
 
 namespace

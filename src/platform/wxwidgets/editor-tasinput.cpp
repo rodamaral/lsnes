@@ -380,7 +380,7 @@ void wxeditor_tasinput::on_control(wxCommandEvent& e)
 		xstate = t.panel->get_x();
 		ystate = t.panel->get_y();
 	}
-	runemufn_async([t, xstate, ystate]() {
+	lsnes_instance.run_async([t, xstate, ystate]() {
 		controls.tasinput(t.port, t.controller, t.xindex, xstate);
 		if(t.yindex != std::numeric_limits<unsigned>::max())
 			controls.tasinput(t.port, t.controller, t.yindex, ystate);
@@ -404,7 +404,7 @@ void wxeditor_tasinput::update_controls()
 
 	std::vector<control_triple> _inputs;
 	std::vector<std::string> _controller_labels;
-	runemufn([&_inputs, &_controller_labels](){
+	lsnes_instance.run([&_inputs, &_controller_labels](){
 		std::map<std::string, unsigned> next_in_class;
 		controller_frame model = controls.get_blank();
 		const port_type_set& pts = model.porttypes();
@@ -582,7 +582,7 @@ void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
 		}
 		return;
 	}
-	if(key == WXK_F5) runemufn_async([this]() { lsnes_instance.command.invoke("+advance-frame"); });
+	if(key == WXK_F5) lsnes_instance.run_async([this]() { lsnes_instance.command.invoke("+advance-frame"); });
 }
 
 void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
@@ -696,11 +696,11 @@ void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
 			return;
 		}
 	}
-	if(key == WXK_F1) runemufn_async([this]() { lsnes_instance.command.invoke("cycle-jukebox-backward"); });
-	if(key == WXK_F2) runemufn_async([this]() { lsnes_instance.command.invoke("cycle-jukebox-forward"); });
-	if(key == WXK_F3) runemufn_async([this]() { lsnes_instance.command.invoke("save-jukebox"); });
-	if(key == WXK_F4) runemufn_async([this]() { lsnes_instance.command.invoke("load-jukebox"); });
-	if(key == WXK_F5) runemufn_async([this]() { lsnes_instance.command.invoke("-advance-frame"); });
+	if(key == WXK_F1) lsnes_instance.queue("cycle-jukebox-backward");
+	if(key == WXK_F2) lsnes_instance.queue("cycle-jukebox-forward");
+	if(key == WXK_F3) lsnes_instance.queue("save-jukebox");
+	if(key == WXK_F4) lsnes_instance.queue("load-jukebox");
+	if(key == WXK_F5) lsnes_instance.queue("-advance-frame");
 }
 
 wxeditor_tasinput::control_triple* wxeditor_tasinput::find_triple(unsigned controller, unsigned control)

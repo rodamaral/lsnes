@@ -631,7 +631,7 @@ void wxwin_project::on_load(wxCommandEvent& e)
 		mov.start_paused = false;
 		rrdata_set tmp_rdata;
 		mov.save("$MEMORY:wxwidgets-romload-tmp", 0, true, tmp_rdata);
-		platform::queue("load-state $MEMORY:wxwidgets-romload-tmp");
+		lsnes_instance.queue("load-state $MEMORY:wxwidgets-romload-tmp");
 		EndModal(0);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading movie", e.what(), wxICON_EXCLAMATION);

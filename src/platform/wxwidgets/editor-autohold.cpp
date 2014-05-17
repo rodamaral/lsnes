@@ -129,7 +129,7 @@ void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
 	bool isaf = (t.afid == id);
 	bool newstate = isaf ? t.afcheck->IsChecked() : t.check->IsChecked();
 	bool state = false;
-	runemufn([t, newstate, &state, isaf]() {
+	lsnes_instance.run([t, newstate, &state, isaf]() {
 		if(isaf) {
 			auto _state = controls.autofire2(t.port, t.controller, t.index);
 			state = (_state.first != 0);
@@ -170,7 +170,7 @@ void wxeditor_autohold::update_controls()
 	panels.clear();
 	std::vector<control_triple> _autoholds;
 	std::vector<std::string> _controller_labels;
-	runemufn([&_autoholds, &_controller_labels](){
+	lsnes_instance.run([&_autoholds, &_controller_labels](){
 		std::map<std::string, unsigned> next_in_class;
 		controller_frame model = controls.get_blank();
 		const port_type_set& pts = model.porttypes();

@@ -265,25 +265,13 @@ namespace
 	std::map<std::string, int> keys_allocated;
 	std::set<int> keys_held;
 
-	struct keypress_request
-	{
-		keyboard::modifier_set mods;
-		keyboard::key_key* key;
-		bool polarity;
-	};
-
 	//Request keypress event to happen.
 	void do_keypress(keyboard::modifier_set mods, keyboard::key_key& key, bool polarity)
 	{
-		struct keypress_request* req = new keypress_request;
-		req->mods = mods;
-		req->key = &key;
-		req->polarity = polarity;
-		platform::queue([](void* args) -> void {
-			struct keypress_request* x = reinterpret_cast<struct keypress_request*>(args);
-			x->key->set_state(x->mods, x->polarity ? 1 : 0);
-			delete x;
-			}, req, false);
+		auto _key = &key;
+		lsnes_instance.run_async([mods, _key, polarity]() {
+			_key->set_state(mods, polarity ? 1 : 0);
+		});
 	}
 }
 

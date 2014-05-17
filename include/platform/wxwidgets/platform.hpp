@@ -1,6 +1,7 @@
 #ifndef _plat_wxwidgets__platform__hpp__included__
 #define _plat_wxwidgets__platform__hpp__included__
 
+#include "core/instance.hpp"
 #include "core/moviefile.hpp"
 #include "core/window.hpp"
 
@@ -81,13 +82,6 @@ bool wxeditor_hexeditor_jumpto(uint64_t addr);
 void wxwindow_tasinput_update();
 
 template<typename T>
-void functor_call_helper2(void* args)
-{
-	(*reinterpret_cast<T*>(args))();
-	delete reinterpret_cast<T*>(args);
-}
-
-template<typename T>
 void runuifun(T fn)
 {
 	_runuifun_async(functor_call_helper2<T>, new T(fn));
@@ -119,9 +113,5 @@ extern bool wxwidgets_exiting;
 //Some important settings.
 extern std::map<std::string, std::string> core_selections;
 
-template<typename T> void runemufn_async(T fn)
-{
-	platform::queue(functor_call_helper2<T>, new T(fn), false);
-}
 
 #endif

@@ -739,7 +739,7 @@ void wxwindow_memorysearch::panel::prepare_paint()
 	uint64_t addr_count;
 	bool toomany = false;
 	auto _parent = parent;
-	runemufn([&toomany, &first, &last, ms, &lines, &addrs, &addr_count, _parent]() {
+	lsnes_instance.run([&toomany, &first, &last, ms, &lines, &addrs, &addr_count, _parent]() {
 		addr_count = ms->get_candidate_count();
 		if(last > addr_count) {
 			uint64_t delta = last - addr_count;
@@ -821,7 +821,7 @@ void wxwindow_memorysearch::dump_candidates_text()
 			filetype_textfile);
 		std::ofstream out(filename);
 		auto ms = msearch;
-		runemufn([ms, this, &out]() {
+		lsnes_instance.run([ms, this, &out]() {
 			std::list<uint64_t> addrs2 = ms->get_candidates();
 			for(auto i : addrs2) {
 				std::string row = format_address(i) + " ";
@@ -1058,7 +1058,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 						endianess = j->endian;
 				}
 				e.endianess = endianess;
-				runemufn([n, &e]() { lsnes_instance.mwatch.set(n, e); });
+				lsnes_instance.run([n, &e]() { lsnes_instance.mwatch.set(n, e); });
 			} catch(canceled_exception& e) {
 			}
 		}
@@ -1076,7 +1076,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 				return;
 			uint64_t addr = addresses[r];
 			auto ms = msearch;
-			runemufn([addr, ms]() { ms->dq_range(addr, addr); });
+			lsnes_instance.run([addr, ms]() { ms->dq_range(addr, addr); });
 		}
 		matches->set_selection(0, 0);
 		wxeditor_hexeditor_update();

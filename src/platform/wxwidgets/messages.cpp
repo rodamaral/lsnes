@@ -287,7 +287,7 @@ void wxwin_messages::on_execute(wxCommandEvent& e)
 	//Delete old commands to prevent box becoming unmageable.
 	if(command->GetCount() > COMMAND_HISTORY_SIZE)
 		command->Delete(command->GetCount() - 1);
-	platform::queue(cmd);
+	lsnes_instance.queue(cmd);
 }
 
 void wxwin_messages::notify_update() throw()

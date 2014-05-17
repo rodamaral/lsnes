@@ -286,7 +286,7 @@ namespace
 		}
 		bool error = false;
 		std::string errorstr;
-		runemufn([&error, &errorstr, name, value]() {
+		lsnes_instance.run([&error, &errorstr, name, value]() {
 			try {
 				lsnes_instance.setcache.set(name, value);
 			} catch(std::exception& e) {

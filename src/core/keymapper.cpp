@@ -33,17 +33,18 @@ void lsnes_gamepads_init()
 	lsnes_gamepads.set_button_cb([](unsigned jnum, unsigned num, bool val) {
 		if(!buttons.count(std::make_pair(jnum, num)))
 			return;
-		platform::queue(keypress(keyboard::modifier_set(), *buttons[std::make_pair(jnum, num)], val));
+		lsnes_instance.queue(keypress_info(keyboard::modifier_set(), *buttons[std::make_pair(jnum, num)],
+			val));
 	});
 	lsnes_gamepads.set_hat_cb([](unsigned jnum, unsigned num, unsigned val) {
 		if(!hats.count(std::make_pair(jnum, num)))
 			return;
-		platform::queue(keypress(keyboard::modifier_set(), *hats[std::make_pair(jnum, num)], val));
+		lsnes_instance.queue(keypress_info(keyboard::modifier_set(), *hats[std::make_pair(jnum, num)], val));
 	});
 	lsnes_gamepads.set_axis_cb([](unsigned jnum, unsigned num, int16_t val) {
 		if(!axes.count(std::make_pair(jnum, num)))
 			return;
-		platform::queue(keypress(keyboard::modifier_set(), *axes[std::make_pair(jnum, num)], val));
+		lsnes_instance.queue(keypress_info(keyboard::modifier_set(), *axes[std::make_pair(jnum, num)], val));
 	});
 	lsnes_gamepads.set_axismode_cb([](unsigned jnum, unsigned num, int mode, double tolerance) {
 		if(!axes.count(std::make_pair(jnum, num)))

@@ -146,7 +146,7 @@ namespace
 			mr.singlefile = req.singlefile = filename;
 		}
 		parent->recent_roms->add(mr);
-		runemufn_async([req]() {
+		lsnes_instance.run_async([req]() {
 			lsnes_instance.command.invoke("unpause-emulator");
 			load_new_rom(req);
 		});
@@ -388,7 +388,7 @@ namespace
 			req.files[i] = files[i];
 		}
 		parent->recent_roms->add(mr);
-		runemufn([req]() {
+		lsnes_instance.run([req]() {
 			lsnes_instance.command.invoke("unpause-emulator");
 			load_new_rom(req);
 		});

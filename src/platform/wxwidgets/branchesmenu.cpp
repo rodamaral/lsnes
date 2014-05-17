@@ -66,7 +66,7 @@ namespace
 			std::map<uint64_t, std::string> namemap;
 			std::map<uint64_t, std::set<uint64_t>> childmap;
 			uint64_t cur = 0;
-			runemufn([&cur, &namemap, &childmap]() {
+			lsnes_instance.run([&cur, &namemap, &childmap]() {
 				auto p = project_get();
 				if(!p) return;
 				fill_namemap(*p, 0, namemap, childmap);
@@ -103,7 +103,7 @@ namespace
 		}
 		void call_project_flush()
 		{
-			runemufn_async([] {
+			lsnes_instance.run_async([] {
 				auto p = project_get();
 				if(p) p->flush();
 			});
@@ -234,7 +234,7 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			runemufn([this, id, newname]() {
+			lsnes_instance.run([this, id, newname]() {
 				try {
 					auto p = project_get();
 					if(p) p->create_branch(id, newname);
@@ -252,7 +252,7 @@ namespace
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			runemufn([this, id]() {
+			lsnes_instance.run([this, id]() {
 				try {
 					auto p = project_get();
 					if(p) p->set_current_branch(id);
@@ -278,7 +278,7 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			runemufn([this, id, newname]() {
+			lsnes_instance.run([this, id, newname]() {
 				try {
 					auto p = project_get();
 					if(p) p->set_branch_name(id, newname);
@@ -307,7 +307,7 @@ namespace
 			pid = bsel->get_selection();
 			if(pid == 0xFFFFFFFFFFFFFFFFULL) return;
 			bsel->Destroy();
-			runemufn([this, id, pid]() {
+			lsnes_instance.run([this, id, pid]() {
 				try {
 					auto p = project_get();
 					if(p) p->set_parent_branch(id, pid);
@@ -326,7 +326,7 @@ namespace
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			runemufn([this, id]() {
+			lsnes_instance.run([this, id]() {
 				try {
 					auto p = project_get();
 					if(p) p->delete_branch(id);
@@ -433,7 +433,7 @@ void branches_menu::on_select(wxCommandEvent& e)
 	if(!branch_ids.count(id)) return;
 	uint64_t bid = branch_ids[id];
 	std::string err;
-	runemufn_async([this, bid]() {
+	lsnes_instance.run_async([this, bid]() {
 		auto p = project_get();
 		try {
 			if(p) p->set_current_branch(bid);
@@ -453,7 +453,7 @@ void branches_menu::update()
 {
 	std::map<uint64_t, std::string> namemap;
 	std::map<uint64_t, std::set<uint64_t>> childmap;
-	runemufn([&namemap, &childmap]() {
+	lsnes_instance.run([&namemap, &childmap]() {
 		auto p = project_get();
 		if(!p) return;
 		fill_namemap(*p, 0, namemap, childmap);

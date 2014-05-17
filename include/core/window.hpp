@@ -11,40 +11,6 @@
 #include <list>
 #include <stdexcept>
 
-/**
- * Information about keypress.
- */
-struct keypress
-{
-/**
- * Create null keypress (no modifiers, NULL key and released).
- */
-	keypress();
-/**
- * Create new keypress.
- */
-	keypress(keyboard::modifier_set mod, keyboard::key& _key, short _value);
-/**
- * Create new keypress (two keys).
- */
-	keypress(keyboard::modifier_set mod, keyboard::key& _key, keyboard::key& _key2, short _value);
-/**
- * Modifier set.
- */
-	keyboard::modifier_set modifiers;
-/**
- * The actual key (first)
- */
-	keyboard::key* key1;
-/**
- * The actual key (second)
- */
-	keyboard::key* key2;
-/**
- * Value for the press
- */
-	short value;
-};
 
 //ROM request.
 struct rom_request
@@ -269,39 +235,9 @@ struct platform
  */
 	static void set_modal_pause(bool enable) throw();
 /**
- * Queue keypress.
- *
- * - Can be called from any thread.
- *
- * Parameter k: The keypress to queue.
- */
-	static void queue(const keypress& k) throw(std::bad_alloc);
-/**
- * Queue command.
- *
- * - Can be called from any thread.
- *
- * Parameter c: The command to queue.
- */
-	static void queue(const std::string& c) throw(std::bad_alloc);
-/**
- * Queue function to be called in emulation thread.
- *
- * - Can be called from any thread (exception: Synchronous mode can not be used from emulation nor main threads).
- *
- * Parameter f: The function to execute.
- * Parameter arg: Argument to pass to the function.
- * Parameter sync: If true, execute function call synchronously, else asynchronously.
- */
-	static void queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc);
-/**
  * Run all queues.
  */
 	static void run_queues() throw();
-/**
- * Set availablinty of system thread.
- */
-	static void system_thread_available(bool av) throw();
 
 	static bool pausing_allowed;
 	static double global_volume;
@@ -319,18 +255,6 @@ private:
 	modal_pause_holder(const modal_pause_holder&);
 	modal_pause_holder& operator=(const modal_pause_holder&);
 };
-
-template<typename T>
-void functor_call_helper(void* args)
-{
-	(*reinterpret_cast<T*>(args))();
-}
-
-template<typename T>
-void runemufn(T fn)
-{
-	platform::queue(functor_call_helper<T>, &fn, true);
-}
 
 /**
  * If set, queueing synchronous function produces a warning.

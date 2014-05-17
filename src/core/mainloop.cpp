@@ -1226,7 +1226,7 @@ void init_main_callbacks()
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	platform::system_thread_available(true);
+	CORE().system_thread_available = true;
 	//Basic initialization.
 	dispatch_set_error_streams(&messages.getstream());
 	emulation_thread = threads::this_id();
@@ -1341,7 +1341,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	information_dispatch::do_dump_end();
 	core_core::uninstall_all_handlers();
 	CORE().commentary.kill();
-	platform::system_thread_available(false);
+	CORE().system_thread_available = false;
 	//Kill some things to avoid crashes.
 	debug_core_change();
 	project_set(NULL, true);
