@@ -115,7 +115,7 @@ namespace
 			std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 				old_alias_value, true);
 			lsnes_instance.command.set_alias_for(name, newcmd);
-			refresh_alias_binds();
+			lsnes_instance.abindmanager();
 			do_notify();
 		} catch(...) {
 		}
@@ -136,7 +136,7 @@ namespace
 			std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 				old_alias_value, true);
 			lsnes_instance.command.set_alias_for(name, newcmd);
-			refresh_alias_binds();
+			lsnes_instance.abindmanager();
 			do_notify();
 		} catch(...) {
 		}
@@ -153,7 +153,7 @@ namespace
 			return;
 		}
 		lsnes_instance.command.set_alias_for(name, "");
-		refresh_alias_binds();
+		lsnes_instance.abindmanager();
 		do_notify();
 		refresh();
 	}

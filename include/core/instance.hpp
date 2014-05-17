@@ -1,6 +1,7 @@
 #ifndef _instance__hpp__included__
 #define _instance__hpp__included__
 
+#include "core/command.hpp"
 #include "core/emustatus.hpp"
 #include "core/inthread.hpp"
 #include "core/movie.hpp"
@@ -34,6 +35,7 @@ struct emulator_instance
 	keyboard::keyboard keyboard;
 	keyboard::mapper mapper;
 	command::group command;
+	alias_binds_manager abindmanager;
 };
 
 extern emulator_instance lsnes_instance;

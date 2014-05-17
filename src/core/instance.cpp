@@ -5,7 +5,7 @@
 
 emulator_instance::emulator_instance()
 	: setcache(settings), subtitles(&mlogic), mbranch(&mlogic), mteditor(&mlogic),
-	status(status_A, status_B, status_C), mapper(keyboard, command)
+	status(status_A, status_B, status_C), mapper(keyboard, command), abindmanager(*this)
 {
 	status_A.valid = false;
 	status_B.valid = false;

@@ -33,7 +33,7 @@ namespace
 		P(alias, cmds);
 
 		CORE().command.set_alias_for(alias, cmds);
-		refresh_alias_binds();
+		CORE().abindmanager();
 		return 0;
 	}
 

@@ -5,6 +5,7 @@
 #include <list>
 #include <stdexcept>
 #include <string>
+#include "keyboard.hpp"
 
 namespace command
 {

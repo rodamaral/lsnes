@@ -148,7 +148,7 @@ namespace
 		P(name, P.optional(value, ""));
 
 		CORE().command.set_alias_for(name, value);
-		refresh_alias_binds();
+		CORE().abindmanager();
 		return 0;
 	}
 

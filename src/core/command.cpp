@@ -13,14 +13,30 @@ command::set lsnes_cmds;
 
 namespace
 {
-	threads::lock alias_ibind_mutex;
+	threads::rlock* global_lock;
+	threads::rlock& get_invbind_lock()
+	{
+		if(!global_lock) global_lock = new threads::rlock;
+		return *global_lock;
+	}
 	std::map<std::string, keyboard::invbind*> alias_binds;
 }
 
-void refresh_alias_binds()
+alias_binds_manager::alias_binds_manager(emulator_instance& _instance)
+	: instance(_instance)
 {
-	threads::alock h(alias_ibind_mutex);
-	auto a = lsnes_instance.command.get_aliases();
+}
+
+alias_binds_manager::~alias_binds_manager()
+{
+	for(auto i : alias_binds) delete i.second;
+	alias_binds.clear();
+}
+
+void alias_binds_manager::operator()()
+{
+	threads::arlock h(get_invbind_lock());
+	auto a = instance.command.get_aliases();
 	for(auto i : alias_binds) {
 		if(!a.count(i.first)) {
 			delete i.second;
@@ -31,12 +47,6 @@ void refresh_alias_binds()
 		if(i == "" || i[0] == '-')
 			continue;
 		if(!alias_binds.count(i) || alias_binds[i] == NULL)
-			alias_binds[i] = new keyboard::invbind(lsnes_instance.mapper, i, "Alias‣" + i);
+			alias_binds[i] = new keyboard::invbind(instance.mapper, i, "Alias‣" + i);
 	}
-}
-
-void kill_alias_binds()
-{
-	for(auto i : alias_binds) delete i.second;
-	alias_binds.clear();
 }

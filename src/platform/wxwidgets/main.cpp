@@ -242,7 +242,7 @@ end:
 			}
 			lineno++;
 		}
-		refresh_alias_binds();
+		lsnes_instance.abindmanager();
 		lsnes_uri_rewrite.load(get_config_path() + "/lsnesurirewrite.cfg");
 	}
 
@@ -572,7 +572,6 @@ int lsnes_app::OnExit()
 	platform::quit();
 	cleanup_all_keys();
 	cleanup_keymapper();
-	kill_alias_binds();
 	deinitialize_wx_keyboard();
 	return 0;
 }
