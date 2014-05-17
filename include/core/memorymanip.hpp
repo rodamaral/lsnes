@@ -6,7 +6,15 @@
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
+#include "library/memoryspace.hpp"
 
-void refresh_cart_mappings() throw(std::bad_alloc);
+class cart_mappings_refresher
+{
+public:
+	cart_mappings_refresher(memory_space& _mspace);
+	void operator()() throw(std::bad_alloc);
+private:
+	memory_space& mspace;
+};
 
 #endif

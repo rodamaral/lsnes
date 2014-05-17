@@ -606,7 +606,7 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 			old_core->debug_reset();
 			old_core->unload_cartridge();
 		} catch(...) {}
-	refresh_cart_mappings();
+	lsnes_instance.cmapper();
 	notify_core_changed(old_type != current_rom_type);
 }
 

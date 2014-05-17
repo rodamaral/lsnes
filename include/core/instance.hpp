@@ -8,6 +8,7 @@
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/mbranch.hpp"
+#include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/multitrack.hpp"
 #include "library/command.hpp"
@@ -87,6 +88,7 @@ struct emulator_instance
 	command::group command;
 	alias_binds_manager abindmanager;
 	rrdata nrrdata;
+	cart_mappings_refresher cmapper;
 	//Queue stuff.
 	threads::lock queue_lock;
 	threads::cv queue_condition;

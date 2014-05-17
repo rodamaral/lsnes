@@ -6,7 +6,8 @@
 
 emulator_instance::emulator_instance()
 	: setcache(settings), subtitles(&mlogic), mbranch(&mlogic), mteditor(&mlogic),
-	status(status_A, status_B, status_C), mapper(keyboard, command), abindmanager(*this)
+	status(status_A, status_B, status_C), mapper(keyboard, command), abindmanager(*this),
+	cmapper(memory)
 {
 	system_thread_available = false;
 	queue_function_run = false;

@@ -86,11 +86,16 @@ namespace
 	};
 }
 
-void refresh_cart_mappings() throw(std::bad_alloc)
+cart_mappings_refresher::cart_mappings_refresher(memory_space& _mspace)
+	: mspace(_mspace)
+{
+}
+
+void cart_mappings_refresher::operator()() throw(std::bad_alloc)
 {
 	if(!our_rom.rtype)
 		return;
-	std::list<memory_region*> cur_regions = CORE().memory.get_regions();
+	std::list<memory_region*> cur_regions = mspace.get_regions();
 	std::list<memory_region*> regions;
 	memory_region* tmp = NULL;
 	auto vmalist = our_rom.rtype->vma_list();
@@ -108,7 +113,7 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 			regions.push_back(tmp);
 			tmp = NULL;
 		}
-		CORE().memory.set_regions(regions);
+		mspace.set_regions(regions);
 	} catch(...) {
 		if(tmp)
 			delete tmp;
