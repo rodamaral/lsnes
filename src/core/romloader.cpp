@@ -17,11 +17,11 @@ bool load_null_rom()
 	}
 	loaded_rom newrom;
 	our_rom = newrom;
-	if(lsnes_instance.mlogic)
+	if(CORE().mlogic)
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			lsnes_instance.mlogic.get_mfile().romimg_sha256[i] = "";
-			lsnes_instance.mlogic.get_mfile().romxml_sha256[i] = "";
-			lsnes_instance.mlogic.get_mfile().namehint[i] = "";
+			CORE().mlogic.get_mfile().romimg_sha256[i] = "";
+			CORE().mlogic.get_mfile().romxml_sha256[i] = "";
+			CORE().mlogic.get_mfile().namehint[i] = "";
 		}
 	notify_core_change();
 	return true;
@@ -96,11 +96,11 @@ bool _load_new_rom(const romload_request& req)
 	}
 	try {
 		load_new_rom_inner(req);
-		if(lsnes_instance.mlogic)
+		if(CORE().mlogic)
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				lsnes_instance.mlogic.get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-				lsnes_instance.mlogic.get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
-				lsnes_instance.mlogic.get_mfile().namehint[i] = our_rom.romimg[i].namehint;
+				CORE().mlogic.get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
+				CORE().mlogic.get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
+				CORE().mlogic.get_mfile().namehint[i] = our_rom.romimg[i].namehint;
 			}
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Can't load ROM: ") + e.what());
@@ -201,7 +201,7 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 			//Try to use hint.
 			std::set<std::string> exts = img.extensions;
 			for(auto j : exts) {
-				std::string candidate = lsnes_instance.setcache.get(psetting) + "/" + info.hint[i] +
+				std::string candidate = CORE().setcache.get(psetting) + "/" + info.hint[i] +
 					"." + j;
 				if(zip::file_exists(candidate)) {
 					roms[i] = candidate;
@@ -211,7 +211,7 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 		}
 		if(isbios && roms[i] == "" && i == 0) {
 			//Fallback default.
-			roms[0] = lsnes_instance.setcache.get("firmwarepath") + "/" + bios;
+			roms[0] = CORE().setcache.get("firmwarepath") + "/" + bios;
 		}
 		if(roms[i] == "" && info.hash[i] != "")
 			roms[i] = try_to_guess_rom(info.hint[i], info.hash[i], info.hashxml[i], *ctype, i);

@@ -201,8 +201,8 @@ void render_framebuffer()
 	ri.rq.run(main_screen);
 	notify_set_screen(main_screen);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	keyboard::key* mouse_x = lsnes_instance.keyboard.try_lookup_key("mouse_x");
-	keyboard::key* mouse_y = lsnes_instance.keyboard.try_lookup_key("mouse_y");
+	keyboard::key* mouse_x = CORE().keyboard.try_lookup_key("mouse_x");
+	keyboard::key* mouse_y = CORE().keyboard.try_lookup_key("mouse_y");
 	keyboard::mouse_calibration xcal;
 	keyboard::mouse_calibration ycal;
 	xcal.offset = ri.lgap;

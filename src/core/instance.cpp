@@ -3,6 +3,9 @@
 #include "core/command.hpp"
 #include "core/keymapper.hpp"
 #include "core/random.hpp"
+#ifdef __linux__
+#include <execinfo.h>
+#endif
 
 emulator_instance::emulator_instance()
 	: setcache(settings), subtitles(&mlogic), mbranch(&mlogic), mteditor(&mlogic),
@@ -23,6 +26,13 @@ emulator_instance lsnes_instance;
 
 emulator_instance& CORE()
 {
+	if(threads::id() != lsnes_instance.emu_thread) {
+		std::cerr << "WARNING: CORE() called in wrong thread." << std::endl;
+#ifdef __linux__
+		void* arr[256];
+		backtrace_symbols_fd(arr, 256, 2);
+#endif
+	}
 	return lsnes_instance;
 }
 
@@ -103,7 +113,7 @@ void emulator_instance::run_queue(bool unlocked) throw()
 			std::string c = commands.front();
 			commands.pop_front();
 			queue_lock.unlock();
-			lsnes_instance.command.invoke(c);
+			CORE().command.invoke(c);
 			queue_lock.lock();
 			queue_function_run = true;
 		}

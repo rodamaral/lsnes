@@ -75,8 +75,8 @@ namespace
 
 	command::fnptr<const std::string&> test4(lsnes_cmds, "panicsave-movie", "", "",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-		if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic.get_mfile(),
-			lsnes_instance.mlogic.get_rrdata());
+		if(CORE().mlogic) emerg_save_movie(CORE().mlogic.get_mfile(),
+			CORE().mlogic.get_rrdata());
 	});
 
 	//% is intentionally missing.
@@ -134,7 +134,7 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 
 void dump_region_map() throw(std::bad_alloc)
 {
-	std::list<struct memory_region*> regions = lsnes_instance.memory.get_regions();
+	std::list<struct memory_region*> regions = CORE().memory.get_regions();
 	for(auto i : regions) {
 		std::ostringstream x;
 		x << hex::to(i->base) << "-" << hex::to(i->last_address()) << " " << hex::to(i->size) << " ";

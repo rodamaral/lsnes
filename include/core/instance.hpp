@@ -93,6 +93,7 @@ struct emulator_instance
 	cart_mappings_refresher cmapper;
 	controller_state controls;
 	project_state project;
+	threads::id emu_thread;
 	//Queue stuff.
 	threads::lock queue_lock;
 	threads::cv queue_condition;

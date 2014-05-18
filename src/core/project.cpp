@@ -325,7 +325,7 @@ bool project_state::set(project_info* p, bool current)
 {
 	if(!p) {
 		if(active_project)
-			lsnes_instance.commentary.unload_collection();
+			CORE().commentary.unload_collection();
 		active_project = p;
 		notify_core_change();
 		notify_branch_change();
@@ -381,19 +381,19 @@ skip_rom_movie:
 		active_project = p;
 		switched = true;
 		//Calculate union of old and new.
-		std::set<std::string> _watches = lsnes_instance.mwatch.enumerate();
+		std::set<std::string> _watches = CORE().mwatch.enumerate();
 		for(auto i : p->watches) _watches.insert(i.first);
 
 		for(auto i : _watches)
 			try {
 				if(p->watches.count(i))
-					lsnes_instance.mwatch.set(i, p->watches[i]);
+					CORE().mwatch.set(i, p->watches[i]);
 				else
-					lsnes_instance.mwatch.clear(i);
+					CORE().mwatch.clear(i);
 			} catch(std::exception& e) {
 				messages << "Can't set/clear watch '" << i << "': " << e.what() << std::endl;
 			}
-		lsnes_instance.commentary.load_collection(p->directory + "/" + p->prefix + ".lsvs");
+		CORE().commentary.load_collection(p->directory + "/" + p->prefix + ".lsvs");
 		CORE().command.invoke("reset-lua");
 		for(auto i : p->luascripts)
 			CORE().command.invoke("run-lua " + i);
@@ -443,7 +443,7 @@ std::string project_state::moviepath()
 	if(active_project)
 		return active_project->directory;
 	else
-		return lsnes_instance.setcache.get("moviepath");
+		return CORE().setcache.get("moviepath");
 }
 
 std::string project_state::otherpath()
@@ -461,9 +461,9 @@ std::string project_state::savestate_ext()
 
 void project_state::copy_watches(project_info& p)
 {
-	for(auto i : lsnes_instance.mwatch.enumerate()) {
+	for(auto i : CORE().mwatch.enumerate()) {
 		try {
-			p.watches[i] = lsnes_instance.mwatch.get_string(i);
+			p.watches[i] = CORE().mwatch.get_string(i);
 		} catch(std::exception& e) {
 			messages << "Can't read memory watch '" << i << "': " << e.what() << std::endl;
 		}

@@ -1226,6 +1226,7 @@ void init_main_callbacks()
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {
+	lsnes_instance.emu_thread = threads::id();
 	CORE().system_thread_available = true;
 	//Basic initialization.
 	dispatch_set_error_streams(&messages.getstream());

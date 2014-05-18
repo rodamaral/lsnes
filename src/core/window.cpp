@@ -242,7 +242,7 @@ namespace
 	{
 		on_idle_time = lua_timed_hook(LUA_TIMED_HOOK_IDLE);
 		on_timer_time = lua_timed_hook(LUA_TIMED_HOOK_TIMER);
-		lsnes_instance.queue_function_run = false;
+		CORE().queue_function_run = false;
 	}
 }
 
@@ -251,9 +251,9 @@ namespace
 void platform::dummy_event_loop() throw()
 {
 	while(!do_exit_dummy_event_loop) {
-		threads::alock h(lsnes_instance.queue_lock);
-		lsnes_instance.run_queue(true);
-		threads::cv_timed_wait(lsnes_instance.queue_condition, h, threads::ustime(MAXWAIT));
+		threads::alock h(CORE().queue_lock);
+		CORE().run_queue(true);
+		threads::cv_timed_wait(CORE().queue_condition, h, threads::ustime(MAXWAIT));
 		random_mix_timing_entropy();
 	}
 }
@@ -261,15 +261,15 @@ void platform::dummy_event_loop() throw()
 void platform::exit_dummy_event_loop() throw()
 {
 	do_exit_dummy_event_loop = true;
-	threads::alock h(lsnes_instance.queue_lock);
-	lsnes_instance.queue_condition.notify_all();
+	threads::alock h(CORE().queue_lock);
+	CORE().queue_condition.notify_all();
 	usleep(200000);
 }
 
 void platform::flush_command_queue() throw()
 {
 	reload_lua_timers();
-	lsnes_instance.queue_function_run = false;
+	CORE().queue_function_run = false;
 	if(modal_pause || normal_pause)
 		freeze_time(get_utime());
 	bool run_idle = false;
@@ -284,11 +284,11 @@ void platform::flush_command_queue() throw()
 			reload_lua_timers();
 			run_idle = false;
 		}
-		threads::alock h(lsnes_instance.queue_lock);
-		lsnes_instance.run_queue(true);
+		threads::alock h(CORE().queue_lock);
+		CORE().run_queue(true);
 		if(!pausing_allowed)
 			break;
-		if(lsnes_instance.queue_function_run)
+		if(CORE().queue_function_run)
 			reload_lua_timers();
 		now = get_utime();
 		uint64_t waitleft = 0;
@@ -305,7 +305,7 @@ void platform::flush_command_queue() throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				threads::cv_timed_wait(lsnes_instance.queue_condition, h, threads::ustime(waitleft));
+				threads::cv_timed_wait(CORE().queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -337,9 +337,9 @@ void platform::wait(uint64_t usec) throw()
 			run_idle = false;
 			reload_lua_timers();
 		}
-		threads::alock h(lsnes_instance.queue_lock);
-		lsnes_instance.run_queue(true);
-		if(lsnes_instance.queue_function_run)
+		threads::alock h(CORE().queue_lock);
+		CORE().run_queue(true);
+		if(CORE().queue_function_run)
 			reload_lua_timers();
 		//If usec is 0, never wait (waitleft can be nonzero if time counting screws up).
 		if(!usec)
@@ -358,7 +358,7 @@ void platform::wait(uint64_t usec) throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				threads::cv_timed_wait(lsnes_instance.queue_condition, h, threads::ustime(waitleft));
+				threads::cv_timed_wait(CORE().queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -369,8 +369,8 @@ void platform::wait(uint64_t usec) throw()
 void platform::cancel_wait() throw()
 {
 	continue_time = 0;
-	threads::alock h(lsnes_instance.queue_lock);
-	lsnes_instance.queue_condition.notify_all();
+	threads::alock h(CORE().queue_lock);
+	CORE().queue_condition.notify_all();
 }
 
 void platform::set_modal_pause(bool enable) throw()
@@ -380,7 +380,7 @@ void platform::set_modal_pause(bool enable) throw()
 
 void platform::run_queues() throw()
 {
-	lsnes_instance.run_queue(false);
+	CORE().run_queue(false);
 }
 
 namespace
