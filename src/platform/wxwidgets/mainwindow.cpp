@@ -562,7 +562,7 @@ namespace
 		lsnes_instance.run_async([req]() {
 			lsnes_instance.command.invoke("unpause-emulator");
 			load_new_rom(req);
-		});
+		}, [](std::exception& e) {});
 	}
 
 	void recent_movie_selected(const recentfiles::path& file)
@@ -760,7 +760,7 @@ namespace
 					req.packfile = a;
 					load_new_rom(req);
 					lsnes_instance.command.invoke("load-smart " + b);
-				});
+				}, [](std::exception& e) {});
 				ret = true;
 			}
 			if(filenames.Count() == 1) {
@@ -776,7 +776,7 @@ namespace
 					lsnes_instance.run_async([req]() {
 						lsnes_instance.command.invoke("unpause-emulator");
 						load_new_rom(req);
-					});
+					}, [](std::exception& e) {});
 					pwin->recent_roms->add(loadreq_to_multirom(req));
 					ret = true;
 				}

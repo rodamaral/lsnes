@@ -104,7 +104,9 @@ std::string pick_text(wxWindow* parent, const std::string& title, const std::str
 void show_message_ok(wxWindow* parent, const std::string& title, const std::string& text, int icon);
 
 //Run function and show errors. Returns true on error.
+
 bool run_show_error(wxWindow* parent, const std::string& title, const std::string& text, std::function<void()> fn);
+void show_exception(wxWindow* parent, const std::string& title, const std::string& text, std::exception& e);
 
 //Some important windows (if open).
 extern wxwin_messages* msg_window;

@@ -926,14 +926,16 @@ namespace
 			lsnes_instance.run_async([this]() {
 				this->singlestepping = true;
 				lsnes_instance.command.invoke("unpause-emulator");
-			});
+			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_FRAMEADVANCE) {
 			lsnes_instance.run_async([this]() { 
 				lsnes_instance.command.invoke("+advance-frame"); 
 				lsnes_instance.command.invoke("-advance-frame"); 
-			});
+			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_CONTINUE) {
-			lsnes_instance.run_async([this]() { lsnes_instance.command.invoke("unpause-emulator"); });
+			lsnes_instance.run_async([this]() {
+				lsnes_instance.command.invoke("unpause-emulator");
+			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_BREAKPOINTS) {
 			dialog_breakpoints* d = new dialog_breakpoints(this);
 			d->ShowModal();
@@ -1308,7 +1310,7 @@ back:
 			d->Destroy();
 			lsnes_instance.run_async([this, disasm, addr, count]() {
 				this->run_disassembler(disasm, addr, count);
-			});
+			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_GOTO) {
 			try {
 				std::string to = pick_text(this, "Goto", "Enter address to go to:", "");
@@ -1362,7 +1364,7 @@ back:
 						}
 						this->scroll_pane(nrow);
 					});
-				});
+				}, [](std::exception& e) {});
 			} catch(canceled_exception& e) {
 			}
 		}
@@ -1412,7 +1414,7 @@ back:
 			auto pp = p;
 			lsnes_instance.run_async([pp, disasm, addr, count]() {
 				pp->run_disassembler(disasm, addr, count);
-			});
+			}, [](std::exception& e) {});
 			//Delete entries in (rbase, addr) if addr = base.
 			if(addr == base) {
 				for(uint64_t i = rbase + 1; i < addr; i++)
@@ -1793,7 +1795,9 @@ back:
 		}
 		rpair(addr, dtype) = d->get_result();
 		d->Destroy();
-		lsnes_instance.run_async([this, addr, dtype]() { pwin->add_breakpoint(addr, dtype); });
+		lsnes_instance.run_async([this, addr, dtype]() {
+			pwin->add_breakpoint(addr, dtype);
+		}, [](std::exception& e) {});
 		auto ent = std::make_pair(addr, dtype);
 		std::string line = format_line(ent);
 		unsigned insert_pos = get_insert_pos(ent);
@@ -1810,7 +1814,9 @@ back:
 		debug_type dtype;
 		addr = listsyms[idx].first;
 		dtype = listsyms[idx].second;
-		lsnes_instance.run_async([this, addr, dtype]() { pwin->remove_breakpoint(addr, dtype); });
+		lsnes_instance.run_async([this, addr, dtype]() {
+			pwin->remove_breakpoint(addr, dtype);
+		}, [](std::exception& e) {});
 		brklist->Delete(idx);
 		listsyms.erase(listsyms.begin() + idx);
 	}

@@ -755,3 +755,11 @@ bool run_show_error(wxWindow* parent, const std::string& title, const std::strin
 		return true;
 	}
 }
+
+void show_exception(wxWindow* parent, const std::string& title, const std::string& text, std::exception& e)
+{
+	std::string err = e.what();
+	std::string _title = title;
+	std::string _text = (text == "") ? err : (text + ": " + err);
+	show_message_ok(parent, _title, _text, wxICON_EXCLAMATION);
+}

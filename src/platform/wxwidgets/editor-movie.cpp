@@ -1657,10 +1657,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to fork "
 				"from " + lsnes_instance.mbranch.name(oldname) + "):", "", false);
 			lsnes_instance.run_async([this, oldname, newname] {
-				run_show_error(this, "Error creating branch", "Can't create branch",
-					[newname, oldname]() {
-					lsnes_instance.mbranch._new(newname, oldname);
-				});
+				lsnes_instance.mbranch._new(newname, oldname);
+			}, [this](std::exception& e) {
+				show_exception(this, "Error creating branch", "Can't create branch", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1677,15 +1676,14 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			mode = g.second;
 			if(mode == MBRANCH_IMPORT_MOVIE) {
 				std::set<std::string> brlist;
-				bool failed = false;
-				lsnes_instance.run([this, filename, &brlist, &failed]() {
-					failed = run_show_error(this, "Can't get branches in movie", "",
-						[filename, &brlist]() {
+				try {
+					lsnes_instance.run([this, filename, &brlist]() {
 						brlist = lsnes_instance.mbranch._movie_branches(filename);
 					});
-				});
-				if(failed)
+				} catch(std::exception& e) {
+					show_exception(this, "Can't get branches in movie", "", e);
 					return;
+				}
 				if(brlist.size() == 0) {
 					show_message_ok(this, "No branches in movie file",
 						"Can't import movie file as it has no branches", wxICON_EXCLAMATION);
@@ -1702,9 +1700,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			dbranch = pick_text(this, "Enter new branch name", "Enter name for an imported branch:",
 				branch, false);
 			lsnes_instance.run_async([this, filename, branch, dbranch, mode]() {
-				run_show_error(this, "Can't import branch", "", [filename, branch, dbranch, mode]() {
-					lsnes_instance.mbranch.import(filename, branch, dbranch, mode);
-				});
+				lsnes_instance.mbranch.import(filename, branch, dbranch, mode);
+			}, [this](std::exception& e) {
+				show_exception(this, "Can't import branch", "", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1718,10 +1716,10 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			file = g.first;
 			mode = g.second;
 			lsnes_instance.run_async([this, file, mode]() {
-				run_show_error(this, "Can't export branch", "", [file, mode]() {
-					std::string bname = lsnes_instance.mbranch.get();
-					lsnes_instance.mbranch._export(file, bname, mode == MBRANCH_IMPORT_BINARY);
-				});
+				std::string bname = lsnes_instance.mbranch.get();
+				lsnes_instance.mbranch._export(file, bname, mode == MBRANCH_IMPORT_BINARY);
+			}, [this](std::exception& e) {
+				show_exception(this, "Can't export branch", "", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1738,10 +1736,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to rename "
 				"'" + lsnes_instance.mbranch.name(oldname) + "'):", oldname, false);
 			lsnes_instance.run_async([this, oldname, newname] {
-				run_show_error(this, "Error renaming branch", "Can't rename branch",
-					[oldname, newname]() {
-					lsnes_instance.mbranch.rename(oldname, newname);
-				});
+				lsnes_instance.mbranch.rename(oldname, newname);
+			}, [this](std::exception& e) {
+				show_exception(this, "Error renaming branch", "Can't rename branch", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1755,9 +1752,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			oldname = pick_among(this, "Select branch to delete", "Select branch to delete",
 				choices, 0);
 			lsnes_instance.run_async([this, oldname] {
-				run_show_error(this, "Error deleting branch", "Can't delete branch", [oldname]() {
-					lsnes_instance.mbranch._delete(oldname);
-				});
+				lsnes_instance.mbranch._delete(oldname);
+			}, [this](std::exception& e) {
+				show_exception(this, "Error deleting branch", "Can't delete branch", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1767,9 +1764,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		if(!branch_names.count(id)) return;
 		std::string name = branch_names[id];
 		lsnes_instance.run_async([this, name]() {
-			run_show_error(this, "Error changing branch", "Can't change branch", [name]() {
-				lsnes_instance.mbranch.set(name);
-			});
+			lsnes_instance.mbranch.set(name);
+		}, [this](std::exception& e) {
+			show_exception(this, "Error changing branch", "Can't change branch", e);
 		});
 	}
 }

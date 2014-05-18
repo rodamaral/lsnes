@@ -271,7 +271,7 @@ namespace
 		auto _key = &key;
 		lsnes_instance.run_async([mods, _key, polarity]() {
 			_key->set_state(mods, polarity ? 1 : 0);
-		});
+		}, [](std::exception& e) {});
 	}
 }
 

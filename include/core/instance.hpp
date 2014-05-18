@@ -14,6 +14,7 @@
 #include "core/multitrack.hpp"
 #include "core/project.hpp"
 #include "library/command.hpp"
+#include "library/exrethrow.hpp"
 #include "library/lua-base.hpp"
 #include "library/memoryspace.hpp"
 #include "library/settingvar.hpp"
@@ -56,20 +57,21 @@ struct keypress_info
 };
 
 template<typename T>
-void functor_call_helper(void* args)
-{
-	(*reinterpret_cast<T*>(args))();
-}
-
-template<typename T>
 void functor_call_helper2(void* args)
 {
 	(*reinterpret_cast<T*>(args))();
 	delete reinterpret_cast<T*>(args);
 }
 
+
 struct emulator_instance
 {
+	struct function_queue_entry
+	{
+		std::function<void()> fn;
+		std::function<void(std::exception& e)> onerror;
+	};
+	
 	emulator_instance();
 	movie_logic mlogic;
 	memory_space memory;
@@ -99,7 +101,7 @@ struct emulator_instance
 	threads::cv queue_condition;
 	std::deque<keypress_info> keypresses;
 	std::deque<std::string> commands;
-	std::deque<std::pair<void(*)(void*), void*>> functions;
+	std::deque<function_queue_entry> functions;
 	volatile uint64_t functions_executed;
 	volatile uint64_t next_function;
 	volatile bool system_thread_available;
@@ -127,10 +129,12 @@ struct emulator_instance
  * - Can be called from any thread (exception: Synchronous mode can not be used from emulation nor main threads).
  *
  * Parameter f: The function to execute.
+ * Parameter onerror: Function to call on error.
  * Parameter arg: Argument to pass to the function.
  * Parameter sync: If true, execute function call synchronously, else asynchronously.
  */
-	void queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc);
+	void queue(std::function<void()> f, std::function<void(std::exception& e)> onerror, bool sync)
+		throw(std::bad_alloc);
 /**
  * Run all queues.
  */
@@ -138,17 +142,19 @@ struct emulator_instance
 /**
  * Call function synchronously in emulation thread.
  */
-	template<typename T>
-	void run(T fn)
+	void run(std::function<void()> fn)
 	{
-		queue(functor_call_helper<T>, &fn, true);
+		exrethrow::storage ex;
+		queue(fn, [&ex](std::exception& e) { ex = exrethrow::storage(e); }, true);
+		if(ex) ex.rethrow();
 	}
 /**
  * Queue asynchrous function in emulation thread.
  */
-	template<typename T> void run_async(T fn)
+	void run_async(std::function<void()> fn,
+		std::function<void(std::exception& e)> onerror)
 	{
-		queue(functor_call_helper2<T>, new T(fn), false);
+		queue(fn, onerror, false);
 	}
 /**
  * Run internal queues.

@@ -149,7 +149,7 @@ namespace
 		lsnes_instance.run_async([req]() {
 			lsnes_instance.command.invoke("unpause-emulator");
 			load_new_rom(req);
-		});
+		}, [](std::exception& e) {});
 	}
 
 	class multirom_dialog : public wxDialog

@@ -384,7 +384,7 @@ void wxeditor_tasinput::on_control(wxCommandEvent& e)
 		lsnes_instance.controls.tasinput(t.port, t.controller, t.xindex, xstate);
 		if(t.yindex != std::numeric_limits<unsigned>::max())
 			lsnes_instance.controls.tasinput(t.port, t.controller, t.yindex, ystate);
-	});
+	}, [](std::exception& e) {});
 }
 
 void wxeditor_tasinput::update_controls()
@@ -582,7 +582,7 @@ void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
 		}
 		return;
 	}
-	if(key == WXK_F5) lsnes_instance.run_async([this]() { lsnes_instance.command.invoke("+advance-frame"); });
+	if(key == WXK_F5) lsnes_instance.queue("+advance-frame");
 }
 
 void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)

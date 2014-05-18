@@ -106,7 +106,7 @@ namespace
 			lsnes_instance.run_async([] {
 				auto p = CORE().project.get();
 				if(p) p->flush();
-			});
+			}, [](std::exception& e) {});
 		}
 	private:
 		void build_tree(uint64_t id, wxTreeItemId parent, std::map<uint64_t, std::set<uint64_t>>& childmap,
@@ -406,11 +406,11 @@ void branches_menu::on_select(wxCommandEvent& e)
 	std::string err;
 	lsnes_instance.run_async([this, bid]() {
 		auto p = CORE().project.get();
-		run_show_error(this->pwin, "Error changing branch", "Can't change branch", [p, bid]() {
-			if(p) p->set_current_branch(bid);
-		});
+		if(p) p->set_current_branch(bid);
 		if(p) p->flush();
 		update_movie_state();
+	}, [this](std::exception& e) {
+		show_exception(this->pwin, "Error changing branch", "Can't change branch", e);
 	});
 }
 
