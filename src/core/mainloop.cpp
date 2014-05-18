@@ -303,7 +303,7 @@ namespace
 
 void update_movie_state()
 {
-	auto p = project_get();
+	auto p = CORE().project.get();
 	bool readonly = false;
 	{
 		uint64_t magic[4];
@@ -1113,13 +1113,13 @@ jumpback:
 		if(pending_new_project != "") {
 			std::string id = pending_new_project;
 			pending_new_project = "";
-			project_info* old = project_get();
+			project_info* old = CORE().project.get();
 			if(old && old->id == id)
 				goto nothing_to_do;
 			try {
-				auto& p = project_load(id);
-				project_set(&p);
-				if(project_get() != old)
+				auto& p = CORE().project.load(id);
+				CORE().project.set(&p);
+				if(CORE().project.get() != old)
 					delete old;
 				flush_slotinfo();	//Wrong movie may be stale.
 				return 1;
@@ -1344,7 +1344,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	CORE().system_thread_available = false;
 	//Kill some things to avoid crashes.
 	debug_core_change();
-	project_set(NULL, true);
+	CORE().project.set(NULL, true);
 	CORE().mwatch.clear_multi(CORE().mwatch.enumerate());
 }
 

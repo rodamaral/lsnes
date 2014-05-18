@@ -358,7 +358,7 @@ void memwatch_set::clear(const std::string& name)
 	nitems.erase(name);
 	rebuild(nitems);
 	std::swap(items, nitems);
-	auto pr = project_get();
+	auto pr = CORE().project.get();
 	if(pr) {
 		pr->watches.erase(name);
 		pr->flush();
@@ -430,7 +430,7 @@ void memwatch_set::set(const std::string& name, memwatch_item& item)
 	nitems[name] = item;
 	rebuild(nitems);
 	std::swap(items, nitems);
-	auto pr = project_get();
+	auto pr = CORE().project.get();
 	if(pr) {
 		pr->watches[name] = get_string(name);
 		pr->flush();
@@ -450,7 +450,7 @@ void memwatch_set::set_multi(std::list<std::pair<std::string, memwatch_item>>& l
 		nitems[i.first] = i.second;
 	rebuild(nitems);
 	std::swap(items, nitems);
-	auto pr = project_get();
+	auto pr = CORE().project.get();
 	if(pr) {
 		for(auto& i : list)
 			pr->watches[i.first] = get_string(i.first);
@@ -477,7 +477,7 @@ void memwatch_set::clear_multi(const std::set<std::string>& names)
 		nitems.erase(i);
 	rebuild(nitems);
 	std::swap(items, nitems);
-	auto pr = project_get();
+	auto pr = CORE().project.get();
 	if(pr) {
 		for(auto& i : names)
 			pr->watches.erase(i);

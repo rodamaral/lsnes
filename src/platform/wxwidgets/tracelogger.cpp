@@ -856,7 +856,7 @@ namespace
 		} else if(e.GetId() == wxID_SAVE) {
 			try {
 				std::string filename = choose_file_save(this, "Save tracelog to",
-					project_otherpath(), filetype_trace);
+					lsnes_instance.project.otherpath(), filetype_trace);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				for(auto& i : panel->rows)
@@ -978,7 +978,7 @@ namespace
 		case wxID_SAVE:
 			try {
 				std::string filename = choose_file_save(this, "Save tracelog fragment to",
-					project_otherpath(), filetype_trace);
+					lsnes_instance.project.otherpath(), filetype_trace);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				if(lines == 1) str += "\n";
@@ -1017,7 +1017,7 @@ namespace
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save tracelog to",
-				project_otherpath(), filetype_trace);
+				lsnes_instance.project.otherpath(), filetype_trace);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			for(auto& i : panel->rows)
@@ -1283,7 +1283,7 @@ back:
 		} else if(e.GetId() == wxID_SAVE) {
 			try {
 				std::string filename = choose_file_save(this, "Save disassembly to",
-					project_otherpath(), filetype_disassembly);
+					lsnes_instance.project.otherpath(), filetype_disassembly);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				for(auto& i : panel->rows)
@@ -1449,7 +1449,7 @@ back:
 		case wxID_SAVE:
 			try {
 				std::string filename = choose_file_save(this, "Save disassembly fragment to",
-					project_otherpath(), filetype_disassembly);
+					lsnes_instance.project.otherpath(), filetype_disassembly);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				if(lines == 1) str += "\n";
@@ -1681,7 +1681,7 @@ back:
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save disassembly to",
-				project_otherpath(), filetype_disassembly);
+				lsnes_instance.project.otherpath(), filetype_disassembly);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			for(auto& i : panel->rows)

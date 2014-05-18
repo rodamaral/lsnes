@@ -364,8 +364,8 @@ public:
 	void on_loadbookmarks(wxCommandEvent& e)
 	{
 		try {
-			std::string filename = choose_file_load(this, "Load bookmarks from file", project_otherpath(),
-				filetype_hexbookmarks);
+			std::string filename = choose_file_load(this, "Load bookmarks from file",
+				lsnes_instance.project.otherpath(), filetype_hexbookmarks);
 			auto _in = zip::readrel(filename, "");
 			std::string in(_in.begin(), _in.end());
 			JSON::node root(in);
@@ -411,8 +411,8 @@ public:
 		}
 		std::string doc = root.serialize();
 		try {
-			std::string filename = choose_file_save(this, "Save bookmarks to file", project_otherpath(),
-				filetype_hexbookmarks);
+			std::string filename = choose_file_save(this, "Save bookmarks to file",
+				lsnes_instance.project.otherpath(), filetype_hexbookmarks);
 			std::ofstream out(filename.c_str());
 			out << doc << std::endl;
 			out.close();

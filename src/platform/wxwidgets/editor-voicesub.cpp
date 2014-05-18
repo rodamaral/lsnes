@@ -212,7 +212,7 @@ void wxeditor_voicesub::on_export(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		auto filename = choose_file_save(this, "Select file to epxort", project_otherpath(),
+		auto filename = choose_file_save(this, "Select file to epxort", lsnes_instance.project.otherpath(),
 			filetype_opus_sox);
 		lsnes_instance.commentary.export_stream(id, filename.first, filename.second);
 	} catch(canceled_exception& e) {
@@ -225,8 +225,8 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 {
 	try {
 		std::string filename;
-		filename = choose_file_save(this, "Select file to export superstream", project_otherpath(),
-			filetype_sox);
+		filename = choose_file_save(this, "Select file to export superstream",
+			lsnes_instance.project.otherpath(), filetype_sox);
 		lsnes_instance.commentary.export_superstream(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -240,7 +240,7 @@ void wxeditor_voicesub::on_import(wxCommandEvent& e)
 		uint64_t ts;
 		ts = lsnes_instance.commentary.parse_timebase(pick_text(this, "Enter timebase",
 			"Enter position for newly imported stream"));
-		auto filename = choose_file_save(this, "Select file to import", project_otherpath(),
+		auto filename = choose_file_save(this, "Select file to import", lsnes_instance.project.otherpath(),
 			filetype_opus_sox);
 		lsnes_instance.commentary.import_stream(ts, filename.first, filename.second);
 	} catch(canceled_exception& e) {
@@ -283,7 +283,7 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_load(wxCommandEvent& e)
 {
-	if(project_get() != NULL)
+	if(lsnes_instance.project.get() != NULL)
 		return;
 	try {
 		std::string filename;
@@ -302,7 +302,7 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_unload(wxCommandEvent& e)
 {
-	if(project_get() != NULL)
+	if(lsnes_instance.project.get() != NULL)
 		return;
 	lsnes_instance.commentary.unload_collection();
 }
@@ -323,7 +323,7 @@ void wxeditor_voicesub::refresh()
 	if(closing)
 		return;
 	bool cflag = lsnes_instance.commentary.collection_loaded();
-	bool pflag = (project_get() != NULL);
+	bool pflag = (lsnes_instance.project.get() != NULL);
 	unloadbutton->Enable(cflag && !pflag);
 	loadbutton->Enable(!pflag);
 	exportsbutton->Enable(cflag);

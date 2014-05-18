@@ -750,7 +750,7 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 		if(fn.length() < 6 || fn.substr(fn.length() - 5) != ".lsmv")
 			filename->SetValue(towxstring(fn + ".lsmv"));
 		lsnes_instance.mlogic.get_mfile().is_savestate = false;
-		auto prj = project_get();
+		auto prj = lsnes_instance.project.get();
 		if(prj) {
 			lsnes_instance.mlogic.get_mfile().gamename = prj->gamename;
 			lsnes_instance.mlogic.get_mfile().authors = prj->authors;
@@ -780,7 +780,7 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 	if(!games_req) {
 		if(current->GetValue()) {
 			std::string curgame;
-			auto prj = project_get();
+			auto prj = lsnes_instance.project.get();
 			if(prj)
 				curgame = prj->gamename;
 			else

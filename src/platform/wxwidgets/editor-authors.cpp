@@ -51,7 +51,7 @@ private:
 wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit game name & authors"), wxDefaultPosition, wxSize(-1, -1))
 {
-	project_info* proj = project_get();
+	project_info* proj = lsnes_instance.project.get();
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(proj ? 12 : 5, 1, 0, 0);
 	SetSizer(top_s);
@@ -199,7 +199,7 @@ void wxeditor_authors::on_cancel(wxCommandEvent& e)
 
 void wxeditor_authors::on_ok(wxCommandEvent& e)
 {
-	project_info* proj = project_get();
+	project_info* proj = lsnes_instance.project.get();
 	std::string gamename = tostdstring(projectname->GetValue());
 	std::string pfx = tostdstring(projectpfx->GetValue());
 	std::string dir = directory ? tostdstring(directory->GetValue()) : std::string("");

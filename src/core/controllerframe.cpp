@@ -227,7 +227,7 @@ void controller_state::erase_macro(const std::string& macro)
 			}
 		}
 		all_macros.erase(macro);
-		project_info* p = project_get();
+		project_info* p = CORE().project.get();
 		if(p) {
 			p->macros.erase(macro);
 			p->flush();
@@ -267,7 +267,7 @@ void controller_state::set_macro(const std::string& macro, const controller_macr
 				break;
 			}
 		}
-		project_info* p = project_get();
+		project_info* p = CORE().project.get();
 		if(p) {
 			p->macros[macro] = all_macros[macro].serialize();
 			p->flush();
@@ -334,7 +334,7 @@ void controller_state::rename_macro(const std::string& old, const std::string& n
 				break;
 			}
 		}
-		project_info* p = project_get();
+		project_info* p = CORE().project.get();
 		if(p) {
 			p->macros[newn] = p->macros[old];
 			p->macros.erase(old);

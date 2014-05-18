@@ -11,7 +11,7 @@
 
 bool load_null_rom()
 {
-	if(project_get()) {
+	if(CORE().project.get()) {
 		std::cerr << "Can't switch ROM with project active." << std::endl;
 		return false;
 	}
@@ -90,7 +90,7 @@ namespace
 
 bool _load_new_rom(const romload_request& req)
 {
-	if(project_get()) {
+	if(CORE().project.get()) {
 		std::cerr << "Can't switch ROM with project active." << std::endl;
 		return false;
 	}

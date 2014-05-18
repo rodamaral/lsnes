@@ -817,7 +817,7 @@ bool wxwindow_memorysearch::ShouldPreventAppExit() const
 void wxwindow_memorysearch::dump_candidates_text()
 {
 	try {
-		std::string filename = choose_file_save(this, "Dump memory search", project_otherpath(),
+		std::string filename = choose_file_save(this, "Dump memory search", lsnes_instance.project.otherpath(),
 			filetype_textfile);
 		std::ofstream out(filename);
 		auto ms = msearch;
@@ -846,8 +846,8 @@ void wxwindow_memorysearch::handle_save(memory_search::savestate_type type)
 	try {
 		std::vector<char> state;
 		msearch->savestate(state, type);
-		std::string filename = choose_file_save(this, "Save memory search", project_otherpath(),
-			filetype_memorysearch);
+		std::string filename = choose_file_save(this, "Save memory search",
+			lsnes_instance.project.otherpath(), filetype_memorysearch);
 		std::ofstream out(filename, std::ios::binary);
 		out.write(&state[0], state.size());
 		if(!out)
@@ -862,8 +862,8 @@ void wxwindow_memorysearch::handle_save(memory_search::savestate_type type)
 void wxwindow_memorysearch::handle_load()
 {
 	try {
-		std::string filename = choose_file_load(this, "Load memory search", project_otherpath(),
-			filetype_memorysearch);
+		std::string filename = choose_file_load(this, "Load memory search",
+			lsnes_instance.project.otherpath(), filetype_memorysearch);
 		std::vector<char> state = zip::readrel(filename, "");
 		push_undo();
 		msearch->loadstate(state);

@@ -447,7 +447,7 @@ namespace
 
 	void handle_watch_load(std::map<std::string, std::string>& new_watches, std::set<std::string>& old_watches)
 	{
-		auto proj = project_get();
+		auto proj = lsnes_instance.project.get();
 		if(proj) {
 			for(auto i : new_watches) {
 				std::string name = i.first;
@@ -489,7 +489,7 @@ namespace
 
 	std::string get_default_screenshot_name()
 	{
-		auto p = project_get();
+		auto p = lsnes_instance.project.get();
 		if(!p)
 			return "";
 		else {
@@ -520,7 +520,7 @@ namespace
 
 	std::string project_prefixname(const std::string ext)
 	{
-		auto p = project_get();
+		auto p = lsnes_instance.project.get();
 		if(!p)
 			return "";
 		else
@@ -578,7 +578,7 @@ namespace
 	wxString getname()
 	{
 		std::string windowname = "lsnes rr" + lsnes_version + " [";
-		auto p = project_get();
+		auto p = lsnes_instance.project.get();
 		if(p)
 			windowname = windowname + p->name;
 		else
@@ -1113,8 +1113,8 @@ wxwin_mainwindow::wxwin_mainwindow(bool fscreen)
 	menu_start_sub(wxT("Close"));
 	menu_entry(wxID_CLOSE_PROJECT, wxT("Project"));
 	menu_entry(wxID_CLOSE_ROM, wxT("ROM"));
-	menu_enable(wxID_CLOSE_PROJECT, project_get() != NULL);
-	menu_enable(wxID_CLOSE_ROM, project_get() == NULL);
+	menu_enable(wxID_CLOSE_PROJECT, lsnes_instance.project.get() != NULL);
+	menu_enable(wxID_CLOSE_ROM, lsnes_instance.project.get() == NULL);
 	menu_end_sub();
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("Quit"));
@@ -1371,7 +1371,7 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 void wxwin_mainwindow::refresh_title() throw()
 {
 	SetTitle(getname());
-	auto p = project_get();
+	auto p = lsnes_instance.project.get();
 	menu_enable(wxID_RELOAD_ROM_IMAGE, !p);
 	for(int i = wxID_LOAD_ROM_IMAGE_FIRST; i <= wxID_LOAD_ROM_IMAGE_LAST; i++)
 		menu_enable(i, !p);
@@ -1394,7 +1394,7 @@ namespace
 		filedialog_input_params input(bool save) const
 		{
 			filedialog_input_params p;
-			std::string ext = state ? project_savestate_ext() : "lsmv";
+			std::string ext = state ? lsnes_instance.project.savestate_ext() : "lsmv";
 			std::string name = state ? "Savestates" : "Movies";
 			if(save) {
 				p.types.push_back(filedialog_type_entry(name, "*." + ext, ext));
@@ -1444,7 +1444,7 @@ void wxwin_mainwindow::project_selected(const std::string& id)
 	bool load_ok = false;
 	lsnes_instance.run([id, &filename, &displayname, &load_ok]() -> void {
 		try {
-			auto& p = project_load(id);	//Check.
+			auto& p = lsnes_instance.project.load(id);	//Check.
 			filename = p.filename;
 			displayname = p.name;
 			load_ok = true;
@@ -1493,12 +1493,14 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		lsnes_instance.queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		filename = choose_file_load(this, "Load Movie", project_moviepath(), filetype_movie).second;
+		filename = choose_file_load(this, "Load Movie", lsnes_instance.project.moviepath(),
+			filetype_movie).second;
 		recent_movies->add(filename);
 		lsnes_instance.queue("load-movie " + filename);
 		return;
 	case wxID_LOAD_STATE:
-		filename2 = choose_file_load(this, "Load State", project_moviepath(), filetype_savestate);
+		filename2 = choose_file_load(this, "Load State", lsnes_instance.project.moviepath(),
+			filetype_savestate);
 		recent_movies->add(filename2.second);
 		lsnes_instance.queue("load" + filename2.first + " " + filename2.second);
 		return;
@@ -1506,29 +1508,31 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		lsnes_instance.queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		filename2 = choose_file_save(this, "Save Movie", project_moviepath(), filetype_movie,
+		filename2 = choose_file_save(this, "Save Movie", lsnes_instance.project.moviepath(), filetype_movie,
 			project_prefixname("lsmv"));
 		recent_movies->add(filename2.second);
 		lsnes_instance.queue("save-movie" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SUBTITLES:
-		lsnes_instance.queue("save-subtitle " + choose_file_save(this, "Save subtitles", project_moviepath(),
-			filetype_sub, project_prefixname("sub")));
+		lsnes_instance.queue("save-subtitle " + choose_file_save(this, "Save subtitles",
+			lsnes_instance.project.moviepath(), filetype_sub, project_prefixname("sub")));
 		return;
 	case wxID_SAVE_STATE:
-		filename2 = choose_file_save(this, "Save State", project_moviepath(), filetype_savestate);
+		filename2 = choose_file_save(this, "Save State", lsnes_instance.project.moviepath(),
+			filetype_savestate);
 		recent_movies->add(filename2.second);
 		lsnes_instance.queue("save-state" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SCREENSHOT:
 		lsnes_instance.queue("take-screenshot " + choose_file_save(this, "Save Screenshot",
-			project_moviepath(), filetype_png, get_default_screenshot_name()));
+			lsnes_instance.project.moviepath(), filetype_png, get_default_screenshot_name()));
 		return;
 	case wxID_RUN_SCRIPT:
-		lsnes_instance.queue("run-script " + pick_file_member(this, "Select Script", project_otherpath()));
+		lsnes_instance.queue("run-script " + pick_file_member(this, "Select Script",
+			lsnes_instance.project.otherpath()));
 		return;
 	case wxID_RUN_LUA: {
-		std::string f = choose_file_load(this, "Select Lua Script", project_otherpath(),
+		std::string f = choose_file_load(this, "Select Lua Script", lsnes_instance.project.otherpath(),
 			filetype_lua_script);
 		lsnes_instance.queue("run-lua " + f);
 		recent_scripts->add(f);
@@ -1575,8 +1579,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
 		lsnes_instance.run([&old_watches]() { old_watches = lsnes_instance.mwatch.enumerate(); });
-		std::string filename = choose_file_save(this, "Save watches to file", project_otherpath(),
-			filetype_watch);
+		std::string filename = choose_file_save(this, "Save watches to file",
+			lsnes_instance.project.otherpath(), filetype_watch);
 		std::ofstream out(filename.c_str());
 		for(auto i : old_watches) {
 			std::string val;
@@ -1598,8 +1602,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::set<std::string> old_watches;
 		lsnes_instance.run([&old_watches]() { old_watches = lsnes_instance.mwatch.enumerate(); });
 		std::map<std::string, std::string> new_watches;
-		std::string filename = choose_file_load(this, "Choose memory watch file", project_otherpath(),
-			filetype_watch);
+		std::string filename = choose_file_load(this, "Choose memory watch file",
+			lsnes_instance.project.otherpath(), filetype_watch);
 		try {
 			std::istream& in = zip::openrel(filename, "");
 			while(in) {
@@ -1731,7 +1735,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + loadlib::library::name();
 		with_loaded_library(*new loadlib::module(loadlib::library(choose_file_load(this, name,
-			project_otherpath(), single_type(loadlib::library::extension(),
+			lsnes_instance.project.otherpath(), single_type(loadlib::library::extension(),
 			loadlib::library::name())))));
 		handle_post_loadlibrary();
 		break;
@@ -1767,7 +1771,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		open_new_project_window(this);
 		return;
 	case wxID_CLOSE_PROJECT:
-		lsnes_instance.run([]() -> void { project_set(NULL); });
+		lsnes_instance.run([]() -> void { lsnes_instance.project.set(NULL); });
 		return;
 	case wxID_CLOSE_ROM:
 		lsnes_instance.run([]() -> void { close_rom(); });

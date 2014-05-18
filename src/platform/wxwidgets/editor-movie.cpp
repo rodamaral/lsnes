@@ -1671,7 +1671,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			std::string filename;
 			std::string branch;
 			std::string dbranch;
-			auto g = choose_file_load(this, "Choose file to import", project_moviepath(),
+			auto g = choose_file_load(this, "Choose file to import", lsnes_instance.project.moviepath(),
 				exp_imp_type());
 			filename = g.first;
 			mode = g.second;
@@ -1713,7 +1713,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		try {
 			int mode;
 			std::string file;
-			auto g = choose_file_save(this, "Choose file to export", project_moviepath(),
+			auto g = choose_file_save(this, "Choose file to export", lsnes_instance.project.moviepath(),
 				exp_imp_type());
 			file = g.first;
 			mode = g.second;

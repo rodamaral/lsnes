@@ -102,8 +102,8 @@ void wxwin_messages::panel::on_menu(wxCommandEvent& e)
 		break;
 	case wxID_SAVE:
 		try {
-			std::string filename = choose_file_save(this, "Save messages to", project_otherpath(),
-				filetype_textfile);
+			std::string filename = choose_file_save(this, "Save messages to",
+				lsnes_instance.project.otherpath(), filetype_textfile);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			if(lines == 1) str += "\n";

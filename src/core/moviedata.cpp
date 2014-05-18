@@ -134,7 +134,7 @@ void set_mprefix_for_project(const std::string& pfx)
 
 std::string translate_name_mprefix(std::string original, int& binary, int save)
 {
-	auto p = project_get();
+	auto p = CORE().project.get();
 	regex_results r = regex("\\$SLOT:(.*)", original);
 	if(r) {
 		if(binary < 0)
@@ -219,7 +219,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		lsnes_instance.mlogic.get_movie().save_state(target.projectid, target.save_frame,
 			target.lagged_frames, target.pollcounters);
 		target.poll_flag = our_rom.rtype->get_pflag();
-		auto prj = project_get();
+		auto prj = CORE().project.get();
 		if(prj) {
 			target.gamename = prj->gamename;
 			target.authors = prj->authors;
@@ -240,7 +240,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		lua_callback_err_save(filename2);
 	}
 	last_save = resolve_relative_path(filename2);
-	auto p = project_get();
+	auto p = CORE().project.get();
 	if(p) {
 		p->last_save = last_save;
 		p->flush();
@@ -261,7 +261,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 	try {
 		uint64_t origtime = get_utime();
 		target.is_savestate = false;
-		auto prj = project_get();
+		auto prj = CORE().project.get();
 		if(prj) {
 			target.gamename = prj->gamename;
 			target.authors = prj->authors;
@@ -282,7 +282,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 		lua_callback_err_save(filename2);
 	}
 	last_save = resolve_relative_path(filename2);
-	auto p = project_get();
+	auto p = CORE().project.get();
 	if(p) {
 		p->last_save = last_save;
 		p->flush();

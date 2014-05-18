@@ -67,7 +67,7 @@ namespace
 			std::map<uint64_t, std::set<uint64_t>> childmap;
 			uint64_t cur = 0;
 			lsnes_instance.run([&cur, &namemap, &childmap]() {
-				auto p = project_get();
+				auto p = lsnes_instance.project.get();
 				if(!p) return;
 				fill_namemap(*p, 0, namemap, childmap);
 				cur = p->get_current_branch();
@@ -104,7 +104,7 @@ namespace
 		void call_project_flush()
 		{
 			lsnes_instance.run_async([] {
-				auto p = project_get();
+				auto p = CORE().project.get();
 				if(p) p->flush();
 			});
 		}
@@ -236,7 +236,7 @@ namespace
 			}
 			lsnes_instance.run([this, id, newname]() {
 				run_show_error(this, "Error creating branch", "Can't create branch", [id, newname]() {
-					auto p = project_get();
+					auto p = CORE().project.get();
 					if(p) p->create_branch(id, newname);
 				});
 			});
@@ -248,7 +248,7 @@ namespace
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			lsnes_instance.run([this, id]() {
 				run_show_error(this, "Error setting branch", "Can't set branch", [id]() {
-					auto p = project_get();
+					auto p = CORE().project.get();
 					if(p) p->set_current_branch(id);
 				});
 			});
@@ -268,7 +268,7 @@ namespace
 			}
 			lsnes_instance.run([this, id, newname]() {
 				run_show_error(this, "Error renaming branch", "Can't rename branch", [id, newname]() {
-					auto p = project_get();
+					auto p = CORE().project.get();
 					if(p) p->set_branch_name(id, newname);
 				});
 			});
@@ -292,7 +292,7 @@ namespace
 			lsnes_instance.run([this, id, pid]() {
 				run_show_error(this, "Error reparenting branch", "Can't reparent branch",
 					[id, pid]() {
-					auto p = project_get();
+					auto p = CORE().project.get();
 					if(p) p->set_parent_branch(id, pid);
 				});
 			});
@@ -305,7 +305,7 @@ namespace
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			lsnes_instance.run([this, id]() {
 				run_show_error(this, "Error deleting branch", "Can't delete branch", [id]() {
-					auto p = project_get();
+					auto p = CORE().project.get();
 					if(p) p->delete_branch(id);
 				});
 			});
@@ -405,7 +405,7 @@ void branches_menu::on_select(wxCommandEvent& e)
 	uint64_t bid = branch_ids[id];
 	std::string err;
 	lsnes_instance.run_async([this, bid]() {
-		auto p = project_get();
+		auto p = CORE().project.get();
 		run_show_error(this->pwin, "Error changing branch", "Can't change branch", [p, bid]() {
 			if(p) p->set_current_branch(bid);
 		});
@@ -419,7 +419,7 @@ void branches_menu::update()
 	std::map<uint64_t, std::string> namemap;
 	std::map<uint64_t, std::set<uint64_t>> childmap;
 	lsnes_instance.run([&namemap, &childmap]() {
-		auto p = project_get();
+		auto p = CORE().project.get();
 		if(!p) return;
 		fill_namemap(*p, 0, namemap, childmap);
 	});
@@ -441,11 +441,11 @@ void branches_menu::update()
 	otheritems.push_back(miteminfo(AppendSeparator(), false, this));
 	int ass_id = wxid_range_low + 1;
 	build_menus(this, 0, otheritems, menus, namemap, childmap, branch_ids, ass_id,
-		project_get()->get_current_branch());
+		lsnes_instance.project.get()->get_current_branch());
 	if(disabler_fn) disabler_fn(true);
 }
 
 bool branches_menu::any_enabled()
 {
-	return project_get();
+	return lsnes_instance.project.get();
 }

@@ -146,57 +146,65 @@ private:
 	void write(std::ostream& s);
 };
 
+class project_state
+{
+public:
+	project_state();
+	~project_state();
 /**
  * Get currently active project.
  *
  * Returns: The currently active project or NULL if none.
  */
-project_info* project_get();
+	project_info* get();
 /**
  * Change currently active project. This reloads Lua VM, ROM and savestate.
  *
  * Parameter p: The new currently active project, or NULL to switch out of any project.
  * Parameter current: If true, do not reload ROM, movie nor state.
  */
-bool project_set(project_info* p, bool current = false);
+	bool set(project_info* p, bool current = false);
 /**
  * Enumerate all known projects.
  *
  * Returns: Map from IDs of projects to project names.
  */
-std::map<std::string, std::string> project_enumerate();
+	std::map<std::string, std::string> enumerate();
 /**
  * Load a given project.
  *
  * Parameter id: The ID of project to load.
  * Returns: The project information.
  */
-project_info& project_load(const std::string& id);
+	project_info& load(const std::string& id);
 /**
  * Get project movie path.
  *
  * Returns: The movie path.
  */
-std::string project_moviepath();
+	std::string moviepath();
 /**
  * Get project other path.
  *
  * Returns: The other path.
  */
-std::string project_otherpath();
+	std::string otherpath();
 /**
  * Get project savestate extension.
  *
  * Returns: The savestate extension.
  */
-std::string project_savestate_ext();
+	std::string savestate_ext();
 /**
  * Copy watches to project
  */
-void project_copy_watches(project_info& p);
+	void copy_watches(project_info& p);
 /**
  * Copy macros to project.
  */
-void project_copy_macros(project_info& p, controller_state& s);
+	void copy_macros(project_info& p, controller_state& s);
+private:
+	project_info* active_project;
+};
 
 #endif

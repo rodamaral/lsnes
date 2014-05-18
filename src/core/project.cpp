@@ -25,8 +25,6 @@ void do_flush_slotinfo();
 
 namespace
 {
-	project_info* active_project = NULL;
-
 	void concatenate(std::vector<char>& data, const std::vector<char>& app)
 	{
 		size_t dsize = data.size();
@@ -189,7 +187,16 @@ namespace
 	}
 }
 
-project_info& project_load(const std::string& id)
+project_state::project_state()
+{
+	active_project = NULL;
+}
+
+project_state::~project_state()
+{
+}
+
+project_info& project_state::load(const std::string& id)
 {
 	std::string file = get_config_path() + "/" + id + ".prj";
 	std::ifstream f(file);
@@ -309,12 +316,12 @@ project_info& project_load(const std::string& id)
 	return pi;
 }
 
-project_info* project_get()
+project_info* project_state::get()
 {
 	return active_project;
 }
 
-bool project_set(project_info* p, bool current)
+bool project_state::set(project_info* p, bool current)
 {
 	if(!p) {
 		if(active_project)
@@ -405,7 +412,7 @@ skip_rom_movie:
 	return switched;
 }
 
-std::map<std::string, std::string> project_enumerate()
+std::map<std::string, std::string> project_state::enumerate()
 {
 	std::set<std::string> projects;
 	std::map<std::string, std::string> projects2;
@@ -431,7 +438,7 @@ std::map<std::string, std::string> project_enumerate()
 	return projects2;
 }
 
-std::string project_moviepath()
+std::string project_state::moviepath()
 {
 	if(active_project)
 		return active_project->directory;
@@ -439,7 +446,7 @@ std::string project_moviepath()
 		return lsnes_instance.setcache.get("moviepath");
 }
 
-std::string project_otherpath()
+std::string project_state::otherpath()
 {
 	if(active_project)
 		return active_project->directory;
@@ -447,12 +454,12 @@ std::string project_otherpath()
 		return ".";
 }
 
-std::string project_savestate_ext()
+std::string project_state::savestate_ext()
 {
 	return active_project ? "lss" : "lsmv";
 }
 
-void project_copy_watches(project_info& p)
+void project_state::copy_watches(project_info& p)
 {
 	for(auto i : lsnes_instance.mwatch.enumerate()) {
 		try {
@@ -463,7 +470,7 @@ void project_copy_watches(project_info& p)
 	}
 }
 
-void project_copy_macros(project_info& p, controller_state& s)
+void project_state::copy_macros(project_info& p, controller_state& s)
 {
 	for(auto i : s.enumerate_macro())
 		p.macros[i] = s.get_macro(i).serialize();
@@ -683,19 +690,20 @@ namespace
 {
 	void recursive_list_branch(uint64_t bid, std::set<unsigned>& dset, unsigned depth, bool last_of)
 	{
-		if(!active_project) {
+		auto prj = CORE().project.get();
+		if(!prj) {
 			messages << "Not in project context." << std::endl;
 			return;
 		}
-		std::set<uint64_t> children = active_project->branch_children(bid);
+		std::set<uint64_t> children = prj->branch_children(bid);
 		std::string prefix;
 		for(unsigned i = 0; i + 1 < depth; i++)
 			prefix += (dset.count(i) ? "\u2502" : " ");
 		prefix += (dset.count(depth - 1) ? (last_of ? "\u2514" : "\u251c") : " ");
 		if(last_of) dset.erase(depth - 1);
 		messages << prefix
-			<< ((bid == active_project->get_current_branch()) ? "*" : "")
-			<< bid << ":" << active_project->get_branch_name(bid) << std::endl;
+			<< ((bid == prj->get_current_branch()) ? "*" : "")
+			<< bid << ":" << prj->get_branch_name(bid) << std::endl;
 		dset.insert(depth);
 		size_t c = 0;
 		for(auto i : children) {
@@ -721,12 +729,13 @@ namespace
 				return;
 			}
 			try {
+				auto prj = CORE().project.get();
 				uint64_t pbid = parse_value<uint64_t>(r[1]);
-				if(!active_project)
+				if(!prj)
 					throw std::runtime_error("Not in project context");
-				uint64_t bid = active_project->create_branch(pbid, r[2]);
+				uint64_t bid = prj->create_branch(pbid, r[2]);
 				messages << "Created branch #" << bid << std::endl;
-				active_project->flush();
+				prj->flush();
 			} catch(std::exception& e) {
 				messages << "Can't create new branch: " << e.what() << std::endl;
 			}
@@ -741,12 +750,13 @@ namespace
 				return;
 			}
 			try {
+				auto prj = CORE().project.get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
-				if(!active_project)
+				if(!prj)
 					throw std::runtime_error("Not in project context");
-				active_project->delete_branch(bid);
+				prj->delete_branch(bid);
 				messages << "Deleted branch #" << bid << std::endl;
-				active_project->flush();
+				prj->flush();
 			} catch(std::exception& e) {
 				messages << "Can't delete branch: " << e.what() << std::endl;
 			}
@@ -761,12 +771,13 @@ namespace
 				return;
 			}
 			try {
+				auto prj = CORE().project.get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
-				if(!active_project)
+				if(!prj)
 					throw std::runtime_error("Not in project context");
-				active_project->set_current_branch(bid);
+				prj->set_current_branch(bid);
 				messages << "Set current branch to #" << bid << std::endl;
-				active_project->flush();
+				prj->flush();
 				update_movie_state();
 			} catch(std::exception& e) {
 				messages << "Can't set branch: " << e.what() << std::endl;
@@ -782,13 +793,14 @@ namespace
 				return;
 			}
 			try {
+				auto prj = CORE().project.get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
 				uint64_t pbid = parse_value<uint64_t>(r[2]);
-				if(!active_project)
+				if(!prj)
 					throw std::runtime_error("Not in project context");
-				active_project->set_parent_branch(bid, pbid);
+				prj->set_parent_branch(bid, pbid);
 				messages << "Reparented branch #" << bid << std::endl;
-				active_project->flush();
+				prj->flush();
 				update_movie_state();
 			} catch(std::exception& e) {
 				messages << "Can't reparent branch: " << e.what() << std::endl;
@@ -804,12 +816,13 @@ namespace
 				return;
 			}
 			try {
+				auto prj = CORE().project.get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
-				if(!active_project)
+				if(!prj)
 					throw std::runtime_error("Not in project context");
-				active_project->set_branch_name(bid, r[2]);
+				prj->set_branch_name(bid, r[2]);
 				messages << "Renamed branch #" << bid << std::endl;
-				active_project->flush();
+				prj->flush();
 				update_movie_state();
 			} catch(std::exception& e) {
 				messages << "Can't rename branch: " << e.what() << std::endl;

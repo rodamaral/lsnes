@@ -109,8 +109,8 @@ void dumper_menu::on_select(wxCommandEvent& e)
 					error_str = e.what();
 				}});
 			if(error_str != "")
-				wxMessageBox(towxstring(error_str), _T("Error ending dump"), wxICON_EXCLAMATION | wxOK,
-					pwin);
+				wxMessageBox(towxstring(error_str), _T("Error ending dump"),
+					wxICON_EXCLAMATION | wxOK, pwin);
 			return;
 		}
 		if(i.second.start_wxids.count(id)) {
@@ -120,10 +120,11 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			std::string prefix;
 			if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_file) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"),
-					towxstring(project_otherpath()), wxT(""), wxT("*.*"), wxFD_SAVE);
+					towxstring(lsnes_instance.project.otherpath()), wxT(""), wxT("*.*"),
+					wxFD_SAVE);
 				std::string modext = t->mode_extension(mode);
 					d->SetWildcard(towxstring(modext + " files|*." + modext));
-				auto p = project_get();
+				auto p = lsnes_instance.project.get();
 				if(p)
 					d->SetFilename(towxstring(p->prefix + "." + modext));
 				if(d->ShowModal() == wxID_OK)
@@ -131,8 +132,9 @@ void dumper_menu::on_select(wxCommandEvent& e)
 				d->Destroy();
 			} else if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_prefix) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose prefix"),
-					towxstring(project_otherpath()), wxT(""), wxT("*.*"), wxFD_SAVE);
-				auto p = project_get();
+					towxstring(lsnes_instance.project.otherpath()), wxT(""), wxT("*.*"),
+					wxFD_SAVE);
+				auto p = lsnes_instance.project.get();
 				if(p)
 					d->SetFilename(towxstring(p->prefix));
 				if(d->ShowModal() == wxID_OK)

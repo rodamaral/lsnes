@@ -12,6 +12,7 @@
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/multitrack.hpp"
+#include "core/project.hpp"
 #include "library/command.hpp"
 #include "library/lua-base.hpp"
 #include "library/memoryspace.hpp"
@@ -91,6 +92,7 @@ struct emulator_instance
 	rrdata nrrdata;
 	cart_mappings_refresher cmapper;
 	controller_state controls;
+	project_state project;
 	//Queue stuff.
 	threads::lock queue_lock;
 	threads::cv queue_condition;

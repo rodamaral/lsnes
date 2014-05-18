@@ -35,7 +35,7 @@ void tracelog_menu::on_select(wxCommandEvent& e)
 		if(ch) {
 			try {
 				std::string filename = choose_file_save(pwin, "Save " + cpunames[rid] + " Trace",
-					project_moviepath(), filetype_trace, "");
+					lsnes_instance.project.moviepath(), filetype_trace, "");
 				debug_tracelog(rid, filename);
 			} catch(canceled_exception& e) {
 			}

@@ -264,8 +264,8 @@ namespace
 		pinfo.projectid = m.projectid;
 		pinfo.active_branch = 0;
 		pinfo.next_branch = 0;
-		project_copy_watches(pinfo);
-		project_copy_macros(pinfo, lsnes_instance.controls);
+		lsnes_instance.project.copy_watches(pinfo);
+		lsnes_instance.project.copy_macros(pinfo, lsnes_instance.controls);
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			pinfo.roms[i] = our_rom.romimg[i].filename;
 			pinfo.romimg_sha256[i] = m.romimg_sha256[i];
@@ -294,8 +294,8 @@ namespace
 no_watch:
 		project_info* pinfo2 = new project_info(pinfo);
 		pinfo2->flush();
-		project_info* old_proj = project_get();
-		project_set(pinfo2, true);
+		project_info* old_proj = lsnes_instance.project.get();
+		lsnes_instance.project.set(pinfo2, true);
 		if(old_proj)
 			delete old_proj;
 		EndModal(wxID_OK);

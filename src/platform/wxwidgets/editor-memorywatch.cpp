@@ -442,7 +442,8 @@ void wxeditor_memorywatch::on_position_change(wxCommandEvent& e)
 void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 {
 	try {
-		std::string filename = choose_file_load(this, "Choose font file", project_otherpath(), filetype_font);
+		std::string filename = choose_file_load(this, "Choose font file", lsnes_instance.project.otherpath(),
+			filetype_font);
 		font->SetValue(towxstring(filename));
 	} catch(canceled_exception& e) {
 	}
