@@ -103,6 +103,8 @@ std::string pick_text(wxWindow* parent, const std::string& title, const std::str
 //Show message box with OK button.
 void show_message_ok(wxWindow* parent, const std::string& title, const std::string& text, int icon);
 
+//Run function and show errors. Returns true on error.
+bool run_show_error(wxWindow* parent, const std::string& title, const std::string& text, std::function<void()> fn);
 
 //Some important windows (if open).
 extern wxwin_messages* msg_window;

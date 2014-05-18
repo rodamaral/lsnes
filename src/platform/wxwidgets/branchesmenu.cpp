@@ -235,16 +235,10 @@ namespace
 				return;
 			}
 			lsnes_instance.run([this, id, newname]() {
-				try {
+				run_show_error(this, "Error creating branch", "Can't create branch", [id, newname]() {
 					auto p = project_get();
 					if(p) p->create_branch(id, newname);
-				} catch(std::exception& e) {
-					std::string err = e.what();
-					runuifun([this, err]() {
-						show_message_ok(this, "Error creating branch",
-							"Can't create branch: " + err, wxICON_EXCLAMATION);
-					});
-				}
+				});
 			});
 			branches->call_project_flush();
 		}
@@ -253,16 +247,10 @@ namespace
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			lsnes_instance.run([this, id]() {
-				try {
+				run_show_error(this, "Error setting branch", "Can't set branch", [id]() {
 					auto p = project_get();
 					if(p) p->set_current_branch(id);
-				} catch(std::exception& e) {
-					std::string err = e.what();
-					runuifun([this, err]() {
-						show_message_ok(this, "Error setting branch",
-							"Can't set branch: " + err, wxICON_EXCLAMATION);
-					});
-				}
+				});
 			});
 			branches->call_project_flush();
 			update_movie_state();
@@ -279,16 +267,10 @@ namespace
 				return;
 			}
 			lsnes_instance.run([this, id, newname]() {
-				try {
+				run_show_error(this, "Error renaming branch", "Can't rename branch", [id, newname]() {
 					auto p = project_get();
 					if(p) p->set_branch_name(id, newname);
-				} catch(std::exception& e) {
-					std::string err = e.what();
-					runuifun([this, err]() {
-						show_message_ok(this, "Error renaming branch",
-							"Can't rename branch: " + err, wxICON_EXCLAMATION);
-					});
-				}
+				});
 			});
 			branches->call_project_flush();
 			update_movie_state();
@@ -308,16 +290,11 @@ namespace
 			if(pid == 0xFFFFFFFFFFFFFFFFULL) return;
 			bsel->Destroy();
 			lsnes_instance.run([this, id, pid]() {
-				try {
+				run_show_error(this, "Error reparenting branch", "Can't reparent branch",
+					[id, pid]() {
 					auto p = project_get();
 					if(p) p->set_parent_branch(id, pid);
-				} catch(std::exception& e) {
-					std::string err = e.what();
-					runuifun([this, err]() {
-						show_message_ok(this, "Error reparenting branch",
-							"Can't reparent branch: " + err, wxICON_EXCLAMATION);
-					});
-				}
+				});
 			});
 			branches->call_project_flush();
 			update_movie_state();
@@ -327,16 +304,10 @@ namespace
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			lsnes_instance.run([this, id]() {
-				try {
+				run_show_error(this, "Error deleting branch", "Can't delete branch", [id]() {
 					auto p = project_get();
 					if(p) p->delete_branch(id);
-				} catch(std::exception& e) {
-					std::string err = e.what();
-					runuifun([this, err]() {
-						show_message_ok(this, "Error deleting branch",
-							"Can't delete branch: " + err, wxICON_EXCLAMATION);
-					});
-				}
+				});
 			});
 			branches->call_project_flush();
 		}
@@ -435,15 +406,9 @@ void branches_menu::on_select(wxCommandEvent& e)
 	std::string err;
 	lsnes_instance.run_async([this, bid]() {
 		auto p = project_get();
-		try {
+		run_show_error(this->pwin, "Error changing branch", "Can't change branch", [p, bid]() {
 			if(p) p->set_current_branch(bid);
-		} catch(std::exception& e) {
-			std::string err = e.what();
-			runuifun([this, err]() {
-				show_message_ok(this->pwin, "Error changing branch", "Can't change branch: " +
-					err, wxICON_EXCLAMATION);
-			});
-		}
+		});
 		if(p) p->flush();
 		update_movie_state();
 	});

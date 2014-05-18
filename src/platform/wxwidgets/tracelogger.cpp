@@ -1342,16 +1342,10 @@ back:
 							return;
 						}
 					}
-					try {
-						addr = hex::from<uint64_t>(offset);
-					} catch(std::exception& e) {
-						runuifun([this] {
-							show_message_ok(this, "Error in address",
-								"Expected <hexdigits> or <name>+<hexdigits>",
-								wxICON_EXCLAMATION);
-						});
+					if(run_show_error(this, "Error in address", "Expected <hexdigits> or "
+						" <name>+<hexdigits>", [&addr, offset]() {
+						addr = hex::from<uint64_t>(offset); }))
 						return;
-					}
 					addr += base;
 					runuifun([this, addr]() {
 						uint64_t nrow = 0;
@@ -1651,29 +1645,24 @@ back:
 	{
 		std::map<uint64_t, disasm_row> rowdata;
 		if(regex_match("\\$data:.*", disasm)) {
-			try {
+			if(run_show_error(this, "Error in disassember", "Error in disassember",
+				[disasm, &rowdata, &addrbase, count]() {
 				for(uint64_t i = 0; i < count; i++) {
 					uint64_t base = addrbase;
 					disasm_row r = disassemble_data_item(addrbase, disasm);
 					rowdata[base] = r;
 				}
-			} catch(std::exception& e) {
-				std::string err = e.what();
-				runuifun([this, err]() { show_message_ok(this, "Error in disassembler",
-					"Error in disassember: " + err, wxICON_EXCLAMATION); });
+				}))
 				return;
-			}
 			add_rows_main(rowdata);
 			return;
 		}
 		disassembler* d;
-		try {
+		if(run_show_error(this, "Error in disassember", "No disassembler '" + disasm + "' found",
+			[&d, disasm]() {
 			d = &disassembler::byname(disasm);
-		} catch(std::exception& e) {
-			runuifun([this, disasm]() { show_message_ok(this, "Error in disassembler",
-				"No disassembler '" + disasm + "' found", wxICON_EXCLAMATION); });
+			}))
 			return;
-		}
 		for(uint64_t i = 0; i < count; i++) {
 			uint64_t base = addrbase;
 			disasm_row r;

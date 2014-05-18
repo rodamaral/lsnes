@@ -739,3 +739,19 @@ void show_message_ok(wxWindow* parent, const std::string& title, const std::stri
 	d3->ShowModal();
 	d3->Destroy();
 }
+
+bool run_show_error(wxWindow* parent, const std::string& title, const std::string& text, std::function<void()> fn)
+{
+	try {
+		fn();
+		return false;
+	} catch(std::exception& e) {
+		std::string err = e.what();
+		std::string _title = title;
+		std::string _text = (text == "") ? err : (text + ": " + err);
+		runuifun([parent, _title, _text]() {
+			show_message_ok(parent, _title, _text, wxICON_EXCLAMATION);
+		});
+		return true;
+	}
+}

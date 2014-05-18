@@ -284,18 +284,11 @@ namespace
 		} catch(...) {
 			return;
 		}
-		bool error = false;
-		std::string errorstr;
-		lsnes_instance.run([&error, &errorstr, name, value]() {
-			try {
+		lsnes_instance.run([this, name, value]() {
+			run_show_error(this, "Error setting value", "", [name, value]() {
 				lsnes_instance.setcache.set(name, value);
-			} catch(std::exception& e) {
-				error = true;
-				errorstr = e.what();
-			}
+			});
 		});
-		if(error)
-			wxMessageBox(towxstring(errorstr), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
 	}
 
 	void wxeditor_esettings_advanced::on_selchange(wxCommandEvent& e)
