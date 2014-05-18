@@ -1919,6 +1919,7 @@ void voice_commentary::load_collection(const std::string& filename)
 
 void voice_commentary::unload_collection()
 {
+	if(!internal) return;
 	auto _internal = get_state(internal);
 	threads::alock m2(_internal->current_collection_lock);
 	if(_internal->current_collection)
