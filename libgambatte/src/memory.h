@@ -118,7 +118,7 @@ public:
 		if(memblock) {
 			if(p >= 0xFE00) { //IOAMHRAM.
 				if(__builtin_expect(dbg->ioamhram[p - 0xFE00] & mask, 0))
-					dbg->read(2, 0x100 + p, v, false);
+					dbg->read(2, 0x100 + p, v, exec);
 			} else {
 				const uint8_t* addr = memblock + p;
 				static void* targets[8] = {&&cart, &&cart, &&cart, &&cart, &&out, &&sram, &&wram,
@@ -137,7 +137,7 @@ cart:
 out:			;
 		}
 		if(__builtin_expect(dbg->bus[p] & mask, 0))
-			dbg->read(0, p, v, false);
+			dbg->read(0, p, v, exec);
 		return v2;
 	}
 
