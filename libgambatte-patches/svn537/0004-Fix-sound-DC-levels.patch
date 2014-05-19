@@ -1,7 +1,7 @@
 From 607d3e252c43d67cea54ec222ef1767a86b3660b Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 5 Dec 2013 08:48:21 +0200
-Subject: [PATCH 4/6] Fix sound DC levels
+Subject: [PATCH 4/7] Fix sound DC levels
 
 This was causing popping in Mega Man (I)
 ---
@@ -105,5 +105,5 @@ index bc0a312..0abd4fb 100644
  		unsigned out = lfsr_.isHighState() ? outHigh : outLow;
  
 -- 
-1.9.1
+2.0.0.rc2
 

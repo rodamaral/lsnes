@@ -1,0 +1,25 @@
+From 9e0586e5943fade4624cdbc89ea832bf56349c46 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Mon, 19 May 2014 11:51:03 +0300
+Subject: [PATCH 7/7] Fix bus write breaks
+
+---
+ libgambatte/src/memory.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libgambatte/src/memory.h b/libgambatte/src/memory.h
+index 4a252b7..e820776 100644
+--- a/libgambatte/src/memory.h
++++ b/libgambatte/src/memory.h
+@@ -142,7 +142,7 @@ out:			;
+ 	}
+ 
+ 	void write(unsigned p, unsigned data, unsigned cc) {
+-		if(__builtin_expect(dbg->bus[0xFF00 + p] & 0x22, 0))
++		if(__builtin_expect(dbg->bus[p] & 0x22, 0))
+ 			dbg->write(0, p, data);
+ 		unsigned char* memblock = cart_.wmem(p >> 12);
+ 		if(memblock) {
+-- 
+2.0.0.rc2
+
