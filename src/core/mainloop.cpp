@@ -39,6 +39,8 @@
 #include <set>
 #include <sys/time.h>
 
+#define QUIT_MAGIC 0x5a8c4bef
+
 #define SPECIAL_FRAME_START 0
 #define SPECIAL_FRAME_VIDEO 1
 #define SPECIAL_SAVEPOINT 2
@@ -67,6 +69,7 @@ namespace
 
 	enum advance_mode
 	{
+		ADVANCE_INVALID,		//In case someone trashes this.
 		ADVANCE_QUIT,			//Quit the emulator.
 		ADVANCE_AUTO,			//Normal (possibly slowed down play).
 		ADVANCE_LOAD,			//Loading a state.
@@ -75,6 +78,7 @@ namespace
 		ADVANCE_SKIPLAG,		//Skip lag (oneshot, reverts to normal).
 		ADVANCE_SKIPLAG_PENDING,	//Activate skip lag mode at next frame.
 		ADVANCE_PAUSE,			//Unconditional pause.
+		ADVANCE_BREAK_PAUSE,		//Break pause.
 	};
 
 	//Our thread.
@@ -105,9 +109,24 @@ namespace
 	//Macro hold.
 	bool macro_hold_1;
 	bool macro_hold_2;
-	//In break pause.
-	bool break_pause = false;
+	//Quit magic.
+	unsigned quit_magic;
 
+	bool is_quitting()
+	{
+		if(amode == ADVANCE_QUIT && quit_magic == QUIT_MAGIC)
+			return true;
+		if(amode == ADVANCE_INVALID || (amode == ADVANCE_QUIT && quit_magic != QUIT_MAGIC) ||
+			amode > ADVANCE_BREAK_PAUSE) {
+			//Ouch.
+			if(lsnes_instance.mlogic)
+				emerg_save_movie(lsnes_instance.mlogic.get_mfile(),
+					lsnes_instance.mlogic.get_rrdata());
+			messages << "WARNING: Emulator runmode undefined, invoked movie dump." << std::endl;
+			amode = ADVANCE_PAUSE;
+		}
+		return false;
+	}
 
 	std::string save_jukebox_name(size_t i)
 	{
@@ -255,8 +274,9 @@ namespace
 	//Do pending load (automatically unpauses).
 	void mark_pending_load(std::string filename, int lmode)
 	{
-		if(break_pause)
-			break_pause = false;
+		//Convert break pause to ordinary pause.
+		if(amode == ADVANCE_BREAK_PAUSE)
+			amode = ADVANCE_PAUSE;
 		loadmode = lmode;
 		pending_load = filename;
 		old_mode = amode;
@@ -337,7 +357,7 @@ void update_movie_state()
 			_status.subframe = 0;
 		}
 		_status.dumping = (information_dispatch::get_dumper_count() > 0);
-		if(break_pause)
+		if(amode == ADVANCE_BREAK_PAUSE)
 			_status.pause = _lsnes_status::pause_break;
 		else if(amode == ADVANCE_PAUSE)
 			_status.pause = _lsnes_status::pause_normal;
@@ -563,6 +583,7 @@ namespace
 		"Syntax: quit-emulator [/y]\nQuits emulator (/y => don't ask for confirmation).\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_QUIT;
+			quit_magic = QUIT_MAGIC;
 			platform::set_paused(false);
 			platform::cancel_wait();
 		});
@@ -570,7 +591,6 @@ namespace
 	command::fnptr<> unpause_emulator(lsnes_cmds, "unpause-emulator", "Unpause the emulator",
 		"Syntax: unpause-emulator\nUnpauses the emulator.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			break_pause = false;
 			amode = ADVANCE_AUTO;
 			platform::set_paused(false);
 			platform::cancel_wait();
@@ -579,8 +599,7 @@ namespace
 	command::fnptr<> pause_emulator(lsnes_cmds, "pause-emulator", "(Un)pause the emulator",
 		"Syntax: pause-emulator\n(Un)pauses the emulator.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(amode != ADVANCE_AUTO || break_pause) {
-				break_pause = false;
+			if(amode != ADVANCE_AUTO) {
 				amode = ADVANCE_AUTO;
 				platform::set_paused(false);
 				platform::cancel_wait();
@@ -685,8 +704,6 @@ namespace
 	command::fnptr<> padvance_frame(lsnes_cmds, "+advance-frame", "Advance one frame",
 		"Syntax: +advance-frame\nAdvances the emulation by one frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(break_pause)
-				break_pause = false;
 			amode = ADVANCE_FRAME;
 			cancel_advance = false;
 			advanced_once = false;
@@ -705,8 +722,6 @@ namespace
 	command::fnptr<> padvance_poll(lsnes_cmds, "+advance-poll", "Advance one subframe",
 		"Syntax: +advance-poll\nAdvances the emulation by one subframe.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(break_pause)
-				break_pause = false;
 			amode = ADVANCE_SUBFRAME;
 			cancel_advance = false;
 			advanced_once = false;
@@ -717,8 +732,8 @@ namespace
 	command::fnptr<> nadvance_poll(lsnes_cmds, "-advance-poll", "Advance one subframe",
 		"No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(break_pause)
-				break_pause = false;
+			if(amode == ADVANCE_BREAK_PAUSE)
+				amode = ADVANCE_PAUSE;
 			cancel_advance = true;
 			platform::cancel_wait();
 			platform::set_paused(false);
@@ -727,8 +742,6 @@ namespace
 	command::fnptr<> advance_skiplag(lsnes_cmds, "advance-skiplag", "Skip to next poll",
 		"Syntax: advance-skiplag\nAdvances the emulation to the next poll.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(break_pause)
-				break_pause = false;
 			amode = ADVANCE_SKIPLAG_PENDING;
 			platform::cancel_wait();
 			platform::set_paused(false);
@@ -1063,6 +1076,7 @@ namespace
 			closenotify.set(notify_close, [this]() {
 				if(on_quit_prompt) {
 					amode = ADVANCE_QUIT;
+					quit_magic = QUIT_MAGIC;
 					platform::set_paused(false);
 					platform::cancel_wait();
 					return;
@@ -1070,6 +1084,7 @@ namespace
 				on_quit_prompt = true;
 				try {
 					amode = ADVANCE_QUIT;
+					quit_magic = QUIT_MAGIC;
 					platform::set_paused(false);
 					platform::cancel_wait();
 				} catch(...) {
@@ -1165,7 +1180,7 @@ nothing_to_do:
 				location_special = SPECIAL_SAVEPOINT;
 				update_movie_state();
 				platform::flush_command_queue();
-				if(amode == ADVANCE_QUIT)
+				if(is_quitting())
 					return -1;
 				if(amode == ADVANCE_LOAD)
 					goto jumpback;
@@ -1211,7 +1226,7 @@ nothing_to_do:
 			platform::set_paused(true);
 			platform::flush_command_queue();
 			handle_load();
-			if(amode == ADVANCE_QUIT)
+			if(is_quitting())
 				return true;
 		}
 		return true;
@@ -1271,7 +1286,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	lua_run_startup_scripts();
 
 	uint64_t time_x = get_utime();
-	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
+	while(!is_quitting() || !queued_saves.empty()) {
 		if(handle_corrupt()) {
 			first_round = CORE().mlogic && CORE().mlogic.get_mfile().is_savestate;
 			just_did_loadstate = first_round;
@@ -1290,7 +1305,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			CORE().mlogic.get_movie().get_pollcounters().set_framepflag(false);
 			CORE().mlogic.new_frame_starting(amode == ADVANCE_SKIPLAG);
 			CORE().mlogic.get_movie().get_pollcounters().set_framepflag(true);
-			if(amode == ADVANCE_QUIT && queued_saves.empty())
+			if(is_quitting() && queued_saves.empty())
 				break;
 			handle_saves();
 			int r = 0;
@@ -1313,14 +1328,14 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
 				stop_at_frame_active = false;
-				if(amode == ADVANCE_QUIT)
-					return;
+				if(is_quitting())
+					goto out;
 				amode = ADVANCE_PAUSE;
 			}
 		}
 		if(just_did_loadstate) {
 			//If we just loadstated, we are up to date.
-			if(amode == ADVANCE_QUIT)
+			if(is_quitting())
 				break;
 			platform::set_paused(amode == ADVANCE_PAUSE);
 			platform::flush_command_queue();
@@ -1339,6 +1354,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		first_round = false;
 		lua_callback_do_frame();
 	}
+out:
 	information_dispatch::do_dump_end();
 	core_core::uninstall_all_handlers();
 	CORE().commentary.kill();
@@ -1395,9 +1411,9 @@ void close_rom()
 
 void do_break_pause()
 {
-	break_pause = true;
+	amode = ADVANCE_BREAK_PAUSE;
 	update_movie_state();
-	while(break_pause) {
+	while(amode == ADVANCE_BREAK_PAUSE) {
 		platform::set_paused(true);
 		platform::flush_command_queue();
 	}
@@ -1405,9 +1421,13 @@ void do_break_pause()
 
 void convert_break_to_pause()
 {
-	if(break_pause) {
+	if(amode == ADVANCE_BREAK_PAUSE) {
 		amode = ADVANCE_PAUSE;
-		break_pause = false;
 		update_movie_state();
 	}
+}
+
+void debug_trash_memory(uint8_t* addr, uint8_t byte)
+{
+	*addr = byte;
 }
