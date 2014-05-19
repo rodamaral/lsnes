@@ -142,7 +142,7 @@ out:			;
 	}
 
 	void write(unsigned p, unsigned data, unsigned cc) {
-		if(__builtin_expect(dbg->bus[0xFF00 + p] & 0x22, 0))
+		if(__builtin_expect(dbg->bus[p] & 0x22, 0))
 			dbg->write(0, p, data);
 		unsigned char* memblock = cart_.wmem(p >> 12);
 		if(memblock) {
