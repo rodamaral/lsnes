@@ -562,6 +562,18 @@ public:
 namespace
 {
 	lsnes_callbacks lsnes_callbacks_obj;
+	command::fnptr<> segfault(lsnes_cmds, "segfault", "Trigger SIGSEGV", "segfault\nTrigger segmentation fault",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			char* ptr = (char*)0x1234;
+			*ptr = 0;
+		});
+
+	command::fnptr<> div0(lsnes_cmds, "divide-by-0", "Do div0", "divide-by-0\nDo divide by 0",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			static int ptr = 1;
+			static int ptr2 = 0;
+			ptr = ptr / ptr2;
+		});
 
 	command::fnptr<const std::string&> test4(lsnes_cmds, "test4", "test", "test",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
