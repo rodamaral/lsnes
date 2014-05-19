@@ -1,7 +1,7 @@
 From 6725b4545adc3e94e0344e5f904267349ce167ba Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 28 Nov 2013 22:05:32 +0200
-Subject: [PATCH 3/7] Breakpoints & debugging
+Subject: [PATCH 3/8] Breakpoints & debugging
 
 ---
  libgambatte/include/gambatte.h    |  23 +++++++++

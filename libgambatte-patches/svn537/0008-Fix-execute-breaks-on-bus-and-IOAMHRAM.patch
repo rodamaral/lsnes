@@ -1,0 +1,34 @@
+From 9e0bab46d119dd97c1069458816a993e05f7e10a Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Mon, 19 May 2014 12:20:12 +0300
+Subject: [PATCH 8/8] Fix execute breaks on bus and IOAMHRAM
+
+---
+ libgambatte/src/memory.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libgambatte/src/memory.h b/libgambatte/src/memory.h
+index e820776..e838502 100644
+--- a/libgambatte/src/memory.h
++++ b/libgambatte/src/memory.h
+@@ -118,7 +118,7 @@ public:
+ 		if(memblock) {
+ 			if(p >= 0xFE00) { //IOAMHRAM.
+ 				if(__builtin_expect(dbg->ioamhram[p - 0xFE00] & mask, 0))
+-					dbg->read(2, 0x100 + p, v, false);
++					dbg->read(2, 0x100 + p, v, exec);
+ 			} else {
+ 				const uint8_t* addr = memblock + p;
+ 				static void* targets[8] = {&&cart, &&cart, &&cart, &&cart, &&out, &&sram, &&wram,
+@@ -137,7 +137,7 @@ cart:
+ out:			;
+ 		}
+ 		if(__builtin_expect(dbg->bus[p] & mask, 0))
+-			dbg->read(0, p, v, false);
++			dbg->read(0, p, v, exec);
+ 		return v2;
+ 	}
+ 
+-- 
+2.0.0.rc2
+
