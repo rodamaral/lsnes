@@ -5,18 +5,19 @@
 
 namespace
 {
-	std::set<garbage_collectable*> gc_items;
+	std::set<garbage_collectable*>* gc_items;
 }
 
 garbage_collectable::garbage_collectable()
 {
-	gc_items.insert(this);
+	if(!gc_items) gc_items = new std::set<garbage_collectable*>;
+	gc_items->insert(this);
 	root_count = 1;
 }
 
 garbage_collectable::~garbage_collectable()
 {
-	gc_items.erase(this);
+	gc_items->erase(this);
 }
 
 void garbage_collectable::mark_root()
@@ -31,14 +32,15 @@ void garbage_collectable::unmark_root()
 
 void garbage_collectable::do_gc()
 {
-	for(auto i : gc_items)
+	if(!gc_items) return;
+	for(auto i : *gc_items)
 		i->reachable = false;
-	for(auto i : gc_items) {
+	for(auto i : *gc_items) {
 		if(i->root_count) {
 			i->mark();
 		}
 	}
-	for(auto i = gc_items.begin(); i != gc_items.end();) {
+	for(auto i = gc_items->begin(); i != gc_items->end();) {
 		if(!(*i)->reachable) {
 			auto ptr = i;
 			i++;
