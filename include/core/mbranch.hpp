@@ -16,8 +16,9 @@ struct movie_branches
 	void rename(const std::string& oldn, const std::string& newn);
 	void _delete(const std::string& branch);
 	std::set<std::string> _movie_branches(const std::string& filename);
-	void import(const std::string& filename, const std::string& ibranch, const std::string& branchname, int mode);
-	void _export(const std::string& filename, const std::string& branchname, bool binary);
+	void import_branch(const std::string& filename, const std::string& ibranch, const std::string& branchname,
+		int mode);
+	void export_branch(const std::string& filename, const std::string& branchname, bool binary);
 private:
 	movie_logic& mlogic;
 };

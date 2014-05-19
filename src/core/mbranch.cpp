@@ -99,8 +99,8 @@ std::set<std::string> movie_branches::_movie_branches(const std::string& filenam
 	return e.enumerate();
 }
 
-void movie_branches::import(const std::string& filename, const std::string& ibranch, const std::string& branchname,
-	int mode)
+void movie_branches::import_branch(const std::string& filename, const std::string& ibranch,
+	const std::string& branchname, int mode)
 {
 	auto& mv = mlogic.get_mfile();
 	if(mv.branches.count(branchname) && &mv.branches[branchname] == mv.input)
@@ -151,7 +151,7 @@ void movie_branches::import(const std::string& filename, const std::string& ibra
 	}
 }
 
-void movie_branches::_export(const std::string& filename, const std::string& branchname, bool binary)
+void movie_branches::export_branch(const std::string& filename, const std::string& branchname, bool binary)
 {
 	auto& mv = mlogic.get_mfile();
 	if(!mv.branches.count(branchname))

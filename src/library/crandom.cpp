@@ -71,7 +71,12 @@ void generate(void* buffer, size_t buffersize)
 		if(r > 0) out += r;
 	}
 }
+}
 
+#endif
+
+namespace crandom
+{
 uint64_t arch_get_tsc()
 {
 #ifdef ARCH_IS_I386
@@ -95,5 +100,3 @@ uint64_t arch_get_random()
 #endif
 }
 }
-
-#endif

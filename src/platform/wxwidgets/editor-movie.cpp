@@ -1700,7 +1700,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			dbranch = pick_text(this, "Enter new branch name", "Enter name for an imported branch:",
 				branch, false);
 			lsnes_instance.run_async([this, filename, branch, dbranch, mode]() {
-				lsnes_instance.mbranch.import(filename, branch, dbranch, mode);
+				lsnes_instance.mbranch.import_branch(filename, branch, dbranch, mode);
 			}, [this](std::exception& e) {
 				show_exception(this, "Can't import branch", "", e);
 			});
@@ -1717,7 +1717,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			mode = g.second;
 			lsnes_instance.run_async([this, file, mode]() {
 				std::string bname = lsnes_instance.mbranch.get();
-				lsnes_instance.mbranch._export(file, bname, mode == MBRANCH_IMPORT_BINARY);
+				lsnes_instance.mbranch.export_branch(file, bname, mode == MBRANCH_IMPORT_BINARY);
 			}, [this](std::exception& e) {
 				show_exception(this, "Can't export branch", "", e);
 			});
