@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/debug.hpp"
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 #include "core/mainloop.hpp"
 #include "core/moviedata.hpp"
 #include "library/directory.hpp"
@@ -12,55 +13,6 @@
 
 namespace
 {
-	struct cb_rwx
-	{
-		std::function<void(uint64_t addr, uint64_t value)> cb;
-		std::function<void()> dtor;
-	};
-	struct cb_trace
-	{
-		std::function<void(uint64_t proc, const char* str, bool true_insn)> cb;
-		std::function<void()> dtor;
-	};
-	struct cb_frame
-	{
-		std::function<void(uint64_t frame, bool loadstate)> cb;
-		std::function<void()> dtor;
-	};
-	typedef std::list<cb_rwx> cb_list;
-	typedef std::list<cb_trace> cb2_list;
-	typedef std::list<cb_frame> cb3_list;
-	std::map<uint64_t, cb_list> read_cb;
-	std::map<uint64_t, cb_list> write_cb;
-	std::map<uint64_t, cb_list> exec_cb;
-	std::map<uint64_t, cb2_list> trace_cb;
-	std::map<uint64_t, cb3_list> frame_cb;
-	cb_list dummy_cb;  //Always empty.
-	cb2_list dummy_cb2;  //Always empty.
-	cb3_list dummy_cb3;  //Always empty.
-	uint64_t xmask = 1;
-	std::function<void()> tracelog_change_cb;
-	struct dispatch::target<> corechange;
-	bool corechange_r = false;
-	bool requesting_break = false;
-
-	struct tracelog_file
-	{
-		std::ofstream stream;
-		std::string full_filename;
-		unsigned refcnt;
-	};
-	std::map<uint64_t, std::pair<tracelog_file*, debug_handle>> trace_outputs;
-
-	std::map<uint64_t, cb_list>& get_lists(debug_type type)
-	{
-		switch(type) {
-		case DEBUG_READ: return read_cb;
-		case DEBUG_WRITE: return write_cb;
-		case DEBUG_EXEC: return exec_cb;
-		default: throw std::runtime_error("Invalid debug callback type");
-		}
-	}
 
 	unsigned debug_flag(debug_type type)
 	{
@@ -75,179 +27,215 @@ namespace
 	}
 }
 
-const uint64_t debug_all_addr = 0xFFFFFFFFFFFFFFFFULL;
-
 namespace
 {
-	template<class T> debug_handle _debug_add_callback(std::map<uint64_t, std::list<T>>& cb, uint64_t addr,
-		debug_type type, T fn, std::function<void()> dtor)
-	{
-		if(!corechange_r) {
-			corechange.set(notify_core_change, []() { debug_core_change(); });
-			corechange_r = true;
-		}
-		if(!cb.count(addr) && type != DEBUG_FRAME)
-			our_rom.rtype->set_debug_flags(addr, debug_flag(type), 0);
-
-		auto& lst = cb[addr];
-		lst.push_back(fn);
-		debug_handle h;
-		h.handle = &*lst.rbegin();
-		return h;
-	}
-
-	template<class T> void _debug_remove_callback(T& cb, uint64_t addr, debug_type type, debug_handle handle)
-	{
-		if(!cb.count(addr)) return;
-		auto& l = cb[addr];
-		for(auto i = l.begin(); i != l.end(); i++) {
-			if(&*i == handle.handle) {
-				l.erase(i);
-				break;
-			}
-		}
-		if(cb[addr].empty()) {
-			cb.erase(addr);
-			if(type != DEBUG_FRAME)
-				our_rom.rtype->set_debug_flags(addr, 0, debug_flag(type));
-		}
-	}
-
-	template<class T> void kill_hooks(T& cblist)
+	template<class T> void kill_hooks(T& cblist, debug_type type)
 	{
 		while(!cblist.empty()) {
 			if(cblist.begin()->second.empty()) {
 				cblist.erase(cblist.begin()->first);
 				continue;
 			}
+			auto key = cblist.begin()->first;
 			auto tmp = cblist.begin()->second.begin();
-			tmp->dtor();
+			cblist.begin()->second.erase(cblist.begin()->second.begin());
+			(*tmp)->killed(key, type);
 		}
 		cblist.clear();
 	}
 }
 
-debug_handle debug_add_callback(uint64_t addr, debug_type type, std::function<void(uint64_t addr, uint64_t value)> fn,
-	std::function<void()> dtor)
+debug_callback_base::~debug_callback_base()
 {
-	std::map<uint64_t, cb_list>& cb = get_lists(type);
-	cb_rwx t;
-	t.cb = fn;
-	t.dtor = dtor;
-	return _debug_add_callback(cb, addr, type, t, dtor);
 }
 
-debug_handle debug_add_trace_callback(uint64_t proc, std::function<void(uint64_t proc, const char* str,
-	bool true_insn)> fn, std::function<void()> dtor)
+const uint64_t debug_context::all_addresses = 0xFFFFFFFFFFFFFFFFULL;
+
+void debug_context::add_callback(uint64_t addr, debug_type type, debug_callback_base& cb)
 {
-	cb_trace t;
-	t.cb = fn;
-	t.dtor = dtor;
-	return _debug_add_callback(trace_cb, proc, DEBUG_TRACE, t, dtor);
+	std::map<uint64_t, cb_list>& xcb = get_lists(type);
+	if(!corechange_r) {
+		corechange.set(notify_core_change, [this]() { this->core_change(); });
+		corechange_r = true;
+	}
+	if(!xcb.count(addr) && type != DEBUG_FRAME)
+		our_rom.rtype->set_debug_flags(addr, debug_flag(type), 0);
+	auto& lst = xcb[addr];
+	lst.push_back(&cb);
 }
 
-debug_handle debug_add_frame_callback(std::function<void(uint64_t frame, bool loadstate)> fn,
-	std::function<void()> dtor)
+void debug_context::remove_callback(uint64_t addr, debug_type type, debug_callback_base& cb)
 {
-	cb_frame t;
-	t.cb = fn;
-	t.dtor = dtor;
-	return _debug_add_callback(frame_cb, 0, DEBUG_FRAME, t, dtor);
-}
-
-void debug_remove_callback(uint64_t addr, debug_type type, debug_handle handle)
-{
-	if(type == DEBUG_FRAME) {
-		_debug_remove_callback(frame_cb, 0, DEBUG_FRAME, handle);
-	} else if(type == DEBUG_TRACE) {
-		_debug_remove_callback(trace_cb, addr, DEBUG_TRACE, handle);
-	} else {
-		_debug_remove_callback(get_lists(type), addr, type, handle);
+	std::map<uint64_t, cb_list>& xcb = get_lists(type);
+	if(type == DEBUG_FRAME) addr = 0;
+	if(!xcb.count(addr)) return;
+	auto& l = xcb[addr];
+	for(auto i = l.begin(); i != l.end(); i++) {
+		if(*i == &cb) {
+			l.erase(i);
+			break;
+		}
+	}
+	if(xcb[addr].empty()) {
+		xcb.erase(addr);
+		if(type != DEBUG_FRAME)
+			our_rom.rtype->set_debug_flags(addr, 0, debug_flag(type));
 	}
 }
 
-void debug_fire_callback_read(uint64_t addr, uint64_t value)
+void debug_context::do_callback_read(uint64_t addr, uint64_t value)
 {
+	debug_callback_params p;
+	p.type = DEBUG_READ;
+	p.rwx.addr = addr;
+	p.rwx.value = value;
+
 	requesting_break = false;
-	cb_list* cb1 = read_cb.count(debug_all_addr) ? &read_cb[debug_all_addr] : &dummy_cb;
+	cb_list* cb1 = read_cb.count(all_addresses) ? &read_cb[all_addresses] : &dummy_cb;
 	cb_list* cb2 = read_cb.count(addr) ? &read_cb[addr] : &dummy_cb;
 	auto _cb1 = *cb1;
 	auto _cb2 = *cb2;
-	for(auto& i : _cb1) i.cb(addr, value);
-	for(auto& i : _cb2) i.cb(addr, value);
+	for(auto& i : _cb1) i->callback(p);
+	for(auto& i : _cb2) i->callback(p);
 	if(requesting_break)
 		do_break_pause();
 }
 
-void debug_fire_callback_write(uint64_t addr, uint64_t value)
+void debug_context::do_callback_write(uint64_t addr, uint64_t value)
 {
+	debug_callback_params p;
+	p.type = DEBUG_WRITE;
+	p.rwx.addr = addr;
+	p.rwx.value = value;
+
 	requesting_break = false;
-	cb_list* cb1 = write_cb.count(debug_all_addr) ? &write_cb[debug_all_addr] : &dummy_cb;
+	cb_list* cb1 = write_cb.count(all_addresses) ? &write_cb[all_addresses] : &dummy_cb;
 	cb_list* cb2 = write_cb.count(addr) ? &write_cb[addr] : &dummy_cb;
 	auto _cb1 = *cb1;
 	auto _cb2 = *cb2;
-	for(auto& i : _cb1) i.cb(addr, value);
-	for(auto& i : _cb2) i.cb(addr, value);
+	for(auto& i : _cb1) i->callback(p);
+	for(auto& i : _cb2) i->callback(p);
 	if(requesting_break)
 		do_break_pause();
 }
 
-void debug_fire_callback_exec(uint64_t addr, uint64_t value)
+void debug_context::do_callback_exec(uint64_t addr, uint64_t cpu)
 {
+	debug_callback_params p;
+	p.type = DEBUG_EXEC;
+	p.rwx.addr = addr;
+	p.rwx.value = cpu;
+
 	requesting_break = false;
-	cb_list* cb1 = exec_cb.count(debug_all_addr) ? &exec_cb[debug_all_addr] : &dummy_cb;
+	cb_list* cb1 = exec_cb.count(all_addresses) ? &exec_cb[all_addresses] : &dummy_cb;
 	cb_list* cb2 = exec_cb.count(addr) ? &exec_cb[addr] : &dummy_cb;
 	auto _cb1 = *cb1;
 	auto _cb2 = *cb2;
-	if(value & xmask)
-		for(auto& i : _cb1) i.cb(addr, value);
-	for(auto& i : _cb2) i.cb(addr, value);
+	if((1ULL << cpu) & xmask)
+		for(auto& i : _cb1) i->callback(p);
+	for(auto& i : _cb2) i->callback(p);
 	if(requesting_break)
 		do_break_pause();
 }
 
-void debug_fire_callback_trace(uint64_t proc, const char* str, bool true_insn)
+void debug_context::do_callback_trace(uint64_t cpu, const char* str, bool true_insn)
 {
+	debug_callback_params p;
+	p.type = DEBUG_TRACE;
+	p.trace.cpu = cpu;
+	p.trace.decoded_insn = str;
+	p.trace.true_insn = true_insn;
+
 	requesting_break = false;
-	cb2_list* cb = trace_cb.count(proc) ? &trace_cb[proc] : &dummy_cb2;
+	cb_list* cb = trace_cb.count(cpu) ? &trace_cb[cpu] : &dummy_cb;
 	auto _cb = *cb;
-	for(auto& i : _cb) i.cb(proc, str, true_insn);
+	for(auto& i : _cb) i->callback(p);
 	if(requesting_break)
 		do_break_pause();
 }
 
-void debug_fire_callback_frame(uint64_t frame, bool loadstate)
+void debug_context::do_callback_frame(uint64_t frame, bool loadstate)
 {
-	cb3_list* cb = frame_cb.count(0) ? &frame_cb[0] : &dummy_cb3;
+	debug_callback_params p;
+	p.type = DEBUG_FRAME;
+	p.frame.frame = frame;
+	p.frame.loadstated = loadstate;
+
+	cb_list* cb = frame_cb.count(0) ? &frame_cb[0] : &dummy_cb;
 	auto _cb = *cb;
-	for(auto& i : _cb) i.cb(frame, loadstate);
+	for(auto& i : _cb) i->callback(p);
 }
 
-void debug_set_cheat(uint64_t addr, uint64_t value)
+void debug_context::set_cheat(uint64_t addr, uint64_t value)
 {
 	our_rom.rtype->set_cheat(addr, value, true);
 }
 
-void debug_clear_cheat(uint64_t addr)
+void debug_context::clear_cheat(uint64_t addr)
 {
 	our_rom.rtype->set_cheat(addr, 0, false);
 }
 
-void debug_setxmask(uint64_t mask)
+void debug_context::setxmask(uint64_t mask)
 {
 	xmask = mask;
 }
 
-void debug_tracelog(uint64_t proc, const std::string& filename)
+bool debug_context::is_tracelogging(uint64_t cpu)
+{
+	return (trace_outputs.count(cpu) != 0);
+}
+
+void debug_context::set_tracelog_change_cb(std::function<void()> cb)
+{
+	tracelog_change_cb = cb;
+}
+
+void debug_context::core_change()
+{
+	our_rom.rtype->debug_reset();
+	kill_hooks(read_cb, DEBUG_READ);
+	kill_hooks(write_cb, DEBUG_WRITE);
+	kill_hooks(exec_cb, DEBUG_EXEC);
+	kill_hooks(trace_cb, DEBUG_TRACE);
+}
+
+void debug_context::request_break()
+{
+	requesting_break = true;
+}
+
+debug_context::tracelog_file::tracelog_file(debug_context& _parent)
+	: parent(_parent)
+{
+}
+
+debug_context::tracelog_file::~tracelog_file()
+{
+}
+
+void debug_context::tracelog_file::callback(const debug_callback_params& p)
+{
+	if(!parent.trace_outputs.count(p.trace.cpu)) return;
+	parent.trace_outputs[p.trace.cpu]->stream << p.trace.decoded_insn << std::endl;
+}
+
+void debug_context::tracelog_file::killed(uint64_t addr, debug_type type)
+{
+	refcnt--;
+	if(!refcnt)
+		delete this;
+}
+
+void debug_context::tracelog(uint64_t proc, const std::string& filename)
 {
 	if(filename == "") {
 		if(!trace_outputs.count(proc))
 			return;
-		debug_remove_callback(proc, DEBUG_TRACE, trace_outputs[proc].second);
-		trace_outputs[proc].first->refcnt--;
-		if(!trace_outputs[proc].first->refcnt) {
-			delete trace_outputs[proc].first;
-		}
+		remove_callback(proc, DEBUG_TRACE, *trace_outputs[proc]);
+		trace_outputs[proc]->refcnt--;
+		if(!trace_outputs[proc]->refcnt)
+			delete trace_outputs[proc];
 		trace_outputs.erase(proc);
 		messages << "Stopped tracelogging processor #" << proc << std::endl;
 		if(tracelog_change_cb) tracelog_change_cb();
@@ -257,73 +245,55 @@ void debug_tracelog(uint64_t proc, const std::string& filename)
 	std::string full_filename = directory::absolute_path(filename);
 	bool found = false;
 	for(auto i : trace_outputs) {
-		if(i.second.first->full_filename == full_filename) {
-			i.second.first->refcnt++;
-			trace_outputs[proc].first = i.second.first;
+		if(i.second->full_filename == full_filename) {
+			i.second->refcnt++;
+			trace_outputs[proc] = i.second;
 			found = true;
 			break;
 		}
 	}
 	if(!found) {
-		trace_outputs[proc].first = new tracelog_file;
-		trace_outputs[proc].first->refcnt = 1;
-		trace_outputs[proc].first->full_filename = full_filename;
-		trace_outputs[proc].first->stream.open(full_filename);
-		if(!trace_outputs[proc].first->stream) {
-			delete trace_outputs[proc].first;
+		trace_outputs[proc] = new tracelog_file(*this);
+		trace_outputs[proc]->refcnt = 1;
+		trace_outputs[proc]->full_filename = full_filename;
+		trace_outputs[proc]->stream.open(full_filename);
+		if(!trace_outputs[proc]->stream) {
+			delete trace_outputs[proc];
 			trace_outputs.erase(proc);
 			throw std::runtime_error("Can't open '" + full_filename + "'");
 		}
 	}
-	trace_outputs[proc].second = debug_add_trace_callback(proc, [](uint64_t proc, const char* str, bool dummy) {
-		if(!trace_outputs.count(proc)) return;
-		trace_outputs[proc].first->stream << str << std::endl;
-	}, [proc]() { debug_tracelog(proc, ""); });
+	try {
+		add_callback(proc, DEBUG_TRACE, *trace_outputs[proc]);
+	} catch(std::exception& e) {
+		messages << "Error starting tracelogging: " << e.what() << std::endl;
+		trace_outputs[proc]->refcnt--;
+		if(!trace_outputs[proc]->refcnt)
+			delete trace_outputs[proc];
+		trace_outputs.erase(proc);
+		throw;
+	}
 	messages << "Tracelogging processor #" << proc << " to '" << filename << "'" << std::endl;
 	if(tracelog_change_cb) tracelog_change_cb();
-}
-
-bool debug_tracelogging(uint64_t proc)
-{
-	return (trace_outputs.count(proc) != 0);
-}
-
-void debug_set_tracelog_change_cb(std::function<void()> cb)
-{
-	tracelog_change_cb = cb;
-}
-
-void debug_core_change()
-{
-	our_rom.rtype->debug_reset();
-	kill_hooks(read_cb);
-	kill_hooks(write_cb);
-	kill_hooks(exec_cb);
-	kill_hooks(trace_cb);
-}
-
-void debug_request_break()
-{
-	requesting_break = true;
 }
 
 namespace
 {
 	command::fnptr<> callbacks_show(lsnes_cmds, "show-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-		for(auto& i : read_cb)
+		for(auto& i : CORE().dbg.read_cb)
 			for(auto& j : i.second)
 				messages << "READ addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : write_cb)
+		for(auto& i : CORE().dbg.write_cb)
 			for(auto& j : i.second)
 				messages << "WRITE addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : exec_cb)
+		for(auto& i : CORE().dbg.exec_cb)
 			for(auto& j : i.second)
 				messages << "EXEC addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : trace_cb)
+		for(auto& i : CORE().dbg.trace_cb)
 			for(auto& j : i.second)
 				messages << "TRACE proc=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : frame_cb)
+		for(auto& i : CORE().dbg.frame_cb)
 			for(auto& j : i.second)
 				messages << "FRAME handle=" << &j << std::endl;
 	});
@@ -335,19 +305,19 @@ namespace
 		if(r[1] == "r") {
 			uint64_t addr = parse_value<uint64_t>(r[2]);
 			uint64_t val = parse_value<uint64_t>(r[3]);
-			debug_fire_callback_read(addr, val);
+			CORE().dbg.do_callback_read(addr, val);
 		} else if(r[1] == "w") {
 			uint64_t addr = parse_value<uint64_t>(r[2]);
 			uint64_t val = parse_value<uint64_t>(r[3]);
-			debug_fire_callback_write(addr, val);
+			CORE().dbg.do_callback_write(addr, val);
 		} else if(r[1] == "x") {
 			uint64_t addr = parse_value<uint64_t>(r[2]);
 			uint64_t val = parse_value<uint64_t>(r[3]);
-			debug_fire_callback_exec(addr, val);
+			CORE().dbg.do_callback_exec(addr, val);
 		} else if(r[1] == "t") {
 			uint64_t proc = parse_value<uint64_t>(r[2]);
 			std::string str = r[3];
-			debug_fire_callback_trace(proc, str.c_str());
+			CORE().dbg.do_callback_trace(proc, str.c_str());
 		} else
 			throw std::runtime_error("Invalid operation");
 	});
@@ -367,7 +337,7 @@ namespace
 		}
 		throw std::runtime_error("tracelog: Invalid CPU");
 out:
-		debug_tracelog(_cpu, filename);
+		CORE().dbg.tracelog(_cpu, filename);
 	});
 
 }

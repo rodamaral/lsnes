@@ -435,10 +435,10 @@ namespace
 		if(addr >= vmasize)
 			throw std::runtime_error("Address out of range");
 		if(P.is_novalue()) {
-			debug_clear_cheat(vmabase + addr);
+			CORE().dbg.clear_cheat(vmabase + addr);
 		} else {
 			P(value);
-			debug_set_cheat(vmabase + addr, value);
+			CORE().dbg.set_cheat(vmabase + addr, value);
 		}
 		return 0;
 	}

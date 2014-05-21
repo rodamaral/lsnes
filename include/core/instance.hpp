@@ -4,6 +4,7 @@
 #include <deque>
 #include "core/command.hpp"
 #include "core/controllerframe.hpp"
+#include "core/debug.hpp"
 #include "core/emustatus.hpp"
 #include "core/inthread.hpp"
 #include "core/movie.hpp"
@@ -95,6 +96,7 @@ struct emulator_instance
 	cart_mappings_refresher cmapper;
 	controller_state controls;
 	project_state project;
+	debug_context dbg;
 	threads::id emu_thread;
 	//Queue stuff.
 	threads::lock queue_lock;

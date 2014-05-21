@@ -540,22 +540,22 @@ public:
 
 	void memory_read(uint64_t addr, uint64_t value)
 	{
-		debug_fire_callback_read(addr, value);
+		CORE().dbg.do_callback_read(addr, value);
 	}
 
 	void memory_write(uint64_t addr, uint64_t value)
 	{
-		debug_fire_callback_write(addr, value);
+		CORE().dbg.do_callback_write(addr, value);
 	}
 
 	void memory_execute(uint64_t addr, uint64_t proc)
 	{
-		debug_fire_callback_exec(addr, proc);
+		CORE().dbg.do_callback_exec(addr, proc);
 	}
 
 	void memory_trace(uint64_t proc, const char* str, bool insn)
 	{
-		debug_fire_callback_trace(proc, str, insn);
+		CORE().dbg.do_callback_trace(proc, str, insn);
 	}
 };
 
@@ -1334,8 +1334,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
 				CORE().controls.reset_framehold();
-				debug_fire_callback_frame(CORE().mlogic.get_movie().get_current_frame(),
-					true);
+				CORE().dbg.do_callback_frame(CORE().mlogic.get_movie().get_current_frame(), true);
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
@@ -1357,7 +1356,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;
-		debug_fire_callback_frame(CORE().mlogic.get_movie().get_current_frame(), false);
+		CORE().dbg.do_callback_frame(CORE().mlogic.get_movie().get_current_frame(), false);
 		our_rom.rtype->emulate();
 		random_mix_timing_entropy();
 		time_x = get_utime();
@@ -1372,7 +1371,7 @@ out:
 	CORE().commentary.kill();
 	CORE().system_thread_available = false;
 	//Kill some things to avoid crashes.
-	debug_core_change();
+	CORE().dbg.core_change();
 	CORE().project.set(NULL, true);
 	CORE().mwatch.clear_multi(CORE().mwatch.enumerate());
 }

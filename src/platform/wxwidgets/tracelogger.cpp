@@ -505,7 +505,7 @@ namespace
 		std::vector<std::pair<uint64_t, debug_type>> listsyms;
 	};
 
-	class wxwin_tracelog : public wxFrame
+	class wxwin_tracelog : public wxFrame, public debug_callback_base
 	{
 	public:
 		wxwin_tracelog(wxWindow* parent, int _cpuid, const std::string& cpuname);
@@ -544,8 +544,8 @@ namespace
 		void scroll_pane(uint64_t line);
 		int cpuid;
 		volatile bool trace_active;
-		debug_handle trace_handle;
-		debug_handle trace_handle_frame;
+		void callback(const debug_callback_params& params);
+		void killed(uint64_t addr, debug_type type);
 		void do_rwx_break(uint64_t addr, uint64_t value, debug_type type);
 		void kill_debug_hooks();
 		scroll_bar* scroll;
@@ -562,7 +562,7 @@ namespace
 		std::string find_string;
 		bool dirty;
 		bool singlestepping;
-		std::map<std::pair<uint64_t, debug_type>, debug_handle> rwx_breakpoints;
+		std::map<std::pair<uint64_t, debug_type>, bool> rwx_breakpoints;
 		wxMenuItem* m_singlestep;
 	};
 
@@ -587,15 +587,14 @@ namespace
 
 	void wxwin_tracelog::kill_debug_hooks()
 	{
-		debug_remove_callback(cpuid, DEBUG_TRACE, trace_handle);
-		debug_remove_callback(cpuid, DEBUG_FRAME, trace_handle_frame);
+		CORE().dbg.remove_callback(cpuid, DEBUG_TRACE, *this);
+		CORE().dbg.remove_callback(cpuid, DEBUG_FRAME, *this);
 		threads::alock h(buffer_mutex);
 		for(auto& i : rwx_breakpoints) {
-			if(!i.second.handle)
+			if(!i.second)
 				continue;
-			debug_remove_callback(i.first.first, i.first.second, i.second);
-			//Dirty hack.
-			i.second.handle = NULL;
+			CORE().dbg.remove_callback(i.first.first, i.first.second, *this);
+			i.second = false;
 		}
 		trace_active = false;
 		convert_break_to_pause();
@@ -708,7 +707,80 @@ namespace
 
 	void wxwin_tracelog::do_rwx_break(uint64_t addr, uint64_t value, debug_type type)
 	{
-		debug_request_break();
+		lsnes_instance.dbg.request_break();
+	}
+
+	void wxwin_tracelog::callback(const debug_callback_params& p)
+	{
+		switch(p.type) {
+		case DEBUG_READ:
+		case DEBUG_WRITE:
+		case DEBUG_EXEC:
+			do_rwx_break(p.rwx.addr, p.rwx.value, p.type);
+			break;
+		case DEBUG_TRACE: {
+			if(!trace_active)
+				return;
+			//Got tracelog line, send it.
+			threads::alock h(buffer_mutex);
+			lines_waiting.push_back(p.trace.decoded_insn);
+			if(!unprocessed_lines) {
+				unprocessed_lines = true;
+				runuifun([this]() { this->process_lines(); });
+			}
+			if(singlestepping && p.trace.true_insn) {
+				lsnes_instance.dbg.request_break();
+				singlestepping = false;
+			}
+			break;
+		}
+		case DEBUG_FRAME: {
+			std::ostringstream xstr;
+			xstr << "------------ ";
+			xstr << "Frame " << p.frame.frame;
+			if(p.frame.loadstated) xstr << " (loadstated)";
+			xstr << " ------------";
+			std::string str = xstr.str();
+			threads::alock h(buffer_mutex);
+			lines_waiting.push_back(str);
+			if(!unprocessed_lines) {
+				unprocessed_lines = true;
+				runuifun([this]() { this->process_lines(); });
+			}
+			break;
+		}
+		}
+	}
+
+	void wxwin_tracelog::killed(uint64_t addr, debug_type type)
+	{
+		switch(type) {
+		case DEBUG_READ:
+		case DEBUG_WRITE:
+		case DEBUG_EXEC: {
+			//We need to kill this hook if still active.
+			auto i2 = std::make_pair(addr, type);
+			auto& h = rwx_breakpoints[i2];
+			if(h)
+				lsnes_instance.dbg.remove_callback(addr, type, *this);
+			h = false;
+			break;
+		}
+		case DEBUG_TRACE:
+			//Dtor!
+			if(!trace_active)
+				return;
+			kill_debug_hooks();
+			runuifun([this]() {
+				this->enabled->SetValue(false);
+				this->enabled->Enable(false);
+				this->m_singlestep->Enable(false);
+			});
+			break;
+		case DEBUG_FRAME:
+			//Do nothing.
+			break;
+		}
 	}
 
 	void wxwin_tracelog::on_enabled(wxCommandEvent& e)
@@ -721,64 +793,11 @@ namespace
 				broken2 = true;
 				for(auto& i : rwx_breakpoints) {
 					auto i2 = i.first;
-					i.second = debug_add_callback(i.first.first, i.first.second,
-						[this, i2](uint64_t addr, uint64_t value) {
-							this->do_rwx_break(addr, value, i2.second);
-						}, [this, i2] {
-							//We need to kill this hook if still active.
-							auto& h = rwx_breakpoints[i2];
-							if(h.handle)
-								debug_remove_callback(i2.first, i2.second, h);
-							h.handle = NULL;
-						});
+					lsnes_instance.dbg.add_callback(i2.first, i2.second, *this);
+					i.second = true;
 				}
-				this->trace_handle = debug_add_trace_callback(cpuid, [this](uint64_t proc,
-					const char* str, bool true_instruction) {
-						if(!this->trace_active)
-							return;
-						//Got tracelog line, send it.
-						threads::alock h(this->buffer_mutex);
-						lines_waiting.push_back(str);
-						if(!this->unprocessed_lines) {
-							this->unprocessed_lines = true;
-							runuifun([this]() { this->process_lines(); });
-						}
-						if(this->singlestepping && true_instruction) {
-							debug_request_break();
-							this->singlestepping = false;
-						}
-					}, [this]() {
-						//Dtor!
-						auto tmp = this;
-						if(!tmp->trace_active)
-							return;
-						tmp->kill_debug_hooks();
-						//We can't use this anymore.
-						runuifun([tmp]() {
-							tmp->enabled->SetValue(false);
-							tmp->m_singlestep->Enable(false);
-						});
-					});
-				this->trace_handle_frame = debug_add_frame_callback([this](uint64_t frame,
-					bool loadstate) {
-						std::ostringstream xstr;
-						xstr << "------------ ";
-						xstr << "Frame " << frame;
-						if(loadstate) xstr << " (loadstated)";
-						xstr << " ------------";
-						std::string str = xstr.str();
-						threads::alock h(this->buffer_mutex);
-						lines_waiting.push_back(str);
-						if(!this->unprocessed_lines) {
-							this->unprocessed_lines = true;
-							runuifun([this]() { this->process_lines(); });
-						}
-					}, [this]() {
-						auto tmp = this;
-						if(!tmp->trace_active)
-							return;
-						debug_remove_callback(0, DEBUG_TRACE, trace_handle_frame);
-					});
+				lsnes_instance.dbg.add_callback(cpuid, DEBUG_TRACE, *this);
+				lsnes_instance.dbg.add_callback(0, DEBUG_FRAME, *this);
 				this->trace_active = true;
 			} else if(trace_active) {
 				this->trace_active = false;
@@ -1051,27 +1070,19 @@ back:
 		std::pair<uint64_t, debug_type> i2 = std::make_pair(addr, dtype);
 		if(!trace_active) {
 			//We'll register this later.
-			rwx_breakpoints[i2] = debug_handle();
+			rwx_breakpoints[i2] = false;
 			return;
 		}
-		rwx_breakpoints[i2] = debug_add_callback(i2.first, i2.second,
-			[this, i2](uint64_t addr, uint64_t value) {
-				this->do_rwx_break(addr, value, i2.second);
-			}, [this, i2] {
-				//We need to kill this hook if still active.
-				auto& h = rwx_breakpoints[i2];
-				if(h.handle)
-					debug_remove_callback(i2.first, i2.second, h);
-				h.handle = NULL;
-			});
+		lsnes_instance.dbg.add_callback(i2.first, i2.second, *this);
+		rwx_breakpoints[i2] = true;
 	}
 
 	void wxwin_tracelog::remove_breakpoint(uint64_t addr, debug_type dtype)
 	{
 		std::pair<uint64_t, debug_type> i2 = std::make_pair(addr, dtype);
 		auto& h = rwx_breakpoints[i2];
-		if(h.handle)
-			debug_remove_callback(i2.first, i2.second, h);
+		if(h)
+			lsnes_instance.dbg.remove_callback(i2.first, i2.second, *this);
 		rwx_breakpoints.erase(i2);
 	}
 

@@ -200,40 +200,6 @@ namespace
 		L.setmetatable(-2);
 	}
 
-	struct lua_debug_callback
-	{
-		uint64_t addr;
-		debug_type type;
-		debug_handle h;
-		bool dead;
-		const void* lua_fn;
-		static int dtor(lua_State* L)
-		{
-			lua_debug_callback* D = (lua_debug_callback*)lua_touserdata(L, 1);
-			return D->_dtor(L);
-		}
-		int _dtor(lua_State* L);
-	};
-	std::map<uint64_t, std::list<lua_debug_callback*>> cbs;
-
-	int lua_debug_callback::_dtor(lua_State* L)
-	{
-		if(dead) return 0;
-		dead = true;
-		lua_pushlightuserdata(L, &type);
-		lua_pushnil(L);
-		lua_rawset(L, LUA_REGISTRYINDEX);
-		debug_remove_callback(addr, type, h);
-		for(auto j = cbs[addr].begin(); j != cbs[addr].end(); j++)
-			if(*j == this) {
-				cbs[addr].erase(j);
-				break;
-			}
-		if(cbs[addr].empty())
-			cbs.erase(addr);
-		return 0;
-	}
-
 	void do_lua_error(lua::state& L, int ret)
 	{
 		if(!ret) return;
@@ -253,81 +219,236 @@ namespace
 			return;
 		}
 	}
+
+	char lua_cb_list_key = 0;
+
+	struct lua_debug_callback2 : public debug_callback_base
+	{
+		lua::state* L;
+		uint64_t addr;
+		debug_type type;
+		bool dead;
+		const void* lua_fn;
+		~lua_debug_callback2();
+		void link_to_list();
+		void set_lua_fn(int slot);
+		void unregister();
+		void callback(const debug_callback_params& p);
+		void killed(uint64_t addr, debug_type type);
+		static int on_lua_gc(lua_State* L);
+		lua_debug_callback2* prev;
+		lua_debug_callback2* next;
+	};
+
+	struct lua_debug_callback_dict
+	{
+		~lua_debug_callback_dict();
+		std::map<std::pair<debug_type, uint64_t>, lua_debug_callback2*> cblist;
+		static int on_lua_gc(lua_State* L);
+	};
+
+	lua_debug_callback2::~lua_debug_callback2()
+	{
+		if(!prev) {
+			L->pushlightuserdata(&lua_cb_list_key);
+			L->rawget(LUA_REGISTRYINDEX);
+			if(!L->isnil(-1)) {
+				lua_debug_callback_dict* dc = (lua_debug_callback_dict*)L->touserdata(-1);
+				std::pair<debug_type, uint64_t> key = std::make_pair(type, addr);
+				if(dc->cblist.count(key)) {
+					dc->cblist[key] = next;
+					if(!next)
+						dc->cblist.erase(key);
+				}
+			}
+			L->pop(1);
+		}
+		//Unlink from list.
+		if(prev) prev->next = next;
+		if(next) next->prev = prev;
+		prev = next = NULL;
+	}
+
+	void lua_debug_callback2::link_to_list()
+	{
+		prev = NULL;
+		L->pushlightuserdata(&lua_cb_list_key);
+		L->rawget(LUA_REGISTRYINDEX);
+		if(L->isnil(-1)) {
+			//No existing dict, create one.
+			L->pop(1);
+			L->pushlightuserdata(&lua_cb_list_key);
+			lua_debug_callback_dict* D = (lua_debug_callback_dict*)
+				L->newuserdata(sizeof(lua_debug_callback_dict));
+			new(D) lua_debug_callback_dict;
+			L->newtable();
+			L->pushstring("__gc");
+			L->pushcclosure(&lua_debug_callback_dict::on_lua_gc, 0);
+			L->rawset(-3);
+			L->setmetatable(-2);
+			L->rawset(LUA_REGISTRYINDEX);
+		}
+		L->pushlightuserdata(&lua_cb_list_key);
+		L->rawget(LUA_REGISTRYINDEX);
+		lua_debug_callback2* was = NULL;
+		lua_debug_callback_dict* dc = (lua_debug_callback_dict*)L->touserdata(-1);
+		std::pair<debug_type, uint64_t> key = std::make_pair(type, addr);
+		if(dc->cblist.count(key))
+			was = dc->cblist[key];
+		dc->cblist[key] = this;
+		next = was;
+		L->pop(1);
+		
+	}
+
+	void lua_debug_callback2::set_lua_fn(int slot)
+	{
+		//Convert to absolute slot.
+		if(slot < 0)
+			slot = L->gettop() + slot;
+		//Write the function.
+		L->pushlightuserdata((char*)this + 1);
+		L->pushvalue(slot);
+		L->rawset(LUA_REGISTRYINDEX);
+		lua_fn = L->topointer(slot);
+	}
+	
+	void lua_debug_callback2::unregister()
+	{
+		//Unregister.
+		CORE().dbg.remove_callback(addr, type, *this);
+		dead = true;
+		//Delink from Lua, prompting Lua to GC this.
+		L->pushlightuserdata(this);
+		L->pushnil();
+		L->rawset(LUA_REGISTRYINDEX);
+		L->pushlightuserdata((char*)this + 1);
+		L->pushnil();
+		L->rawset(LUA_REGISTRYINDEX);
+	}
+	
+	void lua_debug_callback2::callback(const debug_callback_params& p)
+	{
+		L->pushlightuserdata((char*)this + 1);
+		L->rawget(LUA_REGISTRYINDEX);
+		switch(p.type) {
+		case DEBUG_READ:
+		case DEBUG_WRITE:
+		case DEBUG_EXEC:
+			L->pushnumber(p.rwx.addr);
+			L->pushnumber(p.rwx.value);
+			do_lua_error(*L, L->pcall(2, 0, 0));
+			break;
+		case DEBUG_TRACE:
+			L->pushnumber(p.trace.cpu);
+			L->pushstring(p.trace.decoded_insn);
+			L->pushboolean(p.trace.true_insn);
+			do_lua_error(*L, L->pcall(3, 0, 0));
+			break;
+		case DEBUG_FRAME:
+			L->pushnumber(p.frame.frame);
+			L->pushboolean(p.frame.loadstated);
+			do_lua_error(*L, L->pcall(2, 0, 0));
+			break;
+		default:
+			//Remove the junk from stack.
+			L->pop(1);
+			break;
+		}
+	}
+	
+	void lua_debug_callback2::killed(uint64_t addr, debug_type type)
+	{
+		//Assume this has been unregistered.
+		dead = true;
+		//Delink from Lua, lua will GC this.
+		L->pushlightuserdata(this);
+		L->pushnil();
+		L->rawset(LUA_REGISTRYINDEX);
+		L->pushlightuserdata((char*)this + 1);
+		L->pushnil();
+		L->rawset(LUA_REGISTRYINDEX);
+	}
+
+	int lua_debug_callback2::on_lua_gc(lua_State* _L)
+	{
+		//We need to destroy the object.
+		lua_debug_callback2* D = (lua_debug_callback2*)lua_touserdata(_L, 1);
+		if(!D->dead) {
+			//Unregister this!
+			CORE().dbg.remove_callback(D->addr, D->type, *D);
+			D->dead = true;
+		}
+		D->~lua_debug_callback2();
+		return 0;
+	}
+
+	lua_debug_callback_dict::~lua_debug_callback_dict()
+	{
+	}
+
+	int lua_debug_callback_dict::on_lua_gc(lua_State* _L)
+	{
+		lua_pushlightuserdata(_L, &lua_cb_list_key);
+		lua_pushnil(_L);
+		lua_rawset(_L, LUA_REGISTRYINDEX);
+		lua_debug_callback_dict* D = (lua_debug_callback_dict*)lua_touserdata(_L, 1);
+		D->~lua_debug_callback_dict();
+		return 0;
+	}
 }
 
 template<debug_type type>
 void handle_registerX(lua::state& L, uint64_t addr, int lfn)
 {
-	auto& cbl = cbs[addr];
-
 	//Put the context in userdata so it can be gc'd when Lua context is terminated.
-	lua_debug_callback* D = (lua_debug_callback*)L.newuserdata(sizeof(lua_debug_callback));
+	lua_debug_callback2* D = (lua_debug_callback2*)L.newuserdata(sizeof(lua_debug_callback2));
+	new(D) lua_debug_callback2;
 	L.newtable();
 	L.pushstring("__gc");
-	L.pushcclosure(&lua_debug_callback::dtor, 0);
+	L.pushcclosure(&lua_debug_callback2::on_lua_gc, 0);
 	L.rawset(-3);
 	L.setmetatable(-2);
-	L.pushlightuserdata(&D->addr);
+	L.pushlightuserdata(D);
 	L.pushvalue(-2);
 	L.rawset(LUA_REGISTRYINDEX);
 	L.pop(1); //Pop the copy of object.
 
-	cbl.push_back(D);
-
-	D->dead = false;
+	D->L = &L.get_master();
 	D->addr = addr;
 	D->type = type;
-	D->lua_fn = L.topointer(lfn);
-	lua::state* LL = &L.get_master();
-	void* D2 = &D->type;
-	if(type != DEBUG_TRACE)
-		D->h = debug_add_callback(addr, type, [LL, D2](uint64_t addr, uint64_t value) {
-			LL->pushlightuserdata(D2);
-			LL->rawget(LUA_REGISTRYINDEX);
-			LL->pushnumber(addr);
-			LL->pushnumber(value);
-			do_lua_error(*LL, LL->pcall(2, 0, 0));
-		}, [LL, D]() {
-			LL->pushlightuserdata(&D->addr);
-			LL->pushnil();
-			LL->rawset(LUA_REGISTRYINDEX);
-			D->_dtor(LL->handle());
-		});
-	else
-		D->h = debug_add_trace_callback(addr, [LL, D2](uint64_t proc, const char* str, bool true_insn) {
-			LL->pushlightuserdata(D2);
-			LL->rawget(LUA_REGISTRYINDEX);
-			LL->pushnumber(proc);
-			LL->pushstring(str);
-			LL->pushboolean(true_insn);
-			do_lua_error(*LL, LL->pcall(3, 0, 0));
-		}, [LL, D]() {
-			LL->pushlightuserdata(&D->addr);
-			LL->pushnil();
-			LL->rawset(LUA_REGISTRYINDEX);
-			D->_dtor(LL->handle());
-		});
-	L.pushlightuserdata(D2);
-	L.pushvalue(lfn);
-	L.rawset(LUA_REGISTRYINDEX);
+	D->dead = false;
+	D->set_lua_fn(lfn);
+	D->link_to_list();
+
+	CORE().dbg.add_callback(addr, type, *D);
 }
 
 template<debug_type type>
 void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
 {
-	if(!cbs.count(addr))
-		return;
-	auto& cbl = cbs[addr];
-	for(auto i = cbl.begin(); i != cbl.end(); i++) {
-		if((*i)->type != type) continue;
-		if(L.topointer(lfn) != (*i)->lua_fn) continue;
-		L.pushlightuserdata(&(*i)->type);
-		L.pushnil();
-		L.rawset(LUA_REGISTRYINDEX);
-		(*i)->_dtor(L.handle());
-		//Lua will GC the object.
-		break;
-	}
+	lua_debug_callback_dict* Dx;
+	lua_debug_callback2* D = NULL;
+	L.pushlightuserdata(&lua_cb_list_key);
+	L.rawget(LUA_REGISTRYINDEX);
+	if(!L.isnil(-1)) {
+		Dx = (lua_debug_callback_dict*)L.touserdata(-1);
+		auto key = std::make_pair(type, addr);
+		if(Dx->cblist.count(key))
+			D = Dx->cblist[key];
+		L.pop(1);
+		while(D) {
+			if(D->dead || D->type != type || D->addr != addr || L.topointer(lfn) != D->lua_fn) {
+				D = D->next;
+				continue;
+			}
+			//Remove this.
+			auto Dold = D;
+			D = D->next;
+			Dold->unregister();
+		}
+	} else
+		L.pop(1);
 }
 
 typedef void(*dummy1_t)(lua::state& L, uint64_t addr, int lfn);
@@ -368,11 +489,24 @@ namespace
 
 	command::fnptr<> callbacks_show_lua(lsnes_cmds, "show-lua-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-		for(auto& i : cbs)
-			for(auto& j : i.second)
-				messages << "addr=" << j->addr << " type=" << j->type << " handle="
-					<< j->h.handle << " dead=" << j->dead << " lua_fn="
-					<< j->lua_fn << std::endl;
+		lua::state& L = CORE().lua;
+		lua_debug_callback2* D;
+		lua_debug_callback_dict* Dx;
+		L.pushlightuserdata(&lua_cb_list_key);
+		L.rawget(LUA_REGISTRYINDEX);
+		if(!L.isnil(-1)) {
+			Dx = (lua_debug_callback_dict*)L.touserdata(-1);
+			for(auto Dy : Dx->cblist) {
+				D = Dy.second;
+				while(D) {
+					messages << "addr=" << D->addr << " type=" << D->type << " handle="
+					<< D << " dead=" << D->dead << " lua_fn="
+						<< D->lua_fn << std::endl;
+					D = D->next;
+				}
+			}
+		}
+		L.pop(1);
 		});
 
 	template<typename T, T (memory_space::*rfun)(uint64_t addr), bool (memory_space::*wfun)(uint64_t addr,
@@ -477,10 +611,10 @@ namespace
 		addr = lua_get_read_address(P);
 
 		if(P.is_novalue()) {
-			debug_clear_cheat(addr);
+			CORE().dbg.clear_cheat(addr);
 		} else {
 			P(value);
-			debug_set_cheat(addr, value);
+			CORE().dbg.set_cheat(addr, value);
 		}
 		return 0;
 	}
@@ -488,7 +622,7 @@ namespace
 	int setxmask(lua::state& L, lua::parameters& P)
 	{
 		auto value = P.arg<uint64_t>();
-		debug_setxmask(value);
+		CORE().dbg.setxmask(value);
 		return 0;
 	}
 
