@@ -526,32 +526,6 @@ void curve25519_clamp(uint8_t* key)
 const uint8_t curve25519_base[32] = {9};
 
 
-uint64_t arch_get_tsc()
-{
-	uint32_t a, b;
-	asm volatile("rdtsc" : "=a"(a), "=d"(b));
-	return ((uint64_t)b << 32) | a;
-}
-
-int main()
-{
-	uint8_t buf[128] = {0};
-	FILE* fd = fopen("/dev/urandom", "rb");
-	uint64_t ctr = 0;
-	buf[32] = 9;
-	fread(buf, 1, 32, fd);
-	buf[0] &= 248;
-	buf[31] &= 127;
-	buf[31] |= 64;
-	uint64_t t = arch_get_tsc();
-	for(unsigned i = 0; i < 10000; i++) {
-		curve25519(buf+64, buf, buf+32);
-	}
-	t = arch_get_tsc() - t;
-	std::cerr << "Avg: " << t / 10000 << std::endl;
-	return 0;
-}
-
 /*
 //For comparision
 extern "C"
