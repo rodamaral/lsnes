@@ -4,10 +4,10 @@
 #include "internal.hpp"
 #include "core/debug.hpp"
 
-template<debug_type type>
+template<debug_context::etype type>
 void handle_registerX(lua::state& L, uint64_t addr, int lfn);
 
-template<debug_type type>
+template<debug_context::etype type>
 void handle_unregisterX(lua::state& L, uint64_t addr, int lfn);
 
 #endif

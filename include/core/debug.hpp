@@ -6,59 +6,6 @@
 #include <cstdint>
 #include "library/dispatch.hpp"
 
-enum debug_type
-{
-	DEBUG_READ,
-	DEBUG_WRITE,
-	DEBUG_EXEC,
-	DEBUG_TRACE,
-	DEBUG_FRAME,
-};
-
-struct debug_callback_params_rwx
-{
-	uint64_t addr;			//Address.
-	uint64_t value;			//Value/CPU.
-};
-
-struct debug_callback_params_trace
-{
-	uint64_t cpu;			//CPU number.
-	const char* decoded_insn;	//Decoded instruction
-	bool true_insn;			//True instruction flag.
-};
-
-struct debug_callback_params_frame
-{
-	uint64_t frame;			//Frame number.
-	bool loadstated;		//Loadstate flag.
-};
-
-struct debug_callback_params
-{
-	debug_type type;
-	union {
-		debug_callback_params_rwx rwx;		//READ/WRITE/EXECUTE
-		debug_callback_params_trace trace;	//TRACE.
-		debug_callback_params_frame frame;	//FRAME.
-	};
-};
-
-struct debug_callback_base
-{
-/**
- * Destructor.
- */
-	virtual ~debug_callback_base();
-/**
- * Do a callback.
- */
-	virtual void callback(const debug_callback_params& params) = 0;
-/**
- * Notify about killed callback.
- */
-	virtual void killed(uint64_t addr, debug_type type) = 0;
-};
 
 /**
  * Debugging context.
@@ -67,17 +14,83 @@ class debug_context
 {
 public:
 /**
+ * Type of event.
+ */
+	enum etype
+	{
+		DEBUG_READ,
+		DEBUG_WRITE,
+		DEBUG_EXEC,
+		DEBUG_TRACE,
+		DEBUG_FRAME,
+	};
+/**
+ * Parameters for read/write/execute event.
+ */
+	struct params_rwx
+	{
+		uint64_t addr;			//Address.
+		uint64_t value;			//Value/CPU.
+	};
+/**
+ * Parameters for trace event.
+ */
+	struct params_trace
+	{
+		uint64_t cpu;			//CPU number.
+		const char* decoded_insn;	//Decoded instruction
+		bool true_insn;			//True instruction flag.
+	};
+/**
+ * Parameters for frame event.
+ */
+	struct params_frame
+	{
+		uint64_t frame;			//Frame number.
+		bool loadstated;		//Loadstate flag.
+	};
+/**
+ * Parameters for debug callback.
+ */
+	struct params
+	{
+		etype type;
+		union {
+			params_rwx rwx;		//READ/WRITE/EXECUTE
+			params_trace trace;	//TRACE.
+			params_frame frame;	//FRAME.
+		};
+	};
+/**
+ * Base class of debugging callbacks.
+ */
+	struct callback_base
+	{
+/**
+ * Destructor.
+ */
+		virtual ~callback_base();
+/**
+ * Do a callback.
+ */
+		virtual void callback(const params& p) = 0;
+/**
+ * Notify about killed callback.
+ */
+		virtual void killed(uint64_t addr, etype type) = 0;
+	};
+/**
  * Placeholder for all addresses.
  */
 	static const uint64_t all_addresses;
 /**
  * Add a callback.
  */
-	void add_callback(uint64_t addr, debug_type type, debug_callback_base& cb);
+	void add_callback(uint64_t addr, etype type, callback_base& cb);
 /**
  * Remove a callback.
  */
-	void remove_callback(uint64_t addr, debug_type type, debug_callback_base& cb);
+	void remove_callback(uint64_t addr, etype type, callback_base& cb);
 /**
  * Fire a read callback.
  */
@@ -131,7 +144,7 @@ public:
  */
 	void request_break();
 	//These are public only for some debugging stuff.
-	typedef std::list<debug_callback_base*> cb_list;
+	typedef std::list<callback_base*> cb_list;
 	std::map<uint64_t, cb_list> read_cb;
 	std::map<uint64_t, cb_list> write_cb;
 	std::map<uint64_t, cb_list> exec_cb;
@@ -145,21 +158,21 @@ private:
 	bool corechange_r = false;
 	bool requesting_break = false;
 
-	struct tracelog_file : public debug_callback_base
+	struct tracelog_file : public callback_base
 	{
 		std::ofstream stream;
 		std::string full_filename;
 		unsigned refcnt;
 		tracelog_file(debug_context& parent);
 		~tracelog_file();
-		void callback(const debug_callback_params& p);
-		void killed(uint64_t addr, debug_type type);
+		void callback(const params& p);
+		void killed(uint64_t addr, etype type);
 	private:
 		debug_context& parent;
 	};
 	std::map<uint64_t, tracelog_file*> trace_outputs;
 
-	std::map<uint64_t, cb_list>& get_lists(debug_type type)
+	std::map<uint64_t, cb_list>& get_lists(etype type)
 	{
 		switch(type) {
 		case DEBUG_READ: return read_cb;

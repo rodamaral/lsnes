@@ -222,19 +222,19 @@ namespace
 
 	char lua_cb_list_key = 0;
 
-	struct lua_debug_callback2 : public debug_callback_base
+	struct lua_debug_callback2 : public debug_context::callback_base
 	{
 		lua::state* L;
 		uint64_t addr;
-		debug_type type;
+		debug_context::etype type;
 		bool dead;
 		const void* lua_fn;
 		~lua_debug_callback2();
 		void link_to_list();
 		void set_lua_fn(int slot);
 		void unregister();
-		void callback(const debug_callback_params& p);
-		void killed(uint64_t addr, debug_type type);
+		void callback(const debug_context::params& p);
+		void killed(uint64_t addr, debug_context::etype type);
 		static int on_lua_gc(lua_State* L);
 		lua_debug_callback2* prev;
 		lua_debug_callback2* next;
@@ -243,7 +243,7 @@ namespace
 	struct lua_debug_callback_dict
 	{
 		~lua_debug_callback_dict();
-		std::map<std::pair<debug_type, uint64_t>, lua_debug_callback2*> cblist;
+		std::map<std::pair<debug_context::etype, uint64_t>, lua_debug_callback2*> cblist;
 		static int on_lua_gc(lua_State* L);
 	};
 
@@ -254,7 +254,7 @@ namespace
 			L->rawget(LUA_REGISTRYINDEX);
 			if(!L->isnil(-1)) {
 				lua_debug_callback_dict* dc = (lua_debug_callback_dict*)L->touserdata(-1);
-				std::pair<debug_type, uint64_t> key = std::make_pair(type, addr);
+				std::pair<debug_context::etype, uint64_t> key = std::make_pair(type, addr);
 				if(dc->cblist.count(key)) {
 					dc->cblist[key] = next;
 					if(!next)
@@ -292,7 +292,7 @@ namespace
 		L->rawget(LUA_REGISTRYINDEX);
 		lua_debug_callback2* was = NULL;
 		lua_debug_callback_dict* dc = (lua_debug_callback_dict*)L->touserdata(-1);
-		std::pair<debug_type, uint64_t> key = std::make_pair(type, addr);
+		std::pair<debug_context::etype, uint64_t> key = std::make_pair(type, addr);
 		if(dc->cblist.count(key))
 			was = dc->cblist[key];
 		dc->cblist[key] = this;
@@ -327,25 +327,25 @@ namespace
 		L->rawset(LUA_REGISTRYINDEX);
 	}
 	
-	void lua_debug_callback2::callback(const debug_callback_params& p)
+	void lua_debug_callback2::callback(const debug_context::params& p)
 	{
 		L->pushlightuserdata((char*)this + 1);
 		L->rawget(LUA_REGISTRYINDEX);
 		switch(p.type) {
-		case DEBUG_READ:
-		case DEBUG_WRITE:
-		case DEBUG_EXEC:
+		case debug_context::DEBUG_READ:
+		case debug_context::DEBUG_WRITE:
+		case debug_context::DEBUG_EXEC:
 			L->pushnumber(p.rwx.addr);
 			L->pushnumber(p.rwx.value);
 			do_lua_error(*L, L->pcall(2, 0, 0));
 			break;
-		case DEBUG_TRACE:
+		case debug_context::DEBUG_TRACE:
 			L->pushnumber(p.trace.cpu);
 			L->pushstring(p.trace.decoded_insn);
 			L->pushboolean(p.trace.true_insn);
 			do_lua_error(*L, L->pcall(3, 0, 0));
 			break;
-		case DEBUG_FRAME:
+		case debug_context::DEBUG_FRAME:
 			L->pushnumber(p.frame.frame);
 			L->pushboolean(p.frame.loadstated);
 			do_lua_error(*L, L->pcall(2, 0, 0));
@@ -357,7 +357,7 @@ namespace
 		}
 	}
 	
-	void lua_debug_callback2::killed(uint64_t addr, debug_type type)
+	void lua_debug_callback2::killed(uint64_t addr, debug_context::etype type)
 	{
 		//Assume this has been unregistered.
 		dead = true;
@@ -398,7 +398,7 @@ namespace
 	}
 }
 
-template<debug_type type>
+template<debug_context::etype type>
 void handle_registerX(lua::state& L, uint64_t addr, int lfn)
 {
 	//Put the context in userdata so it can be gc'd when Lua context is terminated.
@@ -424,7 +424,7 @@ void handle_registerX(lua::state& L, uint64_t addr, int lfn)
 	CORE().dbg.add_callback(addr, type, *D);
 }
 
-template<debug_type type>
+template<debug_context::etype type>
 void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
 {
 	lua_debug_callback_dict* Dx;
@@ -453,25 +453,25 @@ void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
 
 typedef void(*dummy1_t)(lua::state& L, uint64_t addr, int lfn);
 dummy1_t dummy_628963286932869328692386963[] = {
-	handle_registerX<DEBUG_READ>,
-	handle_registerX<DEBUG_WRITE>,
-	handle_registerX<DEBUG_EXEC>,
-	handle_unregisterX<DEBUG_READ>,
-	handle_unregisterX<DEBUG_WRITE>,
-	handle_unregisterX<DEBUG_EXEC>,
+	handle_registerX<debug_context::DEBUG_READ>,
+	handle_registerX<debug_context::DEBUG_WRITE>,
+	handle_registerX<debug_context::DEBUG_EXEC>,
+	handle_unregisterX<debug_context::DEBUG_READ>,
+	handle_unregisterX<debug_context::DEBUG_WRITE>,
+	handle_unregisterX<debug_context::DEBUG_EXEC>,
 };
 
 namespace
 {
-	template<debug_type type, bool reg>
+	template<debug_context::etype type, bool reg>
 	int lua_registerX(lua::state& L, lua::parameters& P)
 	{
 		uint64_t addr;
 		int lfn;
-		if(P.is_nil() && type != DEBUG_TRACE) {
+		if(P.is_nil() && type != debug_context::DEBUG_TRACE) {
 			addr = 0xFFFFFFFFFFFFFFFFULL;
 			P.skip();
-		} else if(type != DEBUG_TRACE)
+		} else if(type != debug_context::DEBUG_TRACE)
 			addr = lua_get_read_address(P);
 		else
 			P(addr);
@@ -905,14 +905,14 @@ namespace
 		{"mapsqword", lua_mmap_memory<int64_t, &memory_space::read<int64_t>, &memory_space::write<int64_t>>},
 		{"mapfloat", lua_mmap_memory<float, &memory_space::read<float>, &memory_space::write<float>>},
 		{"mapdouble", lua_mmap_memory<double, &memory_space::read<double>, &memory_space::write<double>>},
-		{"registerread", lua_registerX<DEBUG_READ, true>},
-		{"unregisterread", lua_registerX<DEBUG_READ, false>},
-		{"registerwrite", lua_registerX<DEBUG_WRITE, true>},
-		{"unregisterwrite", lua_registerX<DEBUG_WRITE, false>},
-		{"registerexec", lua_registerX<DEBUG_EXEC, true>},
-		{"unregisterexec", lua_registerX<DEBUG_EXEC, false>},
-		{"registertrace", lua_registerX<DEBUG_TRACE, true>},
-		{"unregistertrace", lua_registerX<DEBUG_TRACE, false>},
+		{"registerread", lua_registerX<debug_context::DEBUG_READ, true>},
+		{"unregisterread", lua_registerX<debug_context::DEBUG_READ, false>},
+		{"registerwrite", lua_registerX<debug_context::DEBUG_WRITE, true>},
+		{"unregisterwrite", lua_registerX<debug_context::DEBUG_WRITE, false>},
+		{"registerexec", lua_registerX<debug_context::DEBUG_EXEC, true>},
+		{"unregisterexec", lua_registerX<debug_context::DEBUG_EXEC, false>},
+		{"registertrace", lua_registerX<debug_context::DEBUG_TRACE, true>},
+		{"unregistertrace", lua_registerX<debug_context::DEBUG_TRACE, false>},
 	});
 
 	lua::_class<lua_mmap_struct> class_mmap_struct(lua_class_memory, "MMAP_STRUCT", {

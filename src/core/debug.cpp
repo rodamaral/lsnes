@@ -14,14 +14,14 @@
 namespace
 {
 
-	unsigned debug_flag(debug_type type)
+	unsigned debug_flag(debug_context::etype type)
 	{
 		switch(type) {
-		case DEBUG_READ: return 1;
-		case DEBUG_WRITE: return 2;
-		case DEBUG_EXEC: return 4;
-		case DEBUG_TRACE: return 8;
-		case DEBUG_FRAME: return 0;
+		case debug_context::DEBUG_READ: return 1;
+		case debug_context::DEBUG_WRITE: return 2;
+		case debug_context::DEBUG_EXEC: return 4;
+		case debug_context::DEBUG_TRACE: return 8;
+		case debug_context::DEBUG_FRAME: return 0;
 		default: throw std::runtime_error("Invalid debug callback type");
 		}
 	}
@@ -29,7 +29,7 @@ namespace
 
 namespace
 {
-	template<class T> void kill_hooks(T& cblist, debug_type type)
+	template<class T> void kill_hooks(T& cblist, debug_context::etype type)
 	{
 		while(!cblist.empty()) {
 			if(cblist.begin()->second.empty()) {
@@ -45,13 +45,13 @@ namespace
 	}
 }
 
-debug_callback_base::~debug_callback_base()
+debug_context::callback_base::~callback_base()
 {
 }
 
 const uint64_t debug_context::all_addresses = 0xFFFFFFFFFFFFFFFFULL;
 
-void debug_context::add_callback(uint64_t addr, debug_type type, debug_callback_base& cb)
+void debug_context::add_callback(uint64_t addr, debug_context::etype type, debug_context::callback_base& cb)
 {
 	std::map<uint64_t, cb_list>& xcb = get_lists(type);
 	if(!corechange_r) {
@@ -64,7 +64,7 @@ void debug_context::add_callback(uint64_t addr, debug_type type, debug_callback_
 	lst.push_back(&cb);
 }
 
-void debug_context::remove_callback(uint64_t addr, debug_type type, debug_callback_base& cb)
+void debug_context::remove_callback(uint64_t addr, debug_context::etype type, debug_context::callback_base& cb)
 {
 	std::map<uint64_t, cb_list>& xcb = get_lists(type);
 	if(type == DEBUG_FRAME) addr = 0;
@@ -85,7 +85,7 @@ void debug_context::remove_callback(uint64_t addr, debug_type type, debug_callba
 
 void debug_context::do_callback_read(uint64_t addr, uint64_t value)
 {
-	debug_callback_params p;
+	params p;
 	p.type = DEBUG_READ;
 	p.rwx.addr = addr;
 	p.rwx.value = value;
@@ -103,7 +103,7 @@ void debug_context::do_callback_read(uint64_t addr, uint64_t value)
 
 void debug_context::do_callback_write(uint64_t addr, uint64_t value)
 {
-	debug_callback_params p;
+	params p;
 	p.type = DEBUG_WRITE;
 	p.rwx.addr = addr;
 	p.rwx.value = value;
@@ -121,7 +121,7 @@ void debug_context::do_callback_write(uint64_t addr, uint64_t value)
 
 void debug_context::do_callback_exec(uint64_t addr, uint64_t cpu)
 {
-	debug_callback_params p;
+	params p;
 	p.type = DEBUG_EXEC;
 	p.rwx.addr = addr;
 	p.rwx.value = cpu;
@@ -140,7 +140,7 @@ void debug_context::do_callback_exec(uint64_t addr, uint64_t cpu)
 
 void debug_context::do_callback_trace(uint64_t cpu, const char* str, bool true_insn)
 {
-	debug_callback_params p;
+	params p;
 	p.type = DEBUG_TRACE;
 	p.trace.cpu = cpu;
 	p.trace.decoded_insn = str;
@@ -156,7 +156,7 @@ void debug_context::do_callback_trace(uint64_t cpu, const char* str, bool true_i
 
 void debug_context::do_callback_frame(uint64_t frame, bool loadstate)
 {
-	debug_callback_params p;
+	params p;
 	p.type = DEBUG_FRAME;
 	p.frame.frame = frame;
 	p.frame.loadstated = loadstate;
@@ -214,13 +214,13 @@ debug_context::tracelog_file::~tracelog_file()
 {
 }
 
-void debug_context::tracelog_file::callback(const debug_callback_params& p)
+void debug_context::tracelog_file::callback(const debug_context::params& p)
 {
 	if(!parent.trace_outputs.count(p.trace.cpu)) return;
 	parent.trace_outputs[p.trace.cpu]->stream << p.trace.decoded_insn << std::endl;
 }
 
-void debug_context::tracelog_file::killed(uint64_t addr, debug_type type)
+void debug_context::tracelog_file::killed(uint64_t addr, debug_context::etype type)
 {
 	refcnt--;
 	if(!refcnt)

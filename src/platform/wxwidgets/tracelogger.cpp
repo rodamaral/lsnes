@@ -394,7 +394,7 @@ namespace
 	{
 	public:
 		dialog_breakpoint_add(wxWindow* parent, std::list<memory_region*> regions);
-		std::pair<uint64_t, debug_type> get_result();
+		std::pair<uint64_t, debug_context::etype> get_result();
 		void on_ok(wxCommandEvent& e) { EndModal(wxID_OK); }
 		void on_cancel(wxCommandEvent& e) { EndModal(wxID_CANCEL); }
 		void on_address_change(wxCommandEvent& e);
@@ -457,7 +457,7 @@ namespace
 		}
 	}
 
-	std::pair<uint64_t, debug_type> dialog_breakpoint_add::get_result()
+	std::pair<uint64_t, debug_context::etype> dialog_breakpoint_add::get_result()
 	{
 		std::string vmaname = tostdstring(vmasel->GetStringSelection());
 		std::string addrtext = tostdstring(address->GetValue());
@@ -473,13 +473,13 @@ namespace
 		} catch(std::exception& e) {
 			addr = base;
 		}
-		debug_type dtype = DEBUG_EXEC;
+		debug_context::etype dtype = debug_context::DEBUG_EXEC;
 		if(typesel->GetSelection() == 0)
-			dtype = DEBUG_READ;
+			dtype = debug_context::DEBUG_READ;
 		if(typesel->GetSelection() == 1)
-			dtype = DEBUG_WRITE;
+			dtype = debug_context::DEBUG_WRITE;
 		if(typesel->GetSelection() == 2)
-			dtype = DEBUG_EXEC;
+			dtype = debug_context::DEBUG_EXEC;
 		return std::make_pair(addr, dtype);
 	}
 	
@@ -493,8 +493,8 @@ namespace
 		void on_delete(wxCommandEvent& e);
 		void on_selchange(wxCommandEvent& e);
 	private:
-		std::string format_line(std::pair<uint64_t, debug_type> entry);
-		size_t get_insert_pos(std::pair<uint64_t, debug_type> entry);
+		std::string format_line(std::pair<uint64_t, debug_context::etype> entry);
+		size_t get_insert_pos(std::pair<uint64_t, debug_context::etype> entry);
 		void populate_breakpoints();
 		std::list<memory_region*> regions;
 		wxButton* ok;
@@ -502,10 +502,10 @@ namespace
 		wxButton* delb;
 		wxListBox* brklist;
 		wxwin_tracelog* pwin;
-		std::vector<std::pair<uint64_t, debug_type>> listsyms;
+		std::vector<std::pair<uint64_t, debug_context::etype>> listsyms;
 	};
 
-	class wxwin_tracelog : public wxFrame, public debug_callback_base
+	class wxwin_tracelog : public wxFrame, public debug_context::callback_base
 	{
 	public:
 		wxwin_tracelog(wxWindow* parent, int _cpuid, const std::string& cpuname);
@@ -517,9 +517,9 @@ namespace
 		void on_menu(wxCommandEvent& e);
 		void process_lines();
 		uint64_t get_find_line() { return find_active ? find_line : 0xFFFFFFFFFFFFFFFFULL; }
-		std::set<std::pair<uint64_t, debug_type>> get_breakpoints();
-		void add_breakpoint(uint64_t addr, debug_type dtype);
-		void remove_breakpoint(uint64_t addr, debug_type dtype);
+		std::set<std::pair<uint64_t, debug_context::etype>> get_breakpoints();
+		void add_breakpoint(uint64_t addr, debug_context::etype dtype);
+		void remove_breakpoint(uint64_t addr, debug_context::etype dtype);
 	private:
 		class _panel : public text_framebuffer_panel
 		{
@@ -544,9 +544,9 @@ namespace
 		void scroll_pane(uint64_t line);
 		int cpuid;
 		volatile bool trace_active;
-		void callback(const debug_callback_params& params);
-		void killed(uint64_t addr, debug_type type);
-		void do_rwx_break(uint64_t addr, uint64_t value, debug_type type);
+		void callback(const debug_context::params& params);
+		void killed(uint64_t addr, debug_context::etype type);
+		void do_rwx_break(uint64_t addr, uint64_t value, debug_context::etype type);
 		void kill_debug_hooks();
 		scroll_bar* scroll;
 		_panel* panel;
@@ -562,7 +562,7 @@ namespace
 		std::string find_string;
 		bool dirty;
 		bool singlestepping;
-		std::map<std::pair<uint64_t, debug_type>, bool> rwx_breakpoints;
+		std::map<std::pair<uint64_t, debug_context::etype>, bool> rwx_breakpoints;
 		wxMenuItem* m_singlestep;
 	};
 
@@ -587,8 +587,8 @@ namespace
 
 	void wxwin_tracelog::kill_debug_hooks()
 	{
-		CORE().dbg.remove_callback(cpuid, DEBUG_TRACE, *this);
-		CORE().dbg.remove_callback(cpuid, DEBUG_FRAME, *this);
+		CORE().dbg.remove_callback(cpuid, debug_context::DEBUG_TRACE, *this);
+		CORE().dbg.remove_callback(cpuid, debug_context::DEBUG_FRAME, *this);
 		threads::alock h(buffer_mutex);
 		for(auto& i : rwx_breakpoints) {
 			if(!i.second)
@@ -705,20 +705,20 @@ namespace
 		panel->request_paint();
 	}
 
-	void wxwin_tracelog::do_rwx_break(uint64_t addr, uint64_t value, debug_type type)
+	void wxwin_tracelog::do_rwx_break(uint64_t addr, uint64_t value, debug_context::etype type)
 	{
 		lsnes_instance.dbg.request_break();
 	}
 
-	void wxwin_tracelog::callback(const debug_callback_params& p)
+	void wxwin_tracelog::callback(const debug_context::params& p)
 	{
 		switch(p.type) {
-		case DEBUG_READ:
-		case DEBUG_WRITE:
-		case DEBUG_EXEC:
+		case debug_context::DEBUG_READ:
+		case debug_context::DEBUG_WRITE:
+		case debug_context::DEBUG_EXEC:
 			do_rwx_break(p.rwx.addr, p.rwx.value, p.type);
 			break;
-		case DEBUG_TRACE: {
+		case debug_context::DEBUG_TRACE: {
 			if(!trace_active)
 				return;
 			//Got tracelog line, send it.
@@ -734,7 +734,7 @@ namespace
 			}
 			break;
 		}
-		case DEBUG_FRAME: {
+		case debug_context::DEBUG_FRAME: {
 			std::ostringstream xstr;
 			xstr << "------------ ";
 			xstr << "Frame " << p.frame.frame;
@@ -752,12 +752,12 @@ namespace
 		}
 	}
 
-	void wxwin_tracelog::killed(uint64_t addr, debug_type type)
+	void wxwin_tracelog::killed(uint64_t addr, debug_context::etype type)
 	{
 		switch(type) {
-		case DEBUG_READ:
-		case DEBUG_WRITE:
-		case DEBUG_EXEC: {
+		case debug_context::DEBUG_READ:
+		case debug_context::DEBUG_WRITE:
+		case debug_context::DEBUG_EXEC: {
 			//We need to kill this hook if still active.
 			auto i2 = std::make_pair(addr, type);
 			auto& h = rwx_breakpoints[i2];
@@ -766,7 +766,7 @@ namespace
 			h = false;
 			break;
 		}
-		case DEBUG_TRACE:
+		case debug_context::DEBUG_TRACE:
 			//Dtor!
 			if(!trace_active)
 				return;
@@ -777,7 +777,7 @@ namespace
 				this->m_singlestep->Enable(false);
 			});
 			break;
-		case DEBUG_FRAME:
+		case debug_context::DEBUG_FRAME:
 			//Do nothing.
 			break;
 		}
@@ -796,8 +796,8 @@ namespace
 					lsnes_instance.dbg.add_callback(i2.first, i2.second, *this);
 					i.second = true;
 				}
-				lsnes_instance.dbg.add_callback(cpuid, DEBUG_TRACE, *this);
-				lsnes_instance.dbg.add_callback(0, DEBUG_FRAME, *this);
+				lsnes_instance.dbg.add_callback(cpuid, debug_context::DEBUG_TRACE, *this);
+				lsnes_instance.dbg.add_callback(0, debug_context::DEBUG_FRAME, *this);
 				this->trace_active = true;
 			} else if(trace_active) {
 				this->trace_active = false;
@@ -1055,9 +1055,9 @@ back:
 		return true;
 	}
 
-	std::set<std::pair<uint64_t, debug_type>> wxwin_tracelog::get_breakpoints()
+	std::set<std::pair<uint64_t, debug_context::etype>> wxwin_tracelog::get_breakpoints()
 	{
-		std::set<std::pair<uint64_t, debug_type>> ret;
+		std::set<std::pair<uint64_t, debug_context::etype>> ret;
 		lsnes_instance.run([this, &ret]() {
 			for(auto i : rwx_breakpoints)
 				ret.insert(i.first);
@@ -1065,9 +1065,9 @@ back:
 		return ret;
 	}
 
-	void wxwin_tracelog::add_breakpoint(uint64_t addr, debug_type dtype)
+	void wxwin_tracelog::add_breakpoint(uint64_t addr, debug_context::etype dtype)
 	{
-		std::pair<uint64_t, debug_type> i2 = std::make_pair(addr, dtype);
+		std::pair<uint64_t, debug_context::etype> i2 = std::make_pair(addr, dtype);
 		if(!trace_active) {
 			//We'll register this later.
 			rwx_breakpoints[i2] = false;
@@ -1077,9 +1077,9 @@ back:
 		rwx_breakpoints[i2] = true;
 	}
 
-	void wxwin_tracelog::remove_breakpoint(uint64_t addr, debug_type dtype)
+	void wxwin_tracelog::remove_breakpoint(uint64_t addr, debug_context::etype dtype)
 	{
-		std::pair<uint64_t, debug_type> i2 = std::make_pair(addr, dtype);
+		std::pair<uint64_t, debug_context::etype> i2 = std::make_pair(addr, dtype);
 		auto& h = rwx_breakpoints[i2];
 		if(h)
 			lsnes_instance.dbg.remove_callback(i2.first, i2.second, *this);
@@ -1798,7 +1798,7 @@ back:
 	void dialog_breakpoints::on_add(wxCommandEvent& e)
 	{
 		uint64_t addr;
-		debug_type dtype;
+		debug_context::etype dtype;
 		dialog_breakpoint_add* d = new dialog_breakpoint_add(this, regions);
 		if(d->ShowModal() != wxID_OK) {
 			d->Destroy();
@@ -1822,7 +1822,7 @@ back:
 		if(idx == wxNOT_FOUND)
 			return;
 		uint64_t addr;
-		debug_type dtype;
+		debug_context::etype dtype;
 		addr = listsyms[idx].first;
 		dtype = listsyms[idx].second;
 		lsnes_instance.run_async([this, addr, dtype]() {
@@ -1832,7 +1832,7 @@ back:
 		listsyms.erase(listsyms.begin() + idx);
 	}
 
-	size_t dialog_breakpoints::get_insert_pos(std::pair<uint64_t, debug_type> entry)
+	size_t dialog_breakpoints::get_insert_pos(std::pair<uint64_t, debug_context::etype> entry)
 	{
 		size_t i = 0;
 		for(i = 0; i < listsyms.size(); i++)
@@ -1841,7 +1841,7 @@ back:
 		return i;
 	}
 
-	std::string dialog_breakpoints::format_line(std::pair<uint64_t, debug_type> entry)
+	std::string dialog_breakpoints::format_line(std::pair<uint64_t, debug_context::etype> entry)
 	{
 		std::string base = "";
 		for(auto i : regions) {
@@ -1852,11 +1852,11 @@ back:
 		}
 		if(base == "")
 			base = hex::to<uint64_t>(entry.first);
-		if(entry.second == DEBUG_READ)
+		if(entry.second == debug_context::DEBUG_READ)
 			return base + ": Read";
-		if(entry.second == DEBUG_WRITE)
+		if(entry.second == debug_context::DEBUG_WRITE)
 			return base + ": Write";
-		if(entry.second == DEBUG_EXEC)
+		if(entry.second == debug_context::DEBUG_EXEC)
 			return base + ": Execute";
 		return base + ": Unknown";
 	}

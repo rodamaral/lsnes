@@ -62,7 +62,7 @@ namespace
 		int readregion(lua::state& L, lua::parameters& P);
 		int writeregion(lua::state& L, lua::parameters& P);
 		int cheat(lua::state& L, lua::parameters& P);
-		template<debug_type type, bool reg> int registerX(lua::state& L, lua::parameters& P);
+		template<debug_context::etype type, bool reg> int registerX(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
 			return vma;
@@ -159,12 +159,12 @@ namespace
 			{"storecmp", &lua_vma::storecmp<true>},
 			{"readregion", &lua_vma::readregion},
 			{"writeregion", &lua_vma::writeregion},
-			{"registerread", &lua_vma::registerX<DEBUG_READ, true>},
-			{"unregisterread", &lua_vma::registerX<DEBUG_READ, false>},
-			{"registerwrite", &lua_vma::registerX<DEBUG_WRITE, true>},
-			{"unregisterwrite", &lua_vma::registerX<DEBUG_WRITE, false>},
-			{"registerexec", &lua_vma::registerX<DEBUG_EXEC, true>},
-			{"unregisterexec", &lua_vma::registerX<DEBUG_EXEC, false>},
+			{"registerread", &lua_vma::registerX<debug_context::DEBUG_READ, true>},
+			{"unregisterread", &lua_vma::registerX<debug_context::DEBUG_READ, false>},
+			{"registerwrite", &lua_vma::registerX<debug_context::DEBUG_WRITE, true>},
+			{"unregisterwrite", &lua_vma::registerX<debug_context::DEBUG_WRITE, false>},
+			{"registerexec", &lua_vma::registerX<debug_context::DEBUG_EXEC, true>},
+			{"unregisterexec", &lua_vma::registerX<debug_context::DEBUG_EXEC, false>},
 	}, &lua_vma::print);
 
 	lua::_class<lua_vma_list> class_vmalist(lua_class_memory, "VMALIST", {
@@ -411,7 +411,7 @@ namespace
 		return cmp ? 1 : 0;
 	}
 
-	template<debug_type type, bool reg> int lua_vma::registerX(lua::state& L, lua::parameters& P)
+	template<debug_context::etype type, bool reg> int lua_vma::registerX(lua::state& L, lua::parameters& P)
 	{
 		uint64_t addr;
 		int lfn;
