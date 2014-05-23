@@ -1,6 +1,6 @@
 #include "lua/internal.hpp"
 #include "core/framebuffer.hpp"
-#include "library/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "library/lua-framebuffer.hpp"
 #include "library/minmax.hpp"
 #include "library/png.hpp"
@@ -936,7 +936,7 @@ lua_bitmap::lua_bitmap(lua::state& L, uint32_t w, uint32_t h)
 
 lua_bitmap::~lua_bitmap()
 {
-	render_kill_request(this);
+	CORE().fbuf.render_kill_request(this);
 }
 
 std::string lua_bitmap::print()
@@ -1108,7 +1108,7 @@ lua_dbitmap::lua_dbitmap(lua::state& L, uint32_t w, uint32_t h)
 
 lua_dbitmap::~lua_dbitmap()
 {
-	render_kill_request(this);
+	CORE().fbuf.render_kill_request(this);
 }
 
 std::string lua_dbitmap::print()

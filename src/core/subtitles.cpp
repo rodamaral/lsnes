@@ -113,7 +113,7 @@ namespace
 				CORE().mlogic.get_mfile().subtitles[key] =
 					subtitle_commentary::s_unescape(text);
 			notify_subtitle_change();
-			redraw_framebuffer();
+			CORE().fbuf.redraw_framebuffer();
 		});
 
 	command::fnptr<> list_subtitle(lsnes_cmds, "list-subtitle", "List the subtitles",
@@ -249,5 +249,5 @@ void subtitle_commentary::set(uint64_t f, uint64_t l, const std::string& x)
 	else
 		mlogic.get_mfile().subtitles[key] = s_unescape(x);
 	notify_subtitle_change();
-	redraw_framebuffer();
+	CORE().fbuf.redraw_framebuffer();
 }

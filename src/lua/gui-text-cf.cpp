@@ -2,7 +2,7 @@
 #include "lua/bitmap.hpp"
 #include "fonts/wrapper.hpp"
 #include "core/framebuffer.hpp"
-#include "library/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "library/framebuffer-font2.hpp"
 #include "library/utf8.hpp"
 #include "library/lua-framebuffer.hpp"
@@ -115,7 +115,7 @@ namespace
 
 	lua_customfont::~lua_customfont() throw()
 	{
-		render_kill_request(this);
+		CORE().fbuf.render_kill_request(this);
 	}
 
 	int lua_customfont::draw(lua::state& L, lua::parameters& P)

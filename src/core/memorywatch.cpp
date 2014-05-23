@@ -363,7 +363,7 @@ void memwatch_set::clear(const std::string& name)
 		pr->watches.erase(name);
 		pr->flush();
 	}
-	redraw_framebuffer();
+	CORE().fbuf.redraw_framebuffer();
 }
 
 void memwatch_set::set(const std::string& name, const std::string& item)
@@ -420,7 +420,7 @@ bool memwatch_set::rename(const std::string& oldname, const std::string& newname
 	nitems.erase(oldname);
 	rebuild(nitems);
 	std::swap(items, nitems);
-	redraw_framebuffer();
+	CORE().fbuf.redraw_framebuffer();
 	return true;
 }
 
@@ -435,7 +435,7 @@ void memwatch_set::set(const std::string& name, memwatch_item& item)
 		pr->watches[name] = get_string(name);
 		pr->flush();
 	}
-	redraw_framebuffer();
+	CORE().fbuf.redraw_framebuffer();
 }
 
 std::string memwatch_set::get_value(const std::string& name)
@@ -456,7 +456,7 @@ void memwatch_set::set_multi(std::list<std::pair<std::string, memwatch_item>>& l
 			pr->watches[i.first] = get_string(i.first);
 		pr->flush();
 	}
-	redraw_framebuffer();
+	CORE().fbuf.redraw_framebuffer();
 }
 
 void memwatch_set::set_multi(std::list<std::pair<std::string, std::string>>& list)
@@ -483,7 +483,7 @@ void memwatch_set::clear_multi(const std::set<std::string>& names)
 			pr->watches.erase(i);
 		pr->flush();
 	}
-	redraw_framebuffer();
+	CORE().fbuf.redraw_framebuffer();
 }
 
 void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)

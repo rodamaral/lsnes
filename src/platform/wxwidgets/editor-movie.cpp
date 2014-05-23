@@ -1447,13 +1447,13 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		});
 		signal_repaint();
 	} else if(ci.axistype == port_controller_button::TYPE_LIGHTGUN) {
-		framebuffer::raw& _fb = render_get_latest_screen();
+		framebuffer::raw& _fb = lsnes_instance.fbuf.render_get_latest_screen();
 		framebuffer::fb<false> fb;
 		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
 		auto size = our_rom.rtype->lightgun_scale();
 		fb.reallocate(osize.first, osize.second, false);
 		fb.copy_from(_fb, 1, 1);
-		render_get_latest_screen_end();
+		lsnes_instance.fbuf.render_get_latest_screen_end();
 		std::vector<uint8_t> buf;
 		buf.resize(3 * (ciX.rmax - ciX.rmin + 1) * (ciY.rmax - ciY.rmin + 1));
 		unsigned offX = -ciX.rmin;

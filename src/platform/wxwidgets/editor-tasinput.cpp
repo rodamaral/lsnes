@@ -265,13 +265,13 @@ void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 	wxPaintDC dc(graphics);
 	if(lightgun) {
 		//Draw the current screen.
-		framebuffer::raw& _fb = render_get_latest_screen();
+		framebuffer::raw& _fb = lsnes_instance.fbuf.render_get_latest_screen();
 		framebuffer::fb<false> fb;
 		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
 		auto size = our_rom.rtype->lightgun_scale();
 		fb.reallocate(osize.first, osize.second, false);
 		fb.copy_from(_fb, 1, 1);
-		render_get_latest_screen_end();
+		lsnes_instance.fbuf.render_get_latest_screen_end();
 		std::vector<uint8_t> buf;
 		buf.resize(3 * (t.xmax - t.xmin + 1) * (t.ymax - t.ymin + 1));
 		unsigned offX = -t.xmin;

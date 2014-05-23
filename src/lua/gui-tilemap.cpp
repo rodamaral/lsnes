@@ -1,6 +1,6 @@
 #include "lua/internal.hpp"
 #include "core/framebuffer.hpp"
-#include "library/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "library/png.hpp"
 #include "library/range.hpp"
 #include "library/string.hpp"
@@ -38,7 +38,7 @@ namespace
 		~tilemap()
 		{
 			threads::alock h(lock);
-			render_kill_request(this);
+			CORE().fbuf.render_kill_request(this);
 		}
 		static int create(lua::state& L, lua::parameters& P);
 		template<bool outside> int draw(lua::state& L, lua::parameters& P);

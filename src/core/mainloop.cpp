@@ -188,7 +188,7 @@ void mainloop_signal_need_rewind(void* ptr)
 controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
 	if(lua_requests_subframe_paint)
-		redraw_framebuffer();
+		CORE().fbuf.redraw_framebuffer();
 
 	if(subframe) {
 		if(amode == ADVANCE_SUBFRAME) {
@@ -526,7 +526,7 @@ public:
 	{
 		lua_callback_do_frame_emulated();
 		location_special = SPECIAL_FRAME_VIDEO;
-		redraw_framebuffer(screen, false, true);
+		CORE().fbuf.redraw_framebuffer(screen, false, true);
 		uint32_t g = gcd(fps_n, fps_d);
 		fps_n /= g;
 		fps_d /= g;
@@ -897,7 +897,7 @@ namespace
 	command::fnptr<> repaint(lsnes_cmds, "repaint", "Redraw the screen",
 		"Syntax: repaint\nRedraws the screen\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			redraw_framebuffer();
+			CORE().fbuf.redraw_framebuffer();
 		});
 
 	command::fnptr<> tpon(lsnes_cmds, "toggle-pause-on-end", "Toggle pause on end", "Toggle pause on end\n",
@@ -1261,7 +1261,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	emulation_thread = threads::this_id();
 	jukebox_size_listener jlistener(CORE().settings);
 	CORE().commentary.init();
-	init_special_screens();
+	CORE().fbuf.init_special_screens();
 	our_rom = rom;
 	init_main_callbacks();
 	initialize_all_builtin_c_cores();
@@ -1289,7 +1289,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			throw;
 		}
 		system_corrupt = true;
-		redraw_framebuffer(screen_corrupt);
+		CORE().fbuf.redraw_framebuffer(emu_framebuffer::screen_corrupt);
 	}
 
 	platform::set_paused(initial.start_paused);

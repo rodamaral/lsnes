@@ -912,7 +912,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		//Leave fullscreen mode.
 		main_window->enter_or_leave_fullscreen(false);
 	}
-	render_framebuffer();
+	lsnes_instance.fbuf.render_framebuffer();
 	static 
 	uint8_t* srcp[1];
 	int srcs[1];
@@ -924,11 +924,11 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, our_rom.rtype ?
 		our_rom.rtype->get_PAR() : 1.0);
 	if(rotate_enabled) {
-		tw = main_screen.get_height() * sfactors.second + 0.5;
-		th = main_screen.get_width() * sfactors.first + 0.5;
+		tw = lsnes_instance.fbuf.main_screen.get_height() * sfactors.second + 0.5;
+		th = lsnes_instance.fbuf.main_screen.get_width() * sfactors.first + 0.5;
 	} else {
-		tw = main_screen.get_width() * sfactors.first + 0.5;
-		th = main_screen.get_height() * sfactors.second + 0.5;
+		tw = lsnes_instance.fbuf.main_screen.get_width() * sfactors.first + 0.5;
+		th = lsnes_instance.fbuf.main_screen.get_height() * sfactors.second + 0.5;
 	}
 	if(!tw || !th) {
 		main_window_dirty = false;
@@ -958,8 +958,8 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		old_hflip = hflip_enabled;
 		old_vflip = vflip_enabled;
 		old_rotate = rotate_enabled;
-		uint32_t w = main_screen.get_width();
-		uint32_t h = main_screen.get_height();
+		uint32_t w = lsnes_instance.fbuf.main_screen.get_width();
+		uint32_t h = lsnes_instance.fbuf.main_screen.get_height();
 		if(w && h)
 			sws_ctx = sws_getCachedContext(sws_ctx, rotate_enabled ? h : w, rotate_enabled ? w : h,
 				PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags, NULL, NULL, NULL);
@@ -967,18 +967,19 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		th = max(th, static_cast<uint32_t>(112));
 		screen_buffer = new unsigned char[tw * th * 3];
 		if(aux)
-			rotate_buffer = new uint32_t[main_screen.get_width() * main_screen.get_height()];
+			rotate_buffer = new uint32_t[lsnes_instance.fbuf.main_screen.get_width() *
+				lsnes_instance.fbuf.main_screen.get_height()];
 		SetMinSize(wxSize(tw, th));
 		signal_resize_needed();
 	}
 	if(aux) {
 		//Hflip, Vflip or rotate active.
-		size_t width = main_screen.get_width();
-		size_t height = main_screen.get_height();
+		size_t width = lsnes_instance.fbuf.main_screen.get_width();
+		size_t height = lsnes_instance.fbuf.main_screen.get_height();
 		size_t width1 = width - 1;
 		size_t height1 = height - 1;
-		size_t stride = main_screen.rowptr(1) - main_screen.rowptr(0);
-		uint32_t* pixels = main_screen.rowptr(0);
+		size_t stride = lsnes_instance.fbuf.main_screen.rowptr(1) - lsnes_instance.fbuf.main_screen.rowptr(0);
+		uint32_t* pixels = lsnes_instance.fbuf.main_screen.rowptr(0);
 		if(rotate_enabled) {
 			for(unsigned y = 0; y < height; y++) {
 				uint32_t* pixels2 = pixels + (vflip_enabled ? (height1 - y) : y) * stride;
@@ -1004,15 +1005,17 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		}
 	}
 	if(aux)
-		srcs[0] = 4 * (rotate_enabled ? main_screen.get_height() : main_screen.get_width());
+		srcs[0] = 4 * (rotate_enabled ? lsnes_instance.fbuf.main_screen.get_height() :
+			lsnes_instance.fbuf.main_screen.get_width());
 	else
-		srcs[0] = 4 * main_screen.get_stride();
+		srcs[0] = 4 * lsnes_instance.fbuf.main_screen.get_stride();
 	dsts[0] = 3 * tw;
-	srcp[0] = reinterpret_cast<unsigned char*>(aux ? rotate_buffer : main_screen.rowptr(0));
+	srcp[0] = reinterpret_cast<unsigned char*>(aux ? rotate_buffer : lsnes_instance.fbuf.main_screen.rowptr(0));
 	dstp[0] = screen_buffer;
 	memset(screen_buffer, 0, tw * th * 3);
-	if(main_screen.get_width() && main_screen.get_height())
-		sws_scale(sws_ctx, srcp, srcs, 0, rotate_enabled ? main_screen.get_width() : main_screen.get_height(),
+	if(lsnes_instance.fbuf.main_screen.get_width() && lsnes_instance.fbuf.main_screen.get_height())
+		sws_scale(sws_ctx, srcp, srcs, 0, rotate_enabled ? lsnes_instance.fbuf.main_screen.get_width() :
+			lsnes_instance.fbuf.main_screen.get_height(),
 		dstp, dsts);
 	wxBitmap bmp(wxImage(tw, th, screen_buffer, true));
 	dc.DrawBitmap(bmp, 0, 0, false);

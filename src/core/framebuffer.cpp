@@ -22,23 +22,6 @@ void update_movie_state();
 
 namespace
 {
-	struct render_info
-	{
-		framebuffer::raw fbuf;
-		framebuffer::queue rq;
-		uint32_t hscl;
-		uint32_t vscl;
-		uint32_t lgap;
-		uint32_t rgap;
-		uint32_t tgap;
-		uint32_t bgap;
-	};
-
-	render_info buffer1;
-	render_info buffer2;
-	render_info buffer3;
-	triplebuffer::triplebuffer<render_info> buffering(buffer1, buffer2, buffer3);
-
 	struct render_list_entry
 	{
 		uint32_t codepoint;
@@ -101,7 +84,7 @@ namespace
 	command::fnptr<command::arg_filename> take_screenshot_cmd(lsnes_cmds, "take-screenshot", "Takes a screenshot",
 		"Syntax: take-screenshot <file>\nSaves screenshot to PNG file <file>\n",
 		[](command::arg_filename file) throw(std::bad_alloc, std::runtime_error) {
-			take_screenshot(file);
+			CORE().fbuf.take_screenshot(file);
 			messages << "Saved PNG screenshot" << std::endl;
 		});
 
@@ -113,13 +96,17 @@ namespace
 		"UI‣Left padding", 0);
 	settingvar::supervariable<settingvar::model_int<0, 8191>> drb(lsnes_setgrp, "right-border",
 		"UI‣Right padding", 0);
-
-	bool last_redraw_no_lua = false;
 }
 
-framebuffer::fb<false> main_screen;
+framebuffer::raw emu_framebuffer::screen_corrupt;
 
-void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)
+emu_framebuffer::emu_framebuffer()
+	: buffering(buffer1, buffer2, buffer3)
+{
+	last_redraw_no_lua = false;
+}
+
+void emu_framebuffer::take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {
 	render_info& ri = buffering.get_read();
 	ri.fbuf.save_png(file);
@@ -127,7 +114,7 @@ void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime
 }
 
 
-void init_special_screens() throw(std::bad_alloc)
+void emu_framebuffer::init_special_screens() throw(std::bad_alloc)
 {
 	std::vector<uint32_t> buf;
 	buf.resize(512*448);
@@ -148,7 +135,7 @@ void init_special_screens() throw(std::bad_alloc)
 	screen_corrupt = framebuffer::raw(inf);
 }
 
-void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
+void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 {
 	uint32_t hscl, vscl;
 	auto g = our_rom.rtype->get_scale_factors(todraw.get_width(), todraw.get_height());
@@ -182,7 +169,7 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	update_movie_state();
 }
 
-void redraw_framebuffer()
+void emu_framebuffer::redraw_framebuffer()
 {
 	render_info& ri = buffering.get_read();
 	framebuffer::raw copy = ri.fbuf;
@@ -191,7 +178,7 @@ void redraw_framebuffer()
 	redraw_framebuffer(copy, last_redraw_no_lua, false);
 }
 
-void render_framebuffer()
+void emu_framebuffer::render_framebuffer()
 {
 	render_info& ri = buffering.get_read();
 	main_screen.reallocate(ri.fbuf.get_width() * ri.hscl + ri.lgap + ri.rgap, ri.fbuf.get_height() * ri.vscl +
@@ -214,7 +201,7 @@ void render_framebuffer()
 	buffering.put_read();
 }
 
-std::pair<uint32_t, uint32_t> get_framebuffer_size()
+std::pair<uint32_t, uint32_t> emu_framebuffer::get_framebuffer_size()
 {
 	uint32_t v, h;
 	render_info& ri = buffering.get_read();
@@ -224,7 +211,7 @@ std::pair<uint32_t, uint32_t> get_framebuffer_size()
 	return std::make_pair(h, v);
 }
 
-framebuffer::raw get_framebuffer() throw(std::bad_alloc)
+framebuffer::raw emu_framebuffer::get_framebuffer() throw(std::bad_alloc)
 {
 	render_info& ri = buffering.get_read();
 	framebuffer::raw copy = ri.fbuf;
@@ -232,19 +219,19 @@ framebuffer::raw get_framebuffer() throw(std::bad_alloc)
 	return copy;
 }
 
-void render_kill_request(void* obj)
+void emu_framebuffer::render_kill_request(void* obj)
 {
 	buffer1.rq.kill_request(obj);
 	buffer2.rq.kill_request(obj);
 	buffer3.rq.kill_request(obj);
 }
 
-framebuffer::raw& render_get_latest_screen()
+framebuffer::raw& emu_framebuffer::render_get_latest_screen()
 {
 	return buffering.get_read().fbuf;
 }
 
-void render_get_latest_screen_end()
+void emu_framebuffer::render_get_latest_screen_end()
 {
 	buffering.put_read();
 }

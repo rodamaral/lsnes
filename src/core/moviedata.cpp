@@ -215,7 +215,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 			target.namehint[i] = our_rom.romimg[i].namehint;
 		}
 		target.savestate = our_rom.save_core_state();
-		get_framebuffer().save(target.screenshot);
+		CORE().fbuf.get_framebuffer().save(target.screenshot);
 		CORE().mlogic.get_movie().save_state(target.projectid, target.save_frame,
 			target.lagged_frames, target.pollcounters);
 		target.poll_flag = our_rom.rtype->get_pflag();
@@ -454,13 +454,13 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 			CORE().mlogic.get_mfile().is_savestate = false;
 			CORE().mlogic.get_mfile().host_memory.clear();
 			CORE().mlogic.get_movie().reset_state();
-			redraw_framebuffer(our_rom.rtype->draw_cover());
+			CORE().fbuf.redraw_framebuffer(our_rom.rtype->draw_cover());
 			lua_callback_do_rewind();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
 			system_corrupt = true;
-			redraw_framebuffer(screen_corrupt, true);
+			CORE().fbuf.redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 			throw;
 		}
 	} else {
@@ -506,13 +506,13 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		try {
 			handle_load_core(*_movie.get(), portset2, false);
 			_movie.get()->gametype = &our_rom.rtype->combine_region(*our_rom.region);
-			redraw_framebuffer(our_rom.rtype->draw_cover());
+			CORE().fbuf.redraw_framebuffer(our_rom.rtype->draw_cover());
 			lua_callback_do_rewind();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
 			system_corrupt = true;
-			redraw_framebuffer(screen_corrupt, true);
+			CORE().fbuf.redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 			throw;
 		}
 
@@ -548,13 +548,13 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 		CORE().mlogic.get_mfile().is_savestate = false;
 		CORE().mlogic.get_mfile().host_memory.clear();
 		CORE().mlogic.get_movie().reset_state();
-		redraw_framebuffer(our_rom.rtype->draw_cover());
+		CORE().fbuf.redraw_framebuffer(our_rom.rtype->draw_cover());
 		lua_callback_do_rewind();
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
 		system_corrupt = true;
-		redraw_framebuffer(screen_corrupt, true);
+		CORE().fbuf.redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 		throw;
 	}
 	messages << "Movie rewound to beginning." << std::endl;
@@ -594,7 +594,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 		OOM_panic();
 	} catch(std::exception& e) {
 		system_corrupt = true;
-		redraw_framebuffer(screen_corrupt, true);
+		CORE().fbuf.redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 		throw;
 	}
 
@@ -614,9 +614,9 @@ void do_load_state_preserve(struct moviefile& _movie)
 		framebuffer::raw tmp;
 		if(will_load_state) {
 			tmp.load(_movie.screenshot);
-			redraw_framebuffer(tmp);
+			CORE().fbuf.redraw_framebuffer(tmp);
 		} else
-			redraw_framebuffer(our_rom.rtype->draw_cover());
+			CORE().fbuf.redraw_framebuffer(our_rom.rtype->draw_cover());
 	} catch(...) {
 	}
 	delete &_movie;
@@ -721,7 +721,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 		OOM_panic();
 	} catch(std::exception& e) {
 		system_corrupt = true;
-		redraw_framebuffer(screen_corrupt, true);
+		CORE().fbuf.redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 		throw;
 	}
 
@@ -757,9 +757,9 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 		framebuffer::raw tmp;
 		if(will_load_state) {
 			tmp.load(_movie.screenshot);
-			redraw_framebuffer(tmp);
+			CORE().fbuf.redraw_framebuffer(tmp);
 		} else
-			redraw_framebuffer(our_rom.rtype->draw_cover());
+			CORE().fbuf.redraw_framebuffer(our_rom.rtype->draw_cover());
 	}
 
 	notify_mode_change(m.readonly_mode());

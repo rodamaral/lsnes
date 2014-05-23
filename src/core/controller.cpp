@@ -347,7 +347,7 @@ namespace
 			return;
 		if(lua_callback_do_button(z.port, z.controller, z.bind.control2, "analog"))
 			return;
-		auto g2 = get_framebuffer_size();
+		auto g2 = CORE().fbuf.get_framebuffer_size();
 		x = z.bind.xrel ? (x - g2.first / 2) : (x / 2);
 		y = z.bind.yrel ? (y - g2.second / 2) : (y / 2);
 		if(z.bind.control1 < std::numeric_limits<unsigned>::max())

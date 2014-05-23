@@ -1,7 +1,7 @@
 #include "core/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "lua/bitmap.hpp"
-#include "library/framebuffer.hpp"
 
 namespace
 {
@@ -45,7 +45,7 @@ namespace
 			P(q);
 
 			synchronous_paint_ctx = &*q;
-			redraw_framebuffer();
+			CORE().fbuf.redraw_framebuffer();
 			synchronous_paint_ctx = NULL;
 			return 0;
 		}
