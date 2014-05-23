@@ -596,7 +596,7 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	rtype->power();
 	auto nominal_fps = rtype->get_video_rate();
 	auto nominal_hz = rtype->get_audio_rate();
-	set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
+	CORE().framerate.set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
 	information_dispatch::do_sound_rate(nominal_hz.first, nominal_hz.second);
 	current_rom_type = rtype;
 	current_region = region;

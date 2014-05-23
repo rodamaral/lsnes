@@ -228,7 +228,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 				else if(amode == ADVANCE_SUBFRAME)
 					wait = advance_timeout_subframe(CORE().settings) * 1000;
 				else
-					wait = to_wait_frame(get_utime());
+					wait = CORE().framerate.to_wait_frame(framerate_regulator::get_utime());
 				platform::wait(wait);
 				advanced_once = true;
 			}
@@ -392,7 +392,7 @@ void update_movie_state()
 		_status.mbranch_valid = (cur_branch != "");
 		_status.mbranch = utf8::to32(cur_branch);
 
-		_status.speed = (unsigned)(100 * get_realized_multiplier() + 0.5);
+		_status.speed = (unsigned)(100 * CORE().framerate.get_realized_multiplier() + 0.5);
 
 		if(CORE().mlogic && !system_corrupt) {
 			time_t timevalue = static_cast<time_t>(CORE().mlogic.get_mfile().rtc_second);
@@ -1126,7 +1126,7 @@ jumpback:
 		if(do_unsafe_rewind && unsafe_rewind_obj) {
 			if(!CORE().mlogic)
 				return 0;
-			uint64_t t = get_utime();
+			uint64_t t = framerate_regulator::get_utime();
 			std::vector<char> s;
 			lua_callback_do_unsafe_rewind(s, 0, 0, CORE().mlogic.get_movie(), unsafe_rewind_obj);
 			notify_mode_change(false);
@@ -1134,7 +1134,8 @@ jumpback:
 			CORE().mlogic.get_mfile().is_savestate = true;
 			location_special = SPECIAL_SAVEPOINT;
 			update_movie_state();
-			messages << "Rewind done in " << (get_utime() - t) << " usec." << std::endl;
+			messages << "Rewind done in " << (framerate_regulator::get_utime() - t) << " usec."
+				<< std::endl;
 			return 1;
 		}
 		if(pending_new_project != "") {
@@ -1217,14 +1218,14 @@ nothing_to_do:
 				flush_slotinfo(translate_name_mprefix(i.first, tmp, -1));
 			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
-				uint64_t t = get_utime();
+				uint64_t t = framerate_regulator::get_utime();
 				std::vector<char> s = our_rom.save_core_state(true);
 				uint64_t secs = CORE().mlogic.get_mfile().rtc_second;
 				uint64_t ssecs = CORE().mlogic.get_mfile().rtc_subsecond;
 				lua_callback_do_unsafe_rewind(s, secs, ssecs, CORE().mlogic.get_movie(),
 					NULL);
 				do_unsafe_rewind = false;
-				messages << "Rewind point set in " << (get_utime() - t) << " usec." << std::endl;
+				messages << "Rewind point set in " << (framerate_regulator::get_utime() - t) << " usec." << std::endl;
 			}
 		}
 		queued_saves.clear();
@@ -1297,14 +1298,14 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 	lua_run_startup_scripts();
 
-	uint64_t time_x = get_utime();
+	uint64_t time_x = framerate_regulator::get_utime();
 	while(!is_quitting() || !queued_saves.empty()) {
 		if(handle_corrupt()) {
 			first_round = CORE().mlogic && CORE().mlogic.get_mfile().is_savestate;
 			just_did_loadstate = first_round;
 			continue;
 		}
-		ack_frame_tick(get_utime());
+		CORE().framerate.ack_frame_tick(framerate_regulator::get_utime());
 		if(amode == ADVANCE_SKIPLAG_PENDING)
 			amode = ADVANCE_SKIPLAG;
 
@@ -1355,13 +1356,13 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			CORE().mlogic.get_movie().set_all_DRDY();
 			just_did_loadstate = false;
 		}
-		frame_irq_time = get_utime() - time_x;
+		frame_irq_time = framerate_regulator::get_utime() - time_x;
 		CORE().dbg.do_callback_frame(CORE().mlogic.get_movie().get_current_frame(), false);
 		our_rom.rtype->emulate();
 		random_mix_timing_entropy();
-		time_x = get_utime();
+		time_x = framerate_regulator::get_utime();
 		if(amode == ADVANCE_AUTO)
-			platform::wait(to_wait_frame(get_utime()));
+			platform::wait(CORE().framerate.to_wait_frame(framerate_regulator::get_utime()));
 		first_round = false;
 		lua_callback_do_frame();
 	}

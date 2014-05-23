@@ -1644,7 +1644,7 @@ out:
 						internal.handle_tangent_negative_edge(active_stream, brtrack);
 					break;
 				}
-				uint64_t ticks = get_utime();
+				uint64_t ticks = framerate_regulator::get_utime();
 				//Handle tangent edgets.
 				if(internal.active_flag && !active_stream) {
 					internal.drain_input();
@@ -1690,7 +1690,7 @@ out:
 				}
 
 				//Sleep a bit to save CPU use.
-				uint64_t ticks_spent = get_utime() - ticks;
+				uint64_t ticks_spent = framerate_regulator::get_utime() - ticks;
 				if(ticks_spent < ITERATION_TIME)
 					usleep(ITERATION_TIME - ticks_spent);
 			}

@@ -271,10 +271,10 @@ void platform::flush_command_queue() throw()
 	reload_lua_timers();
 	CORE().queue_function_run = false;
 	if(modal_pause || normal_pause)
-		freeze_time(get_utime());
+		CORE().framerate.freeze_time(framerate_regulator::get_utime());
 	bool run_idle = false;
 	while(true) {
-		uint64_t now = get_utime();
+		uint64_t now = framerate_regulator::get_utime();
 		if(now >= on_timer_time) {
 			lua_callback_do_timer();
 			reload_lua_timers();
@@ -290,7 +290,7 @@ void platform::flush_command_queue() throw()
 			break;
 		if(CORE().queue_function_run)
 			reload_lua_timers();
-		now = get_utime();
+		now = framerate_regulator::get_utime();
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
 		waitleft = (modal_pause || normal_pause) ? MAXWAIT : waitleft;
@@ -313,7 +313,7 @@ void platform::flush_command_queue() throw()
 		//If we had to wait, check queues at least once more.
 	}
 	if(!modal_pause && !normal_pause)
-		unfreeze_time(get_utime());
+		CORE().framerate.unfreeze_time(framerate_regulator::get_utime());
 }
 
 void platform::set_paused(bool enable) throw()
@@ -324,10 +324,10 @@ void platform::set_paused(bool enable) throw()
 void platform::wait(uint64_t usec) throw()
 {
 	reload_lua_timers();
-	continue_time = get_utime() + usec;
+	continue_time = framerate_regulator::get_utime() + usec;
 	bool run_idle = false;
 	while(true) {
-		uint64_t now = get_utime();
+		uint64_t now = framerate_regulator::get_utime();
 		if(now >= on_timer_time) {
 			lua_callback_do_timer();
 			reload_lua_timers();
@@ -344,7 +344,7 @@ void platform::wait(uint64_t usec) throw()
 		//If usec is 0, never wait (waitleft can be nonzero if time counting screws up).
 		if(!usec)
 			return;
-		now = get_utime();
+		now = framerate_regulator::get_utime();
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
 		waitleft = min(static_cast<uint64_t>(MAXWAIT), waitleft);

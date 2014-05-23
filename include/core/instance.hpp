@@ -6,6 +6,7 @@
 #include "core/controllerframe.hpp"
 #include "core/debug.hpp"
 #include "core/emustatus.hpp"
+#include "core/framerate.hpp"
 #include "core/inthread.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
@@ -97,6 +98,7 @@ struct emulator_instance
 	controller_state controls;
 	project_state project;
 	debug_context dbg;
+	framerate_regulator framerate;
 	threads::id emu_thread;
 	//Queue stuff.
 	threads::lock queue_lock;

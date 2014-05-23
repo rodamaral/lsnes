@@ -260,13 +260,13 @@ namespace
 		if(left == 0xFFFFFFFFFFFFFFFFULL) {
 			hashing_in_progress = false;
 			runuifun([mwin]() { if(mwin) mwin->notify_update_status(); });
-			last_update = get_utime() - 2000000;
+			last_update = framerate_regulator::get_utime() - 2000000;
 			return;
 		}
 		hashing_in_progress = true;
 		hashing_left = left;
 		hashing_total = total;
-		int64_t this_update = get_utime();
+		int64_t this_update = framerate_regulator::get_utime();
 		if(this_update < last_update - 1000000 || this_update > last_update + 1000000) {
 			runuifun([mwin]() { if(mwin) mwin->notify_update_status(); });
 			last_update = this_update;
@@ -685,9 +685,9 @@ namespace
 	void set_speed(double target)
 	{
 		if(target < 0)
-			set_speed_multiplier(std::numeric_limits<double>::infinity());
+			lsnes_instance.framerate.set_speed_multiplier(std::numeric_limits<double>::infinity());
 		else
-			set_speed_multiplier(target / 100);
+			lsnes_instance.framerate.set_speed_multiplier(target / 100);
 	}
 
 	void update_preferences()
@@ -1672,18 +1672,19 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	}
 	case wxID_SET_SPEED: {
 		std::string value = "infinite";
-		double val = get_speed_multiplier();
+		double val = lsnes_instance.framerate.get_speed_multiplier();
 		if(!(val == std::numeric_limits<double>::infinity()))
 			value = (stringfmt() << (100 * val)).str();
 		value = pick_text(this, "Set speed", "Enter percentage speed (or \"infinite\"):", value);
 		try {
 			if(value == "infinite")
-				set_speed_multiplier(std::numeric_limits<double>::infinity());
+				lsnes_instance.framerate.set_speed_multiplier(
+					std::numeric_limits<double>::infinity());
 			else {
 				double v = parse_value<double>(value) / 100;
 				if(v <= 0.0001)
 					throw 42;
-				set_speed_multiplier(v);
+				lsnes_instance.framerate.set_speed_multiplier(v);
 			}
 		} catch(...) {
 			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);

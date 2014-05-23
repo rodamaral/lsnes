@@ -35,7 +35,7 @@ namespace
 		if(left == 0xFFFFFFFFFFFFFFFFULL) {
 			hashing_in_progress = false;
 			std::cout << "Done." << std::endl;
-			last_update = get_utime() - 2000000;
+			last_update = framerate_regulator::get_utime() - 2000000;
 			return;
 		}
 		if(!hashing_in_progress) {
@@ -43,7 +43,7 @@ namespace
 		}
 		hashing_in_progress = true;
 		hashing_left = left;
-		int64_t this_update = get_utime();
+		int64_t this_update = framerate_regulator::get_utime();
 		if(this_update < last_update - 1000000 || this_update > last_update + 1000000) {
 			std::cout << ((hashing_left + 524288) >> 20) << "..." << std::flush;
 			last_update = this_update;

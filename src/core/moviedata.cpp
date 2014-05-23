@@ -206,7 +206,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 	std::string filename2 = translate_name_mprefix(filename, binary, 1);
 	lua_callback_pre_save(filename2, true);
 	try {
-		uint64_t origtime = get_utime();
+		uint64_t origtime = framerate_regulator::get_utime();
 		target.is_savestate = true;
 		target.sram = our_rom.rtype->save_sram();
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
@@ -227,7 +227,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		target.active_macros = CORE().controls.get_macro_frames();
 		target.save(filename2, savecompression(CORE().settings), binary > 0,
 			CORE().mlogic.get_rrdata());
-		uint64_t took = get_utime() - origtime;
+		uint64_t took = framerate_regulator::get_utime() - origtime;
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved state " << kind << " '" << filename2 << "' in " << took << " microseconds."
 			<< std::endl;
@@ -259,7 +259,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 	std::string filename2 = translate_name_mprefix(filename, binary, 0);
 	lua_callback_pre_save(filename2, false);
 	try {
-		uint64_t origtime = get_utime();
+		uint64_t origtime = framerate_regulator::get_utime();
 		target.is_savestate = false;
 		auto prj = CORE().project.get();
 		if(prj) {
@@ -269,7 +269,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 		target.active_macros.clear();
 		target.save(filename2, savecompression(CORE().settings), binary > 0,
 			CORE().mlogic.get_rrdata());
-		uint64_t took = get_utime() - origtime;
+		uint64_t took = framerate_regulator::get_utime() - origtime;
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved movie " << kind << " '" << filename2 << "' in " << took << " microseconds."
 			<< std::endl;
@@ -815,7 +815,7 @@ bool do_load_state(const std::string& filename, int lmode)
 {
 	int tmp = -1;
 	std::string filename2 = translate_name_mprefix(filename, tmp, -1);
-	uint64_t origtime = get_utime();
+	uint64_t origtime = framerate_regulator::get_utime();
 	lua_callback_pre_load(filename2);
 	struct moviefile* mfile = NULL;
 	bool used = false;
@@ -833,7 +833,7 @@ bool do_load_state(const std::string& filename, int lmode)
 	}
 	try {
 		do_load_state(*mfile, lmode, used);
-		uint64_t took = get_utime() - origtime;
+		uint64_t took = framerate_regulator::get_utime() - origtime;
 		messages << "Loaded '" << filename2 << "' in " << took << " microseconds." << std::endl;
 		lua_callback_post_load(filename2, CORE().mlogic.get_mfile().is_savestate);
 	} catch(std::bad_alloc& e) {

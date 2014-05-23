@@ -140,7 +140,7 @@ namespace
 
 	int utime(lua::state& L, lua::parameters& P)
 	{
-		uint64_t t = get_utime();
+		uint64_t t = framerate_regulator::get_utime();
 		L.pushnumber(t / 1000000);
 		L.pushnumber(t % 1000000);
 		return 2;
@@ -152,7 +152,7 @@ namespace
 
 		P(dt);
 
-		lua_idle_hook_time = get_utime() + dt;
+		lua_idle_hook_time = framerate_regulator::get_utime() + dt;
 		return 0;
 	}
 
@@ -162,7 +162,7 @@ namespace
 
 		P(dt);
 
-		lua_timer_hook_time = get_utime() + dt;
+		lua_timer_hook_time = framerate_regulator::get_utime() + dt;
 		return 0;
 	}
 

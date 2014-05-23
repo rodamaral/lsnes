@@ -46,9 +46,9 @@ namespace
 		int operator()()
 		{
 			int16_t buf[16384];
-			uint64_t last_ts = get_utime();
+			uint64_t last_ts = framerate_regulator::get_utime();
 			while(!dummy_cb_quit) {
-				uint64_t cur_ts = get_utime();
+				uint64_t cur_ts = framerate_regulator::get_utime();
 				uint64_t dt = cur_ts - last_ts;
 				last_ts = cur_ts;
 				unsigned samples = dt / 25;
