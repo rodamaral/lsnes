@@ -35,28 +35,22 @@ namespace
 				s[1] = ((wide_t)x[0] * (wide_t)x[1] << 1) + 19 * (((wide_t)x[2] * (wide_t)x[4] << 1) +
 					((wide_t)x[3] * (wide_t)x[3]));
 				s[2] = ((wide_t)x[0] * (wide_t)x[2] << 1) + ((wide_t)x[1] * (wide_t)x[1]) +
-					19 * ((wide_t)x[3] * (wide_t)x[4] << 1);
+					38 * ((wide_t)x[3] * (wide_t)x[4]);
 				s[3] = ((wide_t)x[0] * (wide_t)x[3] << 1) + ((wide_t)x[1] * (wide_t)x[2] << 1) +
 					19 * ((wide_t)x[4] * (wide_t)x[4]);
 				s[4] = ((wide_t)x[0] * (wide_t)x[4] << 1) + ((wide_t)x[1] * (wide_t)x[3] << 1) +
 					((wide_t)x[2] * (wide_t)x[2]);
 				s[1] += (s[0] >> shift);
-				s[0] &= mask;
 				s[2] += (s[1] >> shift);
-				s[1] &= mask;
+				x[2] = (limb_t)s[2] & mask;
 				s[3] += (s[2] >> shift);
-				s[2] &= mask;
+				x[3] = (limb_t)s[3] & mask;
 				s[4] += (s[3] >> shift);
-				s[3] &= mask;
-				s[0] += 19 * (s[4] >> shift);
-				s[4] &= mask;
-				s[1] += s[0] >> shift;
-				s[0] &= mask;
-				x[0] = s[0];
-				x[1] = s[1];
-				x[2] = s[2];
-				x[3] = s[3];
-				x[4] = s[4];
+				x[4] = (limb_t)s[4] & mask;
+				s[0] = ((limb_t)s[0] & mask) + 19 * (limb_t)(s[4] >> shift);
+				x[0] = (limb_t)s[0] & mask;
+				s[1] = ((limb_t)s[1] & mask) + (limb_t)(s[0] >> shift);
+				x[1] = (limb_t)s[1];
 			}
 			memcpy(n, x, sizeof(x));
 			zeroize(x, sizeof(x));
@@ -82,22 +76,16 @@ namespace
 				(wide_t)a.n[2] * (wide_t)b.n[2] + (wide_t)a.n[3] * (wide_t)b.n[1] +
 				(wide_t)a.n[4] * (wide_t)b.n[0];
 			s[1] += (s[0] >> shift);
-			s[0] &= mask;
 			s[2] += (s[1] >> shift);
-			s[1] &= mask;
+			n[2] = (limb_t)s[2] & mask;
 			s[3] += (s[2] >> shift);
-			s[2] &= mask;
+			n[3] = (limb_t)s[3] & mask;
 			s[4] += (s[3] >> shift);
-			s[3] &= mask;
-			s[0] += 19 * (s[4] >> shift);
-			s[4] &= mask;
-			s[1] += s[0] >> shift;
-			s[0] &= mask;
-			n[0] = s[0];
-			n[1] = s[1];
-			n[2] = s[2];
-			n[3] = s[3];
-			n[4] = s[4];
+			n[4] = (limb_t)s[4] & mask;
+			s[0] = ((limb_t)s[0] & mask) + 19 * (limb_t)(s[4] >> shift);
+			n[0] = (limb_t)s[0] & mask;
+			s[1] = ((limb_t)s[1] & mask) + (limb_t)(s[0] >> shift);
+			n[1] = (limb_t)s[1];
 			zeroize(s, sizeof(s));
 		}
 		//e - self -> self
@@ -146,7 +134,7 @@ namespace
 			}
 			for(unsigned i = 0; i < 32; i++) {
 				buffer[i] = n[8 * i / shift] >> (8 * i % shift);
-				if(8 * i % shift > shift - 8)
+				if(8 * i % shift > shift - 8 && i < 26)
 					buffer[i] |= n[8 * i / shift + 1] << (shift - 8 * i % shift);
 			}
 		}
@@ -157,7 +145,7 @@ namespace
 			for(unsigned i = 0; i < 32; i++) {
 				n[8 * i / shift] |= (limb_t)buffer[i] << (8 * i % shift);
 				n[8 * i / shift] &= mask;
-				if(8 * i % shift > shift - 8) {
+				if(8 * i % shift > shift - 8 && i < 26) {
 					n[8 * i / shift + 1] |= (limb_t)buffer[i] >> (shift - 8 * i % shift);
 				}
 			}
@@ -527,6 +515,13 @@ const uint8_t curve25519_base[32] = {9};
 
 
 /*
+uint64_t arch_get_tsc()
+{
+	uint32_t a, b;
+	asm volatile("rdtsc" : "=a"(a), "=d"(b));
+	return ((uint64_t)b << 32) | a;
+}
+
 //For comparision
 extern "C"
 {
@@ -539,6 +534,16 @@ int main()
 	FILE* fd = fopen("/dev/urandom", "rb");
 	uint64_t ctr = 0;
 	buf[32] = 9;
+	fread(buf, 1, 32, fd);
+	buf[0] &= 248;
+	buf[31] &= 127;
+	buf[31] |= 64;
+	uint64_t t = arch_get_tsc();
+	for(unsigned i = 0; i < 10000; i++) {
+		curve25519(buf+64, buf, buf+32);
+	}
+	t = arch_get_tsc() - t;
+	std::cerr << "Avg: " << t / 10000 << std::endl;
 	while(true) {
 		fread(buf, 1, 32, fd);
 		buf[0] &= 248;
