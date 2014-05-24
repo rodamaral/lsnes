@@ -18,6 +18,9 @@
 #include "library/controller-data.hpp"
 #include "library/threads.hpp"
 
+class project_state;
+class movie_logic;
+
 /**
  * Controllers state.
  */
@@ -27,7 +30,7 @@ public:
 /**
  * Constructor.
  */
-	controller_state() throw();
+	controller_state(project_state& _project, movie_logic& _mlogic) throw();
 /**
  * Convert lcid (Logical Controller ID) into pcid (Physical Controler ID).
  *
@@ -228,6 +231,8 @@ private:
 	std::map<std::string, controller_macro> all_macros;
 	std::list<std::pair<uint64_t, controller_macro*>> active_macros;
 	threads::lock macro_lock;
+	project_state& project;
+	movie_logic& mlogic;
 };
 
 #endif

@@ -159,8 +159,8 @@ namespace
 		});
 }
 
-subtitle_commentary::subtitle_commentary(movie_logic* _mlogic)
-	: mlogic(*_mlogic)
+subtitle_commentary::subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf)
+	: mlogic(_mlogic), fbuf(_fbuf)
 {
 }
 
@@ -249,5 +249,5 @@ void subtitle_commentary::set(uint64_t f, uint64_t l, const std::string& x)
 	else
 		mlogic.get_mfile().subtitles[key] = s_unescape(x);
 	notify_subtitle_change();
-	CORE().fbuf.redraw_framebuffer();
+	fbuf.redraw_framebuffer();
 }

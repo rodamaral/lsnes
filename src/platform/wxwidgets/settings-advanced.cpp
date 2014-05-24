@@ -284,7 +284,7 @@ namespace
 		} catch(...) {
 			return;
 		}
-		lsnes_instance.run([this, name, value]() {
+		lsnes_instance.iqueue.run([this, name, value]() {
 			run_show_error(this, "Error setting value", "", [name, value]() {
 				lsnes_instance.setcache.set(name, value);
 			});

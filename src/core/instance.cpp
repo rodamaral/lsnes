@@ -7,13 +7,20 @@
 #include <execinfo.h>
 #endif
 
-emulator_instance::emulator_instance()
-	: setcache(settings), subtitles(&mlogic), mbranch(&mlogic), mteditor(&mlogic),
-	status(status_A, status_B, status_C), mapper(keyboard, command), abindmanager(*this),
-	cmapper(memory)
+input_queue::input_queue(command::group& _command)
+	: command(_command)
 {
 	system_thread_available = false;
 	queue_function_run = false;
+}
+
+emulator_instance::emulator_instance()
+	: mwatch(memory, project, fbuf), setcache(settings), subtitles(mlogic, fbuf), mbranch(&mlogic),
+	mteditor(mlogic, controls), status(status_A, status_B, status_C), mapper(keyboard, command),
+	abindmanager(mapper, command), cmapper(memory), controls(project, mlogic),
+	project(commentary, mwatch, command, controls, setcache), fbuf(subtitles, settings, mwatch, keyboard),
+	iqueue(command)
+{
 	status_A.valid = false;
 	status_B.valid = false;
 	status_C.valid = false;
@@ -60,21 +67,21 @@ keypress_info::keypress_info(keyboard::modifier_set mod, keyboard::key& _key, ke
 }
 
 
-void emulator_instance::queue(const keypress_info& k) throw(std::bad_alloc)
+void input_queue::queue(const keypress_info& k) throw(std::bad_alloc)
 {
 	threads::alock h(queue_lock);
 	keypresses.push_back(k);
 	queue_condition.notify_all();
 }
 
-void emulator_instance::queue(const std::string& c) throw(std::bad_alloc)
+void input_queue::queue(const std::string& c) throw(std::bad_alloc)
 {
 	threads::alock h(queue_lock);
 	commands.push_back(c);
 	queue_condition.notify_all();
 }
 
-void emulator_instance::queue(std::function<void()> f, std::function<void(std::exception& e)> onerror, bool sync)
+void input_queue::queue(std::function<void()> f, std::function<void(std::exception& e)> onerror, bool sync)
 	throw(std::bad_alloc)
 {
 	if(!system_thread_available) {
@@ -99,7 +106,7 @@ void emulator_instance::queue(std::function<void()> f, std::function<void(std::e
 		}
 }
 
-void emulator_instance::run_queue(bool unlocked) throw()
+void input_queue::run_queue(bool unlocked) throw()
 {
 	if(!unlocked)
 		queue_lock.lock();
@@ -121,7 +128,7 @@ void emulator_instance::run_queue(bool unlocked) throw()
 			std::string c = commands.front();
 			commands.pop_front();
 			queue_lock.unlock();
-			CORE().command.invoke(c);
+			command.invoke(c);
 			queue_lock.lock();
 			queue_function_run = true;
 		}

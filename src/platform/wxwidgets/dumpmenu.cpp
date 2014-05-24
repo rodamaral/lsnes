@@ -79,7 +79,7 @@ dumper_menu::dumper_menu(wxWindow* win, int wxid_low, int wxid_high)
 	wxid_range_high = wxid_high;
 	monitor = new dumper_menu_monitor(this);
 	std::map<std::string, dumper_info> new_dumpers;
-	lsnes_instance.run([&new_dumpers]() {
+	lsnes_instance.iqueue.run([&new_dumpers]() {
 		std::set<adv_dumper*> dset = adv_dumper::get_dumper_set();
 		for(auto i : dset)
 			update_dumperinfo(new_dumpers, i);
@@ -102,7 +102,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 		adv_dumper* t = existing_dumpers[i.first].instance;
 		if(i.second.end_wxid == id) {
 			//Execute end of dump operation.
-			lsnes_instance.run([t, &error_str]() {
+			lsnes_instance.iqueue.run([t, &error_str]() {
 				try {
 					t->end();
 				} catch(std::exception& e) {
@@ -153,7 +153,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			}
 			if(prefix == "")
 				return;
-			lsnes_instance.run([t, mode, prefix, &error_str]() {
+			lsnes_instance.iqueue.run([t, mode, prefix, &error_str]() {
 				try {
 					t->start(mode, prefix);
 				} catch(std::exception& e) {

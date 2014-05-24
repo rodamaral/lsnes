@@ -187,7 +187,9 @@ namespace
 	}
 }
 
-project_state::project_state()
+project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
+	controller_state& _controls, settingvar::cache& _setcache)
+	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache)
 {
 	active_project = NULL;
 }
@@ -325,7 +327,7 @@ bool project_state::set(project_info* p, bool current)
 {
 	if(!p) {
 		if(active_project)
-			CORE().commentary.unload_collection();
+			commentary.unload_collection();
 		active_project = p;
 		notify_core_change();
 		notify_branch_change();
@@ -381,23 +383,23 @@ skip_rom_movie:
 		active_project = p;
 		switched = true;
 		//Calculate union of old and new.
-		std::set<std::string> _watches = CORE().mwatch.enumerate();
+		std::set<std::string> _watches = mwatch.enumerate();
 		for(auto i : p->watches) _watches.insert(i.first);
 
 		for(auto i : _watches)
 			try {
 				if(p->watches.count(i))
-					CORE().mwatch.set(i, p->watches[i]);
+					mwatch.set(i, p->watches[i]);
 				else
-					CORE().mwatch.clear(i);
+					mwatch.clear(i);
 			} catch(std::exception& e) {
 				messages << "Can't set/clear watch '" << i << "': " << e.what() << std::endl;
 			}
-		CORE().commentary.load_collection(p->directory + "/" + p->prefix + ".lsvs");
-		CORE().command.invoke("reset-lua");
+		commentary.load_collection(p->directory + "/" + p->prefix + ".lsvs");
+		command.invoke("reset-lua");
 		for(auto i : p->luascripts)
-			CORE().command.invoke("run-lua " + i);
-		load_project_macros(CORE().controls, *active_project);
+			command.invoke("run-lua " + i);
+		load_project_macros(controls, *active_project);
 	} catch(std::exception& e) {
 		if(newmovie && !used)
 			delete newmovie;
@@ -443,7 +445,7 @@ std::string project_state::moviepath()
 	if(active_project)
 		return active_project->directory;
 	else
-		return CORE().setcache.get("moviepath");
+		return setcache.get("moviepath");
 }
 
 std::string project_state::otherpath()
@@ -461,9 +463,9 @@ std::string project_state::savestate_ext()
 
 void project_state::copy_watches(project_info& p)
 {
-	for(auto i : CORE().mwatch.enumerate()) {
+	for(auto i : mwatch.enumerate()) {
 		try {
-			p.watches[i] = CORE().mwatch.get_string(i);
+			p.watches[i] = mwatch.get_string(i);
 		} catch(std::exception& e) {
 			messages << "Can't read memory watch '" << i << "': " << e.what() << std::endl;
 		}

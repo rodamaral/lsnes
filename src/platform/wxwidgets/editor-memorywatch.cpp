@@ -299,7 +299,7 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, const std::string& 
 		this);
 	top_s->Add(s12, 0, wxGROW);
 
-	memwatch_item it;
+	memwatch_item it(lsnes_instance.memory);
 	bool had_it = false;
 	try {
 		it = lsnes_instance.mwatch.get(name);
@@ -451,7 +451,7 @@ void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 
 void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 {
-	memwatch_item it;
+	memwatch_item it(lsnes_instance.memory);
 	it.expr = tostdstring(expr->GetValue());
 	it.format = tostdstring(format->GetValue());
 	it.printer.cond_enable = cond_enable->GetValue();
@@ -505,7 +505,7 @@ void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 	}
 	bool did_error = false;
 	std::string error;
-	lsnes_instance.run([this, &it, &did_error, &error]() {
+	lsnes_instance.iqueue.run([this, &it, &did_error, &error]() {
 		try {
 			lsnes_instance.mwatch.set(name, it);
 		} catch(std::exception& e) {
@@ -623,7 +623,7 @@ void wxeditor_memorywatches::on_rename(wxCommandEvent& e)
 	try {
 		bool exists = false;
 		std::string newname = pick_text(this, "Rename watch", "Enter New name for watch:");
-		lsnes_instance.run([watch, newname, &exists]() {
+		lsnes_instance.iqueue.run([watch, newname, &exists]() {
 			exists = !lsnes_instance.mwatch.rename(watch, newname);
 		});
 		if(exists)
@@ -639,7 +639,7 @@ void wxeditor_memorywatches::on_delete(wxCommandEvent& e)
 {
 	std::string watch = tostdstring(watches->GetStringSelection());
 	if(watch != "")
-		lsnes_instance.run([watch]() { lsnes_instance.mwatch.clear(watch); });
+		lsnes_instance.iqueue.run([watch]() { lsnes_instance.mwatch.clear(watch); });
 	refresh();
 	on_memorywatch_change(e);
 }
@@ -669,7 +669,7 @@ void wxeditor_memorywatches::on_close(wxCommandEvent& e)
 void wxeditor_memorywatches::refresh()
 {
 	std::set<std::string> bind;
-	lsnes_instance.run([&bind]() {
+	lsnes_instance.iqueue.run([&bind]() {
 		bind = lsnes_instance.mwatch.enumerate();
 	});
 	watches->Clear();

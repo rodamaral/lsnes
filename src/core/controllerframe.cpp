@@ -16,7 +16,8 @@ namespace
 	port_type_set dummytypes;
 }
 
-controller_state::controller_state() throw()
+controller_state::controller_state(project_state& _project, movie_logic& _mlogic) throw()
+	: project(_project), mlogic(_mlogic)
 {
 	types = &dummytypes;
 	tasinput_enaged = false;
@@ -77,7 +78,7 @@ void controller_state::autofire2(unsigned port, unsigned controller, unsigned pb
 {
 	unsigned idx = _input.porttypes().triple_to_index(port, controller, pbid);
 	if(duty) {
-		_autofire[idx].first_frame = CORE().mlogic.get_movie().get_current_frame();
+		_autofire[idx].first_frame = mlogic.get_movie().get_current_frame();
 		_autofire[idx].duty = duty;
 		_autofire[idx].cyclelen = cyclelen;
 	} else
@@ -227,7 +228,7 @@ void controller_state::erase_macro(const std::string& macro)
 			}
 		}
 		all_macros.erase(macro);
-		project_info* p = CORE().project.get();
+		project_info* p = project.get();
 		if(p) {
 			p->macros.erase(macro);
 			p->flush();
@@ -267,7 +268,7 @@ void controller_state::set_macro(const std::string& macro, const controller_macr
 				break;
 			}
 		}
-		project_info* p = CORE().project.get();
+		project_info* p = project.get();
 		if(p) {
 			p->macros[macro] = all_macros[macro].serialize();
 			p->flush();
@@ -334,7 +335,7 @@ void controller_state::rename_macro(const std::string& old, const std::string& n
 				break;
 			}
 		}
-		project_info* p = CORE().project.get();
+		project_info* p = project.get();
 		if(p) {
 			p->macros[newn] = p->macros[old];
 			p->macros.erase(old);

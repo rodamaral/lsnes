@@ -739,7 +739,7 @@ void wxwindow_memorysearch::panel::prepare_paint()
 	uint64_t addr_count;
 	bool toomany = false;
 	auto _parent = parent;
-	lsnes_instance.run([&toomany, &first, &last, ms, &lines, &addrs, &addr_count, _parent]() {
+	lsnes_instance.iqueue.run([&toomany, &first, &last, ms, &lines, &addrs, &addr_count, _parent]() {
 		addr_count = ms->get_candidate_count();
 		if(last > addr_count) {
 			uint64_t delta = last - addr_count;
@@ -817,11 +817,11 @@ bool wxwindow_memorysearch::ShouldPreventAppExit() const
 void wxwindow_memorysearch::dump_candidates_text()
 {
 	try {
-		std::string filename = choose_file_save(this, "Dump memory search", lsnes_instance.project.otherpath(),
-			filetype_textfile);
+		std::string filename = choose_file_save(this, "Dump memory search",
+			lsnes_instance.project.otherpath(), filetype_textfile);
 		std::ofstream out(filename);
 		auto ms = msearch;
-		lsnes_instance.run([ms, this, &out]() {
+		lsnes_instance.iqueue.run([ms, this, &out]() {
 			std::list<uint64_t> addrs2 = ms->get_candidates();
 			for(auto i : addrs2) {
 				std::string row = format_address(i) + " ";
@@ -1043,7 +1043,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 					<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 				if(n == "")
 					continue;
-				memwatch_item e;
+				memwatch_item e(lsnes_instance.memory);
 				e.expr = (stringfmt() << addr).str();
 				bool is_hex = hexmode2->GetValue();
 				e.bytes = watch_properties[typecode].len;
@@ -1058,7 +1058,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 						endianess = j->endian;
 				}
 				e.endianess = endianess;
-				lsnes_instance.run([n, &e]() { lsnes_instance.mwatch.set(n, e); });
+				lsnes_instance.iqueue.run([n, &e]() { lsnes_instance.mwatch.set(n, e); });
 			} catch(canceled_exception& e) {
 			}
 		}
@@ -1076,7 +1076,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 				return;
 			uint64_t addr = addresses[r];
 			auto ms = msearch;
-			lsnes_instance.run([addr, ms]() { ms->dq_range(addr, addr); });
+			lsnes_instance.iqueue.run([addr, ms]() { ms->dq_range(addr, addr); });
 		}
 		matches->set_selection(0, 0);
 		wxeditor_hexeditor_update();

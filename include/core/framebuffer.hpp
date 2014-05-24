@@ -7,13 +7,25 @@
 
 #include <stdexcept>
 
+class subtitle_commentary;
+class memwatch_set;
+namespace settingvar
+{
+	class group;
+}
+namespace keyboard
+{
+	class keyboard;
+}
+
 /**
  * Emulator frame buffer.
  */
 class emu_framebuffer
 {
 public:
-	emu_framebuffer();
+	emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
+		keyboard::keyboard& _keyboard);
 /**
  * The main framebuffer.
  */
@@ -82,6 +94,10 @@ private:
 	render_info buffer3;
 	triplebuffer::triplebuffer<render_info> buffering;
 	bool last_redraw_no_lua;
+	subtitle_commentary& subtitles;
+	settingvar::group& settings;
+	memwatch_set& mwatch;
+	keyboard::keyboard& keyboard;
 };
 
 #endif

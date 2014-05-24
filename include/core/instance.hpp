@@ -66,42 +66,14 @@ void functor_call_helper2(void* args)
 	delete reinterpret_cast<T*>(args);
 }
 
-
-struct emulator_instance
+struct input_queue
 {
 	struct function_queue_entry
 	{
 		std::function<void()> fn;
 		std::function<void(std::exception& e)> onerror;
 	};
-	
-	emulator_instance();
-	movie_logic mlogic;
-	memory_space memory;
-	lua::state lua;
-	memwatch_set mwatch;
-	settingvar::group settings;
-	settingvar::cache setcache;
-	voice_commentary commentary;
-	subtitle_commentary subtitles;
-	movie_branches mbranch;
-	multitrack_edit mteditor;
-	_lsnes_status status_A;
-	_lsnes_status status_B;
-	_lsnes_status status_C;
-	triplebuffer::triplebuffer<_lsnes_status> status;
-	keyboard::keyboard keyboard;
-	keyboard::mapper mapper;
-	command::group command;
-	alias_binds_manager abindmanager;
-	rrdata nrrdata;
-	cart_mappings_refresher cmapper;
-	controller_state controls;
-	project_state project;
-	debug_context dbg;
-	framerate_regulator framerate;
-	emu_framebuffer fbuf;
-	threads::id emu_thread;
+
 	//Queue stuff.
 	threads::lock queue_lock;
 	threads::cv queue_condition;
@@ -112,7 +84,10 @@ struct emulator_instance
 	volatile uint64_t next_function;
 	volatile bool system_thread_available;
 	bool queue_function_run;
-
+/**
+ * Ctor.
+ */
+	input_queue(command::group& _command);
 /**
  * Queue keypress.
  *
@@ -166,6 +141,40 @@ struct emulator_instance
  * Run internal queues.
  */
 	void run_queue(bool unlocked) throw();
+private:
+	command::group& command;
+};
+
+struct emulator_instance
+{
+	emulator_instance();
+	movie_logic mlogic;
+	memory_space memory;
+	lua::state lua;
+	memwatch_set mwatch;
+	settingvar::group settings;
+	settingvar::cache setcache;
+	voice_commentary commentary;
+	subtitle_commentary subtitles;
+	movie_branches mbranch;
+	multitrack_edit mteditor;
+	_lsnes_status status_A;
+	_lsnes_status status_B;
+	_lsnes_status status_C;
+	triplebuffer::triplebuffer<_lsnes_status> status;
+	keyboard::keyboard keyboard;
+	keyboard::mapper mapper;
+	command::group command;
+	alias_binds_manager abindmanager;
+	rrdata nrrdata;
+	cart_mappings_refresher cmapper;
+	controller_state controls;
+	project_state project;
+	debug_context dbg;
+	framerate_regulator framerate;
+	emu_framebuffer fbuf;
+	input_queue iqueue;
+	threads::id emu_thread;
 };
 
 extern emulator_instance lsnes_instance;

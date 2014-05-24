@@ -1,24 +1,28 @@
 #ifndef _command__hpp__included__
 #define _command__hpp__included__
 
+#include "library/command.hpp"
 #include <stdexcept>
 #include <string>
 #include <set>
-#include "library/command.hpp"
-#include "library/keyboard-mapper.hpp"
 
 extern command::set lsnes_cmds;
 
-class emulator_instance;
+namespace keyboard
+{
+	class mapper;
+	class invbind;
+}
 
 class alias_binds_manager
 {
 public:
-	alias_binds_manager(emulator_instance& _instance);
+	alias_binds_manager(keyboard::mapper& _mapper, command::group& _command);
 	~alias_binds_manager();
 	void operator()();
 private:
-	emulator_instance& instance;
+	keyboard::mapper& mapper;
+	command::group& command;
 	std::map<std::string, keyboard::invbind*> alias_binds;
 };
 

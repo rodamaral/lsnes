@@ -9,6 +9,18 @@
 #include "core/controller.hpp"
 #include "core/rom.hpp"
 
+class voice_commentary;
+class memwatch_set;
+class controller_state;
+namespace command
+{
+	class group;
+}
+namespace settingvar
+{
+	class cache;
+}
+
 //A branch.
 struct project_branch_info
 {
@@ -149,7 +161,8 @@ private:
 class project_state
 {
 public:
-	project_state();
+	project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
+		controller_state& _controls, settingvar::cache& _setcache);
 	~project_state();
 /**
  * Get currently active project.
@@ -205,6 +218,11 @@ public:
 	void copy_macros(project_info& p, controller_state& s);
 private:
 	project_info* active_project;
+	voice_commentary& commentary;
+	memwatch_set& mwatch;
+	command::group& command;
+	controller_state& controls;
+	settingvar::cache& setcache;
 };
 
 #endif

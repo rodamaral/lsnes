@@ -66,7 +66,7 @@ namespace
 			std::map<uint64_t, std::string> namemap;
 			std::map<uint64_t, std::set<uint64_t>> childmap;
 			uint64_t cur = 0;
-			lsnes_instance.run([&cur, &namemap, &childmap]() {
+			lsnes_instance.iqueue.run([&cur, &namemap, &childmap]() {
 				auto p = lsnes_instance.project.get();
 				if(!p) return;
 				fill_namemap(*p, 0, namemap, childmap);
@@ -103,7 +103,7 @@ namespace
 		}
 		void call_project_flush()
 		{
-			lsnes_instance.run_async([] {
+			lsnes_instance.iqueue.run_async([] {
 				auto p = CORE().project.get();
 				if(p) p->flush();
 			}, [](std::exception& e) {});
@@ -234,7 +234,7 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			lsnes_instance.run([this, id, newname]() {
+			lsnes_instance.iqueue.run([this, id, newname]() {
 				run_show_error(this, "Error creating branch", "Can't create branch", [id, newname]() {
 					auto p = CORE().project.get();
 					if(p) p->create_branch(id, newname);
@@ -246,7 +246,7 @@ namespace
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			lsnes_instance.run([this, id]() {
+			lsnes_instance.iqueue.run([this, id]() {
 				run_show_error(this, "Error setting branch", "Can't set branch", [id]() {
 					auto p = CORE().project.get();
 					if(p) p->set_current_branch(id);
@@ -266,7 +266,7 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			lsnes_instance.run([this, id, newname]() {
+			lsnes_instance.iqueue.run([this, id, newname]() {
 				run_show_error(this, "Error renaming branch", "Can't rename branch", [id, newname]() {
 					auto p = CORE().project.get();
 					if(p) p->set_branch_name(id, newname);
@@ -289,7 +289,7 @@ namespace
 			pid = bsel->get_selection();
 			if(pid == 0xFFFFFFFFFFFFFFFFULL) return;
 			bsel->Destroy();
-			lsnes_instance.run([this, id, pid]() {
+			lsnes_instance.iqueue.run([this, id, pid]() {
 				run_show_error(this, "Error reparenting branch", "Can't reparent branch",
 					[id, pid]() {
 					auto p = CORE().project.get();
@@ -303,7 +303,7 @@ namespace
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			lsnes_instance.run([this, id]() {
+			lsnes_instance.iqueue.run([this, id]() {
 				run_show_error(this, "Error deleting branch", "Can't delete branch", [id]() {
 					auto p = CORE().project.get();
 					if(p) p->delete_branch(id);
@@ -404,7 +404,7 @@ void branches_menu::on_select(wxCommandEvent& e)
 	if(!branch_ids.count(id)) return;
 	uint64_t bid = branch_ids[id];
 	std::string err;
-	lsnes_instance.run_async([this, bid]() {
+	lsnes_instance.iqueue.run_async([this, bid]() {
 		auto p = CORE().project.get();
 		if(p) p->set_current_branch(bid);
 		if(p) p->flush();
@@ -418,7 +418,7 @@ void branches_menu::update()
 {
 	std::map<uint64_t, std::string> namemap;
 	std::map<uint64_t, std::set<uint64_t>> childmap;
-	lsnes_instance.run([&namemap, &childmap]() {
+	lsnes_instance.iqueue.run([&namemap, &childmap]() {
 		auto p = CORE().project.get();
 		if(!p) return;
 		fill_namemap(*p, 0, namemap, childmap);

@@ -7,6 +7,10 @@
 #include "library/memorywatch.hpp"
 #include "library/json.hpp"
 
+class memory_space;
+class project_state;
+class emu_framebuffer;
+
 /**
  * lsnes memory watch printer variables.
  */
@@ -57,7 +61,7 @@ struct memwatch_item
 /**
  * Ctor.
  */
-	memwatch_item();
+	memwatch_item(memory_space& memory);
 /**
  * Serialize the item to JSON value.
  */
@@ -75,7 +79,7 @@ struct memwatch_item
 /**
  * Translate compatiblity item.
  */
-	void compatiblity_unserialize(const std::string& item);
+	void compatiblity_unserialize(memory_space& memory, const std::string& item);
 	//Fields
 	memwatch_printer printer;	//The printer.
 	std::string expr;			//The main expression.
@@ -92,6 +96,7 @@ struct memwatch_item
 
 struct memwatch_set
 {
+	memwatch_set(memory_space& _memory, project_state& _project, emu_framebuffer& _fbuf);
 /**
  * Get the specified memory watch item.
  */
@@ -175,6 +180,9 @@ private:
 	void erase_unused_watches();
 	void watch_output(const std::string& name, const std::string& value);
 	memorywatch::set watch_set;
+	memory_space& memory;
+	project_state& project;
+	emu_framebuffer& fbuf;
 };
 
 #endif

@@ -16,7 +16,7 @@ public:
 		MT_OR,
 		MT_XOR
 	};
-	multitrack_edit(movie_logic* _mlogic);
+	multitrack_edit(movie_logic& _mlogic, controller_state& _controls);
 	void enable(bool state);
 	void set(unsigned port, unsigned controller, state s);
 	void set_and_notify(unsigned port, unsigned controller, state s);
@@ -31,6 +31,7 @@ private:
 	bool enabled;
 	std::map<std::pair<unsigned, unsigned>, state> controllerstate;
 	movie_logic& mlogic;
+	controller_state& controls;
 };
 
 #endif

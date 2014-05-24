@@ -219,7 +219,7 @@ gcroot_pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
 	return ptr;
 }
 
-memwatch_item::memwatch_item()
+memwatch_item::memwatch_item(memory_space& memory)
 {
 	bytes = 0;
 	signed_flag = false;
@@ -228,7 +228,7 @@ memwatch_item::memwatch_item()
 	scale_div = 1;
 	addr_base = 0;
 	addr_size = 0;
-	mspace = &CORE().memory;
+	mspace = &memory;
 }
 
 JSON::node memwatch_item::serialize()
@@ -280,7 +280,7 @@ memorywatch::memread_oper* memwatch_item::get_memread_oper()
 	return o;
 }
 
-void memwatch_item::compatiblity_unserialize(const std::string& item)
+void memwatch_item::compatiblity_unserialize(memory_space& memory, const std::string& item)
 {
 	regex_results r;
 	if(!(r = regex("C0x([0-9A-Fa-f]{1,16})z([bBwWoOdDqQfF])(H([0-9A-Ga-g]))?", item)))
@@ -306,7 +306,7 @@ void memwatch_item::compatiblity_unserialize(const std::string& item)
 	case 'F': bytes = 8; signed_flag = true;  float_flag = true;  break;
 	default:  bytes = 0;                                          break;
 	}
-	auto mdata = CORE().memory.lookup(addr);
+	auto mdata = memory.lookup(addr);
 	if(mdata.first) {
 		addr = mdata.second;
 		addr_base = mdata.first->base;
@@ -328,7 +328,7 @@ void memwatch_item::compatiblity_unserialize(const std::string& item)
 		format = "";
 	expr = (stringfmt() << "0x" << std::hex << addr).str();
 	scale_div = 1;
-	mspace = &CORE().memory;	
+	mspace = &memory;	
 	printer.position = memwatch_printer::PC_MEMORYWATCH;
 	printer.cond_enable = false;
 	printer.enabled = "true";
@@ -342,6 +342,11 @@ void memwatch_item::compatiblity_unserialize(const std::string& item)
 	printer.onscreen_fg_color = 0xFFFFFF;
 	printer.onscreen_bg_color = -1;
 	printer.onscreen_halo_color = 0;
+}
+
+memwatch_set::memwatch_set(memory_space& _memory, project_state& _project, emu_framebuffer& _fbuf)
+	: memory(_memory), project(_project), fbuf(_fbuf)
+{
 }
 
 std::set<std::string> memwatch_set::enumerate()
@@ -358,21 +363,21 @@ void memwatch_set::clear(const std::string& name)
 	nitems.erase(name);
 	rebuild(nitems);
 	std::swap(items, nitems);
-	auto pr = CORE().project.get();
+	auto pr = project.get();
 	if(pr) {
 		pr->watches.erase(name);
 		pr->flush();
 	}
-	CORE().fbuf.redraw_framebuffer();
+	fbuf.redraw_framebuffer();
 }
 
 void memwatch_set::set(const std::string& name, const std::string& item)
 {
-	memwatch_item _item;
+	memwatch_item _item(memory);
 	if(item != "" && item[0] != '{') {
 		//Compatiblity.
 		try {
-			_item.compatiblity_unserialize(item);
+			_item.compatiblity_unserialize(memory, item);
 		} catch(std::exception& e) {
 			messages << "Can't handle old memory watch '" << name << "'" << std::endl;
 			return;
@@ -386,7 +391,7 @@ memwatch_item& memwatch_set::get(const std::string& name)
 {
 	if(!items.count(name))
 		throw std::runtime_error("No such memory watch named '" + name + "'");
-	return items[name];
+	return items.find(name)->second;
 }
 
 std::string memwatch_set::get_string(const std::string& name, JSON::printer* printer)
@@ -416,26 +421,26 @@ bool memwatch_set::rename(const std::string& oldname, const std::string& newname
 		return false;
 	if(!nitems.count(oldname))
 		return false;
-	nitems[newname] = nitems[oldname];
+	nitems.insert(std::make_pair(newname, nitems.find(oldname)->second));
 	nitems.erase(oldname);
 	rebuild(nitems);
 	std::swap(items, nitems);
-	CORE().fbuf.redraw_framebuffer();
+	fbuf.redraw_framebuffer();
 	return true;
 }
 
 void memwatch_set::set(const std::string& name, memwatch_item& item)
 {
 	std::map<std::string, memwatch_item> nitems = items;
-	nitems[name] = item;
+	nitems.insert(std::make_pair(name, item));
 	rebuild(nitems);
 	std::swap(items, nitems);
-	auto pr = CORE().project.get();
+	auto pr = project.get();
 	if(pr) {
 		pr->watches[name] = get_string(name);
 		pr->flush();
 	}
-	CORE().fbuf.redraw_framebuffer();
+	fbuf.redraw_framebuffer();
 }
 
 std::string memwatch_set::get_value(const std::string& name)
@@ -447,23 +452,23 @@ void memwatch_set::set_multi(std::list<std::pair<std::string, memwatch_item>>& l
 {
 	std::map<std::string, memwatch_item> nitems = items;
 	for(auto& i : list)
-		nitems[i.first] = i.second;
+		nitems.insert(i);
 	rebuild(nitems);
 	std::swap(items, nitems);
-	auto pr = CORE().project.get();
+	auto pr = project.get();
 	if(pr) {
 		for(auto& i : list)
 			pr->watches[i.first] = get_string(i.first);
 		pr->flush();
 	}
-	CORE().fbuf.redraw_framebuffer();
+	fbuf.redraw_framebuffer();
 }
 
 void memwatch_set::set_multi(std::list<std::pair<std::string, std::string>>& list)
 {
 	std::list<std::pair<std::string, memwatch_item>> _list;
 	for(auto& i: list) {
-		memwatch_item it;
+		memwatch_item it(memory);
 		it.unserialize(JSON::node(i.second));
 		_list.push_back(std::make_pair(i.first, it));
 	}
@@ -477,13 +482,13 @@ void memwatch_set::clear_multi(const std::set<std::string>& names)
 		nitems.erase(i);
 	rebuild(nitems);
 	std::swap(items, nitems);
-	auto pr = CORE().project.get();
+	auto pr = project.get();
 	if(pr) {
 		for(auto& i : names)
 			pr->watches.erase(i);
 		pr->flush();
 	}
-	CORE().fbuf.redraw_framebuffer();
+	fbuf.redraw_framebuffer();
 }
 
 void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)

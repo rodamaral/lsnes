@@ -10,8 +10,8 @@
 
 void update_movie_state();
 
-multitrack_edit::multitrack_edit(movie_logic* _mlogic)
-	: mlogic(*_mlogic)
+multitrack_edit::multitrack_edit(movie_logic& _mlogic, controller_state& _controls)
+	: mlogic(_mlogic), controls(_controls)
 {
 }
 
@@ -53,7 +53,7 @@ void multitrack_edit::rotate(bool forward)
 		return;
 	std::vector<std::pair<unsigned, unsigned>> x;
 	for(unsigned i = 0;; i++) {
-		auto pcid = CORE().controls.lcid_to_pcid(i);
+		auto pcid = controls.lcid_to_pcid(i);
 		if(pcid.first < 0)
 			break;
 		x.push_back(std::make_pair(pcid.first, pcid.second));

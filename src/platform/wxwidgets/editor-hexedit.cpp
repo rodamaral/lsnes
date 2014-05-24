@@ -502,7 +502,7 @@ public:
 				<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 			if(n == "")
 				return;
-			memwatch_item e;
+			memwatch_item e(lsnes_instance.memory);
 			e.expr = (stringfmt() << addr).str();
 			e.format = datatypes[curtype].format;
 			e.bytes = datatypes[curtype].len;
@@ -517,7 +517,7 @@ public:
 			}
 			e.endianess = hostendian ? 0 : (littleendian ? -1 : 1);
 			e.scale_div = 1ULL << datatypes[curtype].scale;
-			lsnes_instance.run([n, &e]() { lsnes_instance.mwatch.set(n, e); });
+			lsnes_instance.iqueue.run([n, &e]() { lsnes_instance.mwatch.set(n, e); });
 		} catch(canceled_exception& e) {
 		}
 	}
@@ -755,7 +755,7 @@ invalid_bookmark:
 			hex_input_state = -1;
 			if(hpanel->seloff + 1 < hpanel->vmasize)
 				hpanel->seloff++;
-			lsnes_instance.run([addr, byte]() {lsnes_instance.memory.write<uint8_t>(addr, byte); });
+			lsnes_instance.iqueue.run([addr, byte]() {lsnes_instance.memory.write<uint8_t>(addr, byte); });
 		}
 		hpanel->request_paint();
 	}
@@ -786,7 +786,8 @@ invalid_bookmark:
 			uint64_t _seloff = seloff;
 			int _lines = lines;
 			uint8_t* _value = value;
-			lsnes_instance.run([_vmabase, _vmasize, paint_offset, _seloff, _value, _lines, this]() {
+			lsnes_instance.iqueue.run([_vmabase, _vmasize, paint_offset, _seloff, _value, _lines,
+				this]() {
 				memory_search* memsearch = wxwindow_memorysearch_active();
 				//Paint the stuff
 				for(ssize_t j = 0; j < _lines; j++) {

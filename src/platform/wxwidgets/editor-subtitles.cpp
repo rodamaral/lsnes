@@ -221,7 +221,7 @@ void wxeditor_subtitles::refresh()
 	if(closing)
 		return;
 	std::map<std::pair<uint64_t, uint64_t>, std::string> _subtitles;
-	lsnes_instance.run([&_subtitles]() -> void {
+	lsnes_instance.iqueue.run([&_subtitles]() -> void {
 		auto keys = lsnes_instance.subtitles.get_all();
 		for(auto i : keys)
 			_subtitles[i] = lsnes_instance.subtitles.get(i.first, i.second);

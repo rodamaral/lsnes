@@ -100,8 +100,10 @@ namespace
 
 framebuffer::raw emu_framebuffer::screen_corrupt;
 
-emu_framebuffer::emu_framebuffer()
-	: buffering(buffer1, buffer2, buffer3)
+emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
+	keyboard::keyboard& _keyboard)
+	: buffering(buffer1, buffer2, buffer3), subtitles(_subtitles), settings(_settings), mwatch(_mwatch),
+	keyboard(_keyboard)
 {
 	last_redraw_no_lua = false;
 }
@@ -153,16 +155,16 @@ void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, 
 	lrc.height = todraw.get_height() * vscl;
 	if(!no_lua) {
 		lua_callback_do_paint(&lrc, spontaneous);
-		CORE().subtitles.render(lrc);
+		subtitles.render(lrc);
 	}
 	ri.fbuf = todraw;
 	ri.hscl = hscl;
 	ri.vscl = vscl;
-	ri.lgap = max(lrc.left_gap, (unsigned)dlb(CORE().settings));
-	ri.rgap = max(lrc.right_gap, (unsigned)drb(CORE().settings));
-	ri.tgap = max(lrc.top_gap, (unsigned)dtb(CORE().settings));
-	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb(CORE().settings));
-	CORE().mwatch.watch(ri.rq);
+	ri.lgap = max(lrc.left_gap, (unsigned)dlb(settings));
+	ri.rgap = max(lrc.right_gap, (unsigned)drb(settings));
+	ri.tgap = max(lrc.top_gap, (unsigned)dtb(settings));
+	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb(settings));
+	mwatch.watch(ri.rq);
 	buffering.put_write();
 	notify_screen_update();
 	last_redraw_no_lua = no_lua;
@@ -188,8 +190,8 @@ void emu_framebuffer::render_framebuffer()
 	ri.rq.run(main_screen);
 	notify_set_screen(main_screen);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	keyboard::key* mouse_x = CORE().keyboard.try_lookup_key("mouse_x");
-	keyboard::key* mouse_y = CORE().keyboard.try_lookup_key("mouse_y");
+	keyboard::key* mouse_x = keyboard.try_lookup_key("mouse_x");
+	keyboard::key* mouse_y = keyboard.try_lookup_key("mouse_y");
 	keyboard::mouse_calibration xcal;
 	keyboard::mouse_calibration ycal;
 	xcal.offset = ri.lgap;

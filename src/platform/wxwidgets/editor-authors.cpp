@@ -153,7 +153,7 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	std::list<std::string> luascriptlist;
 	std::string gamename;
 	std::string x;
-	lsnes_instance.run([&gamename, &x, &luascriptlist, proj]() {
+	lsnes_instance.iqueue.run([&gamename, &x, &luascriptlist, proj]() {
 		if(proj) {
 			luascriptlist = proj->luascripts;
 			gamename = proj->gamename;
@@ -217,7 +217,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			luascriptlist.push_back(tostdstring(luascripts->GetString(i)));
 	bool run_new = autorunlua ? autorunlua->GetValue() : false;
 
-	lsnes_instance.run([gamename, newauthors, pfx, dir, prjname, luascriptlist, run_new, proj]() {
+	lsnes_instance.iqueue.run([gamename, newauthors, pfx, dir, prjname, luascriptlist, run_new, proj]() {
 		std::set<std::string> oldscripts;
 		if(proj) {
 			for(auto i : proj->luascripts)

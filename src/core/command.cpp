@@ -1,6 +1,7 @@
 #include "core/command.hpp"
-#include "core/instance.hpp"
 #include "core/keymapper.hpp"
+#include "library/command.hpp"
+#include "library/keyboard-mapper.hpp"
 #include "library/globalwrap.hpp"
 #include "library/threads.hpp"
 #include "core/misc.hpp"
@@ -22,8 +23,8 @@ namespace
 	std::map<std::string, keyboard::invbind*> alias_binds;
 }
 
-alias_binds_manager::alias_binds_manager(emulator_instance& _instance)
-	: instance(_instance)
+alias_binds_manager::alias_binds_manager(keyboard::mapper& _mapper, command::group& _command)
+	: mapper(_mapper), command(_command)
 {
 }
 
@@ -36,7 +37,7 @@ alias_binds_manager::~alias_binds_manager()
 void alias_binds_manager::operator()()
 {
 	threads::arlock h(get_invbind_lock());
-	auto a = instance.command.get_aliases();
+	auto a = command.get_aliases();
 	for(auto i : alias_binds) {
 		if(!a.count(i.first)) {
 			delete i.second;
@@ -47,6 +48,6 @@ void alias_binds_manager::operator()()
 		if(i == "" || i[0] == '-')
 			continue;
 		if(!alias_binds.count(i) || alias_binds[i] == NULL)
-			alias_binds[i] = new keyboard::invbind(instance.mapper, i, "Alias‣" + i);
+			alias_binds[i] = new keyboard::invbind(mapper, i, "Alias‣" + i);
 	}
 }

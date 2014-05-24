@@ -1255,7 +1255,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	std::runtime_error)
 {
 	lsnes_instance.emu_thread = threads::id();
-	CORE().system_thread_available = true;
+	CORE().iqueue.system_thread_available = true;
 	//Basic initialization.
 	dispatch_set_error_streams(&messages.getstream());
 	emulation_thread = threads::this_id();
@@ -1370,7 +1370,7 @@ out:
 	information_dispatch::do_dump_end();
 	core_core::uninstall_all_handlers();
 	CORE().commentary.kill();
-	CORE().system_thread_available = false;
+	CORE().iqueue.system_thread_available = false;
 	//Kill some things to avoid crashes.
 	CORE().dbg.core_change();
 	CORE().project.set(NULL, true);

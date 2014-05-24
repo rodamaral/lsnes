@@ -1063,7 +1063,7 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 	if(_press_line > line)
 		std::swap(_press_line, line);
 	recursing = true;
-	lsnes_instance.run([idx, _press_line, line, _fcontrols, _force_false]() {
+	lsnes_instance.iqueue.run([idx, _press_line, line, _fcontrols, _force_false]() {
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
@@ -1092,7 +1092,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 	uint64_t line2 = row2;
 	short value;
 	bool valid = true;
-	lsnes_instance.run([idx, line, &value, _fcontrols, &valid]() {
+	lsnes_instance.iqueue.run([idx, line, &value, _fcontrols, &valid]() {
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode()) {
 			valid = false;
 			return;
@@ -1120,7 +1120,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 	}
 	if(line > line2)
 		std::swap(line, line2);
-	lsnes_instance.run([idx, line, line2, value, _fcontrols]() {
+	lsnes_instance.iqueue.run([idx, line, line2, value, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
@@ -1144,7 +1144,7 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 	bool valid = true;
 	if(line > line2)
 		std::swap(line, line2);
-	lsnes_instance.run([idx, line, line2, &value, &value2, _fcontrols, &valid]() {
+	lsnes_instance.iqueue.run([idx, line, line2, &value, &value2, _fcontrols, &valid]() {
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode()) {
 			valid = false;
 			return;
@@ -1162,7 +1162,7 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 	});
 	if(!valid)
 		return;
-	lsnes_instance.run([idx, line, line2, value, value2, _fcontrols]() {
+	lsnes_instance.iqueue.run([idx, line, line2, value, value2, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
@@ -1183,7 +1183,7 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 {
 	recursing = true;
 	uint64_t _count = count;
-	lsnes_instance.run([_count]() {
+	lsnes_instance.iqueue.run([_count]() {
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
 		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
@@ -1228,7 +1228,7 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row, bool multi
 	recursing = true;
 	frame_controls* _fcontrols = &fcontrols;
 	uint64_t _row = row;
-	lsnes_instance.run([_row, _fcontrols, multicount]() {
+	lsnes_instance.iqueue.run([_row, _fcontrols, multicount]() {
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
 		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
@@ -1264,7 +1264,7 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row1, uint64_t row2, 
 	bool _wholeframe = wholeframe;
 	frame_controls* _fcontrols = &fcontrols;
 	if(_row1 > _row2) std::swap(_row1, _row2);
-	lsnes_instance.run([_row1, _row2, _wholeframe, _fcontrols]() {
+	lsnes_instance.iqueue.run([_row1, _row2, _wholeframe, _fcontrols]() {
 		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(_row1 >= vsize)
@@ -1333,7 +1333,7 @@ void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
 	recursing = true;
 	uint64_t _row = row;
 	frame_controls* _fcontrols = &fcontrols;
-	lsnes_instance.run([_row, _fcontrols]() {
+	lsnes_instance.iqueue.run([_row, _fcontrols]() {
 		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(_row >= vsize)
@@ -1355,7 +1355,7 @@ void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
 {
 	uint64_t curframe;
 	uint64_t frame;
-	lsnes_instance.run([&curframe]() {
+	lsnes_instance.iqueue.run([&curframe]() {
 		curframe = lsnes_instance.mlogic.get_movie().get_current_frame();
 	});
 	try {
@@ -1372,7 +1372,7 @@ void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
 		wxMessageBox(wxT("The movie is already past that point"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
 		return;
 	}
-	lsnes_instance.run([frame]() {
+	lsnes_instance.iqueue.run([frame]() {
 		set_stop_at_frame(frame);
 	});
 }
@@ -1438,7 +1438,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 	frame_controls* _fcontrols = &fcontrols;
 	if(ciX.index == ciY.index) {
 		auto c = prompt_coodinates_window(m, NULL, 256, 0, ciX, ciX, screenX, screenY);
-		lsnes_instance.run([ciX, row, c, _fcontrols]() {
+		lsnes_instance.iqueue.run([ciX, row, c, _fcontrols]() {
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			if(row < fedit) return;
 			controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
@@ -1473,7 +1473,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		sws_freeContext(ctx);
 		auto c = prompt_coodinates_window(m, &buf[0], (ciX.rmax - ciX.rmin + 1), (ciY.rmax - ciY.rmin + 1),
 			ciX, ciY, screenX, screenY);
-		lsnes_instance.run([ciX, ciY, row, c, _fcontrols]() {
+		lsnes_instance.iqueue.run([ciX, ciY, row, c, _fcontrols]() {
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
 			if(row < fedit) return;
@@ -1485,7 +1485,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		signal_repaint();
 	} else {
 		auto c = prompt_coodinates_window(m, NULL, 256, 256, ciX, ciY, screenX, screenY);
-		lsnes_instance.run([ciX, ciY, row, c, _fcontrols]() {
+		lsnes_instance.iqueue.run([ciX, ciY, row, c, _fcontrols]() {
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
 			if(row < fedit) return;
@@ -1653,10 +1653,10 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		try {
 			std::string newname;
 			std::string oldname;
-			lsnes_instance.run([&oldname]() { oldname = lsnes_instance.mbranch.get(); });
+			lsnes_instance.iqueue.run([&oldname]() { oldname = lsnes_instance.mbranch.get(); });
 			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to fork "
 				"from " + lsnes_instance.mbranch.name(oldname) + "):", "", false);
-			lsnes_instance.run_async([this, oldname, newname] {
+			lsnes_instance.iqueue.run_async([this, oldname, newname] {
 				lsnes_instance.mbranch._new(newname, oldname);
 			}, [this](std::exception& e) {
 				show_exception(this, "Error creating branch", "Can't create branch", e);
@@ -1677,7 +1677,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			if(mode == MBRANCH_IMPORT_MOVIE) {
 				std::set<std::string> brlist;
 				try {
-					lsnes_instance.run([this, filename, &brlist]() {
+					lsnes_instance.iqueue.run([this, filename, &brlist]() {
 						brlist = lsnes_instance.mbranch._movie_branches(filename);
 					});
 				} catch(std::exception& e) {
@@ -1699,7 +1699,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			}
 			dbranch = pick_text(this, "Enter new branch name", "Enter name for an imported branch:",
 				branch, false);
-			lsnes_instance.run_async([this, filename, branch, dbranch, mode]() {
+			lsnes_instance.iqueue.run_async([this, filename, branch, dbranch, mode]() {
 				lsnes_instance.mbranch.import_branch(filename, branch, dbranch, mode);
 			}, [this](std::exception& e) {
 				show_exception(this, "Can't import branch", "", e);
@@ -1715,7 +1715,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 				exp_imp_type());
 			file = g.first;
 			mode = g.second;
-			lsnes_instance.run_async([this, file, mode]() {
+			lsnes_instance.iqueue.run_async([this, file, mode]() {
 				std::string bname = lsnes_instance.mbranch.get();
 				lsnes_instance.mbranch.export_branch(file, bname, mode == MBRANCH_IMPORT_BINARY);
 			}, [this](std::exception& e) {
@@ -1729,13 +1729,13 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			std::string newname;
 			std::string oldname;
 			std::set<std::string> list;
-			lsnes_instance.run([&list]() { list = lsnes_instance.mbranch.enumerate(); });
+			lsnes_instance.iqueue.run([&list]() { list = lsnes_instance.mbranch.enumerate(); });
 			std::vector<std::string> choices(list.begin(), list.end());
 			oldname = pick_among(this, "Select branch to rename", "Select branch to rename",
 				choices, 0);
 			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to rename "
 				"'" + lsnes_instance.mbranch.name(oldname) + "'):", oldname, false);
-			lsnes_instance.run_async([this, oldname, newname] {
+			lsnes_instance.iqueue.run_async([this, oldname, newname] {
 				lsnes_instance.mbranch.rename(oldname, newname);
 			}, [this](std::exception& e) {
 				show_exception(this, "Error renaming branch", "Can't rename branch", e);
@@ -1747,11 +1747,11 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		try {
 			std::string oldname;
 			std::set<std::string> list;
-			lsnes_instance.run([&list]() { list = lsnes_instance.mbranch.enumerate(); });
+			lsnes_instance.iqueue.run([&list]() { list = lsnes_instance.mbranch.enumerate(); });
 			std::vector<std::string> choices(list.begin(), list.end());
 			oldname = pick_among(this, "Select branch to delete", "Select branch to delete",
 				choices, 0);
-			lsnes_instance.run_async([this, oldname] {
+			lsnes_instance.iqueue.run_async([this, oldname] {
 				lsnes_instance.mbranch._delete(oldname);
 			}, [this](std::exception& e) {
 				show_exception(this, "Error deleting branch", "Can't delete branch", e);
@@ -1763,7 +1763,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 	if(id >= wxID_MBRANCH_FIRST && id <= wxID_MBRANCH_LAST) {
 		if(!branch_names.count(id)) return;
 		std::string name = branch_names[id];
-		lsnes_instance.run_async([this, name]() {
+		lsnes_instance.iqueue.run_async([this, name]() {
 			lsnes_instance.mbranch.set(name);
 		}, [this](std::exception& e) {
 			show_exception(this, "Error changing branch", "Can't change branch", e);
@@ -1965,7 +1965,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	std::set<std::string> list;
 	std::string current;
 	bool ro;
-	lsnes_instance.run([&list, &current, &ro]() {
+	lsnes_instance.iqueue.run([&list, &current, &ro]() {
 		list = lsnes_instance.mbranch.enumerate();
 		current = lsnes_instance.mbranch.get();
 		ro = lsnes_instance.mlogic.get_movie().readonly_mode();
@@ -2008,7 +2008,7 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 	uint32_t prev_width, prev_height;
 	bool done_again = false;
 do_again:
-	lsnes_instance.run([&lines, &width, &height, m2, this]() {
+	lsnes_instance.iqueue.run([&lines, &width, &height, m2, this]() {
 		lines = this->get_lines();
 		if(lines < lines_to_display)
 			this->moviepos = 0;
@@ -2098,7 +2098,7 @@ void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2, unsigned
 	if(line2 < line)
 		std::swap(line, line2);
 	std::string copied;
-	lsnes_instance.run([port, controller, line, line2, _fcontrols, &copied]() {
+	lsnes_instance.iqueue.run([port, controller, line, line2, _fcontrols, &copied]() {
 		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(!vsize)
@@ -2117,7 +2117,7 @@ void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2)
 	if(line2 < line)
 		std::swap(line, line2);
 	std::string copied;
-	lsnes_instance.run([line, line2, &copied]() {
+	lsnes_instance.iqueue.run([line, line2, &copied]() {
 		controller_frame_vector& fv = *lsnes_instance.mlogic.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(!vsize)
@@ -2147,7 +2147,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, bool append)
 	recursing = true;
 	uint64_t _gapstart = row;
 	std::string cliptext = copy_from_clipboard();
-	lsnes_instance.run([_fcontrols, &cliptext, _gapstart, append]() {
+	lsnes_instance.iqueue.run([_fcontrols, &cliptext, _gapstart, append]() {
 		//Insert enough lines for the pasted content.
 		uint64_t gapstart = _gapstart;
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
@@ -2203,7 +2203,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 	recursing = true;
 	uint64_t _gapstart = row;
 	std::string cliptext = copy_from_clipboard();
-	lsnes_instance.run([_fcontrols, iset, &cliptext, _gapstart, port, controller, append]() {
+	lsnes_instance.iqueue.run([_fcontrols, iset, &cliptext, _gapstart, port, controller, append]() {
 		//Insert enough lines for the pasted content.
 		uint64_t gapstart = _gapstart;
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
@@ -2258,7 +2258,7 @@ void wxeditor_movie::_moviepanel::do_insert_controller(uint64_t row, unsigned po
 	auto iset = controller_index_set(fcontrols, port, controller);
 	recursing = true;
 	uint64_t gapstart = row;
-	lsnes_instance.run([_fcontrols, iset, gapstart, port, controller]() {
+	lsnes_instance.iqueue.run([_fcontrols, iset, gapstart, port, controller]() {
 		//Insert enough lines for the pasted content.
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;
@@ -2287,7 +2287,7 @@ void wxeditor_movie::_moviepanel::do_delete_controller(uint64_t row1, uint64_t r
 	if(row1 > row2) std::swap(row1, row2);
 	uint64_t gapstart = row1;
 	uint64_t gaplen = row2 - row1 + 1;
-	lsnes_instance.run([_fcontrols, iset, gapstart, gaplen, port, controller]() {
+	lsnes_instance.iqueue.run([_fcontrols, iset, gapstart, gaplen, port, controller]() {
 		//Insert enough lines for the pasted content.
 		if(!lsnes_instance.mlogic.get_movie().readonly_mode())
 			return;

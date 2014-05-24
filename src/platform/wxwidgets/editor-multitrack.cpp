@@ -95,7 +95,7 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
 				bool wasc = closing;
 				closing = true;
 				multitrack_open = NULL;
-				lsnes_instance.run([]() { lsnes_instance.mteditor.enable(false); });
+				lsnes_instance.iqueue.run([]() { lsnes_instance.mteditor.enable(false); });
 				if(!wasc)
 					Destroy();
 			}
@@ -136,7 +136,7 @@ void wxeditor_multitrack::on_control(wxCommandEvent& e)
 		return;
 	controller_info& ci = controllers[ctrl];
 	std::string mode = tostdstring(ci.mode->GetStringSelection());
-	lsnes_instance.run([ci, mode]() {
+	lsnes_instance.iqueue.run([ci, mode]() {
 		if(mode == MTMODE_PRESERVE)
 			lsnes_instance.mteditor.set(ci.port, ci.controller, multitrack_edit::MT_PRESERVE);
 		else if(mode == MTMODE_OVERWRITE)
@@ -160,7 +160,7 @@ void wxeditor_multitrack::update_controls()
 	}
 	controllers.clear();
 	std::vector<controller_info2> info;
-	lsnes_instance.run([this, &info](){
+	lsnes_instance.iqueue.run([this, &info](){
 		std::map<std::string, unsigned> next_in_class;
 		controller_frame model = lsnes_instance.controls.get_blank();
 		const port_type_set& pts = model.porttypes();
@@ -231,7 +231,7 @@ void wxeditor_multitrack::on_wclose(wxCloseEvent& e)
 	bool wasc = closing;
 	closing = true;
 	multitrack_open = NULL;
-	lsnes_instance.run([]() { lsnes_instance.mteditor.enable(false); });
+	lsnes_instance.iqueue.run([]() { lsnes_instance.mteditor.enable(false); });
 	if(!wasc)
 		Destroy();
 }
@@ -249,5 +249,5 @@ void wxeditor_multitrack_display(wxWindow* parent)
 	}
 	v->Show();
 	multitrack_open = v;
-	lsnes_instance.run([]() { lsnes_instance.mteditor.enable(true); });
+	lsnes_instance.iqueue.run([]() { lsnes_instance.mteditor.enable(true); });
 }

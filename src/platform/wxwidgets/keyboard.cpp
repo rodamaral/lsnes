@@ -269,7 +269,7 @@ namespace
 	void do_keypress(keyboard::modifier_set mods, keyboard::key_key& key, bool polarity)
 	{
 		auto _key = &key;
-		lsnes_instance.run_async([mods, _key, polarity]() {
+		lsnes_instance.iqueue.run_async([mods, _key, polarity]() {
 			_key->set_state(mods, polarity ? 1 : 0);
 		}, [](std::exception& e) {});
 	}
