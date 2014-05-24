@@ -1882,7 +1882,7 @@ again2:
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			CORE().command.invoke("repaint");
+			CORE().command->invoke("repaint");
 		}
 	}
 
@@ -2032,14 +2032,14 @@ again2:
 
 		P(r);
 
-		CORE().command.invoke("tracelog cpu " + r);
+		CORE().command->invoke("tracelog cpu " + r);
 		return 0;
 	}
 
 	command::fnptr<const std::string&> start_trace(lsnes_cmds, "set-trace", "No description available",
 		"No description available\n",
 		[](const std::string& r) throw(std::bad_alloc, std::runtime_error) {
-			CORE().command.invoke("tracelog cpu " + r);
+			CORE().command->invoke("tracelog cpu " + r);
 		});
 
 #ifdef BSNES_IS_COMPAT

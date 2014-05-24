@@ -7,7 +7,7 @@
 
 struct movie_branches
 {
-	movie_branches(movie_logic* _mlogic);
+	movie_branches(movie_logic& _mlogic);
 	std::string name(const std::string& internal);
 	std::set<std::string> enumerate();
 	std::string get();

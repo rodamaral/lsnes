@@ -23,19 +23,19 @@ namespace
 	command::fnptr<> tturbo(lsnes_cmds, "toggle-turbo", "Toggle turbo",
 		"Syntax: toggle-turbo\nToggle turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().framerate.turboed = !CORE().framerate.turboed;
+			CORE().framerate->turboed = !CORE().framerate->turboed;
 		});
 
 	command::fnptr<> pturbo(lsnes_cmds, "+turbo", "Activate turbo",
 		"Syntax: +turbo\nActivate turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().framerate.turboed = true;
+			CORE().framerate->turboed = true;
 		});
 
 	command::fnptr<> nturbo(lsnes_cmds, "-turbo", "Deactivate turbo",
 		"Syntax: -turbo\nDeactivate turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().framerate.turboed = false;
+			CORE().framerate->turboed = false;
 		});
 
 	keyboard::invbind_info turboh(lsnes_invbinds, "+turbo", "Speed‣Turbo hold");

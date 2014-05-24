@@ -1,59 +1,78 @@
 #ifndef _instance__hpp__included__
 #define _instance__hpp__included__
 
-#include <deque>
-#include "core/command.hpp"
-#include "core/controllerframe.hpp"
-#include "core/debug.hpp"
-#include "core/emustatus.hpp"
-#include "core/framebuffer.hpp"
-#include "core/framerate.hpp"
-#include "core/inthread.hpp"
-#include "core/movie.hpp"
-#include "core/moviedata.hpp"
-#include "core/mbranch.hpp"
-#include "core/memorymanip.hpp"
-#include "core/memorywatch.hpp"
-#include "core/multitrack.hpp"
-#include "core/project.hpp"
-#include "core/queue.hpp"
-#include "library/command.hpp"
-#include "library/lua-base.hpp"
-#include "library/memoryspace.hpp"
-#include "library/settingvar.hpp"
-#include "library/keyboard.hpp"
-#include "library/keyboard-mapper.hpp"
+#include "library/threads.hpp"
 
+class movie_logic;
+class memory_space;
+class memwatch_set;
+class voice_commentary;
+class subtitle_commentary;
+class movie_branches;
+class multitrack_edit;
+class _lsnes_status;
+class alias_binds_manager;
+class rrdata;
+class cart_mappings_refresher;
+class controller_state;
+class project_state;
+class debug_context;
+class framerate_regulator;
+class emu_framebuffer;
+class input_queue;
+namespace command
+{
+	class group;
+}
+namespace lua
+{
+	class state;
+}
+namespace settingvar
+{
+	class group;
+	class cache;
+}
+namespace keyboard
+{
+	class keyboard;
+	class mapper;
+}
+namespace triplebuffer
+{
+	template<typename T> class triplebuffer;
+}
 
 struct emulator_instance
 {
 	emulator_instance();
-	movie_logic mlogic;
-	memory_space memory;
-	lua::state lua;
-	memwatch_set mwatch;
-	settingvar::group settings;
-	settingvar::cache setcache;
-	voice_commentary commentary;
-	subtitle_commentary subtitles;
-	movie_branches mbranch;
-	multitrack_edit mteditor;
-	_lsnes_status status_A;
-	_lsnes_status status_B;
-	_lsnes_status status_C;
-	triplebuffer::triplebuffer<_lsnes_status> status;
-	keyboard::keyboard keyboard;
-	keyboard::mapper mapper;
-	command::group command;
-	alias_binds_manager abindmanager;
-	rrdata nrrdata;
-	cart_mappings_refresher cmapper;
-	controller_state controls;
-	project_state project;
-	debug_context dbg;
-	framerate_regulator framerate;
-	emu_framebuffer fbuf;
-	input_queue iqueue;
+	~emulator_instance();
+	movie_logic* mlogic;
+	memory_space* memory;
+	lua::state* lua;
+	memwatch_set* mwatch;
+	settingvar::group* settings;
+	settingvar::cache* setcache;
+	voice_commentary* commentary;
+	subtitle_commentary* subtitles;
+	movie_branches* mbranch;
+	controller_state* controls;
+	multitrack_edit* mteditor;
+	_lsnes_status* status_A;
+	_lsnes_status* status_B;
+	_lsnes_status* status_C;
+	triplebuffer::triplebuffer<_lsnes_status>* status;
+	keyboard::keyboard* keyboard;
+	command::group* command;
+	keyboard::mapper* mapper;
+	alias_binds_manager* abindmanager;
+	rrdata* nrrdata;
+	cart_mappings_refresher* cmapper;
+	project_state* project;
+	debug_context* dbg;
+	framerate_regulator* framerate;
+	emu_framebuffer* fbuf;
+	input_queue* iqueue;
 	threads::id emu_thread;
 };
 

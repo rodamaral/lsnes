@@ -28,7 +28,7 @@ namespace
 
 	int input_controllertype(lua::state& L, unsigned port, unsigned controller)
 	{
-		auto& m = CORE().mlogic.get_movie();
+		auto& m = CORE().mlogic->get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
 		if(port >= f.get_port_count()) {
 			L.pushnil();
@@ -90,7 +90,7 @@ namespace
 
 	const port_controller_set* lookup_ps(unsigned port)
 	{
-		auto& m = CORE().mlogic.get_movie();
+		auto& m = CORE().mlogic->get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
 		const port_type& p = f.get_port_type(port);
 		return p.controller_info;
@@ -189,7 +189,7 @@ namespace
 
 		P(controller);
 
-		auto& m = CORE().mlogic.get_movie();
+		auto& m = CORE().mlogic->get_movie();
 		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		auto _controller = s.legacy_pcid_to_pair(controller);
 		return input_controllertype(L, _controller.first, _controller.second);
@@ -225,7 +225,7 @@ namespace
 	int raw(lua::state& L, lua::parameters& P)
 	{
 		L.newtable();
-		for(auto i : CORE().keyboard.all_keys()) {
+		for(auto i : CORE().keyboard->all_keys()) {
 			L.pushlstring(i->get_name());
 			push_keygroup_parameters(L, *i);
 			L.settable(-3);
@@ -240,7 +240,7 @@ namespace
 
 		P(x, state);
 
-		keyboard::key* key = CORE().keyboard.try_lookup_key(x);
+		keyboard::key* key = CORE().keyboard->try_lookup_key(x);
 		if(!key)
 			throw std::runtime_error("Invalid key name");
 		bool ostate = hooked.count(x) > 0;
@@ -264,7 +264,7 @@ namespace
 
 		if(!lua_input_controllerdata)
 			return 0;
-		auto pcid = CORE().controls.lcid_to_pcid(lcid - 1);
+		auto pcid = CORE().controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			throw std::runtime_error("Invalid controller for input.joyget");
 		L.newtable();
@@ -293,7 +293,7 @@ namespace
 
 		if(!lua_input_controllerdata)
 			return 0;
-		auto pcid = CORE().controls.lcid_to_pcid(lcid - 1);
+		auto pcid = CORE().controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			throw std::runtime_error("Invalid controller for input.joyset");
 		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
@@ -330,13 +330,13 @@ namespace
 
 		P(lcid);
 
-		auto pcid = CORE().controls.lcid_to_pcid(lcid - 1);
+		auto pcid = CORE().controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			return 0;
 		int legacy_pcid = -1;
 		for(unsigned i = 0;; i++)
 			try {
-				auto p = CORE().controls.legacy_pcid_to_pair(i);
+				auto p = CORE().controls->legacy_pcid_to_pair(i);
 				if(p.first == pcid.first && p.second == pcid.second) {
 					legacy_pcid = i;
 					break;
@@ -359,7 +359,7 @@ namespace
 
 		P(lcid);
 
-		auto pcid = CORE().controls.lcid_to_pcid(lcid - 1);
+		auto pcid = CORE().controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			return 0;
 		L.pushnumber(pcid.first);
@@ -373,7 +373,7 @@ namespace
 
 		P(port);
 
-		auto& m = CORE().mlogic.get_movie();
+		auto& m = CORE().mlogic->get_movie();
 		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		try {
 			const port_type& p = s.port_type(port);
@@ -403,7 +403,7 @@ namespace
 		if(!ps || ps->controllers.size() <= controller)
 			return 0;
 		for(unsigned i = 0; i < 8; i++) {
-			auto pcid = CORE().controls.lcid_to_pcid(i);
+			auto pcid = CORE().controls->lcid_to_pcid(i);
 			if(pcid.first < 0)
 				continue;
 			if(pcid.first == (int)port && pcid.second == (int)controller) {

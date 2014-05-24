@@ -115,7 +115,7 @@ namespace
 
 	lua_customfont::~lua_customfont() throw()
 	{
-		CORE().fbuf.render_kill_request(this);
+		CORE().fbuf->render_kill_request(this);
 	}
 
 	int lua_customfont::draw(lua::state& L, lua::parameters& P)

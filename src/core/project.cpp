@@ -692,7 +692,7 @@ namespace
 {
 	void recursive_list_branch(uint64_t bid, std::set<unsigned>& dset, unsigned depth, bool last_of)
 	{
-		auto prj = CORE().project.get();
+		auto prj = CORE().project->get();
 		if(!prj) {
 			messages << "Not in project context." << std::endl;
 			return;
@@ -731,7 +731,7 @@ namespace
 				return;
 			}
 			try {
-				auto prj = CORE().project.get();
+				auto prj = CORE().project->get();
 				uint64_t pbid = parse_value<uint64_t>(r[1]);
 				if(!prj)
 					throw std::runtime_error("Not in project context");
@@ -752,7 +752,7 @@ namespace
 				return;
 			}
 			try {
-				auto prj = CORE().project.get();
+				auto prj = CORE().project->get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
 				if(!prj)
 					throw std::runtime_error("Not in project context");
@@ -773,7 +773,7 @@ namespace
 				return;
 			}
 			try {
-				auto prj = CORE().project.get();
+				auto prj = CORE().project->get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
 				if(!prj)
 					throw std::runtime_error("Not in project context");
@@ -795,7 +795,7 @@ namespace
 				return;
 			}
 			try {
-				auto prj = CORE().project.get();
+				auto prj = CORE().project->get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
 				uint64_t pbid = parse_value<uint64_t>(r[2]);
 				if(!prj)
@@ -818,7 +818,7 @@ namespace
 				return;
 			}
 			try {
-				auto prj = CORE().project.get();
+				auto prj = CORE().project->get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
 				if(!prj)
 					throw std::runtime_error("Not in project context");

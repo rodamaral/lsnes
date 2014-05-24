@@ -1,7 +1,7 @@
 #ifndef _plat_wxwidgets__platform__hpp__included__
 #define _plat_wxwidgets__platform__hpp__included__
 
-#include "core/instance.hpp"
+#include "core/queue.hpp"
 #include "core/moviefile.hpp"
 #include "core/window.hpp"
 

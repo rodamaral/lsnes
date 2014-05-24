@@ -137,6 +137,6 @@ namespace
 
 	avi_video_codec_type rgb("cscd", "Camstudio video codec",
 		[]() -> avi_video_codec* {
-			return new avi_codec_cscd(clvl(CORE().settings), kint(CORE().settings));
+			return new avi_codec_cscd(clvl(*CORE().settings), kint(*CORE().settings));
 		});
 }

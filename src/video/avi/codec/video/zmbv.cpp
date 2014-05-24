@@ -351,7 +351,7 @@ compress:
 	//ZMBV encoder factory object.
 	avi_video_codec_type rgb("zmbv", "Zip Motion Blocks Video codec",
 		[]() -> avi_video_codec* {
-			return new avi_codec_zmbv(clvl(CORE().settings), kint(CORE().settings), bwv(CORE().settings),
-				bhv(CORE().settings), fsrch(CORE().settings));
+			return new avi_codec_zmbv(clvl(*CORE().settings), kint(*CORE().settings),
+				bwv(*CORE().settings), bhv(*CORE().settings), fsrch(*CORE().settings));
 		});
 }

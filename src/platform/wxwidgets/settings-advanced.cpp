@@ -52,7 +52,7 @@ namespace
 	};
 
 	wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
-		: settings_tab(parent), _listener(lsnes_instance.settings, *this)
+		: settings_tab(parent), _listener(*lsnes_instance.settings, *this)
 	{
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
@@ -264,8 +264,8 @@ namespace
 			return;
 		std::string value;
 		std::string err;
-		value = lsnes_instance.setcache.get(name);
-		auto model = lsnes_instance.setcache.get_description(name);
+		value = lsnes_instance.setcache->get(name);
+		auto model = lsnes_instance.setcache->get_description(name);
 		try {
 			switch(model.type) {
 			case settingvar::description::T_BOOLEAN:
@@ -284,9 +284,9 @@ namespace
 		} catch(...) {
 			return;
 		}
-		lsnes_instance.iqueue.run([this, name, value]() {
+		lsnes_instance.iqueue->run([this, name, value]() {
 			run_show_error(this, "Error setting value", "", [name, value]() {
-				lsnes_instance.setcache.set(name, value);
+				lsnes_instance.setcache->set(name, value);
 			});
 		});
 	}
@@ -317,10 +317,10 @@ namespace
 	{
 		if(closing())
 			return;
-		settings = lsnes_instance.setcache.get_keys();
+		settings = lsnes_instance.setcache->get_keys();
 		for(auto i : settings) {
-			values[i] = lsnes_instance.setcache.get(i);
-			names[i] = lsnes_instance.setcache.get_hname(i);
+			values[i] = lsnes_instance.setcache->get(i);
+			names[i] = lsnes_instance.setcache->get_hname(i);
 		}
 		_refresh();
 	}
@@ -347,7 +347,7 @@ namespace
 			sort.insert(std::make_pair(names[i], i));
 		for(auto i : sort) {
 			//FIXME: Do something with this?
-			//auto description = lsnes_instance.setcache.get_description(i.second);
+			//auto description = lsnes_instance.setcache->get_description(i.second);
 			strings.push_back(towxstring(names[i.second] + " (Value: " + values[i.second] + ")"));
 			selections[k++] = i.second;
 		}

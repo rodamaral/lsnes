@@ -192,28 +192,28 @@ end:
 	{
 		regex_results r;
 		if(r = regex("SET[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
-			lsnes_instance.setcache.set(r[1], r[2], true);
+			lsnes_instance.setcache->set(r[1], r[2], true);
 			messages << "Setting " << r[1] << " set to " << r[2] << std::endl;
 		} else if(r = regex("ALIAS[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
-			if(!lsnes_instance.command.valid_alias_name(r[1])) {
+			if(!lsnes_instance.command->valid_alias_name(r[1])) {
 				messages << "Illegal alias name " << r[1] << std::endl;
 				return;
 			}
-			std::string tmp = lsnes_instance.command.get_alias_for(r[1]);
+			std::string tmp = lsnes_instance.command->get_alias_for(r[1]);
 			tmp = tmp + r[2] + "\n";
-			lsnes_instance.command.set_alias_for(r[1], tmp);
+			lsnes_instance.command->set_alias_for(r[1], tmp);
 			messages << r[1] << " aliased to " << r[2] << std::endl;
 		} else if(r = regex("BIND[ \t]+([^/]*)/([^|]*)\\|([^ \t]+)[ \t]+(.*)", line)) {
 			std::string tmp = r[4];
 			regex_results r2 = regex("(load|load-smart|load-readonly|load-preserve|load-state"
 				"|load-movie|save-state|save-movie)[ \t]+\\$\\{project\\}(.*)\\.lsmv", tmp);
 			if(r2) tmp = r2[1] + " $SLOT:" + r2[2];
-			lsnes_instance.mapper.bind(r[1], r[2], r[3], tmp);
+			lsnes_instance.mapper->bind(r[1], r[2], r[3], tmp);
 			if(r[1] != "" || r[2] != "")
 				messages << r[1] << "/" << r[2] << " ";
 			messages << r[3] << " bound to '" << tmp << "'" << std::endl;
 		} else if(r = regex("BUTTON[ \t]+([^ \t]+)[ \t](.*)", line)) {
-			keyboard::ctrlrkey* ckey = lsnes_instance.mapper.get_controllerkey(r[2]);
+			keyboard::ctrlrkey* ckey = lsnes_instance.mapper->get_controllerkey(r[2]);
 			if(ckey) {
 				ckey->append(r[1]);
 				messages << r[1] << " bound (button) to " << r[2] << std::endl;
@@ -242,7 +242,7 @@ end:
 			}
 			lineno++;
 		}
-		lsnes_instance.abindmanager();
+		(*lsnes_instance.abindmanager)();
 		lsnes_uri_rewrite.load(get_config_path() + "/lsnesurirewrite.cfg");
 	}
 
@@ -252,11 +252,11 @@ end:
 		std::string cfgtmp = cfg + ".tmp";
 		std::ofstream cfgfile(cfgtmp.c_str());
 		//Settings.
-		for(auto i : lsnes_instance.setcache.get_all())
+		for(auto i : lsnes_instance.setcache->get_all())
 			cfgfile << "SET " << i.first << " " << i.second << std::endl;
 		//Aliases.
-		for(auto i : lsnes_instance.command.get_aliases()) {
-			std::string old_alias_value = lsnes_instance.command.get_alias_for(i);
+		for(auto i : lsnes_instance.command->get_aliases()) {
+			std::string old_alias_value = lsnes_instance.command->get_alias_for(i);
 			while(old_alias_value != "") {
 				std::string aliasline;
 				size_t s = old_alias_value.find_first_of("\n");
@@ -271,10 +271,10 @@ end:
 			}
 		}
 		//Keybindings.
-		for(auto i : lsnes_instance.mapper.get_bindings())
-			cfgfile << "BIND " << std::string(i) << " " << lsnes_instance.mapper.get(i) << std::endl;
+		for(auto i : lsnes_instance.mapper->get_bindings())
+			cfgfile << "BIND " << std::string(i) << " " << lsnes_instance.mapper->get(i) << std::endl;
 		//Buttons.
-		for(auto i : lsnes_instance.mapper.get_controller_keys()) {
+		for(auto i : lsnes_instance.mapper->get_controller_keys()) {
 			std::string b;
 			unsigned idx = 0;
 			while((b = i->get_string(idx++)) != "")
@@ -481,7 +481,7 @@ bool lsnes_app::OnInit()
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	reinitialize_buttonmap();
-	lsnes_instance.controls.set_ports(ports);
+	lsnes_instance.controls->set_ports(ports);
 
 	std::string cfgpath = get_config_path();
 	autoload_libraries([](const std::string& libname, const std::string& error, bool system) {
@@ -566,7 +566,7 @@ int lsnes_app::OnExit()
 	save_configuration();
 	information_dispatch::do_dump_end();
 	quit_lua();
-	lsnes_instance.mlogic.release_memory();
+	lsnes_instance.mlogic->release_memory();
 	joystick_driver_signal();
 	joystick_thread_handle->join();
 	platform::quit();

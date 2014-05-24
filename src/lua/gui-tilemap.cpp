@@ -38,7 +38,7 @@ namespace
 		~tilemap()
 		{
 			threads::alock h(lock);
-			CORE().fbuf.render_kill_request(this);
+			CORE().fbuf->render_kill_request(this);
 		}
 		static int create(lua::state& L, lua::parameters& P);
 		template<bool outside> int draw(lua::state& L, lua::parameters& P);

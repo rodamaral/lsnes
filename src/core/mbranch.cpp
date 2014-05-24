@@ -1,12 +1,16 @@
 #include "core/instance.hpp"
+#include "core/controllerframe.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/mbranch.hpp"
+#include "core/movie.hpp"
+#include "core/moviefile.hpp"
+#include "library/string.hpp"
 
 void update_movie_state();
 
-movie_branches::movie_branches(movie_logic* _mlogic)
-	: mlogic(*_mlogic)
+movie_branches::movie_branches(movie_logic& _mlogic)
+	: mlogic(_mlogic)
 {
 }
 

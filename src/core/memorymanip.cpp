@@ -25,19 +25,19 @@ namespace
 		try {
 			if(offset >= 0 && offset < 8) {
 				//Frame counter.
-				uint64_t x = CORE().mlogic.get_movie().get_current_frame();
+				uint64_t x = CORE().mlogic->get_movie().get_current_frame();
 				return x >> (8 * (offset & 7));
 			} else if(offset >= 8 && offset < 16) {
 				//Movie length.
-				uint64_t x = CORE().mlogic.get_movie().get_frame_count();
+				uint64_t x = CORE().mlogic->get_movie().get_frame_count();
 				return x >> (8 * (offset & 7));
 			} else if(offset >= 16 && offset < 24) {
 				//Lag counter.
-				uint64_t x = CORE().mlogic.get_movie().get_lag_frames();
+				uint64_t x = CORE().mlogic->get_movie().get_lag_frames();
 				return x >> (8 * (offset & 7));
 			} else if(offset >= 24 && offset < 32) {
 				//Rerecord counter.
-				uint64_t x = CORE().mlogic.get_rrdata().count();
+				uint64_t x = CORE().mlogic->get_rrdata().count();
 				return x >> (8 * (offset & 7));
 			} else
 				return 0;
@@ -138,7 +138,7 @@ namespace
 			std::string vma = r[1];
 			std::string _offset = r[2];
 			uint64_t offset = parse_value<uint64_t>("0x" + _offset);
-			for(auto i : CORE().memory.get_regions())
+			for(auto i : CORE().memory->get_regions())
 				if(i->name == vma) {
 					if(offset >= i->size)
 						throw std::runtime_error("Offset out of range");
@@ -151,7 +151,7 @@ namespace
 
 	std::string format_address(uint64_t addr)
 	{
-		for(auto i : CORE().memory.get_regions())
+		for(auto i : CORE().memory->get_regions())
 			if(i->base <= addr && i->base + i->size > addr) {
 				//Hit.
 				unsigned hcount = 1;
@@ -237,13 +237,13 @@ namespace
 				std::ostringstream x;
 				if(hexd)
 					x << format_address(address) << " -> "
-						<< hex::to((CORE().memory.*_rfn)(address), true);
+						<< hex::to((CORE().memory->*_rfn)(address), true);
 				else if(sizeof(ret) > 1)
 					x << format_address(address) << " -> " << std::dec
-						<< (CORE().memory.*_rfn)(address);
+						<< (CORE().memory->*_rfn)(address);
 				else
 					x << format_address(address) << " -> " << std::dec
-						<< (int)(CORE().memory.*_rfn)(address);
+						<< (int)(CORE().memory->*_rfn)(address);
 				messages << x.str() << std::endl;
 			}
 		}
@@ -272,7 +272,7 @@ namespace
 			int64_t value2 = static_cast<int64_t>(value);
 			if(value2 < low || (value > high && value2 >= 0))
 				throw std::runtime_error("Value to write out of range");
-			(CORE().memory.*_wfn)(address, value & high);
+			(CORE().memory->*_wfn)(address, value & high);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Write memory"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -296,7 +296,7 @@ namespace
 		{
 			if(address_bad || !has_valuef || has_tail)
 				throw std::runtime_error("Syntax: " + _command + " <address> <value>");
-			(CORE().memory.*_wfn)(address, valuef);
+			(CORE().memory->*_wfn)(address, valuef);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Write memory"; }
 		std::string get_long_help() throw(std::bad_alloc)

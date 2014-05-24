@@ -229,7 +229,7 @@ namespace
 				std::string name = nameval.substr(0, s);
 				std::string val = nameval.substr(s + 1);
 				try {
-					lsnes_instance.setcache.set(name, val);
+					lsnes_instance.setcache->set(name, val);
 				} catch(std::exception& e) {
 					std::cerr << "Can't set '" << name << "' to '" << val << "': " << e.what()
 						<< std::endl;
@@ -334,7 +334,7 @@ int main(int argc, char** argv)
 		regex_results r;
 		if(r = regex("--firmware-path=(.*)", i)) {
 			try {
-				lsnes_instance.setcache.set("firmwarepath", r[1]);
+				lsnes_instance.setcache->set("firmwarepath", r[1]);
 				std::cerr << "Set firmware path to '" << r[1] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set firmware path to '" << r[1] << "': " << e.what() << std::endl;
@@ -342,7 +342,7 @@ int main(int argc, char** argv)
 		}
 		if(r = regex("--setting-(.*)=(.*)", i)) {
 			try {
-				lsnes_instance.setcache.set(r[1], r[2]);
+				lsnes_instance.setcache->set(r[1], r[2]);
 				std::cerr << "Set " << r[1] << " to '" << r[2] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what()
@@ -390,7 +390,7 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 	messages << "Detected region: " << r.rtype->combine_region(*r.region).get_name() << std::endl;
-	lsnes_instance.framerate.set_nominal_framerate(r.region->approx_framerate());
+	lsnes_instance.framerate->set_nominal_framerate(r.region->approx_framerate());
 
 	messages << "--- End of Startup --- " << std::endl;
 
@@ -417,7 +417,7 @@ int main(int argc, char** argv)
 	}
 	information_dispatch::do_dump_end();
 	quit_lua();
-	lsnes_instance.mlogic.release_memory();
+	lsnes_instance.mlogic->release_memory();
 	cleanup_all_keys();
 	return 0;
 }

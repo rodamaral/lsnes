@@ -29,13 +29,13 @@ namespace
 
 			L.pushstring("disasm");
 			L.pushlstring(d->disassemble(laddr, [&bytes, laddr]() -> unsigned char {
-				return CORE().memory.read<uint8_t>(laddr + bytes++);
+				return CORE().memory->read<uint8_t>(laddr + bytes++);
 			}));
 			L.settable(-3);
 
 			std::vector<unsigned char> tmp;
 			tmp.resize(bytes);
-			CORE().memory.read_range(laddr, &tmp[0], bytes);
+			CORE().memory->read_range(laddr, &tmp[0], bytes);
 			L.pushstring("bytes");
 			L.pushlstring(hex::b_to(&tmp[0], bytes));
 			L.settable(-3);

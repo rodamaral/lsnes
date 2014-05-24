@@ -264,7 +264,7 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 	if((bios = ctype.get_biosname()) != "") {
 		//This thing has a BIOS.
 		romidx = 1;
-		std::string basename = CORE().setcache.get("firmwarepath") + "/" + bios;
+		std::string basename = CORE().setcache->get("firmwarepath") + "/" + bios;
 		romimg[0] = fileimage::image(lsnes_image_hasher, basename, "", xlate_info(ctype.get_image_info(0)));
 		if(zip::file_exists(basename + ".xml"))
 			romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
@@ -305,7 +305,7 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 		if((bios = coretype->get_biosname()) != "") {
 			//This thing has a BIOS.
 			romidx = 1;
-			std::string basename = CORE().setcache.get("firmwarepath") + "/" + bios;
+			std::string basename = CORE().setcache->get("firmwarepath") + "/" + bios;
 			romimg[0] = fileimage::image(lsnes_image_hasher, basename, "",
 				xlate_info(coretype->get_image_info(0)));
 			if(zip::file_exists(basename + ".xml"))
@@ -506,7 +506,7 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& core, const s
 	std::string bios = t->get_biosname();
 	unsigned romidx = (bios != "") ? 1 : 0;
 	if(bios != "") {
-		std::string basename = CORE().setcache.get("firmwarepath") + "/" + bios;
+		std::string basename = CORE().setcache->get("firmwarepath") + "/" + bios;
 		romimg[0] = fileimage::image(lsnes_image_hasher, basename, "", xlate_info(t->get_image_info(0)));
 		if(zip::file_exists(basename + ".xml"))
 			romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
@@ -596,7 +596,7 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	rtype->power();
 	auto nominal_fps = rtype->get_video_rate();
 	auto nominal_hz = rtype->get_audio_rate();
-	CORE().framerate.set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
+	CORE().framerate->set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
 	information_dispatch::do_sound_rate(nominal_hz.first, nominal_hz.second);
 	current_rom_type = rtype;
 	current_region = region;
@@ -606,7 +606,7 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 			old_core->debug_reset();
 			old_core->unload_cartridge();
 		} catch(...) {}
-	CORE().cmapper();
+	(*CORE().cmapper)();
 	notify_core_changed(old_type != current_rom_type);
 }
 
@@ -675,7 +675,7 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 
 	if(buf.size() < 32)
 		throw std::runtime_error("Savestate corrupt");
-	if(!savestate_no_check(CORE().settings)) {
+	if(!savestate_no_check(*CORE().settings)) {
 		unsigned char tmp[32];
 #ifdef USE_LIBGCRYPT_SHA256
 		gcry_md_hash_buffer(GCRY_MD_SHA256, tmp, &buf[0], buf.size() - 32);

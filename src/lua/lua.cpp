@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "library/globalwrap.hpp"
+#include "library/keyboard.hpp"
 #include "lua/internal.hpp"
 #include "lua/lua.hpp"
 #include "lua/unsaferewind.hpp"
@@ -168,7 +169,7 @@ namespace
 		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			CORE().command.invoke("repaint");
+			CORE().command->invoke("repaint");
 		}
 	}
 
@@ -205,7 +206,7 @@ namespace
 		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			CORE().command.invoke("repaint");
+			CORE().command->invoke("repaint");
 		}
 		return true;
 	}
@@ -259,7 +260,7 @@ namespace
 		lua_renderq_run(ctx, synchronous_paint_ctx);
 	}
 
-#define DEFINE_CB(X) lua::state::callback_list on_##X (CORE().lua, #X , "on_" #X )
+#define DEFINE_CB(X) lua::state::callback_list on_##X (*CORE().lua, #X , "on_" #X )
 
 	DEFINE_CB(paint);
 	DEFINE_CB(video);
@@ -399,7 +400,7 @@ namespace
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
-			do_eval_lua(CORE().lua, args);
+			do_eval_lua(*CORE().lua, args);
 		});
 
 	command::fnptr<const std::string&> evaluate_lua2(lsnes_cmds, "L", "Evaluate expression in "
@@ -407,25 +408,25 @@ namespace
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
-			do_eval_lua(CORE().lua, args);
+			do_eval_lua(*CORE().lua, args);
 		});
 
 	command::fnptr<command::arg_filename> run_lua(lsnes_cmds, "run-lua", "Run Lua script in Lua VM",
 		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error)
 		{
-			do_run_lua(CORE().lua, args);
+			do_run_lua(*CORE().lua, args);
 		});
 
 	command::fnptr<> reset_lua(lsnes_cmds, "reset-lua", "Reset the Lua VM",
 		"Syntax: reset-lua\nReset the Lua VM.\n",
 		[]() throw(std::bad_alloc, std::runtime_error)
 		{
-			CORE().lua.reset();
-			luaL_openlibs(CORE().lua.handle());
+			CORE().lua->reset();
+			luaL_openlibs(CORE().lua->handle());
 
-			run_sysrc_lua(CORE().lua);
-			copy_system_tables(CORE().lua);
+			run_sysrc_lua(*CORE().lua);
+			copy_system_tables(*CORE().lua);
 			messages << "Lua VM reset" << std::endl;
 		});
 
@@ -445,32 +446,32 @@ void lua_callback_keyhook(const std::string& key, keyboard::key& p) throw()
 
 void init_lua() throw()
 {
-	CORE().lua.set_oom_handler(OOM_panic);
+	CORE().lua->set_oom_handler(OOM_panic);
 	try {
-		CORE().lua.reset();
-		CORE().lua.add_function_group(lua_func_bit);
-		CORE().lua.add_function_group(lua_func_load);
-		CORE().lua.add_function_group(lua_func_misc);
-		CORE().lua.add_function_group(lua_func_zip);
-		CORE().lua.add_class_group(lua_class_callback);
-		CORE().lua.add_class_group(lua_class_gui);
-		CORE().lua.add_class_group(lua_class_bind);
-		CORE().lua.add_class_group(lua_class_pure);
-		CORE().lua.add_class_group(lua_class_movie);
-		CORE().lua.add_class_group(lua_class_memory);
-		CORE().lua.add_class_group(lua_class_fileio);
+		CORE().lua->reset();
+		CORE().lua->add_function_group(lua_func_bit);
+		CORE().lua->add_function_group(lua_func_load);
+		CORE().lua->add_function_group(lua_func_misc);
+		CORE().lua->add_function_group(lua_func_zip);
+		CORE().lua->add_class_group(lua_class_callback);
+		CORE().lua->add_class_group(lua_class_gui);
+		CORE().lua->add_class_group(lua_class_bind);
+		CORE().lua->add_class_group(lua_class_pure);
+		CORE().lua->add_class_group(lua_class_movie);
+		CORE().lua->add_class_group(lua_class_memory);
+		CORE().lua->add_class_group(lua_class_fileio);
 	} catch(std::exception& e) {
 		messages << "Can't initialize Lua." << std::endl;
 		fatal_error();
 	}
-	luaL_openlibs(CORE().lua.handle());
-	run_sysrc_lua(CORE().lua);
-	copy_system_tables(CORE().lua);
+	luaL_openlibs(CORE().lua->handle());
+	run_sysrc_lua(*CORE().lua);
+	copy_system_tables(*CORE().lua);
 }
 
 void quit_lua() throw()
 {
-	CORE().lua.deinit();
+	CORE().lua->deinit();
 }
 
 
@@ -498,7 +499,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 			run_callback(on_movie_lost, "unsaferewind");
 			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
 			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
-			try { CORE().mlogic.get_mfile().host_memory = u2->hostmemory; } catch(...) {}
+			try { CORE().mlogic->get_mfile().host_memory = u2->hostmemory; } catch(...) {}
 			run_callback(on_post_rewind);
 			delete reinterpret_cast<lua::objpin<lua_unsaferewind>*>(u);
 		} catch(...) {
@@ -507,11 +508,11 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 	} else {
 		//Save
 		run_callback(on_set_rewind, lua::state::fn_tag([save, secs, ssecs, &mov](lua::state& L) -> int {
-			lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(CORE().lua);
+			lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(*CORE().lua);
 			u2->state = save;
 			u2->secs = secs,
 			u2->ssecs = ssecs;
-			u2->hostmemory = CORE().mlogic.get_mfile().host_memory;
+			u2->hostmemory = CORE().mlogic->get_mfile().host_memory;
 			mov.fast_save(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			return 1;
 		}));
@@ -539,7 +540,7 @@ void lua_run_startup_scripts()
 {
 	for(auto i : startup_scripts) {
 		messages << "Trying to run Lua script: " << i << std::endl;
-		do_run_lua(CORE().lua, i);
+		do_run_lua(*CORE().lua, i);
 	}
 }
 

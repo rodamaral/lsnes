@@ -51,7 +51,7 @@ namespace
 			dres x;
 			x.addr = laddr;
 			x.disasm = d->disassemble(laddr, [&bytes, laddr]() -> unsigned char {
-				return CORE().memory.read<uint8_t>(laddr + bytes++);
+				return CORE().memory->read<uint8_t>(laddr + bytes++);
 			});
 			x.len = bytes;
 			result.push_back(x);
@@ -69,7 +69,7 @@ namespace
 		for(auto i : result) {
 			std::vector<unsigned char> tmp;
 			tmp.resize(i.len);
-			CORE().memory.read_range(i.addr, &tmp[0], i.len);
+			CORE().memory->read_range(i.addr, &tmp[0], i.len);
 			std::string l = hex::to(i.addr) + " " + hex::b_to(&tmp[0], i.len) + " " + i.disasm;
 			(*strm) << l << std::endl;
 		}

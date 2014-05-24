@@ -111,21 +111,21 @@ int main(int argc, char** argv)
 		regex_results r;
 		if(r = regex("--firmware-path=(.*)", i))
 			try {
-				lsnes_instance.setcache.set("firmwarepath", r[1]);
+				lsnes_instance.setcache->set("firmwarepath", r[1]);
 				std::cerr << "Set firmware path to '" << r[1] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set firmware path to '" << r[1] << "': " << e.what() << std::endl;
 			}
 		if(r = regex("--rom-path=(.*)", i))
 			try {
-				lsnes_instance.setcache.set("rompath", r[1]);
+				lsnes_instance.setcache->set("rompath", r[1]);
 				std::cerr << "Set rompath path to '" << r[1] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set firmware path to '" << r[1] << "': " << e.what() << std::endl;
 			}
 		if(r = regex("--setting-(.*)=(.*)", i))
 			try {
-				lsnes_instance.setcache.set(r[1], r[2]);
+				lsnes_instance.setcache->set(r[1], r[2]);
 				std::cerr << "Set " << r[1] << " to '" << r[2] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what()
@@ -176,7 +176,7 @@ int main(int argc, char** argv)
 
 	dump_what_was_loaded(r, *movie);
 
-	lsnes_instance.mlogic.release_memory();
+	lsnes_instance.mlogic->release_memory();
 	cleanup_all_keys();
 	return 0;
 }

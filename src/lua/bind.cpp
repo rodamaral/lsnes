@@ -12,7 +12,7 @@ namespace
 
 		P(mod, mask, key, cmd);
 
-		CORE().mapper.bind(mod, mask, key, cmd);
+		CORE().mapper->bind(mod, mask, key, cmd);
 		return 0;
 	}
 
@@ -22,7 +22,7 @@ namespace
 
 		P(mod, mask, key);
 
-		CORE().mapper.unbind(mod, mask, key);
+		CORE().mapper->unbind(mod, mask, key);
 		return 0;
 	}
 
@@ -32,8 +32,8 @@ namespace
 
 		P(alias, cmds);
 
-		CORE().command.set_alias_for(alias, cmds);
-		CORE().abindmanager();
+		CORE().command->set_alias_for(alias, cmds);
+		(*CORE().abindmanager)();
 		return 0;
 	}
 

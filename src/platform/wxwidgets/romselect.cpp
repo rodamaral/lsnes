@@ -251,7 +251,7 @@ namespace
 		pinfo.last_save = "";
 		pinfo.directory = tostdstring(projdir->GetValue());
 		pinfo.prefix = tostdstring(projpfx->GetValue());
-		auto& m = lsnes_instance.mlogic.get_mfile();
+		auto& m = lsnes_instance.mlogic->get_mfile();
 		pinfo.gametype = m.gametype->get_name();
 		pinfo.settings = m.settings;
 		pinfo.coreversion = m.coreversion;
@@ -264,8 +264,8 @@ namespace
 		pinfo.projectid = m.projectid;
 		pinfo.active_branch = 0;
 		pinfo.next_branch = 0;
-		lsnes_instance.project.copy_watches(pinfo);
-		lsnes_instance.project.copy_macros(pinfo, lsnes_instance.controls);
+		lsnes_instance.project->copy_watches(pinfo);
+		lsnes_instance.project->copy_macros(pinfo, *lsnes_instance.controls);
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			pinfo.roms[i] = our_rom.romimg[i].filename;
 			pinfo.romimg_sha256[i] = m.romimg_sha256[i];
@@ -294,8 +294,8 @@ namespace
 no_watch:
 		project_info* pinfo2 = new project_info(pinfo);
 		pinfo2->flush();
-		project_info* old_proj = lsnes_instance.project.get();
-		lsnes_instance.project.set(pinfo2, true);
+		project_info* old_proj = lsnes_instance.project->get();
+		lsnes_instance.project->set(pinfo2, true);
 		if(old_proj)
 			delete old_proj;
 		EndModal(wxID_OK);
@@ -631,7 +631,7 @@ void wxwin_project::on_load(wxCommandEvent& e)
 		mov.start_paused = false;
 		rrdata_set tmp_rdata;
 		mov.save("$MEMORY:wxwidgets-romload-tmp", 0, true, tmp_rdata);
-		lsnes_instance.iqueue.queue("load-state $MEMORY:wxwidgets-romload-tmp");
+		lsnes_instance.iqueue->queue("load-state $MEMORY:wxwidgets-romload-tmp");
 		EndModal(0);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading movie", e.what(), wxICON_EXCLAMATION);

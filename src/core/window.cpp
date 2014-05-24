@@ -7,6 +7,7 @@
 #include "core/keymapper.hpp"
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
+#include "core/queue.hpp"
 #include "core/random.hpp"
 #include "core/window.hpp"
 #include "fonts/wrapper.hpp"
@@ -242,7 +243,7 @@ namespace
 	{
 		on_idle_time = lua_timed_hook(LUA_TIMED_HOOK_IDLE);
 		on_timer_time = lua_timed_hook(LUA_TIMED_HOOK_TIMER);
-		CORE().iqueue.queue_function_run = false;
+		CORE().iqueue->queue_function_run = false;
 	}
 }
 
@@ -251,9 +252,9 @@ namespace
 void platform::dummy_event_loop() throw()
 {
 	while(!do_exit_dummy_event_loop) {
-		threads::alock h(CORE().iqueue.queue_lock);
-		CORE().iqueue.run_queue(true);
-		threads::cv_timed_wait(CORE().iqueue.queue_condition, h, threads::ustime(MAXWAIT));
+		threads::alock h(CORE().iqueue->queue_lock);
+		CORE().iqueue->run_queue(true);
+		threads::cv_timed_wait(CORE().iqueue->queue_condition, h, threads::ustime(MAXWAIT));
 		random_mix_timing_entropy();
 	}
 }
@@ -261,17 +262,17 @@ void platform::dummy_event_loop() throw()
 void platform::exit_dummy_event_loop() throw()
 {
 	do_exit_dummy_event_loop = true;
-	threads::alock h(CORE().iqueue.queue_lock);
-	CORE().iqueue.queue_condition.notify_all();
+	threads::alock h(CORE().iqueue->queue_lock);
+	CORE().iqueue->queue_condition.notify_all();
 	usleep(200000);
 }
 
 void platform::flush_command_queue() throw()
 {
 	reload_lua_timers();
-	CORE().iqueue.queue_function_run = false;
+	CORE().iqueue->queue_function_run = false;
 	if(modal_pause || normal_pause)
-		CORE().framerate.freeze_time(framerate_regulator::get_utime());
+		CORE().framerate->freeze_time(framerate_regulator::get_utime());
 	bool run_idle = false;
 	while(true) {
 		uint64_t now = framerate_regulator::get_utime();
@@ -284,11 +285,11 @@ void platform::flush_command_queue() throw()
 			reload_lua_timers();
 			run_idle = false;
 		}
-		threads::alock h(CORE().iqueue.queue_lock);
-		CORE().iqueue.run_queue(true);
+		threads::alock h(CORE().iqueue->queue_lock);
+		CORE().iqueue->run_queue(true);
 		if(!pausing_allowed)
 			break;
-		if(CORE().iqueue.queue_function_run)
+		if(CORE().iqueue->queue_function_run)
 			reload_lua_timers();
 		now = framerate_regulator::get_utime();
 		uint64_t waitleft = 0;
@@ -305,7 +306,7 @@ void platform::flush_command_queue() throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				threads::cv_timed_wait(CORE().iqueue.queue_condition, h, threads::ustime(waitleft));
+				threads::cv_timed_wait(CORE().iqueue->queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -313,7 +314,7 @@ void platform::flush_command_queue() throw()
 		//If we had to wait, check queues at least once more.
 	}
 	if(!modal_pause && !normal_pause)
-		CORE().framerate.unfreeze_time(framerate_regulator::get_utime());
+		CORE().framerate->unfreeze_time(framerate_regulator::get_utime());
 }
 
 void platform::set_paused(bool enable) throw()
@@ -337,9 +338,9 @@ void platform::wait(uint64_t usec) throw()
 			run_idle = false;
 			reload_lua_timers();
 		}
-		threads::alock h(CORE().iqueue.queue_lock);
-		CORE().iqueue.run_queue(true);
-		if(CORE().iqueue.queue_function_run)
+		threads::alock h(CORE().iqueue->queue_lock);
+		CORE().iqueue->run_queue(true);
+		if(CORE().iqueue->queue_function_run)
 			reload_lua_timers();
 		//If usec is 0, never wait (waitleft can be nonzero if time counting screws up).
 		if(!usec)
@@ -358,7 +359,7 @@ void platform::wait(uint64_t usec) throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				threads::cv_timed_wait(CORE().iqueue.queue_condition, h, threads::ustime(waitleft));
+				threads::cv_timed_wait(CORE().iqueue->queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -369,8 +370,8 @@ void platform::wait(uint64_t usec) throw()
 void platform::cancel_wait() throw()
 {
 	continue_time = 0;
-	threads::alock h(CORE().iqueue.queue_lock);
-	CORE().iqueue.queue_condition.notify_all();
+	threads::alock h(CORE().iqueue->queue_lock);
+	CORE().iqueue->queue_condition.notify_all();
 }
 
 void platform::set_modal_pause(bool enable) throw()
@@ -380,7 +381,7 @@ void platform::set_modal_pause(bool enable) throw()
 
 void platform::run_queues() throw()
 {
-	CORE().iqueue.run_queue(false);
+	CORE().iqueue->run_queue(false);
 }
 
 namespace

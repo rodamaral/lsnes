@@ -58,8 +58,8 @@ namespace
 	void fatal_signal_handler(int sig)
 	{
 		write(2, "Caught fatal signal!\n", 21);
-		if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic.get_mfile(),
-			lsnes_instance.mlogic.get_rrdata());
+		if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic->get_mfile(),
+			lsnes_instance.mlogic->get_rrdata());
 		signal(sig, SIG_DFL);
 		raise(sig);
 	}
@@ -67,16 +67,16 @@ namespace
 	void terminate_handler()
 	{
 		write(2, "Terminating abnormally!\n", 24);
-		if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic.get_mfile(),
-			lsnes_instance.mlogic.get_rrdata());
+		if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic->get_mfile(),
+			lsnes_instance.mlogic->get_rrdata());
 		std::cerr << "Exiting on fatal error" << std::endl;
 		exit(1);
 	}
 
 	command::fnptr<const std::string&> test4(lsnes_cmds, "panicsave-movie", "", "",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-		if(CORE().mlogic) emerg_save_movie(CORE().mlogic.get_mfile(),
-			CORE().mlogic.get_rrdata());
+		if(*CORE().mlogic) emerg_save_movie(CORE().mlogic->get_mfile(),
+			CORE().mlogic->get_rrdata());
 	});
 
 	//% is intentionally missing.
@@ -134,7 +134,7 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 
 void dump_region_map() throw(std::bad_alloc)
 {
-	std::list<struct memory_region*> regions = CORE().memory.get_regions();
+	std::list<struct memory_region*> regions = CORE().memory->get_regions();
 	for(auto i : regions) {
 		std::ostringstream x;
 		x << hex::to(i->base) << "-" << hex::to(i->last_address()) << " " << hex::to(i->size) << " ";
@@ -188,8 +188,8 @@ std::string get_config_path() throw(std::bad_alloc)
 
 void OOM_panic()
 {
-	if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic.get_mfile(),
-		lsnes_instance.mlogic.get_rrdata());
+	if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic->get_mfile(),
+		lsnes_instance.mlogic->get_rrdata());
 	messages << "FATAL: Out of memory!" << std::endl;
 	fatal_error();
 }
@@ -220,8 +220,8 @@ void reached_main()
 	crandom::init();
 	new_core_flag = false;	//We'll process the static cores anyway.
 	reached_main_flag = true;
-	lsnes_instance.command.set_oom_panic(OOM_panic);
-	lsnes_instance.command.set_output(platform::out());
+	lsnes_instance.command->set_oom_panic(OOM_panic);
+	lsnes_instance.command->set_output(platform::out());
 	loadlib::module::run_initializers();
 	std::set_terminate(terminate_handler);
 #ifdef SIGHUP
@@ -306,13 +306,13 @@ command::fnptr<const std::string&> macro_test(lsnes_cmds, "test-macro", "", "",
 			return;
 		}
 		unsigned ctrl = parse_value<unsigned>(r[1]);
-		auto pcid = CORE().controls.lcid_to_pcid(ctrl);
+		auto pcid = CORE().controls->lcid_to_pcid(ctrl);
 		if(pcid.first < 0) {
 			messages << "Bad controller" << std::endl;
 			return;
 		}
 		try {
-			const port_controller* _ctrl = CORE().controls.get_blank().porttypes().port_type(pcid.first).
+			const port_controller* _ctrl = CORE().controls->get_blank().porttypes().port_type(pcid.first).
 				controller_info->get(pcid.second);
 			if(!_ctrl) {
 				messages << "No controller data for controller" << std::endl;

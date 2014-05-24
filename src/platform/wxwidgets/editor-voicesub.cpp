@@ -1,4 +1,5 @@
 #include "core/instance.hpp"
+#include "core/inthread.hpp"
 #include "core/project.hpp"
 #include <stdexcept>
 
@@ -164,7 +165,7 @@ void wxeditor_voicesub::on_play(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		lsnes_instance.commentary.play_stream(id);
+		lsnes_instance.commentary->play_stream(id);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error playing", e.what(), wxICON_EXCLAMATION);
 	}
@@ -176,7 +177,7 @@ void wxeditor_voicesub::on_delete(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		lsnes_instance.commentary.delete_stream(id);
+		lsnes_instance.commentary->delete_stream(id);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error deleting", e.what(), wxICON_EXCLAMATION);
 	}
@@ -212,9 +213,9 @@ void wxeditor_voicesub::on_export(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		auto filename = choose_file_save(this, "Select file to epxort", lsnes_instance.project.otherpath(),
+		auto filename = choose_file_save(this, "Select file to epxort", lsnes_instance.project->otherpath(),
 			filetype_opus_sox);
-		lsnes_instance.commentary.export_stream(id, filename.first, filename.second);
+		lsnes_instance.commentary->export_stream(id, filename.first, filename.second);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
@@ -226,8 +227,8 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 	try {
 		std::string filename;
 		filename = choose_file_save(this, "Select file to export superstream",
-			lsnes_instance.project.otherpath(), filetype_sox);
-		lsnes_instance.commentary.export_superstream(filename);
+			lsnes_instance.project->otherpath(), filetype_sox);
+		lsnes_instance.commentary->export_superstream(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting superstream", e.what(), wxICON_EXCLAMATION);
@@ -238,11 +239,11 @@ void wxeditor_voicesub::on_import(wxCommandEvent& e)
 {
 	try {
 		uint64_t ts;
-		ts = lsnes_instance.commentary.parse_timebase(pick_text(this, "Enter timebase",
+		ts = lsnes_instance.commentary->parse_timebase(pick_text(this, "Enter timebase",
 			"Enter position for newly imported stream"));
-		auto filename = choose_file_save(this, "Select file to import", lsnes_instance.project.otherpath(),
+		auto filename = choose_file_save(this, "Select file to import", lsnes_instance.project->otherpath(),
 			filetype_opus_sox);
-		lsnes_instance.commentary.import_stream(ts, filename.first, filename.second);
+		lsnes_instance.commentary->import_stream(ts, filename.first, filename.second);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
@@ -256,9 +257,9 @@ void wxeditor_voicesub::on_change_ts(wxCommandEvent& e)
 		return;
 	try {
 		uint64_t ts;
-		ts = lsnes_instance.commentary.parse_timebase(pick_text(this, "Enter timebase",
+		ts = lsnes_instance.commentary->parse_timebase(pick_text(this, "Enter timebase",
 			"Enter new position for stream"));
-		lsnes_instance.commentary.alter_timebase(id, ts);
+		lsnes_instance.commentary->alter_timebase(id, ts);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error changing timebase", e.what(), wxICON_EXCLAMATION);
@@ -272,9 +273,9 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 		return;
 	try {
 		float gain;
-		std::string old = (stringfmt() << lsnes_instance.commentary.get_gain(id)).str();
+		std::string old = (stringfmt() << lsnes_instance.commentary->get_gain(id)).str();
 		gain = parse_value<float>(pick_text(this, "Enter gain", "Enter new gain (dB) for stream", old));
-		lsnes_instance.commentary.set_gain(id, gain);
+		lsnes_instance.commentary->set_gain(id, gain);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error changing gain", e.what(), wxICON_EXCLAMATION);
@@ -283,7 +284,7 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_load(wxCommandEvent& e)
 {
-	if(lsnes_instance.project.get() != NULL)
+	if(lsnes_instance.project->get() != NULL)
 		return;
 	try {
 		std::string filename;
@@ -293,7 +294,7 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 		} catch(...) {
 			return;
 		}
-		lsnes_instance.commentary.load_collection(filename);
+		lsnes_instance.commentary->load_collection(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading collection", e.what(), wxICON_EXCLAMATION);
@@ -302,9 +303,9 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_unload(wxCommandEvent& e)
 {
-	if(lsnes_instance.project.get() != NULL)
+	if(lsnes_instance.project->get() != NULL)
 		return;
-	lsnes_instance.commentary.unload_collection();
+	lsnes_instance.commentary->unload_collection();
 }
 
 void wxeditor_voicesub::on_refresh(wxCommandEvent& e)
@@ -322,8 +323,8 @@ void wxeditor_voicesub::refresh()
 {
 	if(closing)
 		return;
-	bool cflag = lsnes_instance.commentary.collection_loaded();
-	bool pflag = (lsnes_instance.project.get() != NULL);
+	bool cflag = lsnes_instance.commentary->collection_loaded();
+	bool pflag = (lsnes_instance.project->get() != NULL);
 	unloadbutton->Enable(cflag && !pflag);
 	loadbutton->Enable(!pflag);
 	exportsbutton->Enable(cflag);
@@ -332,12 +333,12 @@ void wxeditor_voicesub::refresh()
 	subtitles->Clear();
 	smap.clear();
 	int next = 0;
-	for(auto i : lsnes_instance.commentary.get_stream_info()) {
+	for(auto i : lsnes_instance.commentary->get_stream_info()) {
 		smap[next++] = i.id;
 		std::ostringstream tmp;
-		tmp << "#" << i.id << " " << lsnes_instance.commentary.ts_seconds(i.length) << "s@"
-			<< lsnes_instance.commentary.ts_seconds(i.base) << "s";
-		float gain = lsnes_instance.commentary.get_gain(i.id);
+		tmp << "#" << i.id << " " << lsnes_instance.commentary->ts_seconds(i.length) << "s@"
+			<< lsnes_instance.commentary->ts_seconds(i.base) << "s";
+		float gain = lsnes_instance.commentary->get_gain(i.id);
 		if(gain < -1e-5 || gain > 1e-5)
 			tmp << " (gain " << gain << "dB)";
 		std::string text = tmp.str();

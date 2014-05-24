@@ -749,15 +749,15 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 	} else {
 		if(fn.length() < 6 || fn.substr(fn.length() - 5) != ".lsmv")
 			filename->SetValue(towxstring(fn + ".lsmv"));
-		lsnes_instance.mlogic.get_mfile().is_savestate = false;
-		auto prj = lsnes_instance.project.get();
+		lsnes_instance.mlogic->get_mfile().is_savestate = false;
+		auto prj = lsnes_instance.project->get();
 		if(prj) {
-			lsnes_instance.mlogic.get_mfile().gamename = prj->gamename;
-			lsnes_instance.mlogic.get_mfile().authors = prj->authors;
+			lsnes_instance.mlogic->get_mfile().gamename = prj->gamename;
+			lsnes_instance.mlogic->get_mfile().authors = prj->authors;
 		}
-		lsnes_instance.mlogic.get_mfile().active_macros.clear();
+		lsnes_instance.mlogic->get_mfile().active_macros.clear();
 		std::ostringstream stream;
-		lsnes_instance.mlogic.get_mfile().save(stream, lsnes_instance.mlogic.get_rrdata());
+		lsnes_instance.mlogic->get_mfile().save(stream, lsnes_instance.mlogic->get_rrdata());
 		std::string _stream = stream.str();
 		content = std::vector<char>(_stream.begin(), _stream.end());
 	}
@@ -780,14 +780,14 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 	if(!games_req) {
 		if(current->GetValue()) {
 			std::string curgame;
-			auto prj = lsnes_instance.project.get();
+			auto prj = lsnes_instance.project->get();
 			if(prj)
 				curgame = prj->gamename;
 			else
-				curgame = lsnes_instance.mlogic.get_mfile().gamename;
+				curgame = lsnes_instance.mlogic->get_mfile().gamename;
 
 			std::string plat = lookup_sysregion_mapping(
-				lsnes_instance.mlogic.get_mfile().gametype->get_name()) + " ";
+				lsnes_instance.mlogic->get_mfile().gametype->get_name()) + " ";
 			size_t platlen = plat.length();
 			std::string c = tostdstring(game->GetLabel());
 			std::string fullname = plat + curgame;
@@ -829,7 +829,7 @@ void wxeditor_uploaddialog::on_game_sel(wxCommandEvent& e)
 	auto pos = game_sel_button->GetScreenPosition();
 	std::string system;
 	if(current->GetValue())
-		system = lookup_sysregion_mapping(lsnes_instance.mlogic.get_mfile().gametype->get_name());
+		system = lookup_sysregion_mapping(lsnes_instance.mlogic->get_mfile().gametype->get_name());
 	wxwin_gameselect* gs = new wxwin_gameselect(this, games_list, tostdstring(game->GetLabel()), system,
 		pos.x, pos.y);
 	if(gs->ShowModal() != wxID_OK) {

@@ -4,6 +4,7 @@
 #include <wx/clipbrd.h>
 
 #include "library/minmax.hpp"
+#include "core/instance.hpp"
 #include "core/window.hpp"
 #include "core/project.hpp"
 
@@ -103,7 +104,7 @@ void wxwin_messages::panel::on_menu(wxCommandEvent& e)
 	case wxID_SAVE:
 		try {
 			std::string filename = choose_file_save(this, "Save messages to",
-				lsnes_instance.project.otherpath(), filetype_textfile);
+				lsnes_instance.project->otherpath(), filetype_textfile);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			if(lines == 1) str += "\n";
@@ -287,7 +288,7 @@ void wxwin_messages::on_execute(wxCommandEvent& e)
 	//Delete old commands to prevent box becoming unmageable.
 	if(command->GetCount() > COMMAND_HISTORY_SIZE)
 		command->Delete(command->GetCount() - 1);
-	lsnes_instance.iqueue.queue(cmd);
+	lsnes_instance.iqueue->queue(cmd);
 }
 
 void wxwin_messages::notify_update() throw()

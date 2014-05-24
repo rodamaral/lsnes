@@ -365,7 +365,7 @@ public:
 	{
 		try {
 			std::string filename = choose_file_load(this, "Load bookmarks from file",
-				lsnes_instance.project.otherpath(), filetype_hexbookmarks);
+				lsnes_instance.project->otherpath(), filetype_hexbookmarks);
 			auto _in = zip::readrel(filename, "");
 			std::string in(_in.begin(), _in.end());
 			JSON::node root(in);
@@ -412,7 +412,7 @@ public:
 		std::string doc = root.serialize();
 		try {
 			std::string filename = choose_file_save(this, "Save bookmarks to file",
-				lsnes_instance.project.otherpath(), filetype_hexbookmarks);
+				lsnes_instance.project->otherpath(), filetype_hexbookmarks);
 			std::ofstream out(filename.c_str());
 			out << doc << std::endl;
 			out.close();
@@ -502,14 +502,14 @@ public:
 				<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 			if(n == "")
 				return;
-			memwatch_item e(lsnes_instance.memory);
+			memwatch_item e(*lsnes_instance.memory);
 			e.expr = (stringfmt() << addr).str();
 			e.format = datatypes[curtype].format;
 			e.bytes = datatypes[curtype].len;
 			e.signed_flag = (datatypes[curtype].type == 1);
 			e.float_flag = (datatypes[curtype].type == 2);
 			//Handle hostendian VMAs.
-			auto i = lsnes_instance.memory.get_regions();
+			auto i = lsnes_instance.memory->get_regions();
 			bool hostendian = false;
 			for(auto& j : i) {
 				if(addr >= j->base && addr < j->base + j->size && !j->endian)
@@ -517,7 +517,7 @@ public:
 			}
 			e.endianess = hostendian ? 0 : (littleendian ? -1 : 1);
 			e.scale_div = 1ULL << datatypes[curtype].scale;
-			lsnes_instance.iqueue.run([n, &e]() { lsnes_instance.mwatch.set(n, e); });
+			lsnes_instance.iqueue->run([n, &e]() { lsnes_instance.mwatch->set(n, e); });
 		} catch(canceled_exception& e) {
 		}
 	}
@@ -541,7 +541,7 @@ public:
 		bookmark_entry ent = bookmarks[id - wxID_BOOKMARKS_FIRST];
 		int r = vma_index_for_name(ent.vma);
 		uint64_t base = 0, size = 0;
-		auto i = lsnes_instance.memory.get_regions();
+		auto i = lsnes_instance.memory->get_regions();
 		for(auto j : i) {
 			if(j->readonly || j->special)
 				continue;
@@ -573,7 +573,7 @@ invalid_bookmark:
 		if(selected < wxID_REGIONS_FIRST || selected > wxID_REGIONS_LAST)
 			return;
 		selected -= wxID_REGIONS_FIRST;
-		auto i = lsnes_instance.memory.get_regions();
+		auto i = lsnes_instance.memory->get_regions();
 		int index = 0;
 		for(auto j : i) {
 			if(j->readonly || j->special)
@@ -640,7 +640,7 @@ invalid_bookmark:
 		if(destructing)
 			return;
 		//Switch to correct VMA.
-		auto i = lsnes_instance.memory.get_regions();
+		auto i = lsnes_instance.memory->get_regions();
 		int index = 0;
 		for(auto j : i) {
 			if(j->readonly || j->special)
@@ -708,7 +708,7 @@ invalid_bookmark:
 			}
 			std::string current_reg = get_current_vma_name();
 			uint64_t nsbase = 0, nssize = 0;
-			auto i = lsnes_instance.memory.get_regions();
+			auto i = lsnes_instance.memory->get_regions();
 			vma_names.clear();
 			if(hard)
 				vma_endians.clear();
@@ -755,7 +755,9 @@ invalid_bookmark:
 			hex_input_state = -1;
 			if(hpanel->seloff + 1 < hpanel->vmasize)
 				hpanel->seloff++;
-			lsnes_instance.iqueue.run([addr, byte]() {lsnes_instance.memory.write<uint8_t>(addr, byte); });
+			lsnes_instance.iqueue->run([addr, byte]() {
+				lsnes_instance.memory->write<uint8_t>(addr, byte);
+			});
 		}
 		hpanel->request_paint();
 	}
@@ -786,7 +788,7 @@ invalid_bookmark:
 			uint64_t _seloff = seloff;
 			int _lines = lines;
 			uint8_t* _value = value;
-			lsnes_instance.iqueue.run([_vmabase, _vmasize, paint_offset, _seloff, _value, _lines,
+			lsnes_instance.iqueue->run([_vmabase, _vmasize, paint_offset, _seloff, _value, _lines,
 				this]() {
 				memory_search* memsearch = wxwindow_memorysearch_active();
 				//Paint the stuff
@@ -816,7 +818,7 @@ invalid_bookmark:
 						if(candidate) bg = (bg & 0xC0C0C0) | 0x3F0000;
 						if(addr + i == _seloff)
 							std::swap(fg, bg);
-						uint8_t b = lsnes_instance.memory.read<uint8_t>(laddr + i);
+						uint8_t b = lsnes_instance.memory->read<uint8_t>(laddr + i);
 						if(rparent->hex_input_state < 0 || addr + i != seloff
 						)
 							write(hexes[(b >> 4) & 15], 1, hexcol[i], j, fg, bg);
@@ -834,7 +836,7 @@ invalid_bookmark:
 					}
 				}
 				memset(_value, 0, maxvaluelen);
-				lsnes_instance.memory.read_range(_vmabase + _seloff, _value, maxvaluelen);
+				lsnes_instance.memory->read_range(_vmabase + _seloff, _value, maxvaluelen);
 			});
 			rparent->refresh_curvalue();
 			rparent->set_search_status();

@@ -84,7 +84,7 @@ namespace
 	command::fnptr<command::arg_filename> take_screenshot_cmd(lsnes_cmds, "take-screenshot", "Takes a screenshot",
 		"Syntax: take-screenshot <file>\nSaves screenshot to PNG file <file>\n",
 		[](command::arg_filename file) throw(std::bad_alloc, std::runtime_error) {
-			CORE().fbuf.take_screenshot(file);
+			CORE().fbuf->take_screenshot(file);
 			messages << "Saved PNG screenshot" << std::endl;
 		});
 

@@ -158,8 +158,8 @@ namespace
 	{
 		std::map<std::string, std::pair<uint64_t, uint64_t>> regions;
 		std::set<std::string> disasms;
-		lsnes_instance.iqueue.run([&regions, &disasms]() {
-			for(auto i : lsnes_instance.memory.get_regions())
+		lsnes_instance.iqueue->run([&regions, &disasms]() {
+			for(auto i : CORE().memory->get_regions())
 				regions[i->name] = std::make_pair(i->base, i->size);
 			disasms = disassembler::list();
 		});
@@ -320,8 +320,8 @@ namespace
 			std::string _vma = tostdstring(vma->GetStringSelection());
 			if(_endian <= 0 || _endian > 3) {
 				_endian = 1;
-				lsnes_instance.iqueue.run([&_endian, _vma]() {
-					for(auto i : lsnes_instance.memory.get_regions()) {
+				lsnes_instance.iqueue->run([&_endian, _vma]() {
+					for(auto i : CORE().memory->get_regions()) {
 						if(i->name == _vma) {
 							_endian = i->endian + 2;
 						}
@@ -350,8 +350,8 @@ namespace
 		uint64_t base = 0;
 		if(vma->GetSelection() && vma->GetSelection() != wxNOT_FOUND) {
 			std::string _vma = tostdstring(vma->GetStringSelection());
-			lsnes_instance.iqueue.run([&base, _vma]() {
-				for(auto i : lsnes_instance.memory.get_regions()) {
+			lsnes_instance.iqueue->run([&base, _vma]() {
+				for(auto i : CORE().memory->get_regions()) {
 					if(i->name == _vma) {
 						base = i->base;
 					}
@@ -578,7 +578,7 @@ namespace
 				return;
 		}
 		if(trace_active)
-			lsnes_instance.iqueue.run([this]() { kill_debug_hooks(); });
+			lsnes_instance.iqueue->run([this]() { kill_debug_hooks(); });
 		trace_active = false;
 		if(!closing)
 			Destroy();
@@ -587,13 +587,13 @@ namespace
 
 	void wxwin_tracelog::kill_debug_hooks()
 	{
-		CORE().dbg.remove_callback(cpuid, debug_context::DEBUG_TRACE, *this);
-		CORE().dbg.remove_callback(cpuid, debug_context::DEBUG_FRAME, *this);
+		CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_TRACE, *this);
+		CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_FRAME, *this);
 		threads::alock h(buffer_mutex);
 		for(auto& i : rwx_breakpoints) {
 			if(!i.second)
 				continue;
-			CORE().dbg.remove_callback(i.first.first, i.first.second, *this);
+			CORE().dbg->remove_callback(i.first.first, i.first.second, *this);
 			i.second = false;
 		}
 		trace_active = false;
@@ -707,7 +707,7 @@ namespace
 
 	void wxwin_tracelog::do_rwx_break(uint64_t addr, uint64_t value, debug_context::etype type)
 	{
-		lsnes_instance.dbg.request_break();
+		lsnes_instance.dbg->request_break();
 	}
 
 	void wxwin_tracelog::callback(const debug_context::params& p)
@@ -729,7 +729,7 @@ namespace
 				runuifun([this]() { this->process_lines(); });
 			}
 			if(singlestepping && p.trace.true_insn) {
-				lsnes_instance.dbg.request_break();
+				lsnes_instance.dbg->request_break();
 				singlestepping = false;
 			}
 			break;
@@ -762,7 +762,7 @@ namespace
 			auto i2 = std::make_pair(addr, type);
 			auto& h = rwx_breakpoints[i2];
 			if(h)
-				lsnes_instance.dbg.remove_callback(addr, type, *this);
+				lsnes_instance.dbg->remove_callback(addr, type, *this);
 			h = false;
 			break;
 		}
@@ -786,18 +786,18 @@ namespace
 	void wxwin_tracelog::on_enabled(wxCommandEvent& e)
 	{
 		bool enable = enabled->GetValue();
-		lsnes_instance.iqueue.run([this, enable]() {
+		lsnes_instance.iqueue->run([this, enable]() {
 			if(enable) {
 				threads::alock h(buffer_mutex);
 				broken = broken2;
 				broken2 = true;
 				for(auto& i : rwx_breakpoints) {
 					auto i2 = i.first;
-					lsnes_instance.dbg.add_callback(i2.first, i2.second, *this);
+					CORE().dbg->add_callback(i2.first, i2.second, *this);
 					i.second = true;
 				}
-				lsnes_instance.dbg.add_callback(cpuid, debug_context::DEBUG_TRACE, *this);
-				lsnes_instance.dbg.add_callback(0, debug_context::DEBUG_FRAME, *this);
+				CORE().dbg->add_callback(cpuid, debug_context::DEBUG_TRACE, *this);
+				CORE().dbg->add_callback(0, debug_context::DEBUG_FRAME, *this);
 				this->trace_active = true;
 			} else if(trace_active) {
 				this->trace_active = false;
@@ -867,7 +867,7 @@ namespace
 					return;
 			}
 			if(trace_active) {
-				lsnes_instance.iqueue.run([this]() { this->kill_debug_hooks(); });
+				lsnes_instance.iqueue->run([this]() { this->kill_debug_hooks(); });
 			}
 			trace_active = false;
 			Destroy();
@@ -875,7 +875,7 @@ namespace
 		} else if(e.GetId() == wxID_SAVE) {
 			try {
 				std::string filename = choose_file_save(this, "Save tracelog to",
-					lsnes_instance.project.otherpath(), filetype_trace);
+					lsnes_instance.project->otherpath(), filetype_trace);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				for(auto& i : panel->rows)
@@ -942,18 +942,18 @@ namespace
 			}
 			scroll_pane(find_line);
 		} else if(e.GetId() == wxID_SINGLESTEP) {
-			lsnes_instance.iqueue.run_async([this]() {
+			lsnes_instance.iqueue->run_async([this]() {
 				this->singlestepping = true;
-				lsnes_instance.command.invoke("unpause-emulator");
+				CORE().command->invoke("unpause-emulator");
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_FRAMEADVANCE) {
-			lsnes_instance.iqueue.run_async([this]() { 
-				lsnes_instance.command.invoke("+advance-frame"); 
-				lsnes_instance.command.invoke("-advance-frame"); 
+			lsnes_instance.iqueue->run_async([this]() { 
+				CORE().command->invoke("+advance-frame"); 
+				CORE().command->invoke("-advance-frame"); 
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_CONTINUE) {
-			lsnes_instance.iqueue.run_async([this]() {
-				lsnes_instance.command.invoke("unpause-emulator");
+			lsnes_instance.iqueue->run_async([this]() {
+				CORE().command->invoke("unpause-emulator");
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_BREAKPOINTS) {
 			dialog_breakpoints* d = new dialog_breakpoints(this);
@@ -999,7 +999,7 @@ namespace
 		case wxID_SAVE:
 			try {
 				std::string filename = choose_file_save(this, "Save tracelog fragment to",
-					lsnes_instance.project.otherpath(), filetype_trace);
+					lsnes_instance.project->otherpath(), filetype_trace);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				if(lines == 1) str += "\n";
@@ -1038,7 +1038,7 @@ namespace
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save tracelog to",
-				lsnes_instance.project.otherpath(), filetype_trace);
+				lsnes_instance.project->otherpath(), filetype_trace);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			for(auto& i : panel->rows)
@@ -1058,7 +1058,7 @@ back:
 	std::set<std::pair<uint64_t, debug_context::etype>> wxwin_tracelog::get_breakpoints()
 	{
 		std::set<std::pair<uint64_t, debug_context::etype>> ret;
-		lsnes_instance.iqueue.run([this, &ret]() {
+		lsnes_instance.iqueue->run([this, &ret]() {
 			for(auto i : rwx_breakpoints)
 				ret.insert(i.first);
 		});
@@ -1073,7 +1073,7 @@ back:
 			rwx_breakpoints[i2] = false;
 			return;
 		}
-		lsnes_instance.dbg.add_callback(i2.first, i2.second, *this);
+		lsnes_instance.dbg->add_callback(i2.first, i2.second, *this);
 		rwx_breakpoints[i2] = true;
 	}
 
@@ -1082,7 +1082,7 @@ back:
 		std::pair<uint64_t, debug_context::etype> i2 = std::make_pair(addr, dtype);
 		auto& h = rwx_breakpoints[i2];
 		if(h)
-			lsnes_instance.dbg.remove_callback(i2.first, i2.second, *this);
+			lsnes_instance.dbg->remove_callback(i2.first, i2.second, *this);
 		rwx_breakpoints.erase(i2);
 	}
 
@@ -1296,7 +1296,7 @@ back:
 		} else if(e.GetId() == wxID_SAVE) {
 			try {
 				std::string filename = choose_file_save(this, "Save disassembly to",
-					lsnes_instance.project.otherpath(), filetype_disassembly);
+					lsnes_instance.project->otherpath(), filetype_disassembly);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				for(auto& i : panel->rows)
@@ -1319,13 +1319,13 @@ back:
 			uint64_t addr = d->get_address();
 			uint64_t count = d->get_count();
 			d->Destroy();
-			lsnes_instance.iqueue.run_async([this, disasm, addr, count]() {
+			lsnes_instance.iqueue->run_async([this, disasm, addr, count]() {
 				this->run_disassembler(disasm, addr, count);
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_GOTO) {
 			try {
 				std::string to = pick_text(this, "Goto", "Enter address to go to:", "");
-				lsnes_instance.iqueue.run_async([this, to]() {
+				lsnes_instance.iqueue->run_async([this, to]() {
 					uint64_t addr;
 					uint64_t base = 0;
 					std::string vma;
@@ -1340,7 +1340,7 @@ back:
 					}
 					if(vma != "") {
 						bool found = false;
-						for(auto i : lsnes_instance.memory.get_regions()) {
+						for(auto i : CORE().memory->get_regions()) {
 							if(i->name == vma) {
 								base = i->base;
 								found = true;
@@ -1423,7 +1423,7 @@ back:
 			uint64_t count = d->get_count();
 			d->Destroy();
 			auto pp = p;
-			lsnes_instance.iqueue.run_async([pp, disasm, addr, count]() {
+			lsnes_instance.iqueue->run_async([pp, disasm, addr, count]() {
 				pp->run_disassembler(disasm, addr, count);
 			}, [](std::exception& e) {});
 			//Delete entries in (rbase, addr) if addr = base.
@@ -1462,7 +1462,7 @@ back:
 		case wxID_SAVE:
 			try {
 				std::string filename = choose_file_save(this, "Save disassembly fragment to",
-					lsnes_instance.project.otherpath(), filetype_disassembly);
+					lsnes_instance.project->otherpath(), filetype_disassembly);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				if(lines == 1) str += "\n";
@@ -1501,7 +1501,7 @@ back:
 
 	std::string lookup_address(uint64_t raw)
 	{
-		auto g = lsnes_instance.memory.lookup(raw);
+		auto g = lsnes_instance.memory->lookup(raw);
 		if(!g.first)
 			return hex::to<uint64_t>(raw);
 		else
@@ -1586,7 +1586,7 @@ back:
 	{
 		char buf[sizeof(T)];
 		for(size_t i = 0; i < sizeof(T); i++)
-			buf[i] = lsnes_instance.memory.read<uint8_t>(addrbase + i);
+			buf[i] = lsnes_instance.memory->read<uint8_t>(addrbase + i);
 		disasm_row r;
 		if(hex)
 			r.row = (stringfmt() << "DATA 0x" << hex::to<T>(serialization::read_endian<T>(buf, endian))).
@@ -1680,7 +1680,7 @@ back:
 			uint64_t base = addrbase;
 			disasm_row r;
 			r.row = d->disassemble(addrbase, [&addrbase]() -> unsigned char {
-				return lsnes_instance.memory.read<uint8_t>(addrbase++);
+				return lsnes_instance.memory->read<uint8_t>(addrbase++);
 			});
 			r.cover = addrbase - base;
 			r.language = disasm;
@@ -1694,7 +1694,7 @@ back:
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save disassembly to",
-				lsnes_instance.project.otherpath(), filetype_disassembly);
+				lsnes_instance.project->otherpath(), filetype_disassembly);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			for(auto& i : panel->rows)
@@ -1760,7 +1760,7 @@ back:
 		: wxDialog(parent, wxID_ANY, wxT("Breakpoints"))
 	{
 		pwin = parent;
-		regions = lsnes_instance.memory.get_regions();
+		regions = lsnes_instance.memory->get_regions();
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 		top_s->Add(brklist = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(300, 400)), 1, wxGROW);
@@ -1806,7 +1806,7 @@ back:
 		}
 		rpair(addr, dtype) = d->get_result();
 		d->Destroy();
-		lsnes_instance.iqueue.run_async([this, addr, dtype]() {
+		lsnes_instance.iqueue->run_async([this, addr, dtype]() {
 			pwin->add_breakpoint(addr, dtype);
 		}, [](std::exception& e) {});
 		auto ent = std::make_pair(addr, dtype);
@@ -1825,7 +1825,7 @@ back:
 		debug_context::etype dtype;
 		addr = listsyms[idx].first;
 		dtype = listsyms[idx].second;
-		lsnes_instance.iqueue.run_async([this, addr, dtype]() {
+		lsnes_instance.iqueue->run_async([this, addr, dtype]() {
 			pwin->remove_breakpoint(addr, dtype);
 		}, [](std::exception& e) {});
 		brklist->Delete(idx);

@@ -51,7 +51,7 @@ private:
 wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit game name & authors"), wxDefaultPosition, wxSize(-1, -1))
 {
-	project_info* proj = lsnes_instance.project.get();
+	project_info* proj = lsnes_instance.project->get();
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(proj ? 12 : 5, 1, 0, 0);
 	SetSizer(top_s);
@@ -153,15 +153,15 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	std::list<std::string> luascriptlist;
 	std::string gamename;
 	std::string x;
-	lsnes_instance.iqueue.run([&gamename, &x, &luascriptlist, proj]() {
+	lsnes_instance.iqueue->run([&gamename, &x, &luascriptlist, proj]() {
 		if(proj) {
 			luascriptlist = proj->luascripts;
 			gamename = proj->gamename;
 			for(auto i : proj->authors)
 				x = x + i.first + "|" + i.second + "\n";
 		} else {
-			gamename = lsnes_instance.mlogic.get_mfile().gamename;
-			for(auto i : lsnes_instance.mlogic.get_mfile().authors)
+			gamename = lsnes_instance.mlogic->get_mfile().gamename;
+			for(auto i : lsnes_instance.mlogic->get_mfile().authors)
 				x = x + i.first + "|" + i.second + "\n";
 		}
 
@@ -199,7 +199,7 @@ void wxeditor_authors::on_cancel(wxCommandEvent& e)
 
 void wxeditor_authors::on_ok(wxCommandEvent& e)
 {
-	project_info* proj = lsnes_instance.project.get();
+	project_info* proj = lsnes_instance.project->get();
 	std::string gamename = tostdstring(projectname->GetValue());
 	std::string pfx = tostdstring(projectpfx->GetValue());
 	std::string dir = directory ? tostdstring(directory->GetValue()) : std::string("");
@@ -217,7 +217,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			luascriptlist.push_back(tostdstring(luascripts->GetString(i)));
 	bool run_new = autorunlua ? autorunlua->GetValue() : false;
 
-	lsnes_instance.iqueue.run([gamename, newauthors, pfx, dir, prjname, luascriptlist, run_new, proj]() {
+	lsnes_instance.iqueue->run([gamename, newauthors, pfx, dir, prjname, luascriptlist, run_new, proj]() {
 		std::set<std::string> oldscripts;
 		if(proj) {
 			for(auto i : proj->luascripts)
@@ -234,14 +234,14 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			update_movie_state();
 			notify_title_change();
 		} else {
-			lsnes_instance.mlogic.get_mfile().gamename = gamename;
-			lsnes_instance.mlogic.get_mfile().authors = newauthors;
+			lsnes_instance.mlogic->get_mfile().gamename = gamename;
+			lsnes_instance.mlogic->get_mfile().authors = newauthors;
 			set_mprefix_for_project(pfx);
 		}
 		if(run_new)
 			for(auto i : luascriptlist)
 				if(!oldscripts.count(i))
-					lsnes_instance.command.invoke("run-lua " + i);
+					lsnes_instance.command->invoke("run-lua " + i);
 	});
 	EndModal(wxID_OK);
 }

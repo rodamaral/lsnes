@@ -310,6 +310,6 @@ namespace
 
 	avi_video_codec_type rgb("tscc", "TSCC video codec",
 		[]() -> avi_video_codec* {
-			return new avi_codec_tscc(clvl(CORE().settings), kint(CORE().settings));
+			return new avi_codec_tscc(clvl(*CORE().settings), kint(*CORE().settings));
 		});
 }

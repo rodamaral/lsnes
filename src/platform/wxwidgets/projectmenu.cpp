@@ -1,6 +1,7 @@
 #include "platform/wxwidgets/menu_projects.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "library/eatarg.hpp"
+#include "core/instance.hpp"
 #include "core/project.hpp"
 
 projects_menu::projects_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg, 
@@ -28,7 +29,7 @@ void projects_menu::on_select(wxCommandEvent& e)
 		return;
 	if(id == wxid_range_low) {
 		//Other.
-		auto projects = lsnes_instance.project.enumerate();
+		auto projects = lsnes_instance.project->enumerate();
 		std::vector<std::string> a;
 		std::vector<wxString> b;
 		for(auto i : projects) {

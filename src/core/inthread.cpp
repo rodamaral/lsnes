@@ -8,6 +8,7 @@
 #include "library/ogg.hpp"
 #include "library/opus-ogg.hpp"
 #include "library/opus.hpp"
+#include "library/string.hpp"
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
@@ -1714,12 +1715,12 @@ out:
 	command::fnptr<> ptangent(lsnes_cmds, "+tangent", "Voice tangent",
 		"Syntax: +tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().commentary.set_active_flag(true);
+			CORE().commentary->set_active_flag(true);
 		});
 	command::fnptr<> ntangent(lsnes_cmds, "-tangent", "Voice tangent",
 		"Syntax: -tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().commentary.set_active_flag(false);
+			CORE().commentary->set_active_flag(false);
 		});
 	keyboard::invbind_info itangent(lsnes_invbinds, "+tangent", "Movie‣Voice tangent");
 }

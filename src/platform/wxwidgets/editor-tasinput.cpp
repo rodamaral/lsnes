@@ -265,13 +265,13 @@ void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 	wxPaintDC dc(graphics);
 	if(lightgun) {
 		//Draw the current screen.
-		framebuffer::raw& _fb = lsnes_instance.fbuf.render_get_latest_screen();
+		framebuffer::raw& _fb = lsnes_instance.fbuf->render_get_latest_screen();
 		framebuffer::fb<false> fb;
 		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
 		auto size = our_rom.rtype->lightgun_scale();
 		fb.reallocate(osize.first, osize.second, false);
 		fb.copy_from(_fb, 1, 1);
-		lsnes_instance.fbuf.render_get_latest_screen_end();
+		lsnes_instance.fbuf->render_get_latest_screen_end();
 		std::vector<uint8_t> buf;
 		buf.resize(3 * (t.xmax - t.xmin + 1) * (t.ymax - t.ymin + 1));
 		unsigned offX = -t.xmin;
@@ -347,7 +347,7 @@ wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 				bool wasc = closing;
 				closing = true;
 				tasinput_open = NULL;
-				lsnes_instance.controls.tasinput_enable(false);
+				lsnes_instance.controls->tasinput_enable(false);
 				if(!wasc)
 					Destroy();
 			}
@@ -380,10 +380,10 @@ void wxeditor_tasinput::on_control(wxCommandEvent& e)
 		xstate = t.panel->get_x();
 		ystate = t.panel->get_y();
 	}
-	lsnes_instance.iqueue.run_async([t, xstate, ystate]() {
-		lsnes_instance.controls.tasinput(t.port, t.controller, t.xindex, xstate);
+	lsnes_instance.iqueue->run_async([t, xstate, ystate]() {
+		CORE().controls->tasinput(t.port, t.controller, t.xindex, xstate);
 		if(t.yindex != std::numeric_limits<unsigned>::max())
-			lsnes_instance.controls.tasinput(t.port, t.controller, t.yindex, ystate);
+			CORE().controls->tasinput(t.port, t.controller, t.yindex, ystate);
 	}, [](std::exception& e) {});
 }
 
@@ -404,13 +404,13 @@ void wxeditor_tasinput::update_controls()
 
 	std::vector<control_triple> _inputs;
 	std::vector<std::string> _controller_labels;
-	lsnes_instance.iqueue.run([&_inputs, &_controller_labels](){
+	lsnes_instance.iqueue->run([&_inputs, &_controller_labels](){
 		std::map<std::string, unsigned> next_in_class;
-		controller_frame model = CORE().controls.get_blank();
+		controller_frame model = CORE().controls->get_blank();
 		const port_type_set& pts = model.porttypes();
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
-			auto pcid = CORE().controls.lcid_to_pcid(i);
+			auto pcid = CORE().controls->lcid_to_pcid(i);
 			if(pcid.first < 0)
 				break;
 			const port_type& pt = pts.port_type(pcid.first);
@@ -478,7 +478,7 @@ void wxeditor_tasinput::update_controls()
 				const port_controller_button& pcb = pc.buttons[k];
 				if(pcb.type == port_controller_button::TYPE_BUTTON || pcb.shadow)
 					continue;
-				CORE().controls.tasinput(pcid.first, pcid.second, k, pcb.centers ? ((int)pcb.rmin +
+				CORE().controls->tasinput(pcid.first, pcid.second, k, pcb.centers ? ((int)pcb.rmin +
 					pcb.rmax) / 2 : pcb.rmin);
 			}
 			cnum_g++;
@@ -542,7 +542,7 @@ void wxeditor_tasinput::on_wclose(wxCloseEvent& e)
 	bool wasc = closing;
 	closing = true;
 	tasinput_open = NULL;
-	lsnes_instance.controls.tasinput_enable(false);
+	lsnes_instance.controls->tasinput_enable(false);
 	if(!wasc)
 		Destroy();
 }
@@ -582,7 +582,7 @@ void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
 		}
 		return;
 	}
-	if(key == WXK_F5) lsnes_instance.iqueue.queue("+advance-frame");
+	if(key == WXK_F5) lsnes_instance.iqueue->queue("+advance-frame");
 }
 
 void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
@@ -696,11 +696,11 @@ void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
 			return;
 		}
 	}
-	if(key == WXK_F1) lsnes_instance.iqueue.queue("cycle-jukebox-backward");
-	if(key == WXK_F2) lsnes_instance.iqueue.queue("cycle-jukebox-forward");
-	if(key == WXK_F3) lsnes_instance.iqueue.queue("save-jukebox");
-	if(key == WXK_F4) lsnes_instance.iqueue.queue("load-jukebox");
-	if(key == WXK_F5) lsnes_instance.iqueue.queue("-advance-frame");
+	if(key == WXK_F1) lsnes_instance.iqueue->queue("cycle-jukebox-backward");
+	if(key == WXK_F2) lsnes_instance.iqueue->queue("cycle-jukebox-forward");
+	if(key == WXK_F3) lsnes_instance.iqueue->queue("save-jukebox");
+	if(key == WXK_F4) lsnes_instance.iqueue->queue("load-jukebox");
+	if(key == WXK_F5) lsnes_instance.iqueue->queue("-advance-frame");
 }
 
 wxeditor_tasinput::control_triple* wxeditor_tasinput::find_triple(unsigned controller, unsigned control)
@@ -729,7 +729,7 @@ void wxeditor_tasinput_display(wxWindow* parent)
 	}
 	v->Show();
 	tasinput_open = v;
-	lsnes_instance.controls.tasinput_enable(true);
+	lsnes_instance.controls->tasinput_enable(true);
 }
 
 void wxwindow_tasinput_update()

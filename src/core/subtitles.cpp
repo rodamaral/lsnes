@@ -108,19 +108,19 @@ namespace
 			std::string text = r[4];
 			moviefile_subtiming key(frame, length);
 			if(text == "")
-				CORE().mlogic.get_mfile().subtitles.erase(key);
+				CORE().mlogic->get_mfile().subtitles.erase(key);
 			else
-				CORE().mlogic.get_mfile().subtitles[key] =
+				CORE().mlogic->get_mfile().subtitles[key] =
 					subtitle_commentary::s_unescape(text);
 			notify_subtitle_change();
-			CORE().fbuf.redraw_framebuffer();
+			CORE().fbuf->redraw_framebuffer();
 		});
 
 	command::fnptr<> list_subtitle(lsnes_cmds, "list-subtitle", "List the subtitles",
 		"Syntax: list-subtitle\nList the subtitles.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			for(auto i = CORE().mlogic.get_mfile().subtitles.rbegin(); i !=
-				CORE().mlogic.get_mfile().subtitles.rend();
+			for(auto i = CORE().mlogic->get_mfile().subtitles.rbegin(); i !=
+				CORE().mlogic->get_mfile().subtitles.rend();
 				i++) {
 				messages << i->first.get_frame() << " " << i->first.get_length() << " "
 					<< subtitle_commentary::s_escape(i->second) << std::endl;
@@ -130,9 +130,9 @@ namespace
 	command::fnptr<command::arg_filename> save_s(lsnes_cmds, "save-subtitle", "Save subtitles in .sub format",
 		"Syntax: save-subtitle <file>\nSaves subtitles in .sub format to <file>\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
-			if(CORE().mlogic.get_mfile().subtitles.empty())
+			if(CORE().mlogic->get_mfile().subtitles.empty())
 				return;
-			auto i = CORE().mlogic.get_mfile().subtitles.begin();
+			auto i = CORE().mlogic->get_mfile().subtitles.begin();
 			uint64_t lastframe = i->first.get_frame() + i->first.get_length();
 			std::ofstream y(std::string(args).c_str());
 			if(!y)
@@ -141,8 +141,8 @@ namespace
 			uint64_t since = 0;
 			for(uint64_t i = 1; i < lastframe; i++) {
 				moviefile_subtiming posmarker(i);
-				auto j = CORE().mlogic.get_mfile().subtitles.upper_bound(posmarker);
-				if(j == CORE().mlogic.get_mfile().subtitles.end())
+				auto j = CORE().mlogic->get_mfile().subtitles.upper_bound(posmarker);
+				if(j == CORE().mlogic->get_mfile().subtitles.end())
 					continue;
 				if(lasttxt != j->second || !j->first.inrange(i)) {
 					if(lasttxt != "")

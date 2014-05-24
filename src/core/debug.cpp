@@ -281,19 +281,19 @@ namespace
 {
 	command::fnptr<> callbacks_show(lsnes_cmds, "show-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-		for(auto& i : CORE().dbg.read_cb)
+		for(auto& i : CORE().dbg->read_cb)
 			for(auto& j : i.second)
 				messages << "READ addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : CORE().dbg.write_cb)
+		for(auto& i : CORE().dbg->write_cb)
 			for(auto& j : i.second)
 				messages << "WRITE addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : CORE().dbg.exec_cb)
+		for(auto& i : CORE().dbg->exec_cb)
 			for(auto& j : i.second)
 				messages << "EXEC addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : CORE().dbg.trace_cb)
+		for(auto& i : CORE().dbg->trace_cb)
 			for(auto& j : i.second)
 				messages << "TRACE proc=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : CORE().dbg.frame_cb)
+		for(auto& i : CORE().dbg->frame_cb)
 			for(auto& j : i.second)
 				messages << "FRAME handle=" << &j << std::endl;
 	});
@@ -305,19 +305,19 @@ namespace
 		if(r[1] == "r") {
 			uint64_t addr = parse_value<uint64_t>(r[2]);
 			uint64_t val = parse_value<uint64_t>(r[3]);
-			CORE().dbg.do_callback_read(addr, val);
+			CORE().dbg->do_callback_read(addr, val);
 		} else if(r[1] == "w") {
 			uint64_t addr = parse_value<uint64_t>(r[2]);
 			uint64_t val = parse_value<uint64_t>(r[3]);
-			CORE().dbg.do_callback_write(addr, val);
+			CORE().dbg->do_callback_write(addr, val);
 		} else if(r[1] == "x") {
 			uint64_t addr = parse_value<uint64_t>(r[2]);
 			uint64_t val = parse_value<uint64_t>(r[3]);
-			CORE().dbg.do_callback_exec(addr, val);
+			CORE().dbg->do_callback_exec(addr, val);
 		} else if(r[1] == "t") {
 			uint64_t proc = parse_value<uint64_t>(r[2]);
 			std::string str = r[3];
-			CORE().dbg.do_callback_trace(proc, str.c_str());
+			CORE().dbg->do_callback_trace(proc, str.c_str());
 		} else
 			throw std::runtime_error("Invalid operation");
 	});
@@ -337,7 +337,7 @@ namespace
 		}
 		throw std::runtime_error("tracelog: Invalid CPU");
 out:
-		CORE().dbg.tracelog(_cpu, filename);
+		CORE().dbg->tracelog(_cpu, filename);
 	});
 
 }

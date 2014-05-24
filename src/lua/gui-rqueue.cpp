@@ -45,7 +45,7 @@ namespace
 			P(q);
 
 			synchronous_paint_ctx = &*q;
-			CORE().fbuf.redraw_framebuffer();
+			CORE().fbuf->redraw_framebuffer();
 			synchronous_paint_ctx = NULL;
 			return 0;
 		}

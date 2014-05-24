@@ -221,10 +221,10 @@ void wxeditor_subtitles::refresh()
 	if(closing)
 		return;
 	std::map<std::pair<uint64_t, uint64_t>, std::string> _subtitles;
-	lsnes_instance.iqueue.run([&_subtitles]() -> void {
-		auto keys = lsnes_instance.subtitles.get_all();
+	lsnes_instance.iqueue->run([&_subtitles]() -> void {
+		auto keys = CORE().subtitles->get_all();
 		for(auto i : keys)
-			_subtitles[i] = lsnes_instance.subtitles.get(i.first, i.second);
+			_subtitles[i] = CORE().subtitles->get(i.first, i.second);
 	});
 	int sel = subs->GetSelection();
 	bool found = (subtexts.count(sel) != 0);
@@ -271,7 +271,7 @@ void wxeditor_subtitles::on_add(wxCommandEvent& e)
 	t.last = 0;
 	t.text = "";
 	if(edit_subtext(this, t))
-		lsnes_instance.subtitles.set(t.first, t.last, t.text);
+		lsnes_instance.subtitles->set(t.first, t.last, t.text);
 }
 
 void wxeditor_subtitles::on_edit(wxCommandEvent& e)
@@ -284,8 +284,8 @@ void wxeditor_subtitles::on_edit(wxCommandEvent& e)
 	auto t = subtexts[sel];
 	auto old = t;
 	if(edit_subtext(this, t)) {
-		lsnes_instance.subtitles.set(old.first, old.last, "");
-		lsnes_instance.subtitles.set(t.first, t.last, t.text);
+		lsnes_instance.subtitles->set(old.first, old.last, "");
+		lsnes_instance.subtitles->set(t.first, t.last, t.text);
 	}
 }
 
@@ -297,7 +297,7 @@ void wxeditor_subtitles::on_delete(wxCommandEvent& e)
 	if(!subtexts.count(sel))
 		return;
 	auto t = subtexts[sel];
-	lsnes_instance.subtitles.set(t.first, t.last, "");
+	lsnes_instance.subtitles->set(t.first, t.last, "");
 }
 
 void wxeditor_subtitles_display(wxWindow* parent)

@@ -6,6 +6,7 @@
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
+#include "core/queue.hpp"
 #include "lua/lua.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
@@ -33,19 +34,19 @@ void lsnes_gamepads_init()
 	lsnes_gamepads.set_button_cb([](unsigned jnum, unsigned num, bool val) {
 		if(!buttons.count(std::make_pair(jnum, num)))
 			return;
-		lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), *buttons[std::make_pair(jnum,
+		lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), *buttons[std::make_pair(jnum,
 			num)], val));
 	});
 	lsnes_gamepads.set_hat_cb([](unsigned jnum, unsigned num, unsigned val) {
 		if(!hats.count(std::make_pair(jnum, num)))
 			return;
-		lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), *hats[std::make_pair(jnum, num)],
+		lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), *hats[std::make_pair(jnum, num)],
 			val));
 	});
 	lsnes_gamepads.set_axis_cb([](unsigned jnum, unsigned num, int16_t val) {
 		if(!axes.count(std::make_pair(jnum, num)))
 			return;
-		lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), *axes[std::make_pair(jnum, num)],
+		lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), *axes[std::make_pair(jnum, num)],
 			val));
 	});
 	lsnes_gamepads.set_axismode_cb([](unsigned jnum, unsigned num, int mode, double tolerance) {
@@ -57,17 +58,17 @@ void lsnes_gamepads_init()
 		if(type == 0) {
 			std::string name = (stringfmt() << "joystick" << jnum << "axis" << num).str();
 			int mode = lsnes_gamepads[jnum].get_mode(num);
-			axes[std::make_pair(jnum, num)] = new keyboard::key_axis(lsnes_instance.keyboard, name,
+			axes[std::make_pair(jnum, num)] = new keyboard::key_axis(*lsnes_instance.keyboard, name,
 				"joystick", mode);
 			//Axis.
 		} else if(type == 1) {
 			std::string name = (stringfmt() << "joystick" << jnum << "button" << num).str();
-			buttons[std::make_pair(jnum, num)] = new keyboard::key_key(lsnes_instance.keyboard, name,
+			buttons[std::make_pair(jnum, num)] = new keyboard::key_key(*lsnes_instance.keyboard, name,
 				"joystick");
 			//Button.
 		} else if(type == 2) {
 			std::string name = (stringfmt() << "joystick" << jnum << "hat" << num).str();
-			hats[std::make_pair(jnum, num)] = new keyboard::key_hat(lsnes_instance.keyboard, name,
+			hats[std::make_pair(jnum, num)] = new keyboard::key_hat(*lsnes_instance.keyboard, name,
 				"joystick");
 			//Hat.
 		}

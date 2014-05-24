@@ -13,7 +13,7 @@ namespace
 {
 	std::string rom_path()
 	{
-		return lsnes_instance.setcache.get("rompath");
+		return lsnes_instance.setcache->get("rompath");
 	}
 
 	bool can_load_singlefile(core_type* t)
@@ -121,7 +121,7 @@ namespace
 			coreid[++corecount] = i.second;
 		}
 		filter += "|All files|*";
-		std::string directory = lsnes_instance.setcache.get("rompath");
+		std::string directory = lsnes_instance.setcache->get("rompath");
 		wxFileDialog* d = new wxFileDialog(parent, towxstring("Choose ROM to load"), towxstring(directory),
 			wxT(""), towxstring(filter), wxFD_OPEN);
 		if(d->ShowModal() == wxID_CANCEL) {
@@ -146,8 +146,8 @@ namespace
 			mr.singlefile = req.singlefile = filename;
 		}
 		parent->recent_roms->add(mr);
-		lsnes_instance.iqueue.run_async([req]() {
-			lsnes_instance.command.invoke("unpause-emulator");
+		lsnes_instance.iqueue->run_async([req]() {
+			CORE().command->invoke("unpause-emulator");
 			load_new_rom(req);
 		}, [](std::exception& e) {});
 	}
@@ -300,7 +300,7 @@ namespace
 				directory = "firmwarepath";
 			else
 				directory = "rompath";
-			directory = lsnes_instance.setcache.get(directory);
+			directory = lsnes_instance.setcache->get(directory);
 			core_romimage_info iinfo = t.get_image_info(i);
 			wxFileDialog* d = new wxFileDialog(this, towxstring("Load " + iinfo.hname),
 				towxstring(directory), wxT(""), towxstring(filter), wxFD_OPEN);
@@ -388,8 +388,8 @@ namespace
 			req.files[i] = files[i];
 		}
 		parent->recent_roms->add(mr);
-		lsnes_instance.iqueue.run([req]() {
-			lsnes_instance.command.invoke("unpause-emulator");
+		lsnes_instance.iqueue->run([req]() {
+			lsnes_instance.command->invoke("unpause-emulator");
 			load_new_rom(req);
 		});
 		return;
@@ -433,7 +433,7 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 			directory = "firmwarepath";
 		else
 			directory = "rompath";
-		directory = lsnes_instance.setcache.get(directory);
+		directory = lsnes_instance.setcache->get(directory);
 		std::string _title = "Select " + iinfo.hname;
 		std::string filespec = "Known ROMs|";
 		std::string exts = "";

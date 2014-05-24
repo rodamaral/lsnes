@@ -1,6 +1,7 @@
 #include "library/keyboard.hpp"
 #include "library/keyboard-mapper.hpp"
 #include "core/instance.hpp"
+#include "core/queue.hpp"
 #include "core/window.hpp"
 
 #include <cstdint>
@@ -269,7 +270,7 @@ namespace
 	void do_keypress(keyboard::modifier_set mods, keyboard::key_key& key, bool polarity)
 	{
 		auto _key = &key;
-		lsnes_instance.iqueue.run_async([mods, _key, polarity]() {
+		lsnes_instance.iqueue->run_async([mods, _key, polarity]() {
 			_key->set_state(mods, polarity ? 1 : 0);
 		}, [](std::exception& e) {});
 	}
@@ -334,16 +335,16 @@ void initialize_wx_keyboard()
 	modifier_entry* m = modifiers;
 	while(m->name) {
 		if(m->lname)
-			m->allocated = new keyboard::modifier(lsnes_instance.keyboard, m->name, m->lname);
+			m->allocated = new keyboard::modifier(*lsnes_instance.keyboard, m->name, m->lname);
 		else
-			m->allocated = new keyboard::modifier(lsnes_instance.keyboard, m->name);
+			m->allocated = new keyboard::modifier(*lsnes_instance.keyboard, m->name);
 		modifier_map[m->mod] = m->allocated;
 		m++;
 	}
 	key_entry* k = keys;
 	while(k->name) {
 		if(!keys_allocated.count(k->name)) {
-			k->allocated = new keyboard::key_key(lsnes_instance.keyboard, k->name, k->clazz);
+			k->allocated = new keyboard::key_key(*lsnes_instance.keyboard, k->name, k->clazz);
 			key_map[k->keynum] = k->allocated;
 			keys_allocated[k->name] = k->keynum;
 		} else

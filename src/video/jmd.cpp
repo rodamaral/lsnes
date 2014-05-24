@@ -37,7 +37,7 @@ namespace
 			: information_dispatch("dump-jmd")
 		{
 			enable_send_sound();
-			complevel = clevel(CORE().settings);
+			complevel = clevel(*CORE().settings);
 			if(tcp_flag) {
 				jmd = &(socket_address(filename).connect());
 				deleter = socket_address::deleter();
@@ -426,7 +426,7 @@ namespace
 				x << "Error starting JMD dump: " << e.what();
 				throw std::runtime_error(x.str());
 			}
-			messages << "Dumping to " << prefix << " at level " << clevel(CORE().settings) << std::endl;
+			messages << "Dumping to " << prefix << " at level " << clevel(*CORE().settings) << std::endl;
 			information_dispatch::do_dumper_update();
 			akill = 0;
 			akillfrac = 0;

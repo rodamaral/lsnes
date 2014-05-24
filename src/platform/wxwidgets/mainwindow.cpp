@@ -175,7 +175,7 @@ namespace
 	threads::thread* emulation_thread;
 	bool status_updated = false;
 
-	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(lsnes_instance.settings,
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(*lsnes_instance.settings,
 		"background-audio", "GUI‣Enable background audio", true);
 
 	class _status_timer : public wxTimer
@@ -241,7 +241,7 @@ namespace
 					show_message_ok(w, "Error downloading movie", old->errormsg,
 						wxICON_EXCLAMATION);
 				} else {
-					lsnes_instance.iqueue.queue("load-movie $MEMORY:wxwidgets_download_tmp");
+					lsnes_instance.iqueue->queue("load-movie $MEMORY:wxwidgets_download_tmp");
 				}
 				delete old;
 				Stop();
@@ -392,7 +392,7 @@ namespace
 			return;
 		try {
 			auto p = prompt_action_params(pwin, act->get_title(), act->params);
-			lsnes_instance.iqueue.run([act_id,p]() { our_rom.rtype->execute_action(act_id, p); });
+			lsnes_instance.iqueue->run([act_id,p]() { our_rom.rtype->execute_action(act_id, p); });
 		} catch(canceled_exception& e) {
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -447,7 +447,7 @@ namespace
 
 	void handle_watch_load(std::map<std::string, std::string>& new_watches, std::set<std::string>& old_watches)
 	{
-		auto proj = lsnes_instance.project.get();
+		auto proj = lsnes_instance.project->get();
 		if(proj) {
 			for(auto i : new_watches) {
 				std::string name = i.first;
@@ -455,13 +455,13 @@ namespace
 					if(!old_watches.count(name)) {
 						try {
 							if(name != "" && i.second != "")
-								lsnes_instance.mwatch.set(name, i.second);
+								lsnes_instance.mwatch->set(name, i.second);
 						} catch(std::exception& e) {
 							messages << "Can't set memory watch '" << name << "': "
 								<< e.what() << std::endl;
 						}
 						break;
-					} else if(lsnes_instance.mwatch.get_string(name) == i.second)
+					} else if(lsnes_instance.mwatch->get_string(name) == i.second)
 						break;
 					else
 						name = munge_name(name);
@@ -471,7 +471,7 @@ namespace
 			for(auto i : new_watches)
 				try {
 					if(i.first != "" && i.second != "")
-						lsnes_instance.mwatch.set(i.first, i.second);
+						lsnes_instance.mwatch->set(i.first, i.second);
 				} catch(std::exception& e) {
 					messages << "Can't set memory watch '" << i.first << "': "
 						<< e.what() << std::endl;
@@ -479,7 +479,7 @@ namespace
 			for(auto i : old_watches)
 				if(!new_watches.count(i))
 					try {
-						lsnes_instance.mwatch.clear(i);
+						lsnes_instance.mwatch->clear(i);
 					} catch(std::exception& e) {
 						messages << "Can't clear memory watch '" << i << "': "
 							<< e.what() << std::endl;
@@ -489,7 +489,7 @@ namespace
 
 	std::string get_default_screenshot_name()
 	{
-		auto p = lsnes_instance.project.get();
+		auto p = lsnes_instance.project->get();
 		if(!p)
 			return "";
 		else {
@@ -520,7 +520,7 @@ namespace
 
 	std::string project_prefixname(const std::string ext)
 	{
-		auto p = lsnes_instance.project.get();
+		auto p = lsnes_instance.project->get();
 		if(!p)
 			return "";
 		else
@@ -559,26 +559,26 @@ namespace
 		req.region = file.region;
 		for(unsigned i = 0; i < file.files.size() && i < ROM_SLOT_COUNT; i++)
 			req.files[i] = file.files[i];
-		lsnes_instance.iqueue.run_async([req]() {
-			lsnes_instance.command.invoke("unpause-emulator");
+		lsnes_instance.iqueue->run_async([req]() {
+			CORE().command->invoke("unpause-emulator");
 			load_new_rom(req);
 		}, [](std::exception& e) {});
 	}
 
 	void recent_movie_selected(const recentfiles::path& file)
 	{
-		lsnes_instance.iqueue.queue("load-smart " + file.get_path());
+		lsnes_instance.iqueue->queue("load-smart " + file.get_path());
 	}
 
 	void recent_script_selected(const recentfiles::path& file)
 	{
-		lsnes_instance.iqueue.queue("run-lua " + file.get_path());
+		lsnes_instance.iqueue->queue("run-lua " + file.get_path());
 	}
 
 	wxString getname()
 	{
 		std::string windowname = "lsnes rr" + lsnes_version + " [";
-		auto p = lsnes_instance.project.get();
+		auto p = lsnes_instance.project->get();
 		if(p)
 			windowname = windowname + p->name;
 		else
@@ -621,12 +621,12 @@ namespace
 	}
 
 	keyboard::mouse_calibration mouse_cal = {0};
-	keyboard::key_mouse mouse_x(lsnes_instance.keyboard, "mouse_x", "mouse", mouse_cal);
-	keyboard::key_mouse mouse_y(lsnes_instance.keyboard, "mouse_y", "mouse", mouse_cal);
-	keyboard::key_key mouse_l(lsnes_instance.keyboard, "mouse_left", "mouse");
-	keyboard::key_key mouse_m(lsnes_instance.keyboard, "mouse_center", "mouse");
-	keyboard::key_key mouse_r(lsnes_instance.keyboard, "mouse_right", "mouse");
-	keyboard::key_key mouse_i(lsnes_instance.keyboard, "mouse_inwindow", "mouse");
+	keyboard::key_mouse mouse_x(*lsnes_instance.keyboard, "mouse_x", "mouse", mouse_cal);
+	keyboard::key_mouse mouse_y(*lsnes_instance.keyboard, "mouse_y", "mouse", mouse_cal);
+	keyboard::key_key mouse_l(*lsnes_instance.keyboard, "mouse_left", "mouse");
+	keyboard::key_key mouse_m(*lsnes_instance.keyboard, "mouse_center", "mouse");
+	keyboard::key_key mouse_r(*lsnes_instance.keyboard, "mouse_right", "mouse");
+	keyboard::key_key mouse_i(*lsnes_instance.keyboard, "mouse_inwindow", "mouse");
 
 	std::pair<double, double> calc_scale_factors(double factor, bool ar,
 		double par)
@@ -646,33 +646,33 @@ namespace
 	{
 		auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled,
 			(our_rom.rtype) ? our_rom.rtype->get_PAR() : 1.0);
-		lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_x, e.GetX() /
+		lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_x, e.GetX() /
 			sfactors.first));
-		lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_y, e.GetY() /
+		lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_y, e.GetY() /
 			sfactors.second));
 		if(e.Entering())
-			lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_i, 1));
+			lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_i, 1));
 		if(e.Leaving())
-			lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_i, 0));
+			lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_i, 0));
 		if(e.LeftDown())
-			lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_l, 1));
+			lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_l, 1));
 		if(e.LeftUp())
-			lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_l, 0));
+			lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_l, 0));
 		if(e.MiddleDown())
-			lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_m, 1));
+			lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_m, 1));
 		if(e.MiddleUp())
-			lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_m, 0));
+			lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_m, 0));
 		if(e.RightDown())
-			lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_r, 1));
+			lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_r, 1));
 		if(e.RightUp())
-			lsnes_instance.iqueue.queue(keypress_info(keyboard::modifier_set(), mouse_r, 0));
+			lsnes_instance.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_r, 0));
 	}
 
 	bool is_readonly_mode()
 	{
 		bool ret;
-		lsnes_instance.iqueue.run([&ret]() {
-			ret = lsnes_instance.mlogic ? lsnes_instance.mlogic.get_movie().readonly_mode() : false;
+		lsnes_instance.iqueue->run([&ret]() {
+			ret = *CORE().mlogic ? CORE().mlogic->get_movie().readonly_mode() : false;
 		});
 		return ret;
 	}
@@ -680,16 +680,16 @@ namespace
 	std::pair<int, int> UI_controller_index_by_logical(unsigned lid)
 	{
 		std::pair<int, int> ret;
-		lsnes_instance.iqueue.run([&ret, lid]() { ret = CORE().controls.lcid_to_pcid(lid); });
+		lsnes_instance.iqueue->run([&ret, lid]() { ret = CORE().controls->lcid_to_pcid(lid); });
 		return ret;
 	}
 
 	void set_speed(double target)
 	{
 		if(target < 0)
-			lsnes_instance.framerate.set_speed_multiplier(std::numeric_limits<double>::infinity());
+			lsnes_instance.framerate->set_speed_multiplier(std::numeric_limits<double>::infinity());
 		else
-			lsnes_instance.framerate.set_speed_multiplier(target / 100);
+			lsnes_instance.framerate->set_speed_multiplier(target / 100);
 	}
 
 	void update_preferences()
@@ -710,7 +710,7 @@ namespace
 
 	std::string movie_path()
 	{
-		return lsnes_instance.setcache.get("moviepath");
+		return lsnes_instance.setcache->get("moviepath");
 	}
 
 	bool is_lsnes_movie(const std::string& filename)
@@ -756,12 +756,12 @@ namespace
 				if(amov == bmov)
 					return false;
 				if(amov) std::swap(a, b);
-				lsnes_instance.iqueue.run_async([a, b]() {
-					lsnes_instance.command.invoke("unpause-emulator");
+				lsnes_instance.iqueue->run_async([a, b]() {
+					CORE().command->invoke("unpause-emulator");
 					romload_request req;
 					req.packfile = a;
 					load_new_rom(req);
-					lsnes_instance.command.invoke("load-smart " + b);
+					CORE().command->invoke("load-smart " + b);
 				}, [](std::exception& e) {});
 				ret = true;
 			}
@@ -769,14 +769,14 @@ namespace
 				std::string a = tostdstring(filenames[0]);
 				bool amov = is_lsnes_movie(a);
 				if(amov) {
-					lsnes_instance.iqueue.queue("load-smart " + a);
+					lsnes_instance.iqueue->queue("load-smart " + a);
 					pwin->recent_movies->add(a);
 					ret = true;
 				} else {
 					romload_request req;
 					req.packfile = a;
-					lsnes_instance.iqueue.run_async([req]() {
-						lsnes_instance.command.invoke("unpause-emulator");
+					lsnes_instance.iqueue->run_async([req]() {
+						CORE().command->invoke("unpause-emulator");
 						load_new_rom(req);
 					}, [](std::exception& e) {});
 					pwin->recent_roms->add(loadreq_to_multirom(req));
@@ -914,7 +914,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		//Leave fullscreen mode.
 		main_window->enter_or_leave_fullscreen(false);
 	}
-	lsnes_instance.fbuf.render_framebuffer();
+	lsnes_instance.fbuf->render_framebuffer();
 	static 
 	uint8_t* srcp[1];
 	int srcs[1];
@@ -926,11 +926,11 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, our_rom.rtype ?
 		our_rom.rtype->get_PAR() : 1.0);
 	if(rotate_enabled) {
-		tw = lsnes_instance.fbuf.main_screen.get_height() * sfactors.second + 0.5;
-		th = lsnes_instance.fbuf.main_screen.get_width() * sfactors.first + 0.5;
+		tw = lsnes_instance.fbuf->main_screen.get_height() * sfactors.second + 0.5;
+		th = lsnes_instance.fbuf->main_screen.get_width() * sfactors.first + 0.5;
 	} else {
-		tw = lsnes_instance.fbuf.main_screen.get_width() * sfactors.first + 0.5;
-		th = lsnes_instance.fbuf.main_screen.get_height() * sfactors.second + 0.5;
+		tw = lsnes_instance.fbuf->main_screen.get_width() * sfactors.first + 0.5;
+		th = lsnes_instance.fbuf->main_screen.get_height() * sfactors.second + 0.5;
 	}
 	if(!tw || !th) {
 		main_window_dirty = false;
@@ -960,8 +960,8 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		old_hflip = hflip_enabled;
 		old_vflip = vflip_enabled;
 		old_rotate = rotate_enabled;
-		uint32_t w = lsnes_instance.fbuf.main_screen.get_width();
-		uint32_t h = lsnes_instance.fbuf.main_screen.get_height();
+		uint32_t w = lsnes_instance.fbuf->main_screen.get_width();
+		uint32_t h = lsnes_instance.fbuf->main_screen.get_height();
 		if(w && h)
 			sws_ctx = sws_getCachedContext(sws_ctx, rotate_enabled ? h : w, rotate_enabled ? w : h,
 				PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags, NULL, NULL, NULL);
@@ -969,19 +969,19 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		th = max(th, static_cast<uint32_t>(112));
 		screen_buffer = new unsigned char[tw * th * 3];
 		if(aux)
-			rotate_buffer = new uint32_t[lsnes_instance.fbuf.main_screen.get_width() *
-				lsnes_instance.fbuf.main_screen.get_height()];
+			rotate_buffer = new uint32_t[lsnes_instance.fbuf->main_screen.get_width() *
+				lsnes_instance.fbuf->main_screen.get_height()];
 		SetMinSize(wxSize(tw, th));
 		signal_resize_needed();
 	}
 	if(aux) {
 		//Hflip, Vflip or rotate active.
-		size_t width = lsnes_instance.fbuf.main_screen.get_width();
-		size_t height = lsnes_instance.fbuf.main_screen.get_height();
+		size_t width = lsnes_instance.fbuf->main_screen.get_width();
+		size_t height = lsnes_instance.fbuf->main_screen.get_height();
 		size_t width1 = width - 1;
 		size_t height1 = height - 1;
-		size_t stride = lsnes_instance.fbuf.main_screen.rowptr(1) - lsnes_instance.fbuf.main_screen.rowptr(0);
-		uint32_t* pixels = lsnes_instance.fbuf.main_screen.rowptr(0);
+		size_t stride = lsnes_instance.fbuf->main_screen.rowptr(1) - lsnes_instance.fbuf->main_screen.rowptr(0);
+		uint32_t* pixels = lsnes_instance.fbuf->main_screen.rowptr(0);
 		if(rotate_enabled) {
 			for(unsigned y = 0; y < height; y++) {
 				uint32_t* pixels2 = pixels + (vflip_enabled ? (height1 - y) : y) * stride;
@@ -1007,17 +1007,17 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		}
 	}
 	if(aux)
-		srcs[0] = 4 * (rotate_enabled ? lsnes_instance.fbuf.main_screen.get_height() :
-			lsnes_instance.fbuf.main_screen.get_width());
+		srcs[0] = 4 * (rotate_enabled ? lsnes_instance.fbuf->main_screen.get_height() :
+			lsnes_instance.fbuf->main_screen.get_width());
 	else
-		srcs[0] = 4 * lsnes_instance.fbuf.main_screen.get_stride();
+		srcs[0] = 4 * lsnes_instance.fbuf->main_screen.get_stride();
 	dsts[0] = 3 * tw;
-	srcp[0] = reinterpret_cast<unsigned char*>(aux ? rotate_buffer : lsnes_instance.fbuf.main_screen.rowptr(0));
+	srcp[0] = reinterpret_cast<unsigned char*>(aux ? rotate_buffer : lsnes_instance.fbuf->main_screen.rowptr(0));
 	dstp[0] = screen_buffer;
 	memset(screen_buffer, 0, tw * th * 3);
-	if(lsnes_instance.fbuf.main_screen.get_width() && lsnes_instance.fbuf.main_screen.get_height())
-		sws_scale(sws_ctx, srcp, srcs, 0, rotate_enabled ? lsnes_instance.fbuf.main_screen.get_width() :
-			lsnes_instance.fbuf.main_screen.get_height(),
+	if(lsnes_instance.fbuf->main_screen.get_width() && lsnes_instance.fbuf->main_screen.get_height())
+		sws_scale(sws_ctx, srcp, srcs, 0, rotate_enabled ? lsnes_instance.fbuf->main_screen.get_width() :
+			lsnes_instance.fbuf->main_screen.get_height(),
 		dstp, dsts);
 	wxBitmap bmp(wxImage(tw, th, screen_buffer, true));
 	dc.DrawBitmap(bmp, 0, 0, false);
@@ -1118,8 +1118,8 @@ wxwin_mainwindow::wxwin_mainwindow(bool fscreen)
 	menu_start_sub(wxT("Close"));
 	menu_entry(wxID_CLOSE_PROJECT, wxT("Project"));
 	menu_entry(wxID_CLOSE_ROM, wxT("ROM"));
-	menu_enable(wxID_CLOSE_PROJECT, lsnes_instance.project.get() != NULL);
-	menu_enable(wxID_CLOSE_ROM, lsnes_instance.project.get() == NULL);
+	menu_enable(wxID_CLOSE_PROJECT, lsnes_instance.project->get() != NULL);
+	menu_enable(wxID_CLOSE_ROM, lsnes_instance.project->get() == NULL);
 	menu_end_sub();
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("Quit"));
@@ -1244,7 +1244,7 @@ void wxwin_mainwindow::on_close(wxCloseEvent& e)
 {
 	//Veto it for now, latter things will delete it.
 	e.Veto();
-	lsnes_instance.iqueue.queue("quit-emulator");
+	lsnes_instance.iqueue->queue("quit-emulator");
 }
 
 void wxwin_mainwindow::notify_update() throw()
@@ -1298,9 +1298,9 @@ void wxwin_mainwindow::update_statusbar()
 		statusbar->SetStatusText(towxstring(s.str()));
 		return;
 	}
-	auto& vars = lsnes_instance.status.get_read();
+	auto& vars = lsnes_instance.status->get_read();
 	if(!vars.valid) {
-		lsnes_instance.status.put_read();
+		lsnes_instance.status->put_read();
 		return;
 	}
 	try {
@@ -1353,7 +1353,7 @@ void wxwin_mainwindow::update_statusbar()
 		statusbar->SetStatusText(towxstring(s.str()));
 	} catch(std::exception& e) {
 	}
-	lsnes_instance.status.put_read();
+	lsnes_instance.status->put_read();
 }
 
 #define NEW_KEYBINDING "A new binding..."
@@ -1376,7 +1376,7 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 void wxwin_mainwindow::refresh_title() throw()
 {
 	SetTitle(getname());
-	auto p = lsnes_instance.project.get();
+	auto p = lsnes_instance.project->get();
 	menu_enable(wxID_RELOAD_ROM_IMAGE, !p);
 	for(int i = wxID_LOAD_ROM_IMAGE_FIRST; i <= wxID_LOAD_ROM_IMAGE_LAST; i++)
 		menu_enable(i, !p);
@@ -1399,7 +1399,7 @@ namespace
 		filedialog_input_params input(bool save) const
 		{
 			filedialog_input_params p;
-			std::string ext = state ? lsnes_instance.project.savestate_ext() : "lsmv";
+			std::string ext = state ? lsnes_instance.project->savestate_ext() : "lsmv";
 			std::string name = state ? "Savestates" : "Movies";
 			if(save) {
 				p.types.push_back(filedialog_type_entry(name, "*." + ext, ext));
@@ -1417,8 +1417,8 @@ namespace
 				p.types.push_back(filedialog_type_entry("Savestates [all branches]", "*." + ext +
 					";*." + ext + ".backup", ext));
 			}
-			p.default_type = save ? (state ? save_dflt_binary(lsnes_instance.settings) :
-				movie_dflt_binary(lsnes_instance.settings)) : 0;
+			p.default_type = save ? (state ? save_dflt_binary(*lsnes_instance.settings) :
+				movie_dflt_binary(*lsnes_instance.settings)) : 0;
 			return p;
 		}
 		std::pair<std::string, std::string> output(const filedialog_output_params& p, bool save) const
@@ -1447,9 +1447,9 @@ void wxwin_mainwindow::project_selected(const std::string& id)
 {
 	std::string filename, displayname;
 	bool load_ok = false;
-	lsnes_instance.iqueue.run([id, &filename, &displayname, &load_ok]() -> void {
+	lsnes_instance.iqueue->run([id, &filename, &displayname, &load_ok]() -> void {
 		try {
-			auto& p = lsnes_instance.project.load(id);	//Check.
+			auto& p = CORE().project->load(id);	//Check.
 			filename = p.filename;
 			displayname = p.name;
 			load_ok = true;
@@ -1475,86 +1475,87 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	bool s;
 	switch(e.GetId()) {
 	case wxID_FRAMEADVANCE:
-		lsnes_instance.iqueue.queue("+advance-frame");
-		lsnes_instance.iqueue.queue("-advance-frame");
+		lsnes_instance.iqueue->queue("+advance-frame");
+		lsnes_instance.iqueue->queue("-advance-frame");
 		return;
 	case wxID_SUBFRAMEADVANCE:
-		lsnes_instance.iqueue.queue("+advance-poll");
-		lsnes_instance.iqueue.queue("-advance-poll");
+		lsnes_instance.iqueue->queue("+advance-poll");
+		lsnes_instance.iqueue->queue("-advance-poll");
 		return;
 	case wxID_NEXTPOLL:
-		lsnes_instance.iqueue.queue("advance-skiplag");
+		lsnes_instance.iqueue->queue("advance-skiplag");
 		return;
 	case wxID_PAUSE:
-		lsnes_instance.iqueue.queue("pause-emulator");
+		lsnes_instance.iqueue->queue("pause-emulator");
 		return;
 	case wxID_EXIT:
-		lsnes_instance.iqueue.queue("quit-emulator");
+		lsnes_instance.iqueue->queue("quit-emulator");
 		return;
 	case wxID_AUDIO_ENABLED:
 		platform::sound_enable(menu_ischecked(wxID_AUDIO_ENABLED));
 		return;
 	case wxID_CANCEL_SAVES:
-		lsnes_instance.iqueue.queue("cancel-saves");
+		lsnes_instance.iqueue->queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		filename = choose_file_load(this, "Load Movie", lsnes_instance.project.moviepath(),
+		filename = choose_file_load(this, "Load Movie", lsnes_instance.project->moviepath(),
 			filetype_movie).second;
 		recent_movies->add(filename);
-		lsnes_instance.iqueue.queue("load-movie " + filename);
+		lsnes_instance.iqueue->queue("load-movie " + filename);
 		return;
 	case wxID_LOAD_STATE:
-		filename2 = choose_file_load(this, "Load State", lsnes_instance.project.moviepath(),
+		filename2 = choose_file_load(this, "Load State", lsnes_instance.project->moviepath(),
 			filetype_savestate);
 		recent_movies->add(filename2.second);
-		lsnes_instance.iqueue.queue("load" + filename2.first + " " + filename2.second);
+		lsnes_instance.iqueue->queue("load" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_REWIND_MOVIE:
-		lsnes_instance.iqueue.queue("rewind-movie");
+		lsnes_instance.iqueue->queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		filename2 = choose_file_save(this, "Save Movie", lsnes_instance.project.moviepath(), filetype_movie,
+		filename2 = choose_file_save(this, "Save Movie", lsnes_instance.project->moviepath(), filetype_movie,
 			project_prefixname("lsmv"));
 		recent_movies->add(filename2.second);
-		lsnes_instance.iqueue.queue("save-movie" + filename2.first + " " + filename2.second);
+		lsnes_instance.iqueue->queue("save-movie" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SUBTITLES:
-		lsnes_instance.iqueue.queue("save-subtitle " + choose_file_save(this, "Save subtitles",
-			lsnes_instance.project.moviepath(), filetype_sub, project_prefixname("sub")));
+		lsnes_instance.iqueue->queue("save-subtitle " + choose_file_save(this, "Save subtitles",
+			lsnes_instance.project->moviepath(), filetype_sub, project_prefixname("sub")));
 		return;
 	case wxID_SAVE_STATE:
-		filename2 = choose_file_save(this, "Save State", lsnes_instance.project.moviepath(),
+		filename2 = choose_file_save(this, "Save State", lsnes_instance.project->moviepath(),
 			filetype_savestate);
 		recent_movies->add(filename2.second);
-		lsnes_instance.iqueue.queue("save-state" + filename2.first + " " + filename2.second);
+		lsnes_instance.iqueue->queue("save-state" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SCREENSHOT:
-		lsnes_instance.iqueue.queue("take-screenshot " + choose_file_save(this, "Save Screenshot",
-			lsnes_instance.project.moviepath(), filetype_png, get_default_screenshot_name()));
+		lsnes_instance.iqueue->queue("take-screenshot " + choose_file_save(this, "Save Screenshot",
+			lsnes_instance.project->moviepath(), filetype_png, get_default_screenshot_name()));
 		return;
 	case wxID_RUN_SCRIPT:
-		lsnes_instance.iqueue.queue("run-script " + pick_file_member(this, "Select Script",
-			lsnes_instance.project.otherpath()));
+		lsnes_instance.iqueue->queue("run-script " + pick_file_member(this, "Select Script",
+			lsnes_instance.project->otherpath()));
 		return;
 	case wxID_RUN_LUA: {
-		std::string f = choose_file_load(this, "Select Lua Script", lsnes_instance.project.otherpath(),
+		std::string f = choose_file_load(this, "Select Lua Script", lsnes_instance.project->otherpath(),
 			filetype_lua_script);
-		lsnes_instance.iqueue.queue("run-lua " + f);
+		lsnes_instance.iqueue->queue("run-lua " + f);
 		recent_scripts->add(f);
 		return;
 	}
 	case wxID_RESET_LUA:
-		lsnes_instance.iqueue.queue("reset-lua");
+		lsnes_instance.iqueue->queue("reset-lua");
 		return;
 	case wxID_EVAL_LUA:
-		lsnes_instance.iqueue.queue("evaluate-lua " + pick_text(this, "Evaluate Lua", "Enter Lua Statement:"));
+		lsnes_instance.iqueue->queue("evaluate-lua " + pick_text(this, "Evaluate Lua",
+			"Enter Lua Statement:"));
 		return;
 	case wxID_READONLY_MODE:
 		s = menu_ischecked(wxID_READONLY_MODE);
-		lsnes_instance.iqueue.run([s]() {
+		lsnes_instance.iqueue->run([s]() {
 			if(!s)
 				lua_callback_movie_lost("readwrite");
-			if(lsnes_instance.mlogic) lsnes_instance.mlogic.get_movie().readonly_mode(s);
+			if(*CORE().mlogic) CORE().mlogic->get_movie().readonly_mode(s);
 			notify_mode_change(s);
 			if(!s)
 				lua_callback_do_readwrite();
@@ -1583,15 +1584,15 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SAVE_MEMORYWATCH: {
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
-		lsnes_instance.iqueue.run([&old_watches]() { old_watches = lsnes_instance.mwatch.enumerate(); });
+		lsnes_instance.iqueue->run([&old_watches]() { old_watches = CORE().mwatch->enumerate(); });
 		std::string filename = choose_file_save(this, "Save watches to file",
-			lsnes_instance.project.otherpath(), filetype_watch);
+			lsnes_instance.project->otherpath(), filetype_watch);
 		std::ofstream out(filename.c_str());
 		for(auto i : old_watches) {
 			std::string val;
-			lsnes_instance.iqueue.run([i, &val]() {
+			lsnes_instance.iqueue->run([i, &val]() {
 				try {
-					val = lsnes_instance.mwatch.get_string(i);
+					val = CORE().mwatch->get_string(i);
 				} catch(std::exception& e) {
 					messages << "Can't get value of watch '" << i << "': " << e.what()
 						<< std::endl;
@@ -1605,10 +1606,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_LOAD_MEMORYWATCH: {
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
-		lsnes_instance.iqueue.run([&old_watches]() { old_watches = lsnes_instance.mwatch.enumerate(); });
+		lsnes_instance.iqueue->run([&old_watches]() { old_watches = CORE().mwatch->enumerate(); });
 		std::map<std::string, std::string> new_watches;
 		std::string filename = choose_file_load(this, "Choose memory watch file",
-			lsnes_instance.project.otherpath(), filetype_watch);
+			lsnes_instance.project->otherpath(), filetype_watch);
 		try {
 			std::istream& in = zip::openrel(filename, "");
 			while(in) {
@@ -1625,7 +1626,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 			return;
 		}
 
-		lsnes_instance.iqueue.run([&new_watches, &old_watches]() {
+		lsnes_instance.iqueue->run([&new_watches, &old_watches]() {
 			handle_watch_load(new_watches, old_watches);
 		});
 		return;
@@ -1677,19 +1678,19 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	}
 	case wxID_SET_SPEED: {
 		std::string value = "infinite";
-		double val = lsnes_instance.framerate.get_speed_multiplier();
+		double val = lsnes_instance.framerate->get_speed_multiplier();
 		if(!(val == std::numeric_limits<double>::infinity()))
 			value = (stringfmt() << (100 * val)).str();
 		value = pick_text(this, "Set speed", "Enter percentage speed (or \"infinite\"):", value);
 		try {
 			if(value == "infinite")
-				lsnes_instance.framerate.set_speed_multiplier(
+				lsnes_instance.framerate->set_speed_multiplier(
 					std::numeric_limits<double>::infinity());
 			else {
 				double v = parse_value<double>(value) / 100;
 				if(v <= 0.0001)
 					throw 42;
-				lsnes_instance.framerate.set_speed_multiplier(v);
+				lsnes_instance.framerate->set_speed_multiplier(v);
 			}
 		} catch(...) {
 			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
@@ -1741,7 +1742,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + loadlib::library::name();
 		with_loaded_library(*new loadlib::module(loadlib::library(choose_file_load(this, name,
-			lsnes_instance.project.otherpath(), single_type(loadlib::library::extension(),
+			lsnes_instance.project->otherpath(), single_type(loadlib::library::extension(),
 			loadlib::library::name())))));
 		handle_post_loadlibrary();
 		break;
@@ -1750,8 +1751,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		wxeditor_plugin_manager_display(this);
 		return;
 	case wxID_RELOAD_ROM_IMAGE:
-		lsnes_instance.iqueue.run([]() {
-			lsnes_instance.command.invoke("unpause-emulator");
+		lsnes_instance.iqueue->run([]() {
+			CORE().command->invoke("unpause-emulator");
 			reload_current_rom();
 		});
 		return;
@@ -1777,10 +1778,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		open_new_project_window(this);
 		return;
 	case wxID_CLOSE_PROJECT:
-		lsnes_instance.iqueue.run([]() -> void { lsnes_instance.project.set(NULL); });
+		lsnes_instance.iqueue->run([]() -> void { lsnes_instance.project->set(NULL); });
 		return;
 	case wxID_CLOSE_ROM:
-		lsnes_instance.iqueue.run([]() -> void { close_rom(); });
+		lsnes_instance.iqueue->run([]() -> void { close_rom(); });
 		return;
 	case wxID_ENTER_FULLSCREEN:
 		wx_escape_count = 0;

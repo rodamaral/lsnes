@@ -176,14 +176,14 @@ namespace
 	command::fnptr<> rotate_forward(lsnes_cmds, "rotate-multitrack", "Rotate multitrack",
 		"Syntax: rotate-multitrack\nRotate multitrack\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().mteditor.rotate(true);
+			CORE().mteditor->rotate(true);
 			update_movie_state();
 		});
 
 	command::fnptr<> rotate_backward(lsnes_cmds, "rotate-multitrack-backwards", "Rotate multitrack backwards",
 		"Syntax: rotate-multitrack-backwards\nRotate multitrack backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().mteditor.rotate(false);
+			CORE().mteditor->rotate(false);
 			update_movie_state();
 		});
 
@@ -197,13 +197,13 @@ namespace
 			if(c.first < 0)
 				throw std::runtime_error("No such controller");
 			if(r[2] == "keep")
-				CORE().mteditor.set_and_notify(c.first, c.second, multitrack_edit::MT_PRESERVE);
+				CORE().mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_PRESERVE);
 			else if(r[2] == "rewrite")
-				CORE().mteditor.set_and_notify(c.first, c.second, multitrack_edit::MT_OVERWRITE);
+				CORE().mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_OVERWRITE);
 			else if(r[2] == "or")
-				CORE().mteditor.set_and_notify(c.first, c.second, multitrack_edit::MT_OR);
+				CORE().mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_OR);
 			else if(r[2] == "xor")
-				CORE().mteditor.set_and_notify(c.first, c.second, multitrack_edit::MT_XOR);
+				CORE().mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_XOR);
 			else
 				throw std::runtime_error("Invalid mode (keep, rewrite, or, xor)");
 			update_movie_state();
@@ -219,7 +219,7 @@ namespace
 
 		P(port, controller);
 
-		auto s = CORE().mteditor.get(port, controller);
+		auto s = CORE().mteditor->get(port, controller);
 		switch(s) {
 		case multitrack_edit::MT_OR:
 			L.pushstring("or");

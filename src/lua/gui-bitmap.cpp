@@ -936,7 +936,7 @@ lua_bitmap::lua_bitmap(lua::state& L, uint32_t w, uint32_t h)
 
 lua_bitmap::~lua_bitmap()
 {
-	CORE().fbuf.render_kill_request(this);
+	CORE().fbuf->render_kill_request(this);
 }
 
 std::string lua_bitmap::print()
@@ -1108,7 +1108,7 @@ lua_dbitmap::lua_dbitmap(lua::state& L, uint32_t w, uint32_t h)
 
 lua_dbitmap::~lua_dbitmap()
 {
-	CORE().fbuf.render_kill_request(this);
+	CORE().fbuf->render_kill_request(this);
 }
 
 std::string lua_dbitmap::print()

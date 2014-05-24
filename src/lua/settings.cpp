@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "core/instance.hpp"
+#include "library/settingvar.hpp"
 
 namespace
 {
@@ -10,7 +11,7 @@ namespace
 		P(name, value);
 
 		try {
-			CORE().setcache.set(name, value);
+			CORE().setcache->set(name, value);
 		} catch(std::exception& e) {
 			L.pushnil();
 			L.pushstring(e.what());
@@ -27,7 +28,7 @@ namespace
 		P(name);
 
 		try {
-			std::string value = CORE().setcache.get(name);
+			std::string value = CORE().setcache->get(name);
 			L.pushlstring(value.c_str(), value.length());
 			return 1;
 		} catch(std::exception& e) {

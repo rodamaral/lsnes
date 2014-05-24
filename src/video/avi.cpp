@@ -334,7 +334,7 @@ again:
 			: information_dispatch("dump-avi-int")
 		{
 			enable_send_sound();
-			unsigned srate_setting = soundrate_setting(CORE().settings);
+			unsigned srate_setting = soundrate_setting(*CORE().settings);
 			chans = info.audio_chans = 2;
 			soundrate = get_sound_rate();
 			audio_record_rate = info.sample_rate = get_rate(soundrate.first, soundrate.second,
@@ -364,17 +364,17 @@ again:
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			uint32_t hscl = 1, vscl = 1;
-			unsigned fxfact = fixed_xfact(CORE().settings);
-			unsigned fyfact = fixed_yfact(CORE().settings);
+			unsigned fxfact = fixed_xfact(*CORE().settings);
+			unsigned fyfact = fixed_yfact(*CORE().settings);
 			if(fxfact != 0 && fyfact != 0) {
 				hscl = fxfact;
 				vscl = fyfact;
-			} else if(dump_large(CORE().settings)) {
+			} else if(dump_large(*CORE().settings)) {
 				rpair(hscl, vscl) = our_rom.rtype->get_scale_factors(_frame.get_width(),
 					_frame.get_height());
 			}
-			if(!render_video_hud(dscr, _frame, hscl, vscl, dlb(CORE().settings), dtb(CORE().settings),
-				drb(CORE().settings), dbb(CORE().settings), waitfn)) {
+			if(!render_video_hud(dscr, _frame, hscl, vscl, dlb(*CORE().settings), dtb(*CORE().settings),
+				drb(*CORE().settings), dbb(*CORE().settings), waitfn)) {
 				akill += killed_audio_length(fps_n, fps_d, akillfrac);
 				return;
 			}
@@ -510,7 +510,7 @@ again:
 			struct avi_info info;
 			info.audio_chans = 2;
 			info.sample_rate = 32000;
-			info.max_frames = max_frames_per_segment(CORE().settings);
+			info.max_frames = max_frames_per_segment(*CORE().settings);
 			info.prefix = prefix;
 			rpair(vcodec, acodec) = find_codecs(mode);
 			info.vcodec = vcodec->get_instance();

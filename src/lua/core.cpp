@@ -108,7 +108,7 @@ namespace
 
 		P(text);
 
-		CORE().command.invoke(text);
+		CORE().command->invoke(text);
 		return 0;
 	}
 

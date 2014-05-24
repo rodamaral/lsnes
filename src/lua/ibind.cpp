@@ -22,7 +22,7 @@ class lua_command_binding : public command::base
 {
 public:
 	lua_command_binding(lua::state& _L, const std::string& cmd, int idx)
-		: command::base(CORE().command, cmd, false), L(_L)
+		: command::base(*CORE().command, cmd, false), L(_L)
 	{
 		L.pushlightuserdata(this);
 		L.pushvalue(idx);
@@ -71,7 +71,7 @@ private:
 };
 
 lua_inverse_bind::lua_inverse_bind(lua::state& L, const std::string& name, const std::string& cmd)
-	: ikey(CORE().mapper, cmd, "Lua‣" + name)
+	: ikey(*CORE().mapper, cmd, "Lua‣" + name)
 {
 }
 
@@ -101,16 +101,16 @@ namespace
 		P(P.optional(target, ""));
 
 		L.newtable();
-		for(auto key : CORE().mapper.get_bindings()) {
+		for(auto key : CORE().mapper->get_bindings()) {
 			std::string _key = key;
-			std::string cmd = CORE().mapper.get(key);
+			std::string cmd = CORE().mapper->get(key);
 			if(target != "" && cmd != target)
 				continue;
 			L.pushlstring(_key.c_str(), _key.length());
 			L.pushlstring(cmd.c_str(), cmd.length());
 			L.rawset(-3);
 		}
-		for(auto key : CORE().mapper.get_controller_keys()) {
+		for(auto key : CORE().mapper->get_controller_keys()) {
 			for(unsigned i = 0;; i++) {
 				std::string _key = key->get_string(i);
 				if(_key == "")
@@ -133,7 +133,7 @@ namespace
 
 		P(name);
 
-		std::string a = CORE().command.get_alias_for(name);
+		std::string a = CORE().command->get_alias_for(name);
 		if(a != "")
 			L.pushlstring(a);
 		else
@@ -147,8 +147,8 @@ namespace
 
 		P(name, P.optional(value, ""));
 
-		CORE().command.set_alias_for(name, value);
-		CORE().abindmanager();
+		CORE().command->set_alias_for(name, value);
+		(*CORE().abindmanager)();
 		return 0;
 	}
 
