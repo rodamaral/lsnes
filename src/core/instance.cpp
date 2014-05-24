@@ -15,8 +15,8 @@ input_queue::input_queue(command::group& _command)
 }
 
 emulator_instance::emulator_instance()
-	: mwatch(memory, project, fbuf), setcache(settings), subtitles(mlogic, fbuf), mbranch(&mlogic),
-	mteditor(mlogic, controls), status(status_A, status_B, status_C), mapper(keyboard, command),
+	: mwatch(memory, project, fbuf), setcache(settings), commentary(settings), subtitles(mlogic, fbuf),
+	mbranch(&mlogic), mteditor(mlogic, controls), status(status_A, status_B, status_C), mapper(keyboard, command),
 	abindmanager(mapper, command), cmapper(memory), controls(project, mlogic),
 	project(commentary, mwatch, command, controls, setcache), fbuf(subtitles, settings, mwatch, keyboard),
 	iqueue(command)

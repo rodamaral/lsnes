@@ -5,6 +5,11 @@
 #include <cstdint>
 #include <string>
 
+namespace settingvar
+{
+	class group;
+}
+
 class voice_commentary
 {
 public:
@@ -21,7 +26,7 @@ public:
 		uint64_t length;
 	};
 
-	voice_commentary();
+	voice_commentary(settingvar::group& _settings);
 	~voice_commentary();
 	void init();
 	void kill();
@@ -43,6 +48,7 @@ public:
 	void set_active_flag(bool flag);
 private:
 	void* internal;
+	settingvar::group& settings;
 };
 
 #endif

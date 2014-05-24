@@ -72,7 +72,8 @@ namespace
 
 	struct voicesub_state
 	{
-		voicesub_state()
+		voicesub_state(settingvar::group& _settings)
+			: settings(_settings)
 		{
 			current_time = 0;
 			time_jump = false;
@@ -122,6 +123,7 @@ namespace
 		void handle_tangent_positive_edge(opus::encoder& e, opus_stream*& active_stream,
 			bitrate_tracker& brtrack);
 		void handle_tangent_negative_edge(opus_stream*& active_stream, bitrate_tracker& brtrack);
+		settingvar::group& settings;
 	};
 
 	voicesub_state* get_state(void* ptr)
@@ -264,7 +266,7 @@ namespace
 		//Import a stream with specified base time.
 		//Can throw.
 		opus_stream(uint64_t base, filesystem::ref filesys, std::ifstream& data,
-			voice_commentary::external_stream_format extfmt);
+			voice_commentary::external_stream_format extfmt, settingvar::group& settings);
 		//Delete this stream (also puts a ref)
 		void delete_stream() { deleting = true; put_ref(); }
 		//Export a stream.
@@ -330,7 +332,7 @@ namespace
 	private:
 		void export_stream_sox(std::ofstream& data);
 		void export_stream_oggopus(std::ofstream& data);
-		void import_stream_sox(std::ifstream& data);
+		void import_stream_sox(std::ifstream& data, settingvar::group& settings);
 		void import_stream_oggopus(std::ifstream& data);
 
 		opus_stream(const opus_stream&);
@@ -457,7 +459,7 @@ out_parsing:
 	}
 
 	opus_stream::opus_stream(uint64_t base, filesystem::ref filesys, std::ifstream& data,
-		voice_commentary::external_stream_format extfmt)
+		voice_commentary::external_stream_format extfmt, settingvar::group& settings)
 		: fs(filesys)
 	{
 		refcount = 1;
@@ -477,7 +479,7 @@ out_parsing:
 		if(extfmt == voice_commentary::EXTFMT_OGGOPUS)
 			import_stream_oggopus(data);
 		else if(extfmt == voice_commentary::EXTFMT_SOX)
-			import_stream_sox(data);
+			import_stream_sox(data, settings);
 	}
 
 	void opus_stream::import_stream_oggopus(std::ifstream& data)
@@ -567,7 +569,7 @@ out:
 		}
 	}
 
-	void opus_stream::import_stream_sox(std::ifstream& data)
+	void opus_stream::import_stream_sox(std::ifstream& data, settingvar::group& settings)
 	{
 		bitrate_tracker brtrack;
 		unsigned char tmpi[65536];
@@ -588,7 +590,7 @@ out:
 			throw std::runtime_error("Only mono streams are supported");
 		uint64_t samples = serialization::u64l(header + 8);
 		opus::encoder enc(opus::samplerate::r48k, false, opus::application::voice);
-		enc.ctl(opus::bitrate(opus_bitrate(lsnes_instance.settings)));
+		enc.ctl(opus::bitrate(opus_bitrate(settings)));
 		int32_t pregap = enc.ctl(opus::lookahead);
 		pregap_length = pregap;
 		for(uint64_t i = 0; i < samples + pregap; i += OPUS_BLOCK_SIZE) {
@@ -615,7 +617,7 @@ out:
 			for(size_t j = bs; j < OPUS_BLOCK_SIZE; j++)
 				tmp[j] = 0;
 			try {
-				const size_t opus_out_max2 = opus_max_bitrate(lsnes_instance.settings) *
+				const size_t opus_out_max2 = opus_max_bitrate(settings) *
 					OPUS_BLOCK_SIZE / 384000;
 				size_t r = enc.encode(tmp, OPUS_BLOCK_SIZE, tmpi, opus_out_max2);
 				write(OPUS_BLOCK_SIZE / 120, tmpi, r);
@@ -1447,7 +1449,7 @@ out:
 			cblock = 120;
 		else
 			return;		//No valid data to compress.
-		const size_t opus_out_max2 = opus_max_bitrate(lsnes_instance.settings) * cblock / 384000;
+		const size_t opus_out_max2 = opus_max_bitrate(settings) * cblock / 384000;
 		try {
 			size_t c = e.encode(buf, cblock, opus_output, opus_out_max2);
 			//Successfully compressed a block.
@@ -1530,7 +1532,7 @@ out:
 			return;
 		try {
 			e.ctl(opus::reset);
-			e.ctl(opus::bitrate(opus_bitrate(lsnes_instance.settings)));
+			e.ctl(opus::bitrate(opus_bitrate(settings)));
 			brtrack.reset();
 			uint64_t ctime;
 			{
@@ -1622,7 +1624,7 @@ out:
 				return;
 
 			opus::encoder oenc(opus::samplerate::r48k, false, opus::application::voice);
-			oenc.ctl(opus::bitrate(opus_bitrate(lsnes_instance.settings)));
+			oenc.ctl(opus::bitrate(opus_bitrate(internal.settings)));
 			audioapi_resampler rin;
 			audioapi_resampler rout;
 			const unsigned buf_max = 6144;	//These buffers better be large.
@@ -1722,7 +1724,8 @@ out:
 	keyboard::invbind_info itangent(lsnes_invbinds, "+tangent", "Movie‣Voice tangent");
 }
 
-voice_commentary::voice_commentary()
+voice_commentary::voice_commentary(settingvar::group& _settings)
+	: settings(_settings)
 {
 	internal = NULL;
 }
@@ -1751,7 +1754,7 @@ void voice_commentary::frame_number(uint64_t newframe, double rate)
 
 void voice_commentary::init()
 {
-	internal = new voicesub_state;
+	internal = new voicesub_state(settings);
 	auto _internal = get_state(internal);
 	try {
 		_internal->int_task = new inthread_th(_internal);
@@ -1868,7 +1871,7 @@ uint64_t voice_commentary::import_stream(uint64_t ts, const std::string& filenam
 	std::ifstream s(filename, std::ios_base::in | std::ios_base::binary);
 	if(!s)
 		throw std::runtime_error("Can't open input file");
-	opus_stream* st = new opus_stream(ts, _internal->current_collection->get_filesystem(), s, fmt);
+	opus_stream* st = new opus_stream(ts, _internal->current_collection->get_filesystem(), s, fmt, settings);
 	uint64_t id;
 	try {
 		id = _internal->current_collection->add_stream(*st);
