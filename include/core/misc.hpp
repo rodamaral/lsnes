@@ -20,13 +20,6 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 	std::runtime_error);
 
 /**
- * \brief Dump listing of regions to graphics system messages.
- *
- * \throws std::bad_alloc Not enough memory.
- */
-void dump_region_map() throw(std::bad_alloc);
-
-/**
  * \brief Fatal error.
  *
  * Fatal error.

@@ -132,17 +132,6 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 	return r;
 }
 
-void dump_region_map() throw(std::bad_alloc)
-{
-	std::list<struct memory_region*> regions = CORE().memory->get_regions();
-	for(auto i : regions) {
-		std::ostringstream x;
-		x << hex::to(i->base) << "-" << hex::to(i->last_address()) << " " << hex::to(i->size) << " ";
-		messages << x.str() << (i->readonly ? "R-" : "RW") << endian_char(i->endian)
-			<< (i->special ? 'I' : 'M') << " " << i->name << std::endl;
-	}
-}
-
 void fatal_error() throw()
 {
 	platform::fatal_error();
