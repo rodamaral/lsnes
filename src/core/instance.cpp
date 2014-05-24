@@ -73,10 +73,10 @@ emulator_instance::emulator_instance()
 emulator_instance::~emulator_instance()
 {
 	delete iqueue;
-	delete fbuf;
+	fbuf->~emu_framebuffer();
 	delete framerate;
 	delete dbg;
-	delete project;
+	project->~project_state();
 	delete cmapper;
 	delete nrrdata;
 	delete abindmanager;
@@ -98,6 +98,9 @@ emulator_instance::~emulator_instance()
 	delete lua;
 	delete memory;
 	delete mlogic;
+
+	delete[] reinterpret_cast<char*>(project);
+	delete[] reinterpret_cast<char*>(fbuf);
 }
 
 emulator_instance lsnes_instance;
