@@ -31,41 +31,68 @@
 #include <execinfo.h>
 #endif
 
+dtor_list::dtor_list()
+{
+	list = NULL;
+}
+
+dtor_list::~dtor_list()
+{
+	destroy();
+}
+
+void dtor_list::destroy()
+{
+	dtor_list::entry* e = list;
+	while(e) {
+		e->free1(e->ptr);
+		e = e->prev;
+	}
+	e = list;
+	while(e) {
+		dtor_list::entry* f = e;
+		e = e->prev;
+		f->free2(f->ptr);
+		delete f;
+	}
+	list = NULL;
+}
+
 emulator_instance::emulator_instance()
 {
 	//Preinit.
-	fbuf = (emu_framebuffer*)new char[sizeof(emu_framebuffer) + 32];
-	project = (project_state*)new char[sizeof(project_state) + 32];
-	buttons = (button_mapping*)new char[sizeof(button_mapping) + 32];
+	D.prealloc(fbuf);
+	D.prealloc(project);
+	D.prealloc(buttons);
 
-	mlogic = new movie_logic;
-	memory = new memory_space;
-	lua = new lua::state;
-	mwatch = new memwatch_set(*memory, *project, *fbuf);
-	settings = new settingvar::group;
-	setcache = new settingvar::cache(*settings);
-	commentary = new voice_commentary(*settings);
-	subtitles = new subtitle_commentary(*mlogic, *fbuf);
-	mbranch = new movie_branches(*mlogic);
-	controls = new controller_state(*project, *mlogic, *buttons);
-	keyboard = new keyboard::keyboard;
-	command = new command::group;
-	mapper = new keyboard::mapper(*keyboard, *command);
-	new(fbuf) emu_framebuffer(*subtitles, *settings, *mwatch, *keyboard);
-	new(buttons) button_mapping(*controls, *mapper, *keyboard, *fbuf);
-	mteditor = new multitrack_edit(*mlogic, *controls);
-	status_A = new _lsnes_status;
-	status_B = new _lsnes_status;
-	status_C = new _lsnes_status;
-	status = new triplebuffer::triplebuffer<_lsnes_status>(*status_A, *status_B, *status_C);
-	abindmanager = new alias_binds_manager(*mapper, *command);
-	nrrdata = new rrdata;
-	cmapper = new cart_mappings_refresher(*memory);
-	new(project) project_state(*commentary, *mwatch, *command, *controls, *setcache, *buttons);
-	dbg = new debug_context;
-	framerate = new framerate_regulator;
-	iqueue = new input_queue(*command);
-	mdumper = new master_dumper;
+	D.init(mlogic);
+	D.init(memory);
+	D.init(lua);
+	D.init(mwatch, *memory, *project, *fbuf);
+	D.init(settings);
+	D.init(setcache, *settings);
+	D.init(commentary, *settings);
+	D.init(subtitles, *mlogic, *fbuf);
+	D.init(mbranch, *mlogic);
+	D.init(controls, *project, *mlogic, *buttons);
+	D.init(keyboard);
+	D.init(command);
+	D.init(mapper, *keyboard, *command);
+	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard);
+	D.init(buttons, *controls, *mapper, *keyboard, *fbuf);
+	D.init(mteditor, *mlogic, *controls);
+	D.init(status_A);
+	D.init(status_B);
+	D.init(status_C);
+	D.init(status, *status_A, *status_B, *status_C);
+	D.init(abindmanager, *mapper, *command);
+	D.init(nrrdata);
+	D.init(cmapper, *memory);
+	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons);
+	D.init(dbg);
+	D.init(framerate);
+	D.init(iqueue, *command);
+	D.init(mdumper);
 
 	status_A->valid = false;
 	status_B->valid = false;
@@ -77,37 +104,7 @@ emulator_instance::emulator_instance()
 
 emulator_instance::~emulator_instance()
 {
-	delete mdumper;
-	delete iqueue;
-	delete framerate;
-	delete dbg;
-	project->~project_state();
-	delete cmapper;
-	delete nrrdata;
-	delete abindmanager;
-	delete status;
-	delete status_C;
-	delete status_B;
-	delete status_A;
-	delete mteditor;
-	buttons->~button_mapping();
-	fbuf->~emu_framebuffer();
-	delete mapper;
-	delete command;
-	delete controls;
-	delete mbranch;
-	delete subtitles;
-	delete commentary;
-	delete setcache;
-	delete settings;
-	delete mwatch;
-	delete lua;
-	delete memory;
-	delete mlogic;
-
-	delete[] reinterpret_cast<char*>(buttons);
-	delete[] reinterpret_cast<char*>(project);
-	delete[] reinterpret_cast<char*>(fbuf);
+	D.destroy();
 }
 
 emulator_instance lsnes_instance;

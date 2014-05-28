@@ -22,28 +22,61 @@ class emu_framebuffer;
 class input_queue;
 class master_dumper;
 class button_mapping;
-namespace command
+namespace command { class group; }
+namespace lua { class state; }
+namespace settingvar { class group; }
+namespace settingvar { class cache; }
+namespace keyboard { class keyboard; }
+namespace keyboard { class mapper; }
+namespace triplebuffer { template<typename T> class triplebuffer; }
+
+class dtor_list
 {
-	class group;
-}
-namespace lua
-{
-	class state;
-}
-namespace settingvar
-{
-	class group;
-	class cache;
-}
-namespace keyboard
-{
-	class keyboard;
-	class mapper;
-}
-namespace triplebuffer
-{
-	template<typename T> class triplebuffer;
-}
+	struct entry
+	{
+		void* ptr;
+		void (*free1)(void* ptr);
+		void (*free2)(void* ptr);
+		entry* prev;
+	};
+public:
+	dtor_list();
+	~dtor_list();
+	void destroy();
+	template<typename T> void prealloc(T*& ptr)
+	{
+		entry e;
+		e.ptr = ptr = reinterpret_cast<T*>(new char[sizeof(T) + 32]);
+		e.free1 = null;
+		e.free2 = free2;
+		e.prev = list;
+		list = new entry(e);
+	}
+	template<typename T, typename... U> void init(T*& ptr, U&... args)
+	{
+		if(ptr) {
+			//Find the entry.
+			entry* e = list;
+			while(e->ptr != ptr)
+				e = e->prev;
+			new(ptr) T(args...);
+			e->free1 = free1_p<T>;
+		} else {
+			entry e;
+			e.ptr = ptr = new T(args...);
+			e.free1 = free1<T>;
+			e.free2 = null;
+			e.prev = list;
+			list = new entry(e);
+		}
+	}
+private:
+	entry* list;
+	static void null(void* ptr) {}
+	static void free2(void* ptr) { delete[] reinterpret_cast<char*>(ptr); }
+	template<typename T> static void free1(void* ptr) { delete reinterpret_cast<T*>(ptr); }
+	template<typename T> static void free1_p(void* ptr) { reinterpret_cast<T*>(ptr)->~T(); }
+};
 
 struct emulator_instance
 {
@@ -78,6 +111,7 @@ struct emulator_instance
 	input_queue* iqueue;
 	master_dumper* mdumper;
 	threads::id emu_thread;
+	dtor_list D;
 };
 
 extern emulator_instance lsnes_instance;
