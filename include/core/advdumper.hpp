@@ -4,12 +4,28 @@
 #include <string>
 #include <set>
 #include <stdexcept>
+#include <iostream>
 
 #include "library/framebuffer.hpp"
+#include "library/dispatch.hpp"
+#include "library/threads.hpp"
 
-class adv_dumper
+class master_dumper;
+class dumper_factory_base;
+class dumper_base;
+
+class dumper_factory_base
 {
 public:
+/**
+ * Notifier base.
+ */
+	class notifier
+	{
+	public:
+		virtual ~notifier() throw();
+		virtual void dumpers_updated() throw() = 0;
+	};
 /**
  * Detail flags.
  */
@@ -23,11 +39,11 @@ public:
  * Parameter id: The ID of dumper.
  * Throws std::bad_alloc: Not enough memory.
  */
-	adv_dumper(const std::string& id) throw(std::bad_alloc);
+	dumper_factory_base(const std::string& id) throw(std::bad_alloc);
 /**
  * Unregister a dumper.
  */
-	~adv_dumper();
+	~dumper_factory_base();
 /**
  * Get ID of dumper.
  *
@@ -40,7 +56,7 @@ public:
  * Returns: The set.
  * Throws std::bad_alloc: Not enough memory.
  */
-	static std::set<adv_dumper*> get_dumper_set() throw(std::bad_alloc);
+	static std::set<dumper_factory_base*> get_dumper_set() throw(std::bad_alloc);
 /**
  * List all valid submodes.
  *
@@ -78,27 +94,230 @@ public:
  */
 	virtual std::string modename(const std::string& mode) throw(std::bad_alloc) = 0;
 /**
- * Is this dumper busy dumping?
- *
- * Return: True if busy, false if not.
- */
-	virtual bool busy() = 0;
-/**
  * Start dump.
  *
  * parameter mode: The mode to dump using.
  * parameter targetname: The target filename or prefix.
+ * returns: The dumper object.
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Can't start dump.
  */
-	virtual void start(const std::string& mode, const std::string& targetname) throw(std::bad_alloc,
-		std::runtime_error) = 0;
+	virtual dumper_base* start(master_dumper& _mdumper, const std::string& mode, const std::string& targetname)
+		throw(std::bad_alloc, std::runtime_error) = 0;
 /**
- * End current dump.
+ * Add dumper update notifier object.
  */
-	virtual void end() throw() = 0;
+	static void add_notifier(notifier& n);
+/**
+ * Remove dumper update notifier object.
+ */
+	static void drop_notifier(notifier& n);
+/**
+ * Notify ctor finished.
+ */
+	void ctor_notify();
+/**
+ * Notify dumper change.
+ */
+	static void run_notify();
 private:
 	std::string d_id;
+};
+
+class master_dumper
+{
+public:
+/**
+ * Information about run.
+ */
+	struct gameinfo
+	{
+	public:
+/**
+ * Construct game info.
+ */
+		gameinfo() throw(std::bad_alloc);
+/**
+ * Game name.
+ */
+		std::string gamename;
+/**
+ * Run length in seconds.
+ */
+		double length;
+/**
+ * Rerecord count (base 10 ASCII)
+ */
+		std::string rerecords;
+/**
+ * Authors. The first components are real names, the second components are nicknames. Either (but not both) may be
+ * blank.
+ */
+		std::vector<std::pair<std::string, std::string>> authors;
+/**
+ * Format human-redable representation of the length.
+ *
+ * Parameter digits: Number of sub-second digits to use.
+ * Returns: The time formated.
+ * Throws std::bad_alloc: Not enough memory.
+ */
+		std::string get_readable_time(unsigned digits) const throw(std::bad_alloc);
+/**
+ * Get number of authors.
+ *
+ * Returns: Number of authors.
+ */
+		size_t get_author_count() const throw();
+/**
+ * Get short name of author (nickname if present, otherwise full name).
+ *
+ * Parameter idx: Index of author (0-based).
+ * Returns: The short name.
+ * Throws std::bad_alloc: Not enough memory.
+ */
+		std::string get_author_short(size_t idx) const throw(std::bad_alloc);
+/**
+ * Get long name of author (full name and nickname if present).
+ *
+ * Parameter idx: Index of author (0-based).
+ * Returns: The long name.
+ * Throws std::bad_alloc: Not enough memory.
+ */
+		std::string get_author_long(size_t idx) const throw(std::bad_alloc);
+/**
+ * Get rerecord count as a number. If rerecord count is too high, returns the maximum representatible count.
+ *
+ * Returns: The rerecord count.
+ */
+		uint64_t get_rerecords() const throw();
+	};
+/**
+ * Notifier.
+ */
+	class notifier
+	{
+	public:
+		virtual ~notifier() throw();
+		virtual void dump_status_change() = 0;
+	};
+/**
+ * Ctor.
+ */
+	master_dumper();
+/**
+ * Get instance for specified dumper.
+ */
+	dumper_base* get_instance(dumper_factory_base* dumper) throw();
+/**
+ * Is dumper busy in this instance?
+ */
+	bool busy(dumper_factory_base* dumper) throw()
+	{
+		return get_instance(dumper) != NULL;
+	}
+/**
+ * Call start on dumper.
+ */
+	dumper_base* start(dumper_factory_base& factory, const std::string& mode, const std::string& targetname)
+		throw(std::bad_alloc, std::runtime_error);
+/**
+ * Add dumper update notifier object.
+ */
+	void add_notifier(notifier& n);
+/**
+ * Remove dumper update notifier object.
+ */
+	void drop_notifier(notifier& n);
+/**
+ * Add dumper update notifier object.
+ */
+	void add_dumper(dumper_base& n);
+/**
+ * Remove dumper update notifier object.
+ */
+	void drop_dumper(dumper_base& n);
+/**
+ * Get number of active dumpers.
+ */
+	unsigned get_dumper_count() throw();
+/**
+ * Call all notifiers (on_frame).
+ */
+	void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d);
+/**
+ * Call all notifiers (on_sample).
+ */
+	void on_sample(short l, short r);
+/**
+ * Call all notifiers (on_rate_change)
+ *
+ * Also changes builtin rate variables.
+ */
+	void on_rate_change(uint32_t n, uint32_t d);
+/**
+ * Call all notifiers (on_gameinfo_change)
+ *
+ * Also changes builtin gameinfo structure.
+ */
+	void on_gameinfo_change(const gameinfo& gi);
+/**
+ * Get current sound rate in effect.
+ */
+	std::pair<uint32_t, uint32_t> get_rate();
+/**
+ * Get current gameinfo in effect.
+ */
+	const gameinfo& get_gameinfo();
+/**
+ * End all dumps.
+ */
+	void end_dumps();
+/**
+ * Set output stream.
+ */
+	void set_output(std::ostream* _output);
+private:
+	void statuschange();
+	friend class dumper_base;
+	std::map<dumper_factory_base*, dumper_base*> dumpers;
+	std::set<notifier*> notifications;
+	std::set<dumper_base*> sdumpers;
+	uint32_t current_rate_n;
+	uint32_t current_rate_d;
+	gameinfo current_gi;
+	std::ostream* output;
+	threads::rlock lock;
+};
+
+class dumper_base
+{
+public:
+	dumper_base();
+	dumper_base(master_dumper& _mdumper, dumper_factory_base& _fbase);
+	virtual ~dumper_base() throw();
+/**
+ * New frame available.
+ */
+	virtual void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d) = 0;
+/**
+ * New sample available.
+ */
+	virtual void on_sample(short l, short r) = 0;
+/**
+ * Sample rate is changing.
+ */
+	virtual void on_rate_change(uint32_t n, uint32_t d) = 0;
+/**
+ * Gameinfo is changing.
+ */
+	virtual void on_gameinfo_change(const master_dumper::gameinfo& gi) = 0;
+/**
+ * Dump is being forcibly ended.
+ */
+	virtual void on_end() = 0;
+private:
+	master_dumper* mdumper;
+	dumper_factory_base* fbase;
 };
 
 /**
@@ -116,7 +335,8 @@ private:
  * Returns: True if frame should be dumped, false if not.
  */
 template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct framebuffer::raw& source,
-	uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap, void(*fn)());
+	uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap,
+	std::function<void()> fn);
 
 /**
  * Calculate number of sound samples to drop due to dropped frame.

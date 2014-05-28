@@ -28,9 +28,6 @@
 namespace
 {
 	class avi_avsnoop;
-	avi_avsnoop* vid_dumper;
-	uint64_t akill = 0;
-	double akillfrac = 0;
 
 	uint32_t rates[] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000,
 		128000, 176400, 192000};
@@ -135,13 +132,16 @@ namespace
 		uint32_t max_frames;
 	};
 
+	struct avi_worker;
+
 	struct resample_worker : public workthread::worker
 	{
-		resample_worker(double _ratio, uint32_t _nch);
+		resample_worker(avi_worker* _worker, double _ratio, uint32_t _nch);
 		~resample_worker();
 		void entry();
 		void sendblock(short* block, size_t frames);
 		void sendend();
+		void set_ratio(double _ratio);
 	private:
 		std::vector<short> buffers;
 		std::vector<float> buffers2;
@@ -151,6 +151,7 @@ namespace
 		double ratio;
 		uint32_t nch;
 		void* resampler;
+		avi_worker* worker;
 	};
 
 	struct avi_worker : public workthread::worker
@@ -267,7 +268,8 @@ namespace
 		}
 	}
 
-	resample_worker::resample_worker(double _ratio, uint32_t _nch)
+	resample_worker::resample_worker(avi_worker* _worker, double _ratio, uint32_t _nch)
+		: worker(_worker)
 	{
 		ratio = _ratio;
 		nch = _nch;
@@ -293,6 +295,13 @@ namespace
 #ifdef WITH_SECRET_RABBIT_CODE
 		src_delete((SRC_STATE*)resampler);
 #endif
+	}
+
+	void resample_worker::set_ratio(double _ratio)
+	{
+		ratio = _ratio;
+		buffers3.resize((RESAMPLE_BUFFER * nch * ratio) + 128 * nch);
+		buffers4.resize((RESAMPLE_BUFFER * nch * ratio) + 128 * nch);
 	}
 
 	void resample_worker::sendend()
@@ -325,42 +334,71 @@ again:
 			goto again;
 	}
 
-	void waitfn();
-
-	class avi_avsnoop : public information_dispatch
+	class avi_dumper_obj : public dumper_base
 	{
 	public:
-		avi_avsnoop(avi_info& info) throw(std::bad_alloc, std::runtime_error)
-			: information_dispatch("dump-avi-int")
+		avi_dumper_obj(master_dumper& _mdumper, dumper_factory_base& _fbase, const std::string& mode,
+			const std::string& prefix)
+			: dumper_base(_mdumper, _fbase), mdumper(_mdumper)
 		{
-			enable_send_sound();
-			unsigned srate_setting = soundrate_setting(*CORE().settings);
-			chans = info.audio_chans = 2;
-			soundrate = get_sound_rate();
-			audio_record_rate = info.sample_rate = get_rate(soundrate.first, soundrate.second,
-				srate_setting);
-			worker = new avi_worker(info);
-			soxdumper = new sox_dumper(info.prefix + ".sox", static_cast<double>(soundrate.first) /
-				soundrate.second, 2);
-			dcounter = 0;
-			have_dumped_frame = false;
-			resampler_w = NULL;
-			if(srate_setting == 4 || srate_setting == 5) {
-				double ratio = 1.0 * audio_record_rate * soundrate.second / soundrate.first;
-				sbuffer_fill = 0;
-				sbuffer.resize(RESAMPLE_BUFFER * chans);
-				resampler_w = new resample_worker(ratio, chans);
-			}
-		}
+			avi_video_codec_type* vcodec;
+			avi_audio_codec_type* acodec;
 
-		~avi_avsnoop() throw()
+			if(prefix == "")
+				throw std::runtime_error("Expected prefix");
+			struct avi_info info;
+			info.audio_chans = 2;
+			info.sample_rate = 32000;
+			info.max_frames = max_frames_per_segment(*CORE().settings);
+			info.prefix = prefix;
+			rpair(vcodec, acodec) = find_codecs(mode);
+			info.vcodec = vcodec->get_instance();
+			info.acodec = acodec->get_instance();
+			try {
+				unsigned srate_setting = soundrate_setting(*CORE().settings);
+				chans = info.audio_chans = 2;
+				soundrate = mdumper.get_rate();
+				audio_record_rate = info.sample_rate = get_rate(soundrate.first, soundrate.second,
+					srate_setting);
+				worker = new avi_worker(info);
+				soxdumper = new sox_dumper(info.prefix + ".sox",
+					static_cast<double>(soundrate.first) / soundrate.second, 2);
+				dcounter = 0;
+				have_dumped_frame = false;
+				resampler_w = NULL;
+				if(srate_setting == 4 || srate_setting == 5) {
+					double ratio = 1.0 * audio_record_rate * soundrate.second / soundrate.first;
+					sbuffer_fill = 0;
+					sbuffer.resize(RESAMPLE_BUFFER * chans);
+					resampler_w = new resample_worker(worker, ratio, chans);
+				}
+				akill = 0;
+				akillfrac = 0;
+				mdumper.add_dumper(*this);
+			} catch(std::bad_alloc& e) {
+				throw;
+			} catch(std::exception& e) {
+				std::ostringstream x;
+				x << "Error starting AVI dump: " << e.what();
+				throw std::runtime_error(x.str());
+			}
+			messages << "Dumping AVI (" << vcodec->get_hname() << " / " << acodec->get_hname()
+				<< ") to " << prefix << std::endl;
+		}
+		~avi_dumper_obj() throw()
 		{
+			if(worker) {
+				if(resampler_w)
+					resampler_w->sendend();
+				worker->request_quit();
+			}
+			mdumper.drop_dumper(*this);
 			if(resampler_w)
 				delete resampler_w;
 			delete worker;
 			delete soxdumper;
+			messages << "AVI Dump finished" << std::endl;
 		}
-
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			uint32_t hscl = 1, vscl = 1;
@@ -374,7 +412,8 @@ again:
 					_frame.get_height());
 			}
 			if(!render_video_hud(dscr, _frame, hscl, vscl, dlb(*CORE().settings), dtb(*CORE().settings),
-				drb(*CORE().settings), dbb(*CORE().settings), waitfn)) {
+				drb(*CORE().settings), dbb(*CORE().settings), [this]() -> void {
+				this->worker->wait_busy(); })) {
 				akill += killed_audio_length(fps_n, fps_d, akillfrac);
 				return;
 			}
@@ -382,7 +421,6 @@ again:
 				fps_n, fps_d);
 			have_dumped_frame = true;
 		}
-
 		void on_sample(short l, short r)
 		{
 			if(akill) {
@@ -414,29 +452,28 @@ again:
 			if(have_dumped_frame)
 				soxdumper->sample(l, r);
 		}
-
-		void on_dump_end()
+		void on_rate_change(uint32_t n, uint32_t d)
 		{
-			if(worker) {
-				if(resampler_w)
-					resampler_w->sendend();
-				worker->request_quit();
-			}
-			if(soxdumper)
-				soxdumper->close();
-			delete worker;
-			delete soxdumper;
-			worker = NULL;
-			soxdumper = NULL;
+			messages << "Warning: Changing AVI sound rate mid-dump is not supported!" << std::endl;
+			//Try to do it anyway.
+			soundrate = mdumper.get_rate();
+			dcounter = 0;
+			double ratio =  1.0 * audio_record_rate * soundrate.second / soundrate.first;
+			if(resampler_w)
+				resampler_w->set_ratio(ratio);
 		}
-
-		bool get_dumper_flag() throw()
+		void on_gameinfo_change(const master_dumper::gameinfo& gi)
 		{
-			return true;
+			//Do nothing.
+		}
+		void on_end()
+		{
+			delete this;
 		}
 		avi_worker* worker;
 		resample_worker* resampler_w;
 	private:
+		master_dumper& mdumper;
 		sox_dumper* soxdumper;
 		framebuffer::fb<false> dscr;
 		unsigned dcounter;
@@ -446,17 +483,17 @@ again:
 		std::vector<short> sbuffer;
 		size_t sbuffer_fill;
 		uint32_t chans;
+		uint64_t akill = 0;
+		double akillfrac = 0;
 	};
 
-	void waitfn()
-	{
-		vid_dumper->worker->wait_busy();
-	}
-
-	class adv_avi_dumper : public adv_dumper
+	class adv_avi_dumper : public dumper_factory_base
 	{
 	public:
-		adv_avi_dumper() : adv_dumper("INTERNAL-AVI") {information_dispatch::do_dumper_update(); }
+		adv_avi_dumper() : dumper_factory_base("INTERNAL-AVI")
+		{
+			ctor_notify();
+		}
 		~adv_avi_dumper() throw();
 		std::set<std::string> list_submodes() throw(std::bad_alloc)
 		{
@@ -467,23 +504,18 @@ again:
 					x.insert(v->get_iname() + std::string("/") + a->get_iname());
 			return x;
 		}
-
 		unsigned mode_details(const std::string& mode) throw()
 		{
 			return target_type_prefix;
 		}
-
 		std::string mode_extension(const std::string& mode) throw()
 		{
 			return "";	//Not interesting
 		}
-
-
 		std::string name() throw(std::bad_alloc)
 		{
 			return "AVI (internal)";
 		}
-
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
 			avi_video_codec_type* vcodec;
@@ -491,61 +523,10 @@ again:
 			rpair(vcodec, acodec) = find_codecs(mode);
 			return vcodec->get_hname() + std::string(" / ") + acodec->get_hname();
 		}
-
-		bool busy()
+		avi_dumper_obj* start(master_dumper& _mdumper, const std::string& mode, const std::string& prefix)
+			throw(std::bad_alloc, std::runtime_error)
 		{
-			return (vid_dumper != NULL);
-		}
-
-		void start(const std::string& mode, const std::string& prefix) throw(std::bad_alloc,
-			std::runtime_error)
-		{
-			avi_video_codec_type* vcodec;
-			avi_audio_codec_type* acodec;
-
-			if(prefix == "")
-				throw std::runtime_error("Expected prefix");
-			if(vid_dumper)
-				throw std::runtime_error("AVI dumping already in progress");
-			struct avi_info info;
-			info.audio_chans = 2;
-			info.sample_rate = 32000;
-			info.max_frames = max_frames_per_segment(*CORE().settings);
-			info.prefix = prefix;
-			rpair(vcodec, acodec) = find_codecs(mode);
-			info.vcodec = vcodec->get_instance();
-			info.acodec = acodec->get_instance();
-			try {
-				vid_dumper = new avi_avsnoop(info);
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				std::ostringstream x;
-				x << "Error starting AVI dump: " << e.what();
-				throw std::runtime_error(x.str());
-			}
-			messages << "Dumping AVI (" << vcodec->get_hname() << " / " << acodec->get_hname()
-				<< ") to " << prefix << std::endl;
-			information_dispatch::do_dumper_update();
-			akill = 0;
-			akillfrac = 0;
-		}
-
-		void end() throw()
-		{
-			if(!vid_dumper)
-				throw std::runtime_error("No AVI video dump in progress");
-			try {
-				vid_dumper->on_dump_end();
-				messages << "AVI Dump finished" << std::endl;
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				messages << "Error ending AVI dump: " << e.what() << std::endl;
-			}
-			delete vid_dumper;
-			vid_dumper = NULL;
-			information_dispatch::do_dumper_update();
+			return new avi_dumper_obj(_mdumper, *this, mode, prefix);
 		}
 	} adv;
 
@@ -576,7 +557,7 @@ again:
 					throw std::runtime_error(std::string("Error using libsamplerate: ") +
 					src_strerror(errc));
 				src_float_to_short_array(&buffers3[0], &buffers4[0], block.output_frames_gen * nch);
-				vid_dumper->worker->queue_audio(&buffers4[0], block.output_frames_gen * nch);
+				worker->queue_audio(&buffers4[0], block.output_frames_gen * nch);
 				if((size_t)block.input_frames_used < bufused)
 					memmove(&buffers[0], &buffers[block.output_frames_gen * nch], (bufused -
 						block.input_frames_used) * nch);

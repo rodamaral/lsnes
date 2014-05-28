@@ -1,5 +1,6 @@
 #include "lsnes.hpp"
 
+#include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/command.hpp"
@@ -358,7 +359,7 @@ void update_movie_state()
 			_status.lag = 0;
 			_status.subframe = 0;
 		}
-		_status.dumping = (information_dispatch::get_dumper_count() > 0);
+		_status.dumping = (CORE().mdumper->get_dumper_count() > 0);
 		if(amode == ADVANCE_BREAK_PAUSE)
 			_status.pause = _lsnes_status::pause_break;
 		else if(amode == ADVANCE_PAUSE)
@@ -529,10 +530,11 @@ public:
 		lua_callback_do_frame_emulated();
 		location_special = SPECIAL_FRAME_VIDEO;
 		CORE().fbuf->redraw_framebuffer(screen, false, true);
-		uint32_t g = gcd(fps_n, fps_d);
-		fps_n /= g;
-		fps_d /= g;
-		information_dispatch::do_frame(screen, fps_n, fps_d);
+		auto rate = our_rom.rtype->get_audio_rate();
+		uint32_t gv = gcd(fps_n, fps_d);
+		uint32_t ga = gcd(rate.first, rate.second);
+		CORE().mdumper->on_rate_change(rate.first / ga, rate.second / ga);
+		CORE().mdumper->on_frame(screen, fps_n / gv, fps_d / gv);
 	}
 
 	void action_state_updated()
@@ -1082,10 +1084,10 @@ namespace
 	keyboard::invbind_info islot32(lsnes_invbinds, "set-jukebox-slot 32", "Slot select‣Slot 32");
 
 	bool on_quit_prompt = false;
-	class mywindowcallbacks : public information_dispatch
+	class mywindowcallbacks : public master_dumper::notifier
 	{
 	public:
-		mywindowcallbacks() : information_dispatch("mainloop-window-callbacks")
+		mywindowcallbacks()
 		{
 			closenotify.set(notify_close, [this]() {
 				if(on_quit_prompt) {
@@ -1107,11 +1109,7 @@ namespace
 			});
 		}
 		~mywindowcallbacks() throw() {}
-		void on_new_dumper(const std::string& n)
-		{
-			update_movie_state();
-		}
-		void on_destroy_dumper(const std::string& n)
+		void dump_status_change() throw()
 		{
 			update_movie_state();
 		}
@@ -1370,7 +1368,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		lua_callback_do_frame();
 	}
 out:
-	information_dispatch::do_dump_end();
+	CORE().mdumper->end_dumps();
 	core_core::uninstall_all_handlers();
 	CORE().commentary->kill();
 	CORE().iqueue->system_thread_available = false;

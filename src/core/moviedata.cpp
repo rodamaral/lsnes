@@ -1,5 +1,6 @@
 #include "lsnes.hpp"
 
+#include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
@@ -95,6 +96,16 @@ namespace
 		std::string pfx;
 		std::getline(strm, pfx);
 		return strip_CR(pfx);
+	}
+
+	void set_gameinfo(moviefile& mfile)
+	{
+		master_dumper::gameinfo gi;
+		gi.gamename = mfile.gamename;
+		gi.length = mfile.get_movie_length() / 1000.0;
+		gi.rerecords = mfile.rerecords;
+		gi.authors = mfile.authors;
+		CORE().mdumper->on_gameinfo_change(gi);
 	}
 
 	class _lsnes_pflag_handler : public movie::poll_flag
@@ -521,6 +532,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		CORE().mlogic->set_mfile(*(_movie()), true);
 		CORE().mlogic->set_rrdata(*(rrd()), true);
 		set_mprefix(get_mprefix_for_project(CORE().mlogic->get_mfile().projectid));
+		set_gameinfo(CORE().mlogic->get_mfile());
 	}
 	notify_mode_change(CORE().mlogic->get_movie().readonly_mode());
 	notify_mbranch_change();
@@ -765,6 +777,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	notify_mode_change(m.readonly_mode());
 	print_movie_info(_movie, our_rom, CORE().mlogic->get_rrdata());
 	notify_mbranch_change();
+	set_gameinfo(CORE().mlogic->get_mfile());
 }
 
 

@@ -1,5 +1,5 @@
 #include "video/avi/codec.hpp"
-#include "core/dispatch.hpp"
+#include "core/advdumper.hpp"
 #include "core/misc.hpp"
 #include "library/serialization.hpp"
 
@@ -242,7 +242,7 @@ avi_codec_type<T>::avi_codec_type(const char* _iname, const char* _hname, T* (*_
 	codecs()[iname] = this;
 	//Make UI rereread available dumpers.
 	if(!in_global_ctors())
-		information_dispatch::do_dumper_update();
+		dumper_factory_base::run_notify();
 }
 
 template<typename T>
@@ -251,7 +251,7 @@ avi_codec_type<T>::~avi_codec_type()
 	codecs().erase(iname);
 	//Make UI rereread available dumpers.
 	if(!in_global_ctors())
-		information_dispatch::do_dumper_update();
+		dumper_factory_base::run_notify();
 }
 
 template<typename T>

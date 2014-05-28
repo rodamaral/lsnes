@@ -1,7 +1,9 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
-#include "core/window.hpp"
+#include "core/instance.hpp"
+#include "core/moviedata.hpp"
 #include "core/random.hpp"
+#include "core/window.hpp"
 #include "video/sox.hpp"
 #include "library/serialization.hpp"
 #include "library/string.hpp"
@@ -19,9 +21,6 @@
 
 namespace
 {
-	uint64_t akill = 0;
-	double akillfrac = 0;
-
 	std::string get_pipedec_command(const std::string& type)
 	{
 		auto r = regex("(.*)[\\/][^\\/]+", get_config_path());
@@ -78,41 +77,56 @@ namespace
 		return out;
 	}
 
-	class pipedec_avsnoop : public information_dispatch
+	class pipedec_dump_obj : public dumper_base
 	{
 	public:
-		pipedec_avsnoop(const std::string& file, bool _upsidedown, bool _bits32, bool _swap,
-			const std::string& mode)
-			: information_dispatch("dump-pipedec")
+		pipedec_dump_obj(master_dumper& _mdumper, dumper_factory_base& _fbase, const std::string& mode,
+			const std::string& prefix)
+			: dumper_base(_mdumper, _fbase), mdumper(_mdumper)
 		{
-			enable_send_sound();
+			bool _upsidedown = (mode[0] != 'v');
+			bool _swap = (mode[2] == 'R');
+			bool _bits32 = (mode[3] == '3');
 
-			cmd = get_pipedec_command("!" + mode + ":");
-			video = NULL;
-			auto soundrate = get_sound_rate();
-			audio = new sox_dumper(file, static_cast<double>(soundrate.first) /
-				soundrate.second, 2);
-			if(!audio)
-				throw std::runtime_error("Can't open output file");
-			have_dumped_frame = false;
-			upsidedown = _upsidedown;
-			bits32 = _bits32;
-			swap = _swap;
-
-			last_width = 0;
-			last_height = 0;
-			last_fps_n = 0;
-			last_fps_d = 0;
-			segid = hex::from<uint32_t>(get_random_hexstring(8));
+			if(prefix == "")
+				throw std::runtime_error("Expected filename");
+			try {
+				cmd = get_pipedec_command("!" + mode + ":");
+				video = NULL;
+				auto r = mdumper.get_rate();
+				audio = new sox_dumper(prefix, static_cast<double>(r.first) / r.second, 2);
+				if(!audio)
+					throw std::runtime_error("Can't open output file");
+				have_dumped_frame = false;
+				upsidedown = _upsidedown;
+				bits32 = _bits32;
+				swap = _swap;
+	
+				last_width = 0;
+				last_height = 0;
+				last_fps_n = 0;
+				last_fps_d = 0;
+				segid = hex::from<uint32_t>(get_random_hexstring(8));
+				akill = 0;
+				akillfrac = 0;
+				mdumper.add_dumper(*this);
+			} catch(std::bad_alloc& e) {
+				throw;
+			} catch(std::exception& e) {
+				std::ostringstream x;
+				x << "Error starting PIPEDEC dump: " << e.what();
+				throw std::runtime_error(x.str());
+			}
+			messages << "Dumping to " << prefix << std::endl;
 		}
-
-		~pipedec_avsnoop() throw()
+		~pipedec_dump_obj() throw()
 		{
+			mdumper.drop_dumper(*this);
 			delete audio;
 			if(video)
 				pclose(video);
+			messages << "PIPEDEC Dump finished" << std::endl;
 		}
-
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			if(!render_video_hud(dscr, _frame, 1, 1, 0, 0, 0, 0, NULL)) {
@@ -181,21 +195,20 @@ namespace
 			if(have_dumped_frame && audio)
 				audio->sample(l, r);
 		}
-
-		void on_dump_end()
+		void on_rate_change(uint32_t n, uint32_t d)
 		{
-			if(video)
-				pclose(video);
-			delete audio;
-			video = NULL;
-			audio = NULL;
+			messages << "Pipedec: Changing sound rate mid-dump not supported." << std::endl;
 		}
-
-		bool get_dumper_flag() throw()
+		void on_gameinfo_change(const master_dumper::gameinfo& gi)
 		{
-			return true;
+			//Do nothing.
+		}
+		void on_end()
+		{
+			delete this;
 		}
 	private:
+		master_dumper& mdumper;
 		FILE* video;
 		sox_dumper* audio;
 		bool have_dumped_frame;
@@ -210,16 +223,16 @@ namespace
 		uint32_t last_height;
 		uint32_t last_width;
 		uint32_t segid;
+		uint64_t akill;
+		double akillfrac;
 	};
 
-	pipedec_avsnoop* vid_dumper;
-
-	class adv_pipedec_dumper : public adv_dumper
+	class adv_pipedec_dumper : public dumper_factory_base
 	{
 	public:
-		adv_pipedec_dumper() : adv_dumper("INTERNAL-PIPEDEC")
+		adv_pipedec_dumper() : dumper_factory_base("INTERNAL-PIPEDEC")
 		{
-			information_dispatch::do_dumper_update();
+			ctor_notify();
 		}
 		~adv_pipedec_dumper() throw();
 		std::set<std::string> list_submodes() throw(std::bad_alloc)
@@ -235,73 +248,26 @@ namespace
 			x.insert("vGR32");
 			return x;
 		}
-
 		unsigned mode_details(const std::string& mode) throw()
 		{
 			return target_type_file;
 		}
-
 		std::string mode_extension(const std::string& mode) throw()
 		{
 			return "sox";
 		}
-
 		std::string name() throw(std::bad_alloc)
 		{
 			return "PIPEDEC";
 		}
-
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
 			return "!" + mode;
 		}
-
-		bool busy()
+		pipedec_dump_obj* start(master_dumper& _mdumper, const std::string& mode, const std::string& prefix)
+			throw(std::bad_alloc, std::runtime_error)
 		{
-			return (vid_dumper != NULL);
-		}
-
-		void start(const std::string& mode, const std::string& prefix) throw(std::bad_alloc,
-			std::runtime_error)
-		{
-			bool upsidedown = (mode[0] != 'v');
-			bool swap = (mode[2] == 'R');
-			bool bits32 = (mode[3] == '3');
-
-			if(prefix == "")
-				throw std::runtime_error("Expected filename");
-			if(vid_dumper)
-				throw std::runtime_error("PIPEDEC dumping already in progress");
-			try {
-				vid_dumper = new pipedec_avsnoop(prefix, upsidedown, bits32, swap, mode);
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				std::ostringstream x;
-				x << "Error starting PIPEDEC dump: " << e.what();
-				throw std::runtime_error(x.str());
-			}
-			messages << "Dumping to " << prefix << std::endl;
-			information_dispatch::do_dumper_update();
-			akill = 0;
-			akillfrac = 0;
-		}
-
-		void end() throw()
-		{
-			if(!vid_dumper)
-				throw std::runtime_error("No PIPEDEC video dump in progress");
-			try {
-				vid_dumper->on_dump_end();
-				messages << "PIPEDEC Dump finished" << std::endl;
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				messages << "Error ending PIPEDEC dump: " << e.what() << std::endl;
-			}
-			delete vid_dumper;
-			vid_dumper = NULL;
-			information_dispatch::do_dumper_update();
+			return new pipedec_dump_obj(_mdumper, *this, mode, prefix);
 		}
 	} adv;
 

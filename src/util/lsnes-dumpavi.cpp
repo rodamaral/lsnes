@@ -81,18 +81,20 @@ namespace
 		}
 	}
 
-	class myavsnoop : public information_dispatch
+	class myavsnoop : public dumper_base
 	{
 	public:
-		myavsnoop(adv_dumper& _dumper, uint64_t frames_to_dump)
-			: information_dispatch("myavsnoop-monitor"), dumper(_dumper)
+		myavsnoop(dumper_base& _dumper, uint64_t frames_to_dump)
+			: dumper(_dumper)
 		{
 			frames_dumped = 0;
 			total = frames_to_dump;
+			lsnes_instance.mdumper->add_dumper(*this);
 		}
 
 		~myavsnoop() throw()
 		{
+			lsnes_instance.mdumper->drop_dumper(*this);
 		}
 
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
@@ -102,40 +104,57 @@ namespace
 				std::cout << "Dumping frame " << frames_dumped << "/" << total << " ("
 					<< (100 * frames_dumped / total) << "%)" << std::endl;
 			}
-			if(frames_dumped == total) {
+			if(frames_dumped >= total) {
 				//Rough way to end it.
-				dumper.end();
-				information_dispatch::do_dump_end();
-				exit(0);
+				CORE().command->invoke("quit-emulator");
 			}
 		}
-
-		void on_dump_end()
+		void on_sample(short l, short r)
+		{
+			//We aren't interested in samples.
+		}
+		void on_rate_change(uint32_t n, uint32_t d)
+		{
+			//We aren't interested in samples.
+		}
+		void on_gameinfo_change(const master_dumper::gameinfo& gi)
+		{
+			std::cout << "Game:" << gi.gamename << std::endl;
+			std::cout << "Length:" << gi.get_readable_time(3) << std::endl;
+			std::cout << "Rerecords:" << gi.get_rerecords() << std::endl;
+			for(unsigned i = 0; i < gi.get_author_count(); i++)
+				std::cout << "Author: " << gi.get_author_long(i) << std::endl;
+		}
+		void on_end()
 		{
 			std::cout << "Finished!" << std::endl;
+			delete this;
 		}
 	private:
 		uint64_t frames_dumped;
 		uint64_t total;
-		adv_dumper& dumper;
+		dumper_base& dumper;
 	};
 
-	void dumper_startup(adv_dumper& dumper, const std::string& mode, const std::string& prefix, uint64_t length)
+	void dumper_startup(dumper_factory_base& dumper, const std::string& mode, const std::string& prefix,
+		uint64_t length)
 	{
+		dumper_base* _dumper;
 		std::cout << "Invoking dumper" << std::endl;
 		try {
-			dumper.start(mode, prefix);
+			_dumper = lsnes_instance.mdumper->start(dumper, mode, prefix);
 		} catch(std::exception& e) {
 			std::cerr << "Can't start dumper: " << e.what() << std::endl;
 			exit(1);
 		}
-		if(information_dispatch::get_dumper_count()) {
+		if(lsnes_instance.mdumper->get_dumper_count()) {
 			std::cout << "Dumper attach confirmed" << std::endl;
 		} else {
 			std::cout << "Can't start dumper!" << std::endl;
 			exit(1);
 		}
-		new myavsnoop(dumper, length);
+		auto d = new myavsnoop(*_dumper, length);
+		d->on_gameinfo_change(lsnes_instance.mdumper->get_gameinfo());
 	}
 
 	void startup_lua_scripts(const std::vector<std::string>& cmdline)
@@ -148,10 +167,10 @@ namespace
 		}
 	}
 
-	struct adv_dumper& locate_dumper(const std::string& name)
+	struct dumper_factory_base& locate_dumper(const std::string& name)
 	{
-		adv_dumper* _dumper = NULL;
-		std::set<adv_dumper*> dumpers = adv_dumper::get_dumper_set();
+		dumper_factory_base* _dumper = NULL;
+		std::set<dumper_factory_base*> dumpers = dumper_factory_base::get_dumper_set();
 		for(auto i : dumpers)
 			if(i->id() == name)
 				_dumper = i;
@@ -165,19 +184,19 @@ namespace
 	std::string format_details(unsigned detail)
 	{
 		std::string r;
-		if((detail & adv_dumper::target_type_mask) == adv_dumper::target_type_file)
+		if((detail & dumper_factory_base::target_type_mask) == dumper_factory_base::target_type_file)
 			r = r + "TARGET_FILE";
-		else if((detail & adv_dumper::target_type_mask) == adv_dumper::target_type_prefix)
+		else if((detail & dumper_factory_base::target_type_mask) == dumper_factory_base::target_type_prefix)
 			r = r + "TARGET_PREFIX";
-		else if((detail & adv_dumper::target_type_mask) == adv_dumper::target_type_special)
+		else if((detail & dumper_factory_base::target_type_mask) == dumper_factory_base::target_type_special)
 			r = r + "TARGET_SPECIAL";
 		else
 			r = r + "TARGET_UNKNOWN";
 		return r;
 	}
 
-	adv_dumper& get_dumper(const std::vector<std::string>& cmdline, std::string& mode, std::string& prefix,
-		uint64_t& length, bool& overdump_mode, uint64_t& overdump_length)
+	dumper_factory_base& get_dumper(const std::vector<std::string>& cmdline, std::string& mode,
+		std::string& prefix, uint64_t& length, bool& overdump_mode, uint64_t& overdump_length)
 	{
 		bool dumper_given = false;
 		std::string dumper;
@@ -246,7 +265,7 @@ namespace
 		}
 		if(dumper == "list") {
 			//Help on dumpers.
-			std::set<adv_dumper*> dumpers = adv_dumper::get_dumper_set();
+			std::set<dumper_factory_base*> dumpers = dumper_factory_base::get_dumper_set();
 			std::cout << "Dumpers available:" << std::endl;
 			for(auto i : dumpers)
 				std::cout << i->id() << "\t" << i->name() << std::endl;
@@ -258,7 +277,7 @@ namespace
 		}
 		if(mode == "list") {
 			//Help on modes.
-			adv_dumper& _dumper = locate_dumper(dumper);
+			dumper_factory_base& _dumper = locate_dumper(dumper);
 			std::set<std::string> modes = _dumper.list_submodes();
 			if(modes.empty()) {
 				unsigned d = _dumper.mode_details("");
@@ -274,7 +293,7 @@ namespace
 			}
 			exit(0);
 		}
-		adv_dumper& _dumper = locate_dumper(dumper);
+		dumper_factory_base& _dumper = locate_dumper(dumper);
 		if(!mode_given && !_dumper.list_submodes().empty()) {
 			std::cerr << "Mode required for this dumper" << std::endl;
 			exit(1);
@@ -313,11 +332,13 @@ int main(int argc, char** argv)
 	bool overdump_mode;
 	std::string mode, prefix;
 
-	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length, overdump_mode, overdump_length);
+	dumper_factory_base& dumper = get_dumper(cmdline, mode, prefix, length, overdump_mode, overdump_length);
 
 	set_random_seed();
 	platform::init();
 	init_lua();
+	lsnes_instance.mdumper->set_output(&messages.getstream());
+	set_hasher_callback(hash_callback);
 
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 	messages << "Command line is: ";
@@ -350,8 +371,6 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-
-	set_hasher_callback(hash_callback);
 
 	std::string movfn;
 	for(auto i : cmdline) {
@@ -415,7 +434,6 @@ int main(int argc, char** argv)
 		fatal_error();
 		return 1;
 	}
-	information_dispatch::do_dump_end();
 	quit_lua();
 	lsnes_instance.mlogic->release_memory();
 	cleanup_all_keys();

@@ -1,6 +1,7 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
+#include "core/moviedata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/serialization.hpp"
@@ -22,74 +23,101 @@ namespace
 {
 	settingvar::supervariable<settingvar::model_int<0,9>> clevel(lsnes_setgrp, "jmd-compression",
 		"JMD‣Compression", 7);
-	uint64_t akill = 0;
-	double akillfrac = 0;
 
 	void deleter_fn(void* f)
 	{
 		delete reinterpret_cast<std::ofstream*>(f);
 	}
 
-	class jmd_avsnoop : public information_dispatch
+	class jmd_dump_obj : public dumper_base
 	{
 	public:
-		jmd_avsnoop(const std::string& filename, bool tcp_flag) throw(std::bad_alloc)
-			: information_dispatch("dump-jmd")
+		jmd_dump_obj(master_dumper& _mdumper, dumper_factory_base& _fbase, const std::string& mode,
+			const std::string& prefix)
+			: dumper_base(_mdumper, _fbase), mdumper(_mdumper)
 		{
-			enable_send_sound();
+			if(prefix == "")
+				throw std::runtime_error("Expected target");
+			try {
 			complevel = clevel(*CORE().settings);
-			if(tcp_flag) {
-				jmd = &(socket_address(filename).connect());
-				deleter = socket_address::deleter();
-			} else {
-				jmd = new std::ofstream(filename.c_str(), std::ios::out | std::ios::binary);
-				deleter = deleter_fn;
-			}
-			if(!*jmd)
-				throw std::runtime_error("Can't open output JMD file.");
-			last_written_ts = 0;
-			//Write the segment tables.
-			//Stream #0 is video.
-			//Stream #1 is PCM audio.
-			//Stream #2 is Gameinfo.
-			//Stream #3 is Dummy.
-			char header[] = {
-				/* Magic */
-				-1, -1, 0x4A, 0x50, 0x43, 0x52, 0x52, 0x4D, 0x55, 0x4C, 0x54, 0x49, 0x44, 0x55, 0x4D,
-				0x50,
-				/* Channel count. */
-				0x00, 0x04,
-				/* Video channel header. */
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 'v', 'i',
-				/* Audio channel header. */
-				0x00, 0x01, 0x00, 0x01, 0x00, 0x02, 'a', 'u',
-				/* Gameinfo channel header. */
-				0x00, 0x02, 0x00, 0x05, 0x00, 0x02, 'g', 'i',
-				/* Dummy channel header. */
-				0x00, 0x03, 0x00, 0x03, 0x00, 0x02, 'd', 'u'
-			};
-			jmd->write(header, sizeof(header));
-			if(!*jmd)
-				throw std::runtime_error("Can't write JMD header and segment table");
-			have_dumped_frame = false;
-			audio_w = 0;
-			audio_n = 0;
-			video_w = 0;
-			video_n = 0;
-			maxtc = 0;
-			soundrate = get_sound_rate();
-			try {
-				on_gameinfo(get_gameinfo());
+				if(mode == "tcp") {
+					jmd = &(socket_address(prefix).connect());
+					deleter = socket_address::deleter();
+				} else {
+					jmd = new std::ofstream(prefix.c_str(), std::ios::out | std::ios::binary);
+					deleter = deleter_fn;
+				}
+				if(!*jmd)
+					throw std::runtime_error("Can't open output JMD file.");
+				last_written_ts = 0;
+				//Write the segment tables.
+				//Stream #0 is video.
+				//Stream #1 is PCM audio.
+				//Stream #2 is Gameinfo.
+				//Stream #3 is Dummy.
+				char header[] = {
+					/* Magic */
+					-1, -1, 0x4A, 0x50, 0x43, 0x52, 0x52, 0x4D, 0x55, 0x4C, 0x54, 0x49, 0x44,
+					0x55, 0x4D, 0x50,
+					/* Channel count. */
+					0x00, 0x04,
+					/* Video channel header. */
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 'v', 'i',
+					/* Audio channel header. */
+					0x00, 0x01, 0x00, 0x01, 0x00, 0x02, 'a', 'u',
+					/* Gameinfo channel header. */
+					0x00, 0x02, 0x00, 0x05, 0x00, 0x02, 'g', 'i',
+					/* Dummy channel header. */
+					0x00, 0x03, 0x00, 0x03, 0x00, 0x02, 'd', 'u'
+				};
+				jmd->write(header, sizeof(header));
+				if(!*jmd)
+					throw std::runtime_error("Can't write JMD header and segment table");
+				have_dumped_frame = false;
+				audio_w = 0;
+				audio_n = 0;
+				video_w = 0;
+				video_n = 0;
+				maxtc = 0;
+				soundrate = mdumper.get_rate();
+				akill = 0;
+				akillfrac = 0;
+				mdumper.add_dumper(*this);
+			} catch(std::bad_alloc& e) {
+				throw;
 			} catch(std::exception& e) {
-				messages << "Can't write gameinfo: " << e.what() << std::endl;
+				std::ostringstream x;
+				x << "Error starting JMD dump: " << e.what();
+				throw std::runtime_error(x.str());
 			}
+			messages << "Dumping to " << prefix << " at level " << clevel(*CORE().settings) << std::endl;
 		}
-
-		~jmd_avsnoop() throw()
+		~jmd_dump_obj() throw()
 		{
+			mdumper.drop_dumper(*this);
 			try {
-				on_dump_end();
-			} catch(...) {
+				char dummypacket[8] = {0x00, 0x03};
+				if(!jmd)
+					goto out;
+				flush_buffers(true);
+				if(last_written_ts > maxtc) {
+					deleter(jmd);
+					jmd = NULL;
+					return;
+				}
+				serialization::u32b(dummypacket + 2, maxtc - last_written_ts);
+				last_written_ts = maxtc;
+				jmd->write(dummypacket, sizeof(dummypacket));
+				if(!*jmd)
+					throw std::runtime_error("Can't write JMD ending dummy packet");
+				deleter(jmd);
+				jmd = NULL;
+out:
+				messages << "JMD Dump finished" << std::endl;
+			} catch(std::bad_alloc& e) {
+				throw;
+			} catch(std::exception& e) {
+				messages << "Error ending JMD dump: " << e.what() << std::endl;
 			}
 		}
 
@@ -125,41 +153,18 @@ namespace
 				flush_buffers(false);
 			}
 		}
-
-		void on_dump_end()
+		void on_rate_change(uint32_t n, uint32_t d)
 		{
-			if(!jmd)
-				return;
-			flush_buffers(true);
-			if(last_written_ts > maxtc) {
-				deleter(jmd);
-				jmd = NULL;
-				return;
-			}
-			char dummypacket[8] = {0x00, 0x03};
-			serialization::u32b(dummypacket + 2, maxtc - last_written_ts);
-			last_written_ts = maxtc;
-			jmd->write(dummypacket, sizeof(dummypacket));
-			if(!*jmd)
-				throw std::runtime_error("Can't write JMD ending dummy packet");
-			deleter(jmd);
-			jmd = NULL;
+			soundrate = std::make_pair(n, d);
+			audio_n = 0;
 		}
-
-		void on_gameinfo(const struct gameinfo_struct& gi)
+		void on_gameinfo_change(const master_dumper::gameinfo& gi)
 		{
-			std::string authstr;
-			for(size_t i = 0; i < gi.get_author_count(); i++) {
-				if(i != 0)
-					authstr = authstr + ", ";
-				authstr = authstr + gi.get_author_short(i);
-			}
-			//TODO: Implement
+			//TODO: Dump the gameinfo.
 		}
-
-		bool get_dumper_flag() throw()
+		void on_end()
 		{
-			return true;
+			delete this;
 		}
 	private:
 		uint64_t get_next_video_ts(uint32_t fps_n, uint32_t fps_d)
@@ -197,6 +202,8 @@ namespace
 		uint64_t video_n;
 		uint64_t maxtc;
 		std::pair<uint32_t, uint32_t> soundrate;
+		uint64_t akill;
+		double akillfrac;
 		struct frame_buffer
 		{
 			uint64_t ts;
@@ -368,14 +375,16 @@ namespace
 		void (*deleter)(void* f);
 		uint64_t last_written_ts;
 		unsigned complevel;
+		master_dumper& mdumper;
 	};
 
-	jmd_avsnoop* vid_dumper;
-
-	class adv_jmd_dumper : public adv_dumper
+	class adv_jmd_dumper : public dumper_factory_base
 	{
 	public:
-		adv_jmd_dumper() : adv_dumper("INTERNAL-JMD") {information_dispatch::do_dumper_update(); }
+		adv_jmd_dumper() : dumper_factory_base("INTERNAL-JMD")
+		{
+			ctor_notify();
+		}
 		~adv_jmd_dumper() throw();
 		std::set<std::string> list_submodes() throw(std::bad_alloc)
 		{
@@ -384,69 +393,26 @@ namespace
 			x.insert("tcp");
 			return x;
 		}
-
 		unsigned mode_details(const std::string& mode) throw()
 		{
 			return (mode == "tcp") ? target_type_special : target_type_file;
 		}
-
 		std::string mode_extension(const std::string& mode) throw()
 		{
 			return "jmd";	//Ignored if tcp mode.
 		}
-
 		std::string name() throw(std::bad_alloc)
 		{
 			return "JMD";
 		}
-
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
 			return (mode == "tcp") ? "over TCP/IP" : "to file";
 		}
-
-		bool busy()
+		jmd_dump_obj* start(master_dumper& _mdumper, const std::string& mode, const std::string& prefix)
+			throw(std::bad_alloc, std::runtime_error)
 		{
-			return (vid_dumper != NULL);
-		}
-
-		void start(const std::string& mode, const std::string& prefix) throw(std::bad_alloc,
-			std::runtime_error)
-		{
-			if(prefix == "")
-				throw std::runtime_error("Expected target");
-			if(vid_dumper)
-				throw std::runtime_error("JMD dumping already in progress");
-			try {
-				vid_dumper = new jmd_avsnoop(prefix, mode == "tcp");
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				std::ostringstream x;
-				x << "Error starting JMD dump: " << e.what();
-				throw std::runtime_error(x.str());
-			}
-			messages << "Dumping to " << prefix << " at level " << clevel(*CORE().settings) << std::endl;
-			information_dispatch::do_dumper_update();
-			akill = 0;
-			akillfrac = 0;
-		}
-
-		void end() throw()
-		{
-			if(!vid_dumper)
-				throw std::runtime_error("No JMD video dump in progress");
-			try {
-				vid_dumper->on_dump_end();
-				messages << "JMD Dump finished" << std::endl;
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				messages << "Error ending JMD dump: " << e.what() << std::endl;
-			}
-			delete vid_dumper;
-			vid_dumper = NULL;
-			information_dispatch::do_dumper_update();
+			return new jmd_dump_obj(_mdumper, *this, mode, prefix);
 		}
 	} adv;
 

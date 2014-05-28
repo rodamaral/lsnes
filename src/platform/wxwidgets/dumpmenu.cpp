@@ -8,7 +8,7 @@
 
 struct dumper_info
 {
-	adv_dumper* instance;
+	dumper_factory_base* instance;
 	std::string name;
 	bool active;
 	std::map<std::string, std::string> modes;
@@ -30,7 +30,7 @@ namespace
 	std::string last_processed;
 	bool first;
 
-	void update_dumperinfo(std::map<std::string, dumper_info>& new_dumpers, adv_dumper* d)
+	void update_dumperinfo(std::map<std::string, dumper_info>& new_dumpers, dumper_factory_base* d)
 	{
 		struct dumper_info inf;
 		inf.instance = d;
@@ -38,16 +38,15 @@ namespace
 		std::set<std::string> mset = d->list_submodes();
 		for(auto i : mset)
 			inf.modes[i] = d->modename(i);
-		inf.active = d->busy();
+		inf.active = lsnes_instance.mdumper->busy(d);
 		new_dumpers[d->id()] = inf;
 	}
 }
 
-class dumper_menu_monitor : public information_dispatch
+class dumper_menu_monitor : public master_dumper::notifier
 {
 public:
 	dumper_menu_monitor(dumper_menu* dmenu)
-		: information_dispatch("wxwidgets-dumpmenu")
 	{
 		linked = dmenu;
 	}
@@ -56,13 +55,17 @@ public:
 	{
 	}
 
-	void on_dumper_update()
+	void dumpers_updated() throw()
 	{
 		new_dumpers.clear();
-		std::set<adv_dumper*> dset = adv_dumper::get_dumper_set();
+		std::set<dumper_factory_base*> dset = dumper_factory_base::get_dumper_set();
 		for(auto i : dset)
 			update_dumperinfo(new_dumpers, i);
 		runuifun([this]() { if(this->linked) this->linked->update(this->new_dumpers); });
+	}
+	void dump_status_change() throw()
+	{
+		dumpers_updated();
 	}
 private:
 	dumper_menu* linked;
@@ -79,9 +82,10 @@ dumper_menu::dumper_menu(wxWindow* win, int wxid_low, int wxid_high)
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
 	monitor = new dumper_menu_monitor(this);
+	lsnes_instance.mdumper->add_notifier(*monitor);
 	std::map<std::string, dumper_info> new_dumpers;
 	lsnes_instance.iqueue->run([&new_dumpers]() {
-		std::set<adv_dumper*> dset = adv_dumper::get_dumper_set();
+		std::set<dumper_factory_base*> dset = dumper_factory_base::get_dumper_set();
 		for(auto i : dset)
 			update_dumperinfo(new_dumpers, i);
 		});
@@ -90,6 +94,7 @@ dumper_menu::dumper_menu(wxWindow* win, int wxid_low, int wxid_high)
 
 dumper_menu::~dumper_menu()
 {
+	lsnes_instance.mdumper->drop_notifier(*monitor);
 	delete monitor;
 }
 
@@ -100,18 +105,13 @@ void dumper_menu::on_select(wxCommandEvent& e)
 		return;
 	for(auto i : menustructure) {
 		std::string error_str;
-		adv_dumper* t = existing_dumpers[i.first].instance;
+		dumper_factory_base* t = existing_dumpers[i.first].instance;
 		if(i.second.end_wxid == id) {
 			//Execute end of dump operation.
 			lsnes_instance.iqueue->run([t, &error_str]() {
-				try {
-					t->end();
-				} catch(std::exception& e) {
-					error_str = e.what();
-				}});
-			if(error_str != "")
-				wxMessageBox(towxstring(error_str), _T("Error ending dump"),
-					wxICON_EXCLAMATION | wxOK, pwin);
+				auto in = lsnes_instance.mdumper->get_instance(t);
+				delete in;
+			});
 			return;
 		}
 		if(i.second.start_wxids.count(id)) {
@@ -119,7 +119,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			std::string mode = i.second.start_wxids[id];
 			unsigned d = t->mode_details(mode);
 			std::string prefix;
-			if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_file) {
+			if((d & dumper_factory_base::target_type_mask) == dumper_factory_base::target_type_file) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"),
 					towxstring(lsnes_instance.project->otherpath()), wxT(""), wxT("*.*"),
 					wxFD_SAVE);
@@ -131,7 +131,8 @@ void dumper_menu::on_select(wxCommandEvent& e)
 				if(d->ShowModal() == wxID_OK)
 					prefix = tostdstring(d->GetPath());
 				d->Destroy();
-			} else if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_prefix) {
+			} else if((d & dumper_factory_base::target_type_mask) ==
+				dumper_factory_base::target_type_prefix) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose prefix"),
 					towxstring(lsnes_instance.project->otherpath()), wxT(""), wxT("*.*"),
 					wxFD_SAVE);
@@ -141,7 +142,8 @@ void dumper_menu::on_select(wxCommandEvent& e)
 				if(d->ShowModal() == wxID_OK)
 					prefix = tostdstring(d->GetPath());
 				d->Destroy();
-			} else if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_special) {
+			} else if((d & dumper_factory_base::target_type_mask) ==
+				dumper_factory_base::target_type_special) {
 				try {
 					prefix = pick_text(pwin, "Choose target", "Enter target to dump to", "");
 				} catch(...) {
@@ -156,7 +158,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 				return;
 			lsnes_instance.iqueue->run([t, mode, prefix, &error_str]() {
 				try {
-					t->start(mode, prefix);
+					CORE().mdumper->start(*t, mode, prefix);
 				} catch(std::exception& e) {
 					error_str = e.what();
 				}});

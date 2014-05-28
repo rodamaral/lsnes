@@ -1,6 +1,8 @@
+#include "core/advdumper.hpp"
 #include "core/audioapi.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/instance.hpp"
 #include "library/minmax.hpp"
 #include "library/threads.hpp"
 #include <cstring>
@@ -213,10 +215,10 @@ void audioapi_submit_buffer(int16_t* samples, size_t count, bool stereo, double 
 {
 	if(stereo)
 		for(unsigned i = 0; i < count; i++)
-			information_dispatch::do_sample(samples[2 * i + 0], samples[2 * i + 1]);
+			CORE().mdumper->on_sample(samples[2 * i + 0], samples[2 * i + 1]);
 	else
 		for(unsigned i = 0; i < count; i++)
-			information_dispatch::do_sample(samples[i], samples[i]);
+			CORE().mdumper->on_sample(samples[i], samples[i]);
 	//Limit buffers to avoid overrunning.
 	if(count > music_bufsize / (stereo ? 2 : 1))
 		count = music_bufsize / (stereo ? 2 : 1);

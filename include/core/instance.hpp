@@ -20,6 +20,7 @@ class debug_context;
 class framerate_regulator;
 class emu_framebuffer;
 class input_queue;
+class master_dumper;
 namespace command
 {
 	class group;
@@ -73,6 +74,7 @@ struct emulator_instance
 	framerate_regulator* framerate;
 	emu_framebuffer* fbuf;
 	input_queue* iqueue;
+	master_dumper* mdumper;
 	threads::id emu_thread;
 };
 

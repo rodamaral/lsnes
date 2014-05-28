@@ -1,4 +1,5 @@
 #include <deque>
+#include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/controllerframe.hpp"
 #include "core/debug.hpp"
@@ -61,6 +62,7 @@ emulator_instance::emulator_instance()
 	framerate = new framerate_regulator;
 	new(fbuf) emu_framebuffer(*subtitles, *settings, *mwatch, *keyboard);
 	iqueue = new input_queue(*command);
+	mdumper = new master_dumper;
 
 	status_A->valid = false;
 	status_B->valid = false;
@@ -72,6 +74,7 @@ emulator_instance::emulator_instance()
 
 emulator_instance::~emulator_instance()
 {
+	delete mdumper;
 	delete iqueue;
 	fbuf->~emu_framebuffer();
 	delete framerate;

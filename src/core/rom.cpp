@@ -1,5 +1,6 @@
 #include "lsnes.hpp"
 
+#include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
@@ -597,7 +598,8 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	auto nominal_fps = rtype->get_video_rate();
 	auto nominal_hz = rtype->get_audio_rate();
 	CORE().framerate->set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
-	information_dispatch::do_sound_rate(nominal_hz.first, nominal_hz.second);
+	CORE().mdumper->on_rate_change(nominal_hz.first, nominal_hz.second);
+
 	current_rom_type = rtype;
 	current_region = region;
 	//If core changes, unload the cartridge.

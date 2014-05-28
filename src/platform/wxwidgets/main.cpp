@@ -10,6 +10,7 @@
 #include "core/keymapper.hpp"
 #include "core/loadlib.hpp"
 #include "lua/lua.hpp"
+#include "core/advdumper.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/instance.hpp"
@@ -509,6 +510,7 @@ bool lsnes_app::OnInit()
 		return false;
 	}
 	init_lua();
+	lsnes_instance.mdumper->set_output(&messages.getstream());
 
 	joystick_thread_handle = new threads::thread(joystick_thread, 7);
 
@@ -564,7 +566,6 @@ int lsnes_app::OnExit()
 	if(x)
 		x->Destroy();
 	save_configuration();
-	information_dispatch::do_dump_end();
 	quit_lua();
 	lsnes_instance.mlogic->release_memory();
 	joystick_driver_signal();
