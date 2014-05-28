@@ -4,6 +4,7 @@
 #include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/memorywatch.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"

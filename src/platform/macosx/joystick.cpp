@@ -1,6 +1,7 @@
 #include "sdl-sysjoy-interface.h"
 #include "core/keymapper.hpp"
 #include "core/joystickapi.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "library/string.hpp"
 #include <cstdlib>

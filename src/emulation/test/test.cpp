@@ -27,7 +27,7 @@
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
-#include "core/window.hpp"
+#include "core/messages.hpp"
 #include "interface/callbacks.hpp"
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"

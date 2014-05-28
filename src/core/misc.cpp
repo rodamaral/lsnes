@@ -2,6 +2,7 @@
 
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/instance.hpp"
 #include "core/rom.hpp"
@@ -181,9 +182,6 @@ void OOM_panic()
 	messages << "FATAL: Out of memory!" << std::endl;
 	fatal_error();
 }
-
-std::ostream& messages_relay_class::getstream() { return platform::out(); }
-messages_relay_class messages;
 
 uint32_t gcd(uint32_t a, uint32_t b) throw()
 {

@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "library/lua-framebuffer.hpp"
 #include "library/minmax.hpp"

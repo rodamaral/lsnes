@@ -2,6 +2,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
+#include "core/messages.hpp"
 #include "core/moviedata.hpp"
 #include "core/subtitles.hpp"
 #include "core/window.hpp"

@@ -8,6 +8,7 @@
 #include "core/framerate.hpp"
 #include "core/misc.hpp"
 #include "core/mainloop.hpp"
+#include "core/messages.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"

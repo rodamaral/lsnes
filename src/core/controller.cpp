@@ -7,6 +7,7 @@
 #include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/mainloop.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"

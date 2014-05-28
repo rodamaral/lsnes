@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "interface/romtype.hpp"
 #include "core/moviedata.hpp"
+#include "core/messages.hpp"
 
 namespace
 {

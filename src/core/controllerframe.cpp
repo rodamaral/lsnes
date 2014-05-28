@@ -2,6 +2,7 @@
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
+#include "core/messages.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"

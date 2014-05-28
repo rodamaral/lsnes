@@ -1,3 +1,4 @@
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"

@@ -3,7 +3,7 @@
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/random.hpp"
-#include "core/window.hpp"
+#include "core/messages.hpp"
 #include "video/sox.hpp"
 #include "library/serialization.hpp"
 #include "library/string.hpp"

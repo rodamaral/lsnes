@@ -3,6 +3,7 @@
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
 #include "core/mainloop.hpp"
+#include "core/messages.hpp"
 #include "core/moviedata.hpp"
 #include "library/directory.hpp"
 #include <stdexcept>

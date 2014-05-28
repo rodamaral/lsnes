@@ -3,6 +3,7 @@
 #include "interface/romtype.hpp"
 #include "interface/setting.hpp"
 #include "interface/disassembler.hpp"
+#include "library/string.hpp"
 #include "library/controller-parse.hpp"
 #include "library/framebuffer.hpp"
 #include "library/framebuffer-pixfmt-rgb15.hpp"
@@ -11,8 +12,7 @@
 #include "library/framebuffer-pixfmt-rgb32.hpp"
 #include "library/framebuffer-pixfmt-lrgb.hpp"
 #include "core/audioapi.hpp"
-#include "core/misc.hpp"
-#include "core/window.hpp"
+#include "core/messages.hpp"
 
 template<> int ccore_call_param_map<lsnes_core_enumerate_cores>::id = LSNES_CORE_ENUMERATE_CORES;
 template<> int ccore_call_param_map<lsnes_core_get_core_info>::id = LSNES_CORE_GET_CORE_INFO;

@@ -4,6 +4,7 @@
 #include "library/globalwrap.hpp"
 #include "core/keymapper.hpp"
 #include "core/memorymanip.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
 #include "core/queue.hpp"

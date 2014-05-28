@@ -1,5 +1,6 @@
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
+#include "core/messages.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"

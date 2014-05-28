@@ -1,7 +1,7 @@
 #include "core/command.hpp"
 #include "core/joystickapi.hpp"
 #include "core/keymapper.hpp"
-#include "core/window.hpp"
+#include "core/messages.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
 

@@ -6,6 +6,7 @@
 #include "core/joystickapi.hpp"
 #include "core/keymapper.hpp"
 #include "lua/lua.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/queue.hpp"
 #include "core/random.hpp"

@@ -4,6 +4,7 @@
 #include "core/command.hpp"
 #include "core/instance.hpp"
 #include "core/mainloop.hpp"
+#include "core/messages.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"

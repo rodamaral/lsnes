@@ -6,6 +6,7 @@
 #include "lua/unsaferewind.hpp"
 #include "core/instance.hpp"
 #include "core/mainloop.hpp"
+#include "core/messages.hpp"
 #include "core/memorymanip.hpp"
 #include "core/moviedata.hpp"
 #include "core/misc.hpp"

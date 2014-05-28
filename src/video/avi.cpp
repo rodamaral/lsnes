@@ -8,7 +8,7 @@
 #include "lua/lua.hpp"
 #include "library/minmax.hpp"
 #include "library/workthread.hpp"
-#include "core/misc.hpp"
+#include "core/messages.hpp"
 #include "core/instance.hpp"
 #include "core/settings.hpp"
 #include "core/moviedata.hpp"

@@ -1,6 +1,6 @@
 #include "video/avi/writer.hpp"
 #include "core/framerate.hpp"
-#include "core/misc.hpp"
+#include "core/messages.hpp"
 #include <sstream>
 #include <iomanip>
 

@@ -14,6 +14,7 @@
 #include "core/multitrack.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
+#include "core/messages.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"

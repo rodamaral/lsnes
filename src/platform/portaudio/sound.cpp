@@ -3,7 +3,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
-#include "core/misc.hpp"
+#include "core/messages.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/settings.hpp"

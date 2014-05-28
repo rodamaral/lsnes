@@ -4,6 +4,7 @@
 #include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
+#include "core/messages.hpp"
 #include "core/project.hpp"
 #include "core/window.hpp"
 #include "fonts/wrapper.hpp"

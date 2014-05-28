@@ -4,6 +4,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
+#include "core/messages.hpp"
 #include "library/directory.hpp"
 #include "library/filelist.hpp"
 #include "library/running-executable.hpp"

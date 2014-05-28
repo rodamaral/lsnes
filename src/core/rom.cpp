@@ -7,6 +7,7 @@
 #include "core/instance.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"

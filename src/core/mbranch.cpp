@@ -3,6 +3,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/mbranch.hpp"
+#include "core/messages.hpp"
 #include "core/movie.hpp"
 #include "core/moviefile.hpp"
 #include "library/string.hpp"

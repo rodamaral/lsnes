@@ -3,6 +3,7 @@
 #include "library/minmax.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
+#include "core/messages.hpp"
 #include "core/window.hpp"
 #include <fstream>
 

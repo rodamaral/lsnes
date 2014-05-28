@@ -4,6 +4,7 @@
 #include "library/minmax.hpp"
 #include "core/instance.hpp"
 #include "core/memorymanip.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"

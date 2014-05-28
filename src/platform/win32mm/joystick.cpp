@@ -2,6 +2,7 @@
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/joystickapi.hpp"
+#include "core/messages.hpp"
 #include "core/window.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"

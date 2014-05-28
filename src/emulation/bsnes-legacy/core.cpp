@@ -30,7 +30,7 @@
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
 #include "core/settings.hpp"
-#include "core/window.hpp"
+#include "core/messages.hpp"
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"
 #include "interface/setting.hpp"

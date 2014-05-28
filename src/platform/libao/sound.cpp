@@ -7,6 +7,7 @@
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/settings.hpp"
+#include "core/messages.hpp"
 #include "core/window.hpp"
 #include "library/framebuffer.hpp"
 #include "library/string.hpp"

@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
 #include "core/instance.hpp"
+#include "core/messages.hpp"
 #include "core/moviedata.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"

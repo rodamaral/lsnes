@@ -3,7 +3,7 @@
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/settings.hpp"
-#include "core/window.hpp"
+#include "core/messages.hpp"
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
 #include "video/tcp.hpp"

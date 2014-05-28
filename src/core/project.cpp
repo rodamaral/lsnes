@@ -7,6 +7,7 @@
 #include "core/misc.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorywatch.hpp"
+#include "core/messages.hpp"
 #include "core/moviefile.hpp"
 #include "core/moviedata.hpp"
 #include "core/settings.hpp"

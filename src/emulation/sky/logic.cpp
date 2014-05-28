@@ -5,7 +5,7 @@
 #include "romimage.hpp"
 #include "draw.hpp"
 #include "instance.hpp"
-#include "core/misc.hpp"
+#include "core/messages.hpp"
 #include "library/zip.hpp"
 
 #define DEMO_WAIT 1080

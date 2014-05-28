@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/instance.hpp"
 #include "core/keymapper.hpp"
+#include "core/messages.hpp"
 #include "core/command.hpp"
 #include <vector>
 

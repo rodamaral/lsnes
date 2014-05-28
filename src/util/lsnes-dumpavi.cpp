@@ -12,6 +12,7 @@
 #include "lua/lua.hpp"
 #include "core/filedownload.hpp"
 #include "core/mainloop.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
