@@ -32,7 +32,7 @@
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
-#include "core/romloader.hpp"
+#include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/directory.hpp"

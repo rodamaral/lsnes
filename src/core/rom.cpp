@@ -9,7 +9,6 @@
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
-#include "core/romguess.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/cover.hpp"

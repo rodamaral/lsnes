@@ -1,7 +1,6 @@
 #ifndef _window__hpp__included__
 #define _window__hpp__included__
 
-#include "core/rom.hpp"
 #include "interface/romtype.hpp"
 #include "library/keyboard.hpp"
 #include "library/messagebuffer.hpp"
@@ -11,25 +10,7 @@
 #include <list>
 #include <stdexcept>
 
-
-//ROM request.
-struct rom_request
-{
-	//List of core types.
-	std::vector<core_type*> cores;
-	//Selected core (default core on call).
-	bool core_guessed;
-	size_t selected;
-	//Filename selected (on entry, filename hint).
-	bool has_slot[ROM_SLOT_COUNT];
-	bool guessed[ROM_SLOT_COUNT];
-	std::string filename[ROM_SLOT_COUNT];
-	std::string hash[ROM_SLOT_COUNT];
-	std::string hashxml[ROM_SLOT_COUNT];
-	//Canceled flag.
-	bool canceled;
-};
-
+class rom_request;
 
 //Various methods corresponding to graphics_driver_*
 struct _graphics_driver

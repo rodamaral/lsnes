@@ -16,7 +16,6 @@
 #include "core/moviedata.hpp"
 #include "core/random.hpp"
 #include "core/rom.hpp"
-#include "core/romloader.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"

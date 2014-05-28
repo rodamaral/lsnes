@@ -7,7 +7,7 @@
 #include "library/ogg.hpp"
 #include "library/opus-ogg.hpp"
 #include "library/string.hpp"
-#include "core/window.hpp"
+#include "core/misc.hpp"
 #include "state.hpp"
 
 namespace sky

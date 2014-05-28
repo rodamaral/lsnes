@@ -11,6 +11,24 @@
 #include "interface/romtype.hpp"
 #include "library/fileimage.hpp"
 
+//ROM request.
+struct rom_request
+{
+	//List of core types.
+	std::vector<core_type*> cores;
+	//Selected core (default core on call).
+	bool core_guessed;
+	size_t selected;
+	//Filename selected (on entry, filename hint).
+	bool has_slot[ROM_SLOT_COUNT];
+	bool guessed[ROM_SLOT_COUNT];
+	std::string filename[ROM_SLOT_COUNT];
+	std::string hash[ROM_SLOT_COUNT];
+	std::string hashxml[ROM_SLOT_COUNT];
+	//Canceled flag.
+	bool canceled;
+};
+
 /**
  * ROM loaded into memory.
  */
@@ -134,6 +152,32 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
  * Set the hasher callback.
  */
 void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb);
+
+struct romload_request
+{
+	//Pack file to load. Overrides everything else.
+	std::string packfile;
+	//Single file to load to default slot.
+	std::string singlefile;
+	//Core and system. May be blank.
+	std::string core;
+	std::string system;
+	std::string region;
+	//Files to load.
+	std::string files[ROM_SLOT_COUNT];
+};
+
+bool load_null_rom();
+bool _load_new_rom(const romload_request& req);
+bool reload_active_rom();
+regex_results get_argument(const std::vector<std::string>& cmdline, const std::string& regexp);
+std::string get_requested_core(const std::vector<std::string>& cmdline);
+loaded_rom construct_rom(const std::string& movie_filename, const std::vector<std::string>& cmdline);
+void try_guess_roms(rom_request& req);
+void record_filehash(const std::string& file, uint64_t prefix, const std::string& hash);
+std::string try_to_guess_rom(const std::string& hint, const std::string& hash, const std::string& xhash,
+	core_type& type, unsigned i);
+
 
 //Map of preferred cores for each extension and type.
 extern std::map<std::string, core_type*> preferred_core;

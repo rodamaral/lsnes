@@ -2,8 +2,6 @@
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
-#include "core/romloader.hpp"
-#include "core/romguess.hpp"
 #include "core/settings.hpp"
 #include "core/project.hpp"
 #include "core/window.hpp"

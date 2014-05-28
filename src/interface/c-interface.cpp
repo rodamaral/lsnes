@@ -11,6 +11,7 @@
 #include "library/framebuffer-pixfmt-rgb32.hpp"
 #include "library/framebuffer-pixfmt-lrgb.hpp"
 #include "core/audioapi.hpp"
+#include "core/misc.hpp"
 #include "core/window.hpp"
 
 template<> int ccore_call_param_map<lsnes_core_enumerate_cores>::id = LSNES_CORE_ENUMERATE_CORES;

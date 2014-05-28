@@ -6,7 +6,7 @@
 #include "demo.hpp"
 #include "core/dispatch.hpp"
 #include "core/audioapi.hpp"
-#include "core/window.hpp"
+#include "core/misc.hpp"
 #include "interface/romtype.hpp"
 #include "interface/callbacks.hpp"
 #include "library/framebuffer-pixfmt-rgb32.hpp"

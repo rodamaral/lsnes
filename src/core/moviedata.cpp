@@ -12,7 +12,7 @@
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
 #include "core/random.hpp"
-#include "core/romguess.hpp"
+#include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "lua/lua.hpp"
 #include "library/directory.hpp"
