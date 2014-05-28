@@ -1,8 +1,7 @@
-#include <deque>
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
-#include "core/controller.hpp"
 #include "core/controllerframe.hpp"
+#include "core/controller.hpp"
 #include "core/debug.hpp"
 #include "core/emustatus.hpp"
 #include "core/framebuffer.hpp"
@@ -10,23 +9,24 @@
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
 #include "core/keymapper.hpp"
-#include "core/movie.hpp"
-#include "core/moviedata.hpp"
 #include "core/mbranch.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
+#include "core/moviedata.hpp"
+#include "core/movie.hpp"
 #include "core/multitrack.hpp"
 #include "core/project.hpp"
 #include "core/queue.hpp"
 #include "core/random.hpp"
 #include "core/settings.hpp"
 #include "library/command.hpp"
+#include "library/keyboard.hpp"
+#include "library/keyboard-mapper.hpp"
 #include "library/lua-base.hpp"
 #include "library/memoryspace.hpp"
 #include "library/settingvar.hpp"
-#include "library/keyboard.hpp"
-#include "library/keyboard-mapper.hpp"
 
+#include <deque>
 #ifdef __linux__
 #include <execinfo.h>
 #endif

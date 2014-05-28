@@ -1,4 +1,3 @@
-#include "core/command.hpp"
 #include "core/audioapi.hpp"
 
 #include <cstdlib>

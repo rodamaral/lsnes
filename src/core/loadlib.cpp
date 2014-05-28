@@ -1,15 +1,15 @@
+#include "core/dispatch.hpp"
 #include "core/loadlib.hpp"
+#include "core/messages.hpp"
+#include "core/misc.hpp"
 #include "interface/c-interface.hpp"
 #include "interface/romtype.hpp"
-#include "core/command.hpp"
-#include "core/dispatch.hpp"
-#include "core/misc.hpp"
-#include "core/messages.hpp"
 #include "library/directory.hpp"
 #include "library/filelist.hpp"
-#include "library/running-executable.hpp"
 #include "library/loadlib.hpp"
 #include "library/opus.hpp"
+#include "library/running-executable.hpp"
+
 #include <stdexcept>
 #include <sstream>
 #include <dirent.h>

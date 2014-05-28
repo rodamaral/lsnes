@@ -5,6 +5,7 @@
 #include "core/instance.hpp"
 #include "library/minmax.hpp"
 #include "library/threads.hpp"
+
 #include <cstring>
 #include <cmath>
 #include <iostream>

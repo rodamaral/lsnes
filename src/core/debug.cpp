@@ -6,6 +6,7 @@
 #include "core/messages.hpp"
 #include "core/moviedata.hpp"
 #include "library/directory.hpp"
+
 #include <stdexcept>
 #include <list>
 #include <map>

@@ -1,12 +1,9 @@
 #include "core/advdumper.hpp"
-#include "core/command.hpp"
-#include "core/dispatch.hpp"
 #include "core/instance.hpp"
-#include "core/moviedata.hpp"
-#include "core/rom.hpp"
+#include "core/misc.hpp"
 #include "library/globalwrap.hpp"
-#include "lua/lua.hpp"
 #include "library/string.hpp"
+#include "lua/lua.hpp"
 
 #include <map>
 #include <string>

@@ -1,10 +1,9 @@
 #include "core/filedownload.hpp"
-#include "core/misc.hpp"
+#include "core/moviedata.hpp"
+#include "interface/romtype.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
-#include "core/moviedata.hpp"
-#include "core/rom.hpp"
-#include "interface/romtype.hpp"
+
 #include <fstream>
 
 namespace

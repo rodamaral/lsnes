@@ -2,21 +2,17 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
-#include "core/keymapper.hpp"
 #include "core/memorywatch.hpp"
 #include "core/messages.hpp"
-#include "core/misc.hpp"
 #include "core/moviedata.hpp"
-#include "core/moviefile.hpp"
-#include "core/subtitles.hpp"
 #include "core/settings.hpp"
-#include "core/window.hpp"
-#include "lua/lua.hpp"
+#include "core/subtitles.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/framebuffer.hpp"
 #include "library/framebuffer-pixfmt-lrgb.hpp"
 #include "library/minmax.hpp"
 #include "library/triplebuffer.hpp"
+#include "lua/lua.hpp"
 
 framebuffer::raw screen_corrupt;
 void update_movie_state();

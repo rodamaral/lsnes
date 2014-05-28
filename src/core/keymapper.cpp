@@ -1,16 +1,13 @@
 #include "core/command.hpp"
-#include "core/dispatch.hpp"
 #include "core/instance.hpp"
-#include "library/globalwrap.hpp"
 #include "core/keymapper.hpp"
 #include "core/memorymanip.hpp"
 #include "core/messages.hpp"
-#include "core/misc.hpp"
-#include "core/window.hpp"
 #include "core/queue.hpp"
-#include "lua/lua.hpp"
+#include "library/globalwrap.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
+#include "lua/lua.hpp"
 
 #include <stdexcept>
 #include <stdexcept>

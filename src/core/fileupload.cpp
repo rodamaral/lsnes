@@ -1,11 +1,12 @@
 #include "core/fileupload.hpp"
 #include "core/misc.hpp"
-#include "library/streamcompress.hpp"
-#include "library/httpreq.hpp"
-#include "library/httpauth.hpp"
-#include "library/string.hpp"
-#include "library/skein.hpp"
 #include "library/curve25519.hpp"
+#include "library/httpauth.hpp"
+#include "library/httpreq.hpp"
+#include "library/skein.hpp"
+#include "library/streamcompress.hpp"
+#include "library/string.hpp"
+
 #include <fstream>
 #include <boost/iostreams/categories.hpp>
 #include <boost/iostreams/copy.hpp>

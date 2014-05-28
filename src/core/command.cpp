@@ -1,11 +1,9 @@
 #include "core/command.hpp"
 #include "core/keymapper.hpp"
 #include "library/command.hpp"
-#include "library/keyboard-mapper.hpp"
 #include "library/globalwrap.hpp"
+#include "library/keyboard-mapper.hpp"
 #include "library/threads.hpp"
-#include "core/misc.hpp"
-#include "core/window.hpp"
 
 #include <set>
 #include <map>

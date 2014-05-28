@@ -1,8 +1,6 @@
 #include "core/command.hpp"
 #include "core/messages.hpp"
-#include "core/rom.hpp"
 #include "core/moviedata.hpp"
-#include "interface/romtype.hpp"
 
 namespace
 {

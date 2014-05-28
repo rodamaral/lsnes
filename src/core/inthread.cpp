@@ -1,24 +1,24 @@
-#include <lsnes.hpp>
-#include <cstdint>
-#include "library/filesystem.hpp"
-#include "library/minmax.hpp"
-#include "library/workthread.hpp"
-#include "library/serialization.hpp"
-#include "library/string.hpp"
-#include "library/ogg.hpp"
-#include "library/opus-ogg.hpp"
-#include "library/opus.hpp"
-#include "library/string.hpp"
+#include "lsnes.hpp"
+
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
-#include "core/messages.hpp"
 #include "core/keymapper.hpp"
+#include "core/messages.hpp"
 #include "core/settings.hpp"
-#include "core/misc.hpp"
+#include "library/filesystem.hpp"
+#include "library/minmax.hpp"
+#include "library/ogg.hpp"
+#include "library/opus.hpp"
+#include "library/opus-ogg.hpp"
+#include "library/serialization.hpp"
+#include "library/string.hpp"
+#include "library/workthread.hpp"
+
+#include <cstdint>
 #include <cmath>
 #include <list>
 #include <iostream>
