@@ -4,6 +4,7 @@
 #include "core/misc.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
+#include "core/project.hpp"
 #include "interface/romtype.hpp"
 
 #include <cstdio>
@@ -16,8 +17,8 @@ namespace
 	port_type_set dummytypes;
 }
 
-controller_state::controller_state(project_state& _project, movie_logic& _mlogic) throw()
-	: project(_project), mlogic(_mlogic)
+controller_state::controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons) throw()
+	: project(_project), mlogic(_mlogic), buttons(_buttons)
 {
 	types = &dummytypes;
 	tasinput_enaged = false;
@@ -147,8 +148,6 @@ void controller_state::tasinput_enable(bool enabled)
 	tasinput_enaged = enabled;
 }
 
-void reread_active_buttons();
-
 void controller_state::reread_tasinput_mode(const port_type_set& ptype)
 {
 	unsigned indices = ptype.indices();
@@ -189,7 +188,7 @@ void controller_state::set_ports(const port_type_set& ptype) throw(std::runtime_
 		_autofire.clear();
 		reread_tasinput_mode(ptype);
 		_autohold = _autohold.blank_frame();
-		reread_active_buttons();
+		buttons.reread();
 		notify_autohold_reconfigure();
 	}
 }
@@ -234,7 +233,7 @@ void controller_state::erase_macro(const std::string& macro)
 			p->flush();
 		}
 	}
-	load_macros(*this);
+	buttons.load(*this);
 }
 
 std::set<std::string> controller_state::enumerate_macro()
@@ -274,7 +273,7 @@ void controller_state::set_macro(const std::string& macro, const controller_macr
 			p->flush();
 		}
 	}
-	load_macros(*this);
+	buttons.load(*this);
 }
 
 void controller_state::apply_macro(controller_frame& f)
@@ -341,7 +340,7 @@ void controller_state::rename_macro(const std::string& old, const std::string& n
 			p->macros.erase(old);
 		}
 	}
-	load_macros(*this);
+	buttons.load(*this);
 }
 
 void controller_state::do_macro(const std::string& a, int mode) {

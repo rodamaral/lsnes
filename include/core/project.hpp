@@ -6,12 +6,12 @@
 #include <list>
 #include <vector>
 #include "library/json.hpp"
-#include "core/controller.hpp"
 #include "core/rom.hpp"
 
 class voice_commentary;
 class memwatch_set;
 class controller_state;
+class button_mapping;
 namespace command
 {
 	class group;
@@ -162,7 +162,7 @@ class project_state
 {
 public:
 	project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
-		controller_state& _controls, settingvar::cache& _setcache);
+		controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons);
 	~project_state();
 /**
  * Get currently active project.
@@ -223,6 +223,7 @@ private:
 	command::group& command;
 	controller_state& controls;
 	settingvar::cache& setcache;
+	button_mapping& buttons;
 };
 
 #endif

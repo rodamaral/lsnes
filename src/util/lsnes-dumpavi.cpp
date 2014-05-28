@@ -436,6 +436,6 @@ int main(int argc, char** argv)
 	}
 	quit_lua();
 	lsnes_instance.mlogic->release_memory();
-	cleanup_all_keys();
+	lsnes_instance.buttons->cleanup();
 	return 0;
 }

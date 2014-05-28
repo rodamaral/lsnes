@@ -219,7 +219,7 @@ end:
 				ckey->append(r[1]);
 				messages << r[1] << " bound (button) to " << r[2] << std::endl;
 			} else
-				button_keys[r[2]] = r[1];
+				lsnes_instance.buttons->button_keys[r[2]] = r[1];
 		} else if(r = regex("PREFER[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
 			if(r[2] != "") {
 				core_selections[r[1]] = r[2];
@@ -281,7 +281,7 @@ end:
 			while((b = i->get_string(idx++)) != "")
 				cfgfile << "BUTTON " << b << " " << i->get_command() << std::endl;
 		}
-		for(auto i : button_keys)
+		for(auto i : lsnes_instance.buttons->button_keys)
 			cfgfile << "BUTTON " << i.second << " " << i.first << std::endl;
 		for(auto i : core_selections)
 			if(i.second != "")
@@ -481,7 +481,7 @@ bool lsnes_app::OnInit()
 	auto ctrldata = dummy_rom.rtype->controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
-	reinitialize_buttonmap();
+	lsnes_instance.buttons->reinit();
 	lsnes_instance.controls->set_ports(ports);
 
 	std::string cfgpath = get_config_path();
@@ -571,7 +571,7 @@ int lsnes_app::OnExit()
 	joystick_driver_signal();
 	joystick_thread_handle->join();
 	platform::quit();
-	cleanup_all_keys();
+	lsnes_instance.buttons->cleanup();
 	cleanup_keymapper();
 	deinitialize_wx_keyboard();
 	return 0;

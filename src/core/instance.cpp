@@ -1,6 +1,7 @@
 #include <deque>
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
+#include "core/controller.hpp"
 #include "core/controllerframe.hpp"
 #include "core/debug.hpp"
 #include "core/emustatus.hpp"
@@ -35,6 +36,7 @@ emulator_instance::emulator_instance()
 	//Preinit.
 	fbuf = (emu_framebuffer*)new char[sizeof(emu_framebuffer) + 32];
 	project = (project_state*)new char[sizeof(project_state) + 32];
+	buttons = (button_mapping*)new char[sizeof(button_mapping) + 32];
 
 	mlogic = new movie_logic;
 	memory = new memory_space;
@@ -45,22 +47,23 @@ emulator_instance::emulator_instance()
 	commentary = new voice_commentary(*settings);
 	subtitles = new subtitle_commentary(*mlogic, *fbuf);
 	mbranch = new movie_branches(*mlogic);
-	controls = new controller_state(*project, *mlogic);
+	controls = new controller_state(*project, *mlogic, *buttons);
+	keyboard = new keyboard::keyboard;
+	command = new command::group;
+	mapper = new keyboard::mapper(*keyboard, *command);
+	new(fbuf) emu_framebuffer(*subtitles, *settings, *mwatch, *keyboard);
+	new(buttons) button_mapping(*controls, *mapper, *keyboard, *fbuf);
 	mteditor = new multitrack_edit(*mlogic, *controls);
 	status_A = new _lsnes_status;
 	status_B = new _lsnes_status;
 	status_C = new _lsnes_status;
 	status = new triplebuffer::triplebuffer<_lsnes_status>(*status_A, *status_B, *status_C);
-	keyboard = new keyboard::keyboard;
-	command = new command::group;
-	mapper = new keyboard::mapper(*keyboard, *command);
 	abindmanager = new alias_binds_manager(*mapper, *command);
 	nrrdata = new rrdata;
 	cmapper = new cart_mappings_refresher(*memory);
-	new(project) project_state(*commentary, *mwatch, *command, *controls, *setcache);
+	new(project) project_state(*commentary, *mwatch, *command, *controls, *setcache, *buttons);
 	dbg = new debug_context;
 	framerate = new framerate_regulator;
-	new(fbuf) emu_framebuffer(*subtitles, *settings, *mwatch, *keyboard);
 	iqueue = new input_queue(*command);
 	mdumper = new master_dumper;
 
@@ -76,21 +79,21 @@ emulator_instance::~emulator_instance()
 {
 	delete mdumper;
 	delete iqueue;
-	fbuf->~emu_framebuffer();
 	delete framerate;
 	delete dbg;
 	project->~project_state();
 	delete cmapper;
 	delete nrrdata;
 	delete abindmanager;
-	delete mapper;
-	delete command;
-	delete keyboard;
 	delete status;
 	delete status_C;
 	delete status_B;
 	delete status_A;
 	delete mteditor;
+	buttons->~button_mapping();
+	fbuf->~emu_framebuffer();
+	delete mapper;
+	delete command;
 	delete controls;
 	delete mbranch;
 	delete subtitles;
@@ -102,6 +105,7 @@ emulator_instance::~emulator_instance()
 	delete memory;
 	delete mlogic;
 
+	delete[] reinterpret_cast<char*>(buttons);
 	delete[] reinterpret_cast<char*>(project);
 	delete[] reinterpret_cast<char*>(fbuf);
 }

@@ -1,4 +1,5 @@
 #include "video/avi/writer.hpp"
+#include "core/framerate.hpp"
 #include "core/misc.hpp"
 #include <sstream>
 #include <iomanip>
@@ -77,7 +78,11 @@ do_again:
 		messages << "Start AVI: " << curwidth << "x" << curheight << "@" << curfps_n << "/" << curfps_d
 			<< " to '" << aviname << "'" << std::endl;
 	}
+	uint64_t t = framerate_regulator::get_utime();
 	if(aviout.readqueue(f.data, f.odata, f.stride, aqueue, force)) {
+		t = framerate_regulator::get_utime() - t;
+		if(t > 20000)
+			std::cerr << "aviout.readqueue took " << t << std::endl;
 		vqueue.pop_front();
 		goto do_again;
 	}

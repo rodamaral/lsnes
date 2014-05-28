@@ -188,8 +188,9 @@ namespace
 }
 
 project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
-	controller_state& _controls, settingvar::cache& _setcache)
-	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache)
+	controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons)
+	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache),
+	buttons(_buttons)
 {
 	active_project = NULL;
 }
@@ -399,7 +400,7 @@ skip_rom_movie:
 		command.invoke("reset-lua");
 		for(auto i : p->luascripts)
 			command.invoke("run-lua " + i);
-		load_project_macros(controls, *active_project);
+		buttons.load(controls, *active_project);
 	} catch(std::exception& e) {
 		if(newmovie && !used)
 			delete newmovie;

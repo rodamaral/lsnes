@@ -177,6 +177,6 @@ int main(int argc, char** argv)
 	dump_what_was_loaded(r, *movie);
 
 	lsnes_instance.mlogic->release_memory();
-	cleanup_all_keys();
+	lsnes_instance.buttons->cleanup();
 	return 0;
 }

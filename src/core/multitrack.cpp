@@ -193,7 +193,7 @@ namespace
 			regex_results r = regex("(.*)[ \t]+(.*)", args);
 			if(!r)
 				throw std::runtime_error("Bad arguments");
-			auto c = controller_by_name(r[1]);
+			auto c = CORE().buttons->byname(r[1]);
 			if(c.first < 0)
 				throw std::runtime_error("No such controller");
 			if(r[2] == "keep")

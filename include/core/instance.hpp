@@ -21,6 +21,7 @@ class framerate_regulator;
 class emu_framebuffer;
 class input_queue;
 class master_dumper;
+class button_mapping;
 namespace command
 {
 	class group;
@@ -58,6 +59,7 @@ struct emulator_instance
 	subtitle_commentary* subtitles;
 	movie_branches* mbranch;
 	controller_state* controls;
+	button_mapping* buttons;
 	multitrack_edit* mteditor;
 	_lsnes_status* status_A;
 	_lsnes_status* status_B;

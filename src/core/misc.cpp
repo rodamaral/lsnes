@@ -1,7 +1,6 @@
 #include "lsnes.hpp"
 
 #include "core/command.hpp"
-#include "core/controller.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/instance.hpp"

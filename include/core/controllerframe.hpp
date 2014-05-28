@@ -20,6 +20,7 @@
 
 class project_state;
 class movie_logic;
+class button_mapping;
 
 /**
  * Controllers state.
@@ -30,7 +31,7 @@ public:
 /**
  * Constructor.
  */
-	controller_state(project_state& _project, movie_logic& _mlogic) throw();
+	controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons) throw();
 /**
  * Convert lcid (Logical Controller ID) into pcid (Physical Controler ID).
  *
@@ -233,6 +234,7 @@ private:
 	threads::lock macro_lock;
 	project_state& project;
 	movie_logic& mlogic;
+	button_mapping& buttons;
 };
 
 #endif
