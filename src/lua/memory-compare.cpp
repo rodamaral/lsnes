@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/instance.hpp"
 #include "core/memorymanip.hpp"
+#include "library/memoryspace.hpp"
 #include "library/minmax.hpp"
 
 namespace

@@ -11,6 +11,7 @@
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/skein.hpp"
+#include "library/memoryspace.hpp"
 #include "library/minmax.hpp"
 #include "library/hex.hpp"
 #include "library/int24.hpp"

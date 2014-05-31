@@ -11,6 +11,7 @@
 #include "interface/disassembler.hpp"
 #include "library/minmax.hpp"
 #include "library/hex.hpp"
+#include "library/memoryspace.hpp"
 #include "library/serialization.hpp"
 #include <wx/frame.h>
 #include <wx/clipbrd.h>

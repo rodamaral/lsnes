@@ -39,6 +39,7 @@
 #include "library/hex.hpp"
 #include "library/string.hpp"
 #include "library/controller-data.hpp"
+#include "library/memoryspace.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-base.hpp"
 #include "lua/internal.hpp"

@@ -4,6 +4,7 @@
 #include "core/messages.hpp"
 #include "interface/disassembler.hpp"
 #include "library/hex.hpp"
+#include "library/memoryspace.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
 

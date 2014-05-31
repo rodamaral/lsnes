@@ -2,6 +2,7 @@
 #include "core/moviedata.hpp"
 #include "core/memorywatch.hpp"
 #include "core/memorymanip.hpp"
+#include "library/memoryspace.hpp"
 #include "core/project.hpp"
 
 #include "platform/wxwidgets/platform.hpp"

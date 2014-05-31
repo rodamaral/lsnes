@@ -21,7 +21,7 @@
 
 namespace
 {
-	uint8_t lsnes_mmio_iospace_read(uint64_t offset)
+	uint8_t lsnes_mmio_iospace_read(movie_logic* mlogic, uint64_t offset)
 	{
 		try {
 			if(offset >= 0 && offset < 8) {
@@ -47,7 +47,7 @@ namespace
 		}
 	}
 
-	void lsnes_mmio_iospace_write(uint64_t offset, uint8_t data)
+	void lsnes_mmio_iospace_write(movie_logic* mlogic, uint64_t offset, uint8_t data)
 	{
 		//Ignore.
 	}
@@ -56,7 +56,7 @@ namespace
 	{
 	public:
 		iospace_region(const std::string& _name, uint64_t _base, uint64_t _size, bool _special,
-			uint8_t (*_read)(uint64_t offset), void (*_write)(uint64_t offset, uint8_t data))
+			std::function<uint8_t(uint64_t)> _read, std::function<void(uint64_t, uint8_t)> _write)
 		{
 			name = _name;
 			base = _base;
@@ -82,13 +82,13 @@ namespace
 				Xwrite(offset + i, _buffer[i]);
 			return offset + rsize <= size;
 		}
-		uint8_t (*Xread)(uint64_t offset);
-		void (*Xwrite)(uint64_t offset, uint8_t data);
+		std::function<uint8_t(uint64_t)> Xread;
+		std::function<void(uint64_t, uint8_t)> Xwrite;
 	};
 }
 
-cart_mappings_refresher::cart_mappings_refresher(memory_space& _mspace)
-	: mspace(_mspace)
+cart_mappings_refresher::cart_mappings_refresher(memory_space& _mspace, movie_logic& _mlogic)
+	: mspace(_mspace), mlogic(_mlogic)
 {
 }
 
@@ -100,9 +100,11 @@ void cart_mappings_refresher::operator()() throw(std::bad_alloc)
 	std::list<memory_region*> regions;
 	memory_region* tmp = NULL;
 	auto vmalist = our_rom.rtype->vma_list();
+	auto _mlogic = &mlogic;
 	try {
-		tmp = new iospace_region("LSNESMMIO", 0xFFFFFFFF00000000ULL, 32, true, lsnes_mmio_iospace_read,
-			lsnes_mmio_iospace_write);
+		tmp = new iospace_region("LSNESMMIO", 0xFFFFFFFF00000000ULL, 32, true, 
+			[_mlogic](uint64_t addr) -> uint8_t { return lsnes_mmio_iospace_read(_mlogic, addr); },
+			[_mlogic](uint64_t addr, uint8_t value) { lsnes_mmio_iospace_write(_mlogic, addr, value); });
 		regions.push_back(tmp);
 		tmp = NULL;
 		for(auto i : vmalist) {

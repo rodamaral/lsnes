@@ -10,6 +10,7 @@
 #include "library/skein.hpp"
 #include "library/string.hpp"
 #include "library/serialization.hpp"
+#include "library/memoryspace.hpp"
 #include "library/minmax.hpp"
 #include "library/int24.hpp"
 

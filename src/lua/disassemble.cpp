@@ -2,6 +2,7 @@
 #include "interface/disassembler.hpp"
 #include "interface/romtype.hpp"
 #include "library/hex.hpp"
+#include "library/memoryspace.hpp"
 #include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 #include "core/moviedata.hpp"

@@ -1,6 +1,7 @@
 #include "lua/bitmap.hpp"
 #include "lua/internal.hpp"
 #include "library/serialization.hpp"
+#include "library/memoryspace.hpp"
 #include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 
