@@ -17,6 +17,8 @@ UI services.
 
 class emulator_instance;
 class dumper_factory_base;
+namespace keyboard { class modifier_set; }
+namespace keyboard { class key_key; }
 
 struct project_author_info
 {
@@ -108,5 +110,10 @@ void UI_start_dump(emulator_instance& inst, dumper_factory_base& factory, const 
  * End dumping.
  */
 void UI_end_dump(emulator_instance& inst, dumper_factory_base& factory);
+/**
+ * Send a keypress event.
+ */
+void UI_do_keypress(emulator_instance& inst, const keyboard::modifier_set& mods, keyboard::key_key& key,
+	bool polarity);
 
 #endif

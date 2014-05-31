@@ -3,6 +3,7 @@
 #include "core/instance.hpp"
 #include "core/queue.hpp"
 #include "core/window.hpp"
+#include "core/ui-services.hpp"
 
 #include <cstdint>
 #include <map>
@@ -265,15 +266,6 @@ namespace
 	std::map<int, keyboard::key_key*> key_map;
 	std::map<std::string, int> keys_allocated;
 	std::set<int> keys_held;
-
-	//Request keypress event to happen.
-	void do_keypress(keyboard::modifier_set mods, keyboard::key_key& key, bool polarity)
-	{
-		auto _key = &key;
-		lsnes_instance.iqueue->run_async([mods, _key, polarity]() {
-			_key->set_state(mods, polarity ? 1 : 0);
-		}, [](std::exception& e) {});
-	}
 }
 
 std::string map_keycode_to_key(int kcode)
@@ -323,7 +315,7 @@ void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 		k++;
 	}
 	if(grp)
-		do_keypress(mset, *grp, polarity);
+		UI_do_keypress(lsnes_instance, mset, *grp, polarity);
 	e.Skip();
 }
 

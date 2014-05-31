@@ -6,6 +6,7 @@
 #include "core/project.hpp"
 #include "core/queue.hpp"
 #include "core/ui-services.hpp"
+#include "library/keyboard.hpp"
 
 namespace
 {
@@ -200,4 +201,13 @@ void UI_end_dump(emulator_instance& inst, dumper_factory_base& factory)
 		auto in = inst.mdumper->get_instance(&factory);
 		delete in;
 	});
+}
+
+void UI_do_keypress(emulator_instance& inst, const keyboard::modifier_set& mods, keyboard::key_key& key,
+	bool polarity)
+{
+	auto _key = &key;
+	inst.iqueue->run_async([mods, _key, polarity]() {
+		_key->set_state(mods, polarity ? 1 : 0);
+	}, [](std::exception& e) {});
 }
