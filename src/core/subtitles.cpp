@@ -3,11 +3,12 @@
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
 #include "core/messages.hpp"
-#include "core/moviedata.hpp"
+#include "core/movie.hpp"
+#include "core/moviefile.hpp"
 #include "core/subtitles.hpp"
-#include "core/window.hpp"
-#include "library/string.hpp"
 #include "fonts/wrapper.hpp"
+#include "library/string.hpp"
+
 #include <fstream>
 
 moviefile_subtiming::moviefile_subtiming(uint64_t _frame)

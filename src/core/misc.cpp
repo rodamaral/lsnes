@@ -1,24 +1,18 @@
 #include "lsnes.hpp"
 
 #include "core/command.hpp"
+#include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
-#include "core/memorymanip.hpp"
+#include "core/instance.hpp"
 #include "core/messages.hpp"
 #include "core/misc.hpp"
-#include "core/instance.hpp"
-#include "core/rom.hpp"
-#include "core/moviedata.hpp"
-#include "core/settings.hpp"
+#include "core/movie.hpp"
 #include "core/window.hpp"
 #include "library/crandom.hpp"
 #include "library/directory.hpp"
 #include "library/hex.hpp"
 #include "library/loadlib.hpp"
-#include "library/sha256.hpp"
 #include "library/string.hpp"
-#include "library/skein.hpp"
-#include "library/serialization.hpp"
-#include "library/arch-detect.hpp"
 
 #include <cstdlib>
 #include <csignal>

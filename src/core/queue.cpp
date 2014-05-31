@@ -1,8 +1,8 @@
 #include "core/misc.hpp"
 #include "core/queue.hpp"
 #include "core/random.hpp"
-#include "library/threads.hpp"
 #include "library/command.hpp"
+#include "library/threads.hpp"
 
 input_queue::input_queue(command::group& _command)
 	: command(_command)

@@ -1,16 +1,12 @@
-#include "core/misc.hpp"
-#include "core/movie.hpp"
-#include "core/moviedata.hpp"
-#include "core/moviefile.hpp"
 #include "core/moviefile-common.hpp"
+#include "core/moviefile.hpp"
 #include "core/random.hpp"
-#include "library/zip.hpp"
+#include "library/binarystream.hpp"
 #include "library/directory.hpp"
-#include "library/string.hpp"
 #include "library/minmax.hpp"
 #include "library/serialization.hpp"
-#include "library/binarystream.hpp"
-#include "interface/romtype.hpp"
+#include "library/string.hpp"
+#include "library/zip.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>

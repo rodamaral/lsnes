@@ -1,16 +1,16 @@
 #include "core/command.hpp"
-#include "core/memorymanip.hpp"
 #include "core/instance.hpp"
+#include "core/memorymanip.hpp"
 #include "core/messages.hpp"
-#include "core/moviedata.hpp"
 #include "core/misc.hpp"
+#include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "interface/romtype.hpp"
 #include "library/hex.hpp"
-#include "library/string.hpp"
 #include "library/int24.hpp"
-#include "library/minmax.hpp"
 #include "library/memorysearch.hpp"
+#include "library/minmax.hpp"
+#include "library/string.hpp"
 
 #include <iostream>
 #include <limits>

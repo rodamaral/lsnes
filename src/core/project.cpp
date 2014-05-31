@@ -3,18 +3,16 @@
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
-#include "core/project.hpp"
-#include "core/misc.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorywatch.hpp"
 #include "core/messages.hpp"
-#include "core/moviefile.hpp"
 #include "core/moviedata.hpp"
-#include "core/settings.hpp"
-#include "core/window.hpp"
+#include "core/moviefile.hpp"
+#include "core/project.hpp"
 #include "library/directory.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
+
 #include <fstream>
 #include <dirent.h>
 #if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)

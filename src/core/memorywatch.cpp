@@ -2,7 +2,6 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
-#include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/messages.hpp"
 #include "core/project.hpp"
@@ -10,13 +9,14 @@
 #include "fonts/wrapper.hpp"
 #include "library/directory.hpp"
 #include "library/framebuffer-font2.hpp"
-#include "library/string.hpp"
 #include "library/int24.hpp"
 #include "library/mathexpr-ntype.hpp"
+#include "library/memoryspace.hpp"
+#include "library/memorywatch-fb.hpp"
 #include "library/memorywatch.hpp"
 #include "library/memorywatch-list.hpp"
-#include "library/memorywatch-fb.hpp"
 #include "library/memorywatch-null.hpp"
+#include "library/string.hpp"
 
 #include <cstdio>
 #include <cstdlib>

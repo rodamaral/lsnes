@@ -1,29 +1,25 @@
 #include "lsnes.hpp"
 
 #include "core/advdumper.hpp"
-#include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/instance.hpp"
-#include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
 #include "core/messages.hpp"
-#include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/callbacks.hpp"
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"
-#include "interface/callbacks.hpp"
-#include "library/framebuffer-pixfmt-rgb16.hpp"
 #include "library/controller-data.hpp"
 #include "library/fileimage-patch.hpp"
+#include "library/framebuffer-pixfmt-rgb16.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 
 #include <stdexcept>
-
 #include <sstream>
 #include <iomanip>
 #include <cstdint>

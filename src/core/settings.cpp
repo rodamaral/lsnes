@@ -1,4 +1,3 @@
-#include "core/command.hpp"
 #include "core/settings.hpp"
 
 settingvar::set lsnes_setgrp;

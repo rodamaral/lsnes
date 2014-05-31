@@ -1,11 +1,11 @@
 #include "core/instance.hpp"
-#include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
-#include "library/zip.hpp"
 #include "library/directory.hpp"
+#include "library/zip.hpp"
+
 #include <fstream>
 
 namespace

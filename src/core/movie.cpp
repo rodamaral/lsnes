@@ -1,8 +1,6 @@
 #include "lsnes.hpp"
 
-#include "core/misc.hpp"
 #include "core/movie.hpp"
-#include "core/rom.hpp"
 
 #include <stdexcept>
 #include <cassert>

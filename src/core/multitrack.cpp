@@ -1,12 +1,13 @@
-#include <string>
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
-#include "core/keymapper.hpp"
 #include "core/instance.hpp"
-#include "core/moviedata.hpp"
+#include "core/keymapper.hpp"
+#include "core/movie.hpp"
 #include "core/multitrack.hpp"
 #include "lua/internal.hpp"
+
+#include <string>
 
 void update_movie_state();
 

@@ -5,17 +5,16 @@
 #include "core/instance.hpp"
 #include "core/joystickapi.hpp"
 #include "core/keymapper.hpp"
-#include "lua/lua.hpp"
 #include "core/messages.hpp"
-#include "core/misc.hpp"
 #include "core/queue.hpp"
 #include "core/random.hpp"
 #include "core/window.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/framebuffer.hpp"
-#include "library/string.hpp"
 #include "library/minmax.hpp"
+#include "library/string.hpp"
 #include "library/threads.hpp"
+#include "lua/lua.hpp"
 
 #include <fstream>
 #include <iostream>

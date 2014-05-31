@@ -2,14 +2,11 @@
 
 #include "core/random.hpp"
 #include "library/crandom.hpp"
-#include "library/directory.hpp"
 #include "library/hex.hpp"
-#include "library/loadlib.hpp"
-#include "library/sha256.hpp"
-#include "library/string.hpp"
-#include "library/skein.hpp"
 #include "library/serialization.hpp"
-#include "library/arch-detect.hpp"
+#include "library/skein.hpp"
+#include "library/string.hpp"
+#include "library/threads.hpp"
 
 #include <cstdlib>
 #include <csignal>

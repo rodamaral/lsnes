@@ -2,9 +2,9 @@
 #include "core/instance.hpp"
 #include "core/messages.hpp"
 #include "core/moviedata.hpp"
+#include "core/project.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"
-#include "core/project.hpp"
 #include "core/window.hpp"
 #include "library/zip.hpp"
 

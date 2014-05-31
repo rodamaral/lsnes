@@ -2,25 +2,24 @@
 
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
-#include "core/controller.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
-#include "core/misc.hpp"
+#include "core/instance.hpp"
 #include "core/mainloop.hpp"
 #include "core/messages.hpp"
-#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
 #include "core/random.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"
-#include "lua/lua.hpp"
-#include "library/directory.hpp"
-#include "library/string.hpp"
-#include "library/minmax.hpp"
-#include "library/temporary_handle.hpp"
 #include "interface/romtype.hpp"
+#include "library/directory.hpp"
+#include "library/minmax.hpp"
+#include "library/string.hpp"
+#include "library/temporary_handle.hpp"
+#include "lua/lua.hpp"
+
 #include <iomanip>
 #include <fstream>
 

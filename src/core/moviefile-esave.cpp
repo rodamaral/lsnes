@@ -1,7 +1,6 @@
-#include "core/moviefile.hpp"
 #include "core/moviefile-binary.hpp"
+#include "core/moviefile.hpp"
 #include "library/serialization.hpp"
-#include "interface/romtype.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>
