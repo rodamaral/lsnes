@@ -1,3 +1,4 @@
+#include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
@@ -16,6 +17,19 @@ namespace
 		for(auto i : s)
 			fill_namemap(p, i, namemap, childmap);
 		childmap[id] = s;
+	}
+
+	void update_dumperinfo(emulator_instance& inst, std::map<std::string, dumper_information_1>& new_dumpers,
+		dumper_factory_base* d)
+	{
+		struct dumper_information_1 inf;
+		inf.factory = d;
+		inf.name = d->name();
+		std::set<std::string> mset = d->list_submodes();
+		for(auto i : mset)
+			inf.modes[i] = d->modename(i);
+		inf.active = inst.mdumper->busy(d);
+		new_dumpers[d->id()] = inf;
 	}
 }
 
@@ -158,5 +172,32 @@ void UI_save_author_info(emulator_instance& inst, project_author_info& info)
 			for(auto i : info.luascripts)
 				if(!oldscripts.count(i))
 					inst.command->invoke("run-lua " + i);
+	});
+}
+
+dumper_information UI_get_dumpers(emulator_instance& inst)
+{
+	dumper_information x;
+	inst.iqueue->run([&inst, &x]() {
+		std::set<dumper_factory_base*> dset = dumper_factory_base::get_dumper_set();
+		for(auto i : dset)
+			update_dumperinfo(inst, x.dumpers, i);
+	});
+	return x;
+}
+
+void UI_start_dump(emulator_instance& inst, dumper_factory_base& factory, const std::string& mode,
+	const std::string& prefix)
+{
+	lsnes_instance.iqueue->run([&inst, &factory, mode, prefix]() {
+		inst.mdumper->start(factory, mode, prefix);
+	});
+}
+
+void UI_end_dump(emulator_instance& inst, dumper_factory_base& factory)
+{
+	lsnes_instance.iqueue->run([&inst, &factory]() {
+		auto in = inst.mdumper->get_instance(&factory);
+		delete in;
 	});
 }

@@ -2,6 +2,7 @@
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
 #include "core/project.hpp"
+#include "core/ui-services.hpp"
 
 #include "platform/wxwidgets/menu_dump.hpp"
 #include "platform/wxwidgets/platform.hpp"
@@ -16,8 +17,6 @@ struct dumper_info
 
 namespace
 {
-	std::map<std::string, dumper_info> existing_dumpers;
-
 	struct dumper_menu_struct
 	{
 		int end_wxid;
@@ -30,17 +29,6 @@ namespace
 	std::string last_processed;
 	bool first;
 
-	void update_dumperinfo(std::map<std::string, dumper_info>& new_dumpers, dumper_factory_base* d)
-	{
-		struct dumper_info inf;
-		inf.instance = d;
-		inf.name = d->name();
-		std::set<std::string> mset = d->list_submodes();
-		for(auto i : mset)
-			inf.modes[i] = d->modename(i);
-		inf.active = lsnes_instance.mdumper->busy(d);
-		new_dumpers[d->id()] = inf;
-	}
 }
 
 class dumper_menu_monitor : public master_dumper::notifier
@@ -57,11 +45,7 @@ public:
 
 	void dumpers_updated() throw()
 	{
-		new_dumpers.clear();
-		std::set<dumper_factory_base*> dset = dumper_factory_base::get_dumper_set();
-		for(auto i : dset)
-			update_dumperinfo(new_dumpers, i);
-		runuifun([this]() { if(this->linked) this->linked->update(this->new_dumpers); });
+		runuifun([this]() { if(this->linked) this->linked->update(); });
 	}
 	void dump_status_change() throw()
 	{
@@ -69,7 +53,6 @@ public:
 	}
 private:
 	dumper_menu* linked;
-	std::map<std::string, dumper_info> new_dumpers;
 };
 
 
@@ -83,13 +66,7 @@ dumper_menu::dumper_menu(wxWindow* win, int wxid_low, int wxid_high)
 	wxid_range_high = wxid_high;
 	monitor = new dumper_menu_monitor(this);
 	lsnes_instance.mdumper->add_notifier(*monitor);
-	std::map<std::string, dumper_info> new_dumpers;
-	lsnes_instance.iqueue->run([&new_dumpers]() {
-		std::set<dumper_factory_base*> dset = dumper_factory_base::get_dumper_set();
-		for(auto i : dset)
-			update_dumperinfo(new_dumpers, i);
-		});
-	update(new_dumpers);
+	update();
 }
 
 dumper_menu::~dumper_menu()
@@ -104,14 +81,9 @@ void dumper_menu::on_select(wxCommandEvent& e)
 	if(id < wxid_range_low || id > wxid_range_high)
 		return;
 	for(auto i : menustructure) {
-		std::string error_str;
-		dumper_factory_base* t = existing_dumpers[i.first].instance;
+		dumper_factory_base* t = existing_dumpers[i.first].factory;
 		if(i.second.end_wxid == id) {
-			//Execute end of dump operation.
-			lsnes_instance.iqueue->run([t, &error_str]() {
-				auto in = lsnes_instance.mdumper->get_instance(t);
-				delete in;
-			});
+			UI_end_dump(lsnes_instance, *t);
 			return;
 		}
 		if(i.second.start_wxids.count(id)) {
@@ -156,22 +128,19 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			}
 			if(prefix == "")
 				return;
-			lsnes_instance.iqueue->run([t, mode, prefix, &error_str]() {
-				try {
-					CORE().mdumper->start(*t, mode, prefix);
-				} catch(std::exception& e) {
-					error_str = e.what();
-				}});
-			if(error_str != "")
-				wxMessageBox(towxstring(error_str), _T("Error starting dump"), wxICON_EXCLAMATION |
-					wxOK, pwin);
+			try {
+				UI_start_dump(lsnes_instance, *t, mode, prefix);
+			} catch(std::exception& e) {
+				show_exception(this->pwin, "Error starting dump", "", e);
+			}
 			return;
 		}
 	}
 }
 
-void dumper_menu::update(const std::map<std::string, dumper_info>& new_dumpers)
+void dumper_menu::update()
 {
+	dumper_information dinfo = UI_get_dumpers(lsnes_instance);
 	//Destroy all old entries.
 	for(auto i : menustructure) {
 		struct dumper_menu_struct& m = i.second;
@@ -186,7 +155,7 @@ void dumper_menu::update(const std::map<std::string, dumper_info>& new_dumpers)
 	int id = wxid_range_low;
 	first = true;
 	menustructure.clear();
-	for(auto i : new_dumpers) {
+	for(auto i : dinfo.dumpers) {
 		if(!first)
 			menustructure[last_processed].sep = AppendSeparator();
 		last_processed = i.first;
@@ -209,5 +178,5 @@ void dumper_menu::update(const std::map<std::string, dumper_info>& new_dumpers)
 			menustructure[i.first].end_wxid = id++;
 		}
 	}
-	existing_dumpers = new_dumpers;
+	existing_dumpers = dinfo.dumpers;
 }

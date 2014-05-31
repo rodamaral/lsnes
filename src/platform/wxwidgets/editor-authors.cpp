@@ -283,7 +283,7 @@ void wxeditor_authors::on_luasel(wxCommandEvent& e)
 void wxeditor_authors_display(wxWindow* parent)
 {
 	modal_pause_holder hld;
-	if(!lsnes_instance.mlogic) {
+	if(!*lsnes_instance.mlogic) {
 		show_message_ok(parent, "No movie", "Can't edit authors of nonexistent movie", wxICON_EXCLAMATION);
 		return;
 	}

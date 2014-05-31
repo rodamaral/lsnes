@@ -16,6 +16,7 @@ UI services.
 *********************************************************************************************************************/
 
 class emulator_instance;
+class dumper_factory_base;
 
 struct project_author_info
 {
@@ -35,6 +36,23 @@ struct project_author_info
 	std::string projectname;
 	//Save prefix.
 	std::string prefix;
+};
+
+struct dumper_information_1
+{
+	//The factory for this dumper.
+	dumper_factory_base* factory;
+	//Name of this dumper.
+	std::string name;
+	//Is this dumper active?
+	bool active;
+	//Modes available (first is internal name, second is human-readable one).
+	std::map<std::string, std::string> modes;
+};
+
+struct dumper_information
+{
+	std::map<std::string, dumper_information_1> dumpers;
 };
 
 /**
@@ -77,5 +95,18 @@ project_author_info UI_load_author_info(emulator_instance& instance);
  * Save project author info.
  */
 void UI_save_author_info(emulator_instance& instance, project_author_info& info);
+/**
+ * Get available dumpers.
+ */
+dumper_information UI_get_dumpers(emulator_instance& instance);
+/**
+ * Start dumping.
+ */
+void UI_start_dump(emulator_instance& inst, dumper_factory_base& factory, const std::string& mode,
+	const std::string& prefix);
+/**
+ * End dumping.
+ */
+void UI_end_dump(emulator_instance& inst, dumper_factory_base& factory);
 
 #endif
