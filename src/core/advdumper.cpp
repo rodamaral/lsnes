@@ -161,6 +161,7 @@ dumper_base::dumper_base()
 {
 	mdumper = NULL;
 	fbase = NULL;
+	samples_killed = 0;
 }
 
 dumper_base::dumper_base(master_dumper& _mdumper, dumper_factory_base& _fbase)
@@ -269,6 +270,10 @@ void master_dumper::on_sample(short l, short r)
 	threads::arlock h(lock);
 	for(auto i : sdumpers)
 		try {
+			if(__builtin_expect(i->samples_killed, 0)) {
+				i->samples_killed--;
+				continue;
+			}
 			i->on_sample(l, r);
 		} catch(std::exception& e) {
 			(*output) << "Error in on_sample: " << e.what() << std::endl;

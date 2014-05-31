@@ -80,8 +80,6 @@ namespace
 				video_n = 0;
 				maxtc = 0;
 				soundrate = mdumper.get_rate();
-				akill = 0;
-				akillfrac = 0;
 				mdumper.add_dumper(*this);
 			} catch(std::bad_alloc& e) {
 				throw;
@@ -123,10 +121,8 @@ out:
 
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
-			if(!mdumper.render_video_hud(dscr, _frame, 1, 1, 0, 0, 0, 0, NULL)) {
-				akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
+			if(!render_video_hud(dscr, _frame, fps_n, fps_d, 1, 1, 0, 0, 0, 0, NULL))
 				return;
-			}
 			frame_buffer f;
 			f.ts = get_next_video_ts(fps_n, fps_d);
 			//We'll compress the frame here.
@@ -139,10 +135,6 @@ out:
 
 		void on_sample(short l, short r)
 		{
-			if(akill) {
-				akill--;
-				return;
-			}
 			uint64_t ts = get_next_audio_ts();
 			if(have_dumped_frame) {
 				sample_buffer s;
@@ -202,8 +194,6 @@ out:
 		uint64_t video_n;
 		uint64_t maxtc;
 		std::pair<uint32_t, uint32_t> soundrate;
-		uint64_t akill;
-		double akillfrac;
 		struct frame_buffer
 		{
 			uint64_t ts;

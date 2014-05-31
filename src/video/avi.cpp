@@ -372,8 +372,6 @@ again:
 					sbuffer.resize(RESAMPLE_BUFFER * chans);
 					resampler_w = new resample_worker(worker, ratio, chans);
 				}
-				akill = 0;
-				akillfrac = 0;
 				mdumper.add_dumper(*this);
 			} catch(std::bad_alloc& e) {
 				throw;
@@ -411,23 +409,16 @@ again:
 				rpair(hscl, vscl) = our_rom.rtype->get_scale_factors(_frame.get_width(),
 					_frame.get_height());
 			}
-			if(!mdumper.render_video_hud(dscr, _frame, hscl, vscl, dlb(*CORE().settings),
+			if(!render_video_hud(dscr, _frame, fps_n, fps_d, hscl, vscl, dlb(*CORE().settings),
 				dtb(*CORE().settings), drb(*CORE().settings), dbb(*CORE().settings),
-				[this]() -> void { this->worker->wait_busy(); })) {
-
-				akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
+				[this]() -> void { this->worker->wait_busy(); }))
 				return;
-			}
 			worker->queue_video(dscr.rowptr(0), dscr.get_stride(), dscr.get_width(), dscr.get_height(),
 				fps_n, fps_d);
 			have_dumped_frame = true;
 		}
 		void on_sample(short l, short r)
 		{
-			if(akill) {
-				akill--;
-				return;
-			}
 			if(resampler_w) {
 				if(!have_dumped_frame)
 					return;
@@ -484,8 +475,6 @@ again:
 		std::vector<short> sbuffer;
 		size_t sbuffer_fill;
 		uint32_t chans;
-		uint64_t akill = 0;
-		double akillfrac = 0;
 	};
 
 	class adv_avi_dumper : public dumper_factory_base

@@ -293,7 +293,6 @@ public:
 	template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct framebuffer::raw& source,
 		uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap,
 		std::function<void()> fn);
-
 /**
  * Calculate number of sound samples to drop due to dropped frame.
  */
@@ -337,9 +336,37 @@ public:
  * Dump is being forcibly ended.
  */
 	virtual void on_end() = 0;
+/**
+ * Render Lua HUD on video. samples_killed is incremented if needed.
+ *
+ * Parameter target: The target screen to render on.
+ * Parameter source: The source screen to read.
+ * Parameter fps_n: Fps numerator.
+ * Parameter fps_d: Fps denominator.
+ * Parameter hscl: The horizontal scale factor.
+ * Parameter vscl: The vertical scale factor.
+ * Parameter lgap: Left gap.
+ * Parameter tgap: Top gap.
+ * Parameter rgap: Right gap
+ * Parameter bgap: Bottom gap.
+ * Parameter fn: Function to call between running lua hooks and actually rendering.
+ * Returns: True if frame should be dumped, false if not.
+ */
+	template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct framebuffer::raw& source,
+		uint32_t fps_n, uint32_t fps_d, uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap,
+		uint32_t rgap, uint32_t bgap, std::function<void()> fn)
+	{
+		bool r = mdumper->render_video_hud(target, source, hscl, vscl, lgap, tgap, rgap, bgap, fn);
+		if(!r)
+			samples_killed += mdumper->killed_audio_length(fps_n, fps_d, akillfrac);
+		return r;
+	}
 private:
+	friend class master_dumper;
+	uint64_t samples_killed;
 	master_dumper* mdumper;
 	dumper_factory_base* fbase;
+	double akillfrac;
 };
 
 #endif

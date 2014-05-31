@@ -76,8 +76,6 @@ namespace
 				have_dumped_frame = false;
 				swap = _swap;
 				bits64 = _bits64;
-				akill = 0;
-				akillfrac = 0;
 				mdumper.add_dumper(*this);
 			} catch(std::bad_alloc& e) {
 				throw;
@@ -110,10 +108,8 @@ namespace
 				std::vector<uint16_t> tmp;
 				tmp.resize(8 * s + 8);
 				uint32_t alignment = (16 - reinterpret_cast<size_t>(&tmp[0])) % 16 / 2;
-				if(!mdumper.render_video_hud(dscr2, _frame, hscl, vscl, 0, 0, 0, 0, NULL)) {
-					akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
+				if(!render_video_hud(dscr2, _frame, fps_n, fps_d, hscl, vscl, 0, 0, 0, 0, NULL))
 					return;
-				}
 				for(size_t i = 0; i < h; i++) {
 					if(!swap)
 						framebuffer::copy_swap4(&tmp[alignment], dscr2.rowptr(i), s);
@@ -128,10 +124,8 @@ namespace
 				std::vector<uint8_t> tmp;
 				tmp.resize(4 * s + 16);
 				uint32_t alignment = (16 - reinterpret_cast<size_t>(&tmp[0])) % 16;
-				if(!mdumper.render_video_hud(dscr, _frame, hscl, vscl, 0, 0, 0, 0, NULL)) {
-					akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
+				if(!render_video_hud(dscr, _frame, fps_n, fps_d, hscl, vscl, 0, 0, 0, 0, NULL))
 					return;
-				}
 				for(size_t i = 0; i < h; i++) {
 					if(!swap)
 						framebuffer::copy_swap4(&tmp[alignment], dscr.rowptr(i), s);
@@ -147,10 +141,6 @@ namespace
 
 		void on_sample(short l, short r)
 		{
-			if(akill) {
-				akill--;
-				return;
-			}
 			if(have_dumped_frame && audio) {
 				char buffer[4];
 				serialization::s16b(buffer + 0, l);
@@ -179,8 +169,6 @@ namespace
 		struct framebuffer::fb<true> dscr2;
 		bool swap;
 		bool bits64;
-		uint64_t akill;
-		double akillfrac;
 		master_dumper& mdumper;
 	};
 

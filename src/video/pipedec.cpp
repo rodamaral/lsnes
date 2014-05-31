@@ -107,8 +107,6 @@ namespace
 				last_fps_n = 0;
 				last_fps_d = 0;
 				segid = hex::from<uint32_t>(get_random_hexstring(8));
-				akill = 0;
-				akillfrac = 0;
 				mdumper.add_dumper(*this);
 			} catch(std::bad_alloc& e) {
 				throw;
@@ -129,10 +127,8 @@ namespace
 		}
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
-			if(!mdumper.render_video_hud(dscr, _frame, 1, 1, 0, 0, 0, 0, NULL)) {
-				akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
+			if(!render_video_hud(dscr, _frame, fps_n, fps_d, 1, 1, 0, 0, 0, 0, NULL))
 				return;
-			}
 			size_t w = dscr.get_width();
 			size_t h = dscr.get_height();
 			uint32_t stride = dscr.get_stride();
@@ -188,10 +184,6 @@ namespace
 
 		void on_sample(short l, short r)
 		{
-			if(akill) {
-				akill--;
-				return;
-			}
 			if(have_dumped_frame && audio)
 				audio->sample(l, r);
 		}
@@ -223,8 +215,6 @@ namespace
 		uint32_t last_height;
 		uint32_t last_width;
 		uint32_t segid;
-		uint64_t akill;
-		double akillfrac;
 	};
 
 	class adv_pipedec_dumper : public dumper_factory_base
