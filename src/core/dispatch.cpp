@@ -11,7 +11,8 @@ emulator_dispatch::emulator_dispatch()
 	sound_unmute("sound_unmute"), mode_change("mode_change"), core_change("core_change"),
 	title_change("title_change"), branch_change("branch_change"), mbranch_change("mbranch_change"),
 	core_changed("core_changed"), voice_stream_change("voice_stream_change"),
-	vu_change("vu_change"), subtitle_change("subtitle_change"), multitrack_change("multitrack_change")
+	vu_change("vu_change"), subtitle_change("subtitle_change"), multitrack_change("multitrack_change"),
+	action_update("action_update")
 {
 }
 
@@ -35,6 +36,7 @@ void emulator_dispatch::set_error_streams(std::ostream* stream)
 	title_change.errors_to(stream);
 	branch_change.errors_to(stream);
 	mbranch_change.errors_to(stream);
+	action_update.errors_to(stream);
 }
 
 dispatch::source<> notify_new_core("new_core");

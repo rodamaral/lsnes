@@ -539,7 +539,7 @@ public:
 
 	void action_state_updated()
 	{
-		graphics_driver_action_updated();
+		CORE().dispatch->action_update();
 	}
 
 	void memory_read(uint64_t addr, uint64_t value)

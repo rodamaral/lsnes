@@ -48,11 +48,7 @@
 #define UISERV_REFRESH_TITLE 9990
 #define UISERV_RESIZED 9991
 #define UISERV_UIFUN 9992
-//#define UISERV_UI_IRQ 9993	Not in use anymore, can be recycled.
 #define UISERV_EXIT 9994
-#define UISERV_UPDATE_STATUS 9995
-#define UISERV_UPDATE_MESSAGES 9996
-#define UISERV_UPDATE_SCREEN 9997
 #define UISERV_PANIC 9998
 #define UISERV_ERROR 9999
 
@@ -126,22 +122,6 @@ namespace
 		} else if(c == UISERV_ERROR) {
 			std::string text = error_message_text;
 			wxMessageBox(towxstring(text), _T("lsnes: Error"), wxICON_EXCLAMATION | wxOK, main_window);
-		} else if(c == UISERV_UPDATE_MESSAGES) {
-			{ threads::alock h(if_mutex); if_update_messages = false; }
-			if(msg_window)
-				msg_window->notify_update();
-		} else if(c == UISERV_UPDATE_STATUS) {
-			{ threads::alock h(if_mutex); if_update_status = false; }
-			if(main_window)
-				main_window->notify_update_status();
-			wxeditor_movie_update();
-			wxeditor_hexeditor_update();
-		} else if(c == UISERV_UPDATE_SCREEN) {
-			{ threads::alock h(if_mutex); if_update_screen = false; }
-			if(main_window)
-				main_window->notify_update();
-			wxwindow_memorysearch_update();
-			wxwindow_tasinput_update();
 		} else if(c == UISERV_EXIT) {
 			if(main_window)
 				main_window->notify_exit();
@@ -170,22 +150,6 @@ end:
 
 	void post_ui_event(int code)
 	{
-		//Coalesce some messages.
-		if(code == UISERV_UPDATE_MESSAGES) {
-			threads::alock h(if_mutex);
-			if(if_update_messages) return;
-			if_update_messages = true;
-		}
-		if(code == UISERV_UPDATE_SCREEN) {
-			threads::alock h(if_mutex);
-			if(if_update_screen) return;
-			if_update_screen = true;
-		}
-		if(code == UISERV_UPDATE_STATUS) {
-			threads::alock h(if_mutex);
-			if(if_update_status) return;
-			if_update_status = true;
-		}
 		uiserv_event uic(code);
 		wxPostEvent(ui_services, uic);
 	}
@@ -397,6 +361,7 @@ private:
 	bool start_unpaused;
 	struct dispatch::target<> screenupdate;
 	struct dispatch::target<> statusupdate;
+	struct dispatch::target<> actionupdate;
 };
 
 IMPLEMENT_APP(lsnes_app)
@@ -457,8 +422,31 @@ bool lsnes_app::OnInit()
 	if(exit_immediately)
 		return false;
 
-	screenupdate.set(lsnes_instance.dispatch->screen_update, []() { post_ui_event(UISERV_UPDATE_SCREEN); });
-	statusupdate.set(lsnes_instance.dispatch->status_update, []() { post_ui_event(UISERV_UPDATE_STATUS); });
+	screenupdate.set(lsnes_instance.dispatch->screen_update, []() {
+		threads::alock h(if_mutex);
+		if(if_update_screen) return;
+		if_update_screen = true;
+		runuifun([]() {
+			{ threads::alock h(if_mutex); if_update_screen = false; }
+			if(main_window)
+				main_window->notify_update();
+			wxwindow_memorysearch_update();
+			wxwindow_tasinput_update();
+		});
+	});
+	statusupdate.set(lsnes_instance.dispatch->status_update, []() {
+		threads::alock h(if_mutex);
+		if(if_update_status) return;
+		if_update_status = true;
+		runuifun([]() {
+			{ threads::alock h(if_mutex); if_update_status = false; }
+			if(main_window)
+				main_window->notify_update_status();
+			wxeditor_movie_update();
+			wxeditor_hexeditor_update();
+		});
+	});
+	statusupdate.set(lsnes_instance.dispatch->action_update, []() { main_window->action_updated(); });
 
 	try {
 		crandom::init();
@@ -597,7 +585,14 @@ namespace
 		.quit = []() -> void {},
 		.notify_message = []() -> void
 		{
-			post_ui_event(UISERV_UPDATE_MESSAGES);
+			{ threads::alock h(if_mutex); if_update_messages = false; }
+			if(msg_window)
+				msg_window->notify_update();
+			runuifun([]() {
+				{ threads::alock h(if_mutex); if_update_messages = false; }
+				if(msg_window)
+					msg_window->notify_update();
+			});
 		},
 		.error_message = [](const std::string& text) -> void {
 			error_message_text = text;
@@ -617,10 +612,6 @@ namespace
 			}
 		},
 		.name = []() -> const char* { return "wxwidgets graphics plugin"; },
-		.action_updated = []()
-		{
-			runuifun([]() -> void { main_window->action_updated(); });
-		},
 		.request_rom = [](rom_request& req)
 		{
 			rom_request* _req = &req;

@@ -32,6 +32,7 @@ struct emulator_dispatch
 	dispatch::source<> vu_change;
 	dispatch::source<> subtitle_change;
 	dispatch::source<unsigned, unsigned, int> multitrack_change;
+	dispatch::source<> action_update;
 };
 
 extern dispatch::source<> notify_new_core;

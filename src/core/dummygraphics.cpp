@@ -38,10 +38,6 @@ namespace
 		std::cerr << "Exiting on fatal error." << std::endl;
 	}
 
-	void dummy_action_updated()
-	{
-	}
-
 	void dummy_request_rom(rom_request& req)
 	{
 		throw std::runtime_error("Headless build does not support ROM requests");
@@ -56,7 +52,6 @@ namespace
 		.error_message = dummy_error_message,
 		.fatal_error = dummy_fatal_error,
 		.name = dummy_name,
-		.action_updated = dummy_action_updated,
 		.request_rom = dummy_request_rom
 	};
 
@@ -101,11 +96,6 @@ void graphics_driver_fatal_error() throw()
 const char* graphics_driver_name()
 {
 	return driver.name();
-}
-
-void graphics_driver_action_updated()
-{
-	driver.action_updated();
 }
 
 void graphics_driver_request_rom(rom_request& req)
