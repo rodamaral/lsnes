@@ -111,7 +111,6 @@ struct platform
  * throws std::bad_alloc: Not enough memory.
  */
 	static void message(const std::string& msg) throw(std::bad_alloc);
-
 /**
  * Displays fatal error message, quitting after the user acks it (called by fatal_error()).
  *

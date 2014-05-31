@@ -98,41 +98,6 @@ std::string safe_filename(const std::string& str)
 	return o.str();
 }
 
-struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) throw(std::bad_alloc,
-	std::runtime_error)
-{
-	std::string f;
-	regex_results optp;
-	for(auto i : cmdline) {
-		if(!(optp = regex("--rom=(.+)", i)))
-			continue;
-		f = optp[1];
-	}
-
-	struct loaded_rom r;
-	try {
-		r = loaded_rom(f);
-	} catch(std::bad_alloc& e) {
-		OOM_panic();
-	} catch(std::exception& e) {
-		throw std::runtime_error(std::string("Can't load ROM: ") + e.what());
-	}
-
-	std::string not_present = "N/A";
-	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-		std::string romname = "UNKNOWN ROM";
-		std::string xmlname = "UNKNOWN XML";
-		if(i < r.rtype->get_image_count()) {
-			romname = (r.rtype->get_image_info(i).hname == "ROM") ? std::string("ROM") :
-				(r.rtype->get_image_info(i).hname + " ROM");
-			xmlname = r.rtype->get_image_info(i).hname + " XML";
-		}
-		if(r.romimg[i].data)	messages << romname << " hash: " << r.romimg[i].sha_256.read() << std::endl;
-		if(r.romxml[i].data)	messages << xmlname << " hash: " << r.romxml[i].sha_256.read() << std::endl;
-	}
-	return r;
-}
-
 void fatal_error() throw()
 {
 	platform::fatal_error();
