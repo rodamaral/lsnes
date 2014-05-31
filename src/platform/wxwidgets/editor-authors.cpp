@@ -1,9 +1,6 @@
-#include "core/command.hpp"
-#include "core/dispatch.hpp"
 #include "core/instance.hpp"
-#include "core/mainloop.hpp"
 #include "core/moviedata.hpp"
-#include "core/project.hpp"
+#include "core/ui-services.hpp"
 #include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -32,7 +29,7 @@ public:
 	void on_luasel(wxCommandEvent& e);
 private:
 	void reorder_scripts(int delta);
-	wxTextCtrl* projectname;
+	wxTextCtrl* gamename;
 	wxTextCtrl* pname;
 	wxTextCtrl* directory;
 	wxTextCtrl* authors;
@@ -51,21 +48,21 @@ private:
 wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit game name & authors"), wxDefaultPosition, wxSize(-1, -1))
 {
-	project_info* proj = lsnes_instance.project->get();
+	project_author_info ainfo = UI_load_author_info(lsnes_instance);
 	Centre();
-	wxFlexGridSizer* top_s = new wxFlexGridSizer(proj ? 12 : 5, 1, 0, 0);
+	wxFlexGridSizer* top_s = new wxFlexGridSizer(ainfo.is_project ? 12 : 5, 1, 0, 0);
 	SetSizer(top_s);
 
-	if(proj) {
+	if(ainfo.is_project) {
 		wxFlexGridSizer* c4_s = new wxFlexGridSizer(1, 2, 0, 0);
 		c4_s->Add(new wxStaticText(this, wxID_ANY, wxT("Project:")), 0, wxGROW);
-		c4_s->Add(pname = new wxTextCtrl(this, wxID_ANY, towxstring(proj->name),
+		c4_s->Add(pname = new wxTextCtrl(this, wxID_ANY, towxstring(ainfo.projectname),
 			wxDefaultPosition, wxSize(400, -1)), 1, wxGROW);
 		top_s->Add(c4_s);
 
 		wxFlexGridSizer* c2_s = new wxFlexGridSizer(1, 3, 0, 0);
 		c2_s->Add(new wxStaticText(this, wxID_ANY, wxT("Directory:")), 0, wxGROW);
-		c2_s->Add(directory = new wxTextCtrl(this, wxID_ANY, towxstring(proj->directory),
+		c2_s->Add(directory = new wxTextCtrl(this, wxID_ANY, towxstring(ainfo.directory),
 			wxDefaultPosition, wxSize(350, -1)), 1, wxGROW);
 		wxButton* pdir;
 		c2_s->Add(pdir = new wxButton(this, wxID_ANY, wxT("...")), 1, wxGROW);
@@ -75,24 +72,23 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 
 		wxFlexGridSizer* c3_s = new wxFlexGridSizer(1, 2, 0, 0);
 		c3_s->Add(new wxStaticText(this, wxID_ANY, wxT("Prefix:")), 0, wxGROW);
-		c3_s->Add(projectpfx = new wxTextCtrl(this, wxID_ANY, towxstring(proj->prefix),
+		c3_s->Add(projectpfx = new wxTextCtrl(this, wxID_ANY, towxstring(ainfo.prefix),
 			wxDefaultPosition, wxSize(300, -1)), 1, wxGROW);
 		top_s->Add(c3_s);
-
 	} else {
 		directory = NULL;
 		pname = NULL;
 		wxFlexGridSizer* c2_s = new wxFlexGridSizer(1, 2, 0, 0);
 		c2_s->Add(new wxStaticText(this, wxID_ANY, wxT("Save slot prefix:")), 0, wxGROW);
-		c2_s->Add(projectpfx = new wxTextCtrl(this, wxID_ANY, towxstring(get_mprefix_for_project()),
+		c2_s->Add(projectpfx = new wxTextCtrl(this, wxID_ANY, towxstring(ainfo.prefix),
 			wxDefaultPosition, wxSize(300, -1)), 1, wxGROW);
 		top_s->Add(c2_s);
 	}
 
 	wxFlexGridSizer* c_s = new wxFlexGridSizer(1, 2, 0, 0);
 	c_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game name:")), 0, wxGROW);
-	c_s->Add(projectname = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
-		wxGROW);
+	c_s->Add(gamename = new wxTextCtrl(this, wxID_ANY, towxstring(ainfo.gamename), wxDefaultPosition,
+		wxSize(400, -1)), 1, wxGROW);
 	top_s->Add(c_s);
 
 	top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Authors (one per line):")), 0, wxGROW);
@@ -101,7 +97,7 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	authors->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 		wxCommandEventHandler(wxeditor_authors::on_authors_change), NULL, this);
 
-	if(proj) {
+	if(ainfo.is_project) {
 		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Autoload lua scripts:")), 0, wxGROW);
 		top_s->Add(luascripts = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(400, 100)), 1,
 			wxEXPAND);
@@ -150,25 +146,11 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	top_s->SetSizeHints(this);
 	Fit();
 
-	std::list<std::string> luascriptlist;
-	std::string gamename;
 	std::string x;
-	lsnes_instance.iqueue->run([&gamename, &x, &luascriptlist, proj]() {
-		if(proj) {
-			luascriptlist = proj->luascripts;
-			gamename = proj->gamename;
-			for(auto i : proj->authors)
-				x = x + i.first + "|" + i.second + "\n";
-		} else {
-			gamename = lsnes_instance.mlogic->get_mfile().gamename;
-			for(auto i : lsnes_instance.mlogic->get_mfile().authors)
-				x = x + i.first + "|" + i.second + "\n";
-		}
-
-	});
-	for(auto i : luascriptlist)
+	for(auto i : ainfo.authors)
+		x = x + i.first + "|" + i.second + "\n";
+	for(auto i : ainfo.luascripts)
 		luascripts->Append(towxstring(i));
-	projectname->SetValue(towxstring(gamename));
 	authors->SetValue(towxstring(x));
 }
 
@@ -199,50 +181,25 @@ void wxeditor_authors::on_cancel(wxCommandEvent& e)
 
 void wxeditor_authors::on_ok(wxCommandEvent& e)
 {
-	project_info* proj = lsnes_instance.project->get();
-	std::string gamename = tostdstring(projectname->GetValue());
-	std::string pfx = tostdstring(projectpfx->GetValue());
-	std::string dir = directory ? tostdstring(directory->GetValue()) : std::string("");
-	std::string prjname = pname ? tostdstring(pname->GetValue()) : std::string("");
-	std::vector<std::pair<std::string, std::string>> newauthors;
-	std::list<std::string> luascriptlist;
+	project_author_info ainfo;
+	ainfo.gamename = tostdstring(gamename->GetValue());
+	ainfo.prefix = tostdstring(projectpfx->GetValue());
+	ainfo.directory = directory ? tostdstring(directory->GetValue()) : std::string("");
+	ainfo.projectname = pname ? tostdstring(pname->GetValue()) : std::string("");
+
 	size_t lines = authors->GetNumberOfLines();
 	for(size_t i = 0; i < lines; i++) {
 		std::string l = tostdstring(authors->GetLineText(i));
 		if(l != "" && l != "|")
-			newauthors.push_back(split_author(l));
+			ainfo.authors.push_back(split_author(l));
 	}
+
 	if(luascripts)
 		for(unsigned i = 0; i < luascripts->GetCount(); i++)
-			luascriptlist.push_back(tostdstring(luascripts->GetString(i)));
-	bool run_new = autorunlua ? autorunlua->GetValue() : false;
+			ainfo.luascripts.push_back(tostdstring(luascripts->GetString(i)));
+	ainfo.autorunlua = autorunlua ? autorunlua->GetValue() : false;
 
-	lsnes_instance.iqueue->run([gamename, newauthors, pfx, dir, prjname, luascriptlist, run_new, proj]() {
-		std::set<std::string> oldscripts;
-		if(proj) {
-			for(auto i : proj->luascripts)
-				oldscripts.insert(i);
-			proj->gamename = gamename;
-			proj->authors = newauthors;
-			proj->prefix = pfx;
-			proj->directory = dir;
-			proj->name = prjname;
-			proj->luascripts = luascriptlist;
-			proj->flush();
-			//For save status to immediately update.
-			do_flush_slotinfo();
-			update_movie_state();
-			CORE().dispatch->title_change();
-		} else {
-			lsnes_instance.mlogic->get_mfile().gamename = gamename;
-			lsnes_instance.mlogic->get_mfile().authors = newauthors;
-			set_mprefix_for_project(pfx);
-		}
-		if(run_new)
-			for(auto i : luascriptlist)
-				if(!oldscripts.count(i))
-					lsnes_instance.command->invoke("run-lua " + i);
-	});
+	UI_save_author_info(lsnes_instance, ainfo);
 	EndModal(wxID_OK);
 }
 

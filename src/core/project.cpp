@@ -25,16 +25,6 @@ void do_flush_slotinfo();
 
 namespace
 {
-	void fill_namemap(project_info& p, uint64_t id, std::map<uint64_t, std::string>& namemap,
-		std::map<uint64_t, std::set<uint64_t>>& childmap)
-	{
-		namemap[id] = p.get_branch_name(id);
-		auto s = p.branch_children(id);
-		for(auto i : s)
-			fill_namemap(p, i, namemap, childmap);
-		childmap[id] = s;
-	}
-
 	void concatenate(std::vector<char>& data, const std::vector<char>& app)
 	{
 		size_t dsize = data.size();
@@ -488,80 +478,6 @@ void project_state::copy_macros(project_info& p, controller_state& s)
 {
 	for(auto i : s.enumerate_macro())
 		p.macros[i] = s.get_macro(i).serialize();
-}
-
-void project_state::F_get_branch_map(uint64_t& cur, std::map<uint64_t, std::string>& namemap,
-	std::map<uint64_t, std::set<uint64_t>>& childmap)
-{
-	iqueue.run([this, &cur, &namemap, &childmap]() {
-		auto p = this->get();
-		if(!p) return;
-		fill_namemap(*p, 0, namemap, childmap);
-		cur = p->get_current_branch();
-	});
-}
-
-void project_state::F_call_flush(std::function<void(std::exception&)> onerror)
-{
-	iqueue.run_async([this]() {
-		auto p = this->get();
-		if(p) p->flush();
-	}, onerror);
-}
-
-void project_state::F_create_branch(uint64_t id, const std::string& name,
-	std::function<void(std::exception&)> onerror)
-{
-	iqueue.run_async([this, id, name]() {
-		auto p = this->get();
-		if(!p) return;
-		p->create_branch(id, name);
-		p->flush();
-	}, onerror);
-}
-
-void project_state::F_rename_branch(uint64_t id, const std::string& name,
-	std::function<void(std::exception&)> onerror)
-{
-	iqueue.run_async([this, id, name]() {
-		auto p = this->get();
-		if(!p) return;
-		p->set_branch_name(id, name);
-		p->flush();
-		update_movie_state();
-	}, onerror);
-}
-
-void project_state::F_reparent_branch(uint64_t id, uint64_t pid, std::function<void(std::exception&)> onerror)
-{
-	iqueue.run_async([this, id, pid]() {
-		auto p = this->get();
-		if(!p) return;
-		p->set_parent_branch(id, pid);
-		p->flush();
-		update_movie_state();
-	}, onerror);
-}
-
-void project_state::F_delete_branch(uint64_t id, std::function<void(std::exception&)> onerror)
-{
-	iqueue.run_async([this, id]() {
-		auto p = this->get();
-		if(!p) return;
-		p->delete_branch(id);
-		p->flush();
-	}, onerror);
-}
-
-void project_state::F_switch_branch(uint64_t id, std::function<void(std::exception&)> onerror)
-{
-	iqueue.run_async([this, id]() {
-		auto p = this->get();
-		if(!p) return;
-		p->set_current_branch(id);
-		p->flush();
-		update_movie_state();
-	}, onerror);
 }
 
 project_info::project_info(emulator_dispatch& _dispatch)

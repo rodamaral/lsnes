@@ -8,6 +8,7 @@
 #include "core/instance.hpp"
 #include "core/project.hpp"
 #include "core/moviedata.hpp"
+#include "core/ui-services.hpp"
 
 void update_movie_state();
 
@@ -58,7 +59,7 @@ namespace
 			std::map<uint64_t, std::string> namemap;
 			std::map<uint64_t, std::set<uint64_t>> childmap;
 			uint64_t cur = 0;
-			lsnes_instance.project->F_get_branch_map(cur, namemap, childmap);
+			UI_get_branch_map(lsnes_instance, cur, namemap, childmap);
 			current = cur;
 			selection cursel = get_selection();
 			std::set<uint64_t> expanded;
@@ -214,7 +215,7 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			lsnes_instance.project->F_create_branch(id, newname, [this](std::exception& e) {
+			UI_create_branch(lsnes_instance, id, newname, [this](std::exception& e) {
 				show_exception_any(this, "Error creating branch", "Can't create branch", e);
 			});
 		}
@@ -222,7 +223,7 @@ namespace
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			lsnes_instance.project->F_switch_branch(id, [this](std::exception& e) {
+			UI_switch_branch(lsnes_instance, id, [this](std::exception& e) {
 				show_exception_any(this, "Error setting branch", "Can't set branch", e);
 			});
 		}
@@ -237,7 +238,7 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			lsnes_instance.project->F_rename_branch(id, newname, [this](std::exception& e) {
+			UI_rename_branch(lsnes_instance, id, newname, [this](std::exception& e) {
 				show_exception_any(this, "Error renaming branch", "Can't rename branch", e);
 			});
 		}
@@ -255,7 +256,7 @@ namespace
 			pid = bsel->get_selection();
 			if(pid == 0xFFFFFFFFFFFFFFFFULL) return;
 			bsel->Destroy();
-			lsnes_instance.project->F_reparent_branch(id, pid, [this](std::exception& e) {
+			UI_reparent_branch(lsnes_instance, id, pid, [this](std::exception& e) {
 				show_exception_any(this, "Error reparenting branch", "Can't reparent branch", e);
 			});
 		}
@@ -263,7 +264,7 @@ namespace
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			lsnes_instance.project->F_delete_branch(id, [this](std::exception& e) {
+			UI_delete_branch(lsnes_instance, id, [this](std::exception& e) {
 				show_exception_any(this, "Error deleting branch", "Can't delete branch", e);
 			});
 		}
@@ -361,7 +362,7 @@ void branches_menu::on_select(wxCommandEvent& e)
 	if(!branch_ids.count(id)) return;
 	uint64_t bid = branch_ids[id];
 	std::string err;
-	lsnes_instance.project->F_switch_branch(bid, [this](std::exception& e) {
+	UI_switch_branch(lsnes_instance, bid, [this](std::exception& e) {
 		show_exception_any(this->pwin, "Error changing branch", "Can't change branch", e);
 	});
 }
@@ -371,7 +372,7 @@ void branches_menu::update()
 	std::map<uint64_t, std::string> namemap;
 	std::map<uint64_t, std::set<uint64_t>> childmap;
 	uint64_t cur;
-	lsnes_instance.project->F_get_branch_map(cur, namemap, childmap);
+	UI_get_branch_map(lsnes_instance, cur, namemap, childmap);
 	//First destroy everything that isn't a menu.
 	for(auto i : otheritems)
 		i.parent->Delete(i.item);
