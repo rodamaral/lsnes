@@ -411,10 +411,11 @@ again:
 				rpair(hscl, vscl) = our_rom.rtype->get_scale_factors(_frame.get_width(),
 					_frame.get_height());
 			}
-			if(!render_video_hud(dscr, _frame, hscl, vscl, dlb(*CORE().settings), dtb(*CORE().settings),
-				drb(*CORE().settings), dbb(*CORE().settings), [this]() -> void {
-				this->worker->wait_busy(); })) {
-				akill += killed_audio_length(fps_n, fps_d, akillfrac);
+			if(!mdumper.render_video_hud(dscr, _frame, hscl, vscl, dlb(*CORE().settings),
+				dtb(*CORE().settings), drb(*CORE().settings), dbb(*CORE().settings),
+				[this]() -> void { this->worker->wait_busy(); })) {
+
+				akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
 				return;
 			}
 			worker->queue_video(dscr.rowptr(0), dscr.get_stride(), dscr.get_width(), dscr.get_height(),

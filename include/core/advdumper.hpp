@@ -276,6 +276,28 @@ public:
  * Set output stream.
  */
 	void set_output(std::ostream* _output);
+/**
+ * Render Lua HUD on video.
+ *
+ * Parameter target: The target screen to render on.
+ * Parameter source: The source screen to read.
+ * Parameter hscl: The horizontal scale factor.
+ * Parameter vscl: The vertical scale factor.
+ * Parameter lgap: Left gap.
+ * Parameter tgap: Top gap.
+ * Parameter rgap: Right gap
+ * Parameter bgap: Bottom gap.
+ * Parameter fn: Function to call between running lua hooks and actually rendering.
+ * Returns: True if frame should be dumped, false if not.
+ */
+	template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct framebuffer::raw& source,
+		uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap,
+		std::function<void()> fn);
+
+/**
+ * Calculate number of sound samples to drop due to dropped frame.
+ */
+	uint64_t killed_audio_length(uint32_t fps_n, uint32_t fps_d, double& fraction);
 private:
 	void statuschange();
 	friend class dumper_base;
@@ -319,28 +341,5 @@ private:
 	master_dumper* mdumper;
 	dumper_factory_base* fbase;
 };
-
-/**
- * Render Lua HUD on video.
- *
- * Parameter target: The target screen to render on.
- * Parameter source: The source screen to read.
- * Parameter hscl: The horizontal scale factor.
- * Parameter vscl: The vertical scale factor.
- * Parameter lgap: Left gap.
- * Parameter tgap: Top gap.
- * Parameter rgap: Right gap
- * Parameter bgap: Bottom gap.
- * Parameter fn: Function to call between running lua hooks and actually rendering.
- * Returns: True if frame should be dumped, false if not.
- */
-template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct framebuffer::raw& source,
-	uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap,
-	std::function<void()> fn);
-
-/**
- * Calculate number of sound samples to drop due to dropped frame.
- */
-uint64_t killed_audio_length(uint32_t fps_n, uint32_t fps_d, double& fraction);
 
 #endif

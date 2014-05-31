@@ -129,8 +129,8 @@ namespace
 		}
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
-			if(!render_video_hud(dscr, _frame, 1, 1, 0, 0, 0, 0, NULL)) {
-				akill += killed_audio_length(fps_n, fps_d, akillfrac);
+			if(!mdumper.render_video_hud(dscr, _frame, 1, 1, 0, 0, 0, 0, NULL)) {
+				akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
 				return;
 			}
 			size_t w = dscr.get_width();

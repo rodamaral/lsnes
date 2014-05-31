@@ -336,9 +336,9 @@ void master_dumper::set_output(std::ostream* _output)
 	output = _output;
 }
 
-template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct framebuffer::raw& source,
-	uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap,
-	std::function<void()> fn)
+template<bool X> bool master_dumper::render_video_hud(struct framebuffer::fb<X>& target,
+	struct framebuffer::raw& source, uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap,
+	uint32_t bgap, std::function<void()> fn)
 {
 	bool lua_kill_video = false;
 	struct lua::render_context lrc;
@@ -361,16 +361,18 @@ template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct
 	return !lua_kill_video;
 }
 
-uint64_t killed_audio_length(uint32_t fps_n, uint32_t fps_d, double& fraction)
+uint64_t master_dumper::killed_audio_length(uint32_t fps_n, uint32_t fps_d, double& fraction)
 {
-	auto r = CORE().mdumper->get_rate();
+	auto r = get_rate();
 	double x = 1.0 * fps_d * r.first / (fps_n * r.second) + fraction;
 	uint64_t y = x;
 	fraction = x - y;
 	return y;
 }
 
-template bool render_video_hud(struct framebuffer::fb<false>& target, struct framebuffer::raw& source, uint32_t hscl,
-	uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap, std::function<void()> fn);
-template bool render_video_hud(struct framebuffer::fb<true>& target, struct framebuffer::raw& source, uint32_t hscl,
-	uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap, std::function<void()> fn);
+template bool master_dumper::render_video_hud(struct framebuffer::fb<false>& target, struct framebuffer::raw& source,
+	uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap,
+	std::function<void()> fn);
+template bool master_dumper::render_video_hud(struct framebuffer::fb<true>& target, struct framebuffer::raw& source,
+	uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap,
+	std::function<void()> fn);

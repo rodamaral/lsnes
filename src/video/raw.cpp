@@ -110,8 +110,8 @@ namespace
 				std::vector<uint16_t> tmp;
 				tmp.resize(8 * s + 8);
 				uint32_t alignment = (16 - reinterpret_cast<size_t>(&tmp[0])) % 16 / 2;
-				if(!render_video_hud(dscr2, _frame, hscl, vscl, 0, 0, 0, 0, NULL)) {
-					akill += killed_audio_length(fps_n, fps_d, akillfrac);
+				if(!mdumper.render_video_hud(dscr2, _frame, hscl, vscl, 0, 0, 0, 0, NULL)) {
+					akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
 					return;
 				}
 				for(size_t i = 0; i < h; i++) {
@@ -128,8 +128,8 @@ namespace
 				std::vector<uint8_t> tmp;
 				tmp.resize(4 * s + 16);
 				uint32_t alignment = (16 - reinterpret_cast<size_t>(&tmp[0])) % 16;
-				if(!render_video_hud(dscr, _frame, hscl, vscl, 0, 0, 0, 0, NULL)) {
-					akill += killed_audio_length(fps_n, fps_d, akillfrac);
+				if(!mdumper.render_video_hud(dscr, _frame, hscl, vscl, 0, 0, 0, 0, NULL)) {
+					akill += mdumper.killed_audio_length(fps_n, fps_d, akillfrac);
 					return;
 				}
 				for(size_t i = 0; i < h; i++) {
