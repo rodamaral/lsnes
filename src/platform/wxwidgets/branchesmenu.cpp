@@ -389,8 +389,7 @@ void branches_menu::update()
 	otheritems.push_back(miteminfo(Append(wxid_range_low, towxstring("Edit branches")), false, this));
 	otheritems.push_back(miteminfo(AppendSeparator(), false, this));
 	int ass_id = wxid_range_low + 1;
-	build_menus(this, 0, otheritems, menus, namemap, childmap, branch_ids, ass_id,
-		lsnes_instance.project->get()->get_current_branch());
+	build_menus(this, 0, otheritems, menus, namemap, childmap, branch_ids, ass_id, cur);
 	if(disabler_fn) disabler_fn(true);
 }
 
