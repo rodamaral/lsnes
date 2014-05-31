@@ -68,6 +68,8 @@ emulator_instance::emulator_instance()
 	D.prealloc(buttons);
 
 	D.init(dispatch);
+	D.init(command);
+	D.init(iqueue, *command);
 	D.init(mlogic);
 	D.init(memory);
 	D.init(lua);
@@ -79,7 +81,6 @@ emulator_instance::emulator_instance()
 	D.init(mbranch, *mlogic, *dispatch);
 	D.init(controls, *project, *mlogic, *buttons, *dispatch);
 	D.init(keyboard);
-	D.init(command);
 	D.init(mapper, *keyboard, *command);
 	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch);
 	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch);
@@ -91,10 +92,9 @@ emulator_instance::emulator_instance()
 	D.init(abindmanager, *mapper, *command);
 	D.init(nrrdata);
 	D.init(cmapper, *memory, *mlogic);
-	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch);
+	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue);
 	D.init(dbg, *dispatch);
 	D.init(framerate);
-	D.init(iqueue, *command);
 	D.init(mdumper);
 
 	status_A->valid = false;

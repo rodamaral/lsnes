@@ -107,6 +107,7 @@ void show_message_ok(wxWindow* parent, const std::string& title, const std::stri
 
 bool run_show_error(wxWindow* parent, const std::string& title, const std::string& text, std::function<void()> fn);
 void show_exception(wxWindow* parent, const std::string& title, const std::string& text, std::exception& e);
+void show_exception_any(wxWindow* parent, const std::string& title, const std::string& text, std::exception& e);
 
 //Some important windows (if open).
 extern wxwin_messages* msg_window;

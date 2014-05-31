@@ -13,16 +13,6 @@ void update_movie_state();
 
 namespace
 {
-	void fill_namemap(project_info& p, uint64_t id, std::map<uint64_t, std::string>& namemap,
-		std::map<uint64_t, std::set<uint64_t>>& childmap)
-	{
-		namemap[id] = p.get_branch_name(id);
-		auto s = p.branch_children(id);
-		for(auto i : s)
-			fill_namemap(p, i, namemap, childmap);
-		childmap[id] = s;
-	}
-
 	//Tree of branches.
 	class branches_tree : public wxTreeCtrl
 	{
@@ -68,12 +58,7 @@ namespace
 			std::map<uint64_t, std::string> namemap;
 			std::map<uint64_t, std::set<uint64_t>> childmap;
 			uint64_t cur = 0;
-			lsnes_instance.iqueue->run([&cur, &namemap, &childmap]() {
-				auto p = lsnes_instance.project->get();
-				if(!p) return;
-				fill_namemap(*p, 0, namemap, childmap);
-				cur = p->get_current_branch();
-			});
+			lsnes_instance.project->F_get_branch_map(cur, namemap, childmap);
 			current = cur;
 			selection cursel = get_selection();
 			std::set<uint64_t> expanded;
@@ -102,13 +87,6 @@ namespace
 			if(names.count(id))
 				return names[id];
 			return "";
-		}
-		void call_project_flush()
-		{
-			lsnes_instance.iqueue->run_async([] {
-				auto p = CORE().project->get();
-				if(p) p->flush();
-			}, [](std::exception& e) {});
 		}
 	private:
 		void build_tree(uint64_t id, wxTreeItemId parent, std::map<uint64_t, std::set<uint64_t>>& childmap,
@@ -236,26 +214,17 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			lsnes_instance.iqueue->run([this, id, newname]() {
-				run_show_error(this, "Error creating branch", "Can't create branch", [id, newname]() {
-					auto p = CORE().project->get();
-					if(p) p->create_branch(id, newname);
-				});
+			lsnes_instance.project->F_create_branch(id, newname, [this](std::exception& e) {
+				show_exception_any(this, "Error creating branch", "Can't create branch", e);
 			});
-			branches->call_project_flush();
 		}
 		void on_select(wxCommandEvent& e)
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			lsnes_instance.iqueue->run([this, id]() {
-				run_show_error(this, "Error setting branch", "Can't set branch", [id]() {
-					auto p = CORE().project->get();
-					if(p) p->set_current_branch(id);
-				});
+			lsnes_instance.project->F_switch_branch(id, [this](std::exception& e) {
+				show_exception_any(this, "Error setting branch", "Can't set branch", e);
 			});
-			branches->call_project_flush();
-			update_movie_state();
 		}
 		void on_rename(wxCommandEvent& e)
 		{
@@ -268,14 +237,9 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			lsnes_instance.iqueue->run([this, id, newname]() {
-				run_show_error(this, "Error renaming branch", "Can't rename branch", [id, newname]() {
-					auto p = CORE().project->get();
-					if(p) p->set_branch_name(id, newname);
-				});
+			lsnes_instance.project->F_rename_branch(id, newname, [this](std::exception& e) {
+				show_exception_any(this, "Error renaming branch", "Can't rename branch", e);
 			});
-			branches->call_project_flush();
-			update_movie_state();
 		}
 		void on_reparent(wxCommandEvent& e)
 		{
@@ -291,27 +255,17 @@ namespace
 			pid = bsel->get_selection();
 			if(pid == 0xFFFFFFFFFFFFFFFFULL) return;
 			bsel->Destroy();
-			lsnes_instance.iqueue->run([this, id, pid]() {
-				run_show_error(this, "Error reparenting branch", "Can't reparent branch",
-					[id, pid]() {
-					auto p = CORE().project->get();
-					if(p) p->set_parent_branch(id, pid);
-				});
+			lsnes_instance.project->F_reparent_branch(id, pid, [this](std::exception& e) {
+				show_exception_any(this, "Error reparenting branch", "Can't reparent branch", e);
 			});
-			branches->call_project_flush();
-			update_movie_state();
 		}
 		void on_delete(wxCommandEvent& e)
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			lsnes_instance.iqueue->run([this, id]() {
-				run_show_error(this, "Error deleting branch", "Can't delete branch", [id]() {
-					auto p = CORE().project->get();
-					if(p) p->delete_branch(id);
-				});
+			lsnes_instance.project->F_delete_branch(id, [this](std::exception& e) {
+				show_exception_any(this, "Error deleting branch", "Can't delete branch", e);
 			});
-			branches->call_project_flush();
 		}
 		void on_close(wxCommandEvent& e)
 		{
@@ -407,13 +361,8 @@ void branches_menu::on_select(wxCommandEvent& e)
 	if(!branch_ids.count(id)) return;
 	uint64_t bid = branch_ids[id];
 	std::string err;
-	lsnes_instance.iqueue->run_async([this, bid]() {
-		auto p = CORE().project->get();
-		if(p) p->set_current_branch(bid);
-		if(p) p->flush();
-		update_movie_state();
-	}, [this](std::exception& e) {
-		show_exception(this->pwin, "Error changing branch", "Can't change branch", e);
+	lsnes_instance.project->F_switch_branch(bid, [this](std::exception& e) {
+		show_exception_any(this->pwin, "Error changing branch", "Can't change branch", e);
 	});
 }
 
@@ -421,11 +370,8 @@ void branches_menu::update()
 {
 	std::map<uint64_t, std::string> namemap;
 	std::map<uint64_t, std::set<uint64_t>> childmap;
-	lsnes_instance.iqueue->run([&namemap, &childmap]() {
-		auto p = CORE().project->get();
-		if(!p) return;
-		fill_namemap(*p, 0, namemap, childmap);
-	});
+	uint64_t cur;
+	lsnes_instance.project->F_get_branch_map(cur, namemap, childmap);
 	//First destroy everything that isn't a menu.
 	for(auto i : otheritems)
 		i.parent->Delete(i.item);

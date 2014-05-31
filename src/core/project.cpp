@@ -9,6 +9,7 @@
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/project.hpp"
+#include "core/queue.hpp"
 #include "library/directory.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
@@ -24,6 +25,16 @@ void do_flush_slotinfo();
 
 namespace
 {
+	void fill_namemap(project_info& p, uint64_t id, std::map<uint64_t, std::string>& namemap,
+		std::map<uint64_t, std::set<uint64_t>>& childmap)
+	{
+		namemap[id] = p.get_branch_name(id);
+		auto s = p.branch_children(id);
+		for(auto i : s)
+			fill_namemap(p, i, namemap, childmap);
+		childmap[id] = s;
+	}
+
 	void concatenate(std::vector<char>& data, const std::vector<char>& app)
 	{
 		size_t dsize = data.size();
@@ -188,9 +199,9 @@ namespace
 
 project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
 	controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
-	emulator_dispatch& _edispatch)
+	emulator_dispatch& _edispatch, input_queue& _iqueue)
 	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache),
-	buttons(_buttons), edispatch(_edispatch)
+	buttons(_buttons), edispatch(_edispatch), iqueue(_iqueue)
 {
 	active_project = NULL;
 }
@@ -479,6 +490,80 @@ void project_state::copy_macros(project_info& p, controller_state& s)
 		p.macros[i] = s.get_macro(i).serialize();
 }
 
+void project_state::F_get_branch_map(uint64_t& cur, std::map<uint64_t, std::string>& namemap,
+	std::map<uint64_t, std::set<uint64_t>>& childmap)
+{
+	iqueue.run([this, &cur, &namemap, &childmap]() {
+		auto p = this->get();
+		if(!p) return;
+		fill_namemap(*p, 0, namemap, childmap);
+		cur = p->get_current_branch();
+	});
+}
+
+void project_state::F_call_flush(std::function<void(std::exception&)> onerror)
+{
+	iqueue.run_async([this]() {
+		auto p = this->get();
+		if(p) p->flush();
+	}, onerror);
+}
+
+void project_state::F_create_branch(uint64_t id, const std::string& name,
+	std::function<void(std::exception&)> onerror)
+{
+	iqueue.run_async([this, id, name]() {
+		auto p = this->get();
+		if(!p) return;
+		p->create_branch(id, name);
+		p->flush();
+	}, onerror);
+}
+
+void project_state::F_rename_branch(uint64_t id, const std::string& name,
+	std::function<void(std::exception&)> onerror)
+{
+	iqueue.run_async([this, id, name]() {
+		auto p = this->get();
+		if(!p) return;
+		p->set_branch_name(id, name);
+		p->flush();
+		update_movie_state();
+	}, onerror);
+}
+
+void project_state::F_reparent_branch(uint64_t id, uint64_t pid, std::function<void(std::exception&)> onerror)
+{
+	iqueue.run_async([this, id, pid]() {
+		auto p = this->get();
+		if(!p) return;
+		p->set_parent_branch(id, pid);
+		p->flush();
+		update_movie_state();
+	}, onerror);
+}
+
+void project_state::F_delete_branch(uint64_t id, std::function<void(std::exception&)> onerror)
+{
+	iqueue.run_async([this, id]() {
+		auto p = this->get();
+		if(!p) return;
+		p->delete_branch(id);
+		p->flush();
+	}, onerror);
+}
+
+void project_state::F_switch_branch(uint64_t id, std::function<void(std::exception&)> onerror)
+{
+	iqueue.run_async([this, id]() {
+		auto p = this->get();
+		if(!p) return;
+		p->set_current_branch(id);
+		p->flush();
+		update_movie_state();
+	}, onerror);
+}
+
 project_info::project_info(emulator_dispatch& _dispatch)
 	: edispatch(_dispatch)
 {
@@ -530,6 +615,8 @@ void project_info::set_parent_branch(uint64_t bid, uint64_t pbid)
 		throw std::runtime_error("Invalid branch ID");
 	if(pbid && !branches.count(pbid))
 		throw std::runtime_error("Invalid parent branch ID");
+	if(bid == pbid)
+		throw std::runtime_error("Branch can't be its own parent");
 	for(auto& i : branches) {
 		uint64_t j = i.first;
 		while(j) {

@@ -13,6 +13,7 @@ class memwatch_set;
 class controller_state;
 class button_mapping;
 class emulator_dispatch;
+class input_queue;
 namespace command
 {
 	class group;
@@ -169,7 +170,7 @@ class project_state
 public:
 	project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
 		controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
-		emulator_dispatch& _edispatch);
+		emulator_dispatch& _edispatch, input_queue& _iqueue);
 	~project_state();
 /**
  * Get currently active project.
@@ -223,6 +224,49 @@ public:
  * Copy macros to project.
  */
 	void copy_macros(project_info& p, controller_state& s);
+/**
+ * Fill branch name map.
+ * 
+ * Notes: Safe to call from another thread.
+ */
+	void F_get_branch_map(uint64_t& cur, std::map<uint64_t, std::string>& namemap,
+		std::map<uint64_t, std::set<uint64_t>>& childmap);
+/**
+ * Arrange current project to be flushed later.
+ * 
+ * Notes: Safe to call from another thread.
+ */
+	void F_call_flush(std::function<void(std::exception&)> onerror);
+/**
+ * Arrage branch to be created.
+ *
+ * Notes: Safe to call from another thread.
+ */
+	void F_create_branch(uint64_t id, const std::string& name, std::function<void(std::exception&)> onerror);
+/**
+ * Arrage branch to be renamed.
+ *
+ * Notes: Safe to call from another thread.
+ */
+	void F_rename_branch(uint64_t id, const std::string& name, std::function<void(std::exception&)> onerror);
+/**
+ * Arrage branch to be reparented.
+ *
+ * Notes: Safe to call from another thread.
+ */
+	void F_reparent_branch(uint64_t id, uint64_t pid, std::function<void(std::exception&)> onerror);
+/**
+ * Arrage branch to be deleted.
+ *
+ * Notes: Safe to call from another thread.
+ */
+	void F_delete_branch(uint64_t id, std::function<void(std::exception&)> onerror);
+/**
+ * Arrage branch to be switched.
+ *
+ * Notes: Safe to call from another thread.
+ */
+	void F_switch_branch(uint64_t id, std::function<void(std::exception&)> onerror);
 private:
 	project_info* active_project;
 	voice_commentary& commentary;
@@ -232,6 +276,7 @@ private:
 	settingvar::cache& setcache;
 	button_mapping& buttons;
 	emulator_dispatch& edispatch;
+	input_queue& iqueue;
 };
 
 #endif
