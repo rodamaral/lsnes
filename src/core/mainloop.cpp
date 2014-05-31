@@ -455,7 +455,7 @@ void update_movie_state()
 	} catch(...) {
 	}
 	CORE().status->put_write();
-	notify_status_update();
+	CORE().dispatch->status_update();
 }
 
 uint64_t audio_irq_time;
@@ -872,7 +872,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			lua_callback_movie_lost("readwrite");
 			CORE().mlogic->get_movie().readonly_mode(false);
-			notify_mode_change(false);
+			CORE().dispatch->mode_change(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
 		});
@@ -881,7 +881,7 @@ namespace
 		"Syntax: set-romode\nSwitches to playback mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().mlogic->get_movie().readonly_mode(true);
-			notify_mode_change(true);
+			CORE().dispatch->mode_change(true);
 			update_movie_state();
 		});
 
@@ -892,7 +892,7 @@ namespace
 			if(c)
 				lua_callback_movie_lost("readwrite");
 			CORE().mlogic->get_movie().readonly_mode(!c);
-			notify_mode_change(!c);
+			CORE().dispatch->mode_change(!c);
 			if(c)
 				lua_callback_do_readwrite();
 			update_movie_state();
@@ -1083,21 +1083,12 @@ namespace
 	keyboard::invbind_info islot31(lsnes_invbinds, "set-jukebox-slot 31", "Slot select‣Slot 31");
 	keyboard::invbind_info islot32(lsnes_invbinds, "set-jukebox-slot 32", "Slot select‣Slot 32");
 
-	bool on_quit_prompt = false;
 	class mywindowcallbacks : public master_dumper::notifier
 	{
 	public:
-		mywindowcallbacks()
+		mywindowcallbacks(emulator_dispatch& dispatch)
 		{
-			closenotify.set(notify_close, [this]() {
-				if(on_quit_prompt) {
-					amode = ADVANCE_QUIT;
-					quit_magic = QUIT_MAGIC;
-					platform::set_paused(false);
-					platform::cancel_wait();
-					return;
-				}
-				on_quit_prompt = true;
+			closenotify.set(dispatch.close, [this]() {
 				try {
 					amode = ADVANCE_QUIT;
 					quit_magic = QUIT_MAGIC;
@@ -1105,7 +1096,6 @@ namespace
 					platform::cancel_wait();
 				} catch(...) {
 				}
-				on_quit_prompt = false;
 			});
 		}
 		~mywindowcallbacks() throw() {}
@@ -1115,7 +1105,7 @@ namespace
 		}
 	private:
 		struct dispatch::target<> closenotify;
-	} mywcb;
+	};
 
 	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load
 	//failing.
@@ -1129,7 +1119,7 @@ jumpback:
 			uint64_t t = framerate_regulator::get_utime();
 			std::vector<char> s;
 			lua_callback_do_unsafe_rewind(s, 0, 0, CORE().mlogic->get_movie(), unsafe_rewind_obj);
-			notify_mode_change(false);
+			CORE().dispatch->mode_change(false);
 			do_unsafe_rewind = false;
 			CORE().mlogic->get_mfile().is_savestate = true;
 			location_special = SPECIAL_SAVEPOINT;
@@ -1256,9 +1246,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	std::runtime_error)
 {
 	lsnes_instance.emu_thread = threads::id();
+	mywindowcallbacks mywcb(*CORE().dispatch);
 	CORE().iqueue->system_thread_available = true;
 	//Basic initialization.
-	dispatch_set_error_streams(&messages.getstream());
 	emulation_thread = threads::this_id();
 	jukebox_size_listener jlistener(*CORE().settings);
 	CORE().commentary->init();

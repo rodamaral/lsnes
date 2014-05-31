@@ -101,8 +101,8 @@ namespace
 }
 
 button_mapping::button_mapping(controller_state& _controls, keyboard::mapper& _mapper, keyboard::keyboard& _keyboard,
-	emu_framebuffer& _fbuf)
-	: controls(_controls), mapper(_mapper), keyboard(_keyboard), fbuf(_fbuf)
+	emu_framebuffer& _fbuf, emulator_dispatch& _dispatch)
+	: controls(_controls), mapper(_mapper), keyboard(_keyboard), fbuf(_fbuf), edispatch(_dispatch)
 {
 	ncore.set(notify_new_core, [this]() { this->init(); });
 }
@@ -454,7 +454,7 @@ void button_mapping::do_button_action(const std::string& name, short newstate, i
 		if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "hold" : "unhold"))
 			return;
 		controls.autohold2(x.port, x.controller, x.bind.control1, nstate);
-		notify_autohold_update(x.port, x.controller, x.bind.control1, nstate);
+		edispatch.autohold_update(x.port, x.controller, x.bind.control1, nstate);
 	} else if(mode == 2) {
 		//Framehold.
 		bool nstate = controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
@@ -571,13 +571,12 @@ void button_mapping::do_autofire_action(const std::string& a, int mode)
 			<< duty << " " << cyclelen).str().c_str()))
 			return;
 		controls.autofire2(z.port, z.controller, z.bind.control1, duty, cyclelen);
-		notify_autofire_update(z.port, z.controller, z.bind.control1, duty,
-			cyclelen);
+		edispatch.autofire_update(z.port, z.controller, z.bind.control1, duty, cyclelen);
 	} else if(mode == 0 || (mode == -1 && afire.first != 0)) {
 		//Turn off.
 		if(lua_callback_do_button(z.port, z.controller, z.bind.control1, "autofire"))
 			return;
 		controls.autofire2(z.port, z.controller, z.bind.control1, 0, 1);
-		notify_autofire_update(z.port, z.controller, z.bind.control1, 0, 1);
+		edispatch.autofire_update(z.port, z.controller, z.bind.control1, 0, 1);
 	}
 }

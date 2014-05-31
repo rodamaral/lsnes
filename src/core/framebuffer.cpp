@@ -98,9 +98,9 @@ namespace
 framebuffer::raw emu_framebuffer::screen_corrupt;
 
 emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
-	keyboard::keyboard& _keyboard)
+	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch)
 	: buffering(buffer1, buffer2, buffer3), subtitles(_subtitles), settings(_settings), mwatch(_mwatch),
-	keyboard(_keyboard)
+	keyboard(_keyboard), edispatch(_dispatch)
 {
 	last_redraw_no_lua = false;
 }
@@ -163,7 +163,7 @@ void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, 
 	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb(settings));
 	mwatch.watch(ri.rq);
 	buffering.put_write();
-	notify_screen_update();
+	edispatch.screen_update();
 	last_redraw_no_lua = no_lua;
 	update_movie_state();
 }
@@ -185,7 +185,6 @@ void emu_framebuffer::render_framebuffer()
 	main_screen.set_origin(ri.lgap, ri.tgap);
 	main_screen.copy_from(ri.fbuf, ri.hscl, ri.vscl);
 	ri.rq.run(main_screen);
-	notify_set_screen(main_screen);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
 	keyboard::key* mouse_x = keyboard.try_lookup_key("mouse_x");
 	keyboard::key* mouse_y = keyboard.try_lookup_key("mouse_y");

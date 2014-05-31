@@ -609,7 +609,7 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 			old_core->unload_cartridge();
 		} catch(...) {}
 	(*CORE().cmapper)();
-	notify_core_changed(old_type != current_rom_type);
+	CORE().dispatch->core_changed(old_type != current_rom_type);
 }
 
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)

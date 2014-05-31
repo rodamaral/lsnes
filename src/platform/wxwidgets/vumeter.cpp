@@ -1,5 +1,6 @@
 #include "core/audioapi.hpp"
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 #include "core/window.hpp"
 
 #include "library/string.hpp"
@@ -300,10 +301,10 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 		wxCommandEventHandler(wxwin_vumeter::on_mute), NULL, this);
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwin_vumeter::on_wclose));
 
-	unmuted.set(notify_sound_unmute, [this](bool unmute) {
+	unmuted.set(lsnes_instance.dispatch->sound_unmute, [this](bool unmute) {
 		runuifun([this, unmute]() { if(!this->closing) this->mute->SetValue(!unmute); });
 	});
-	devchange.set(notify_sound_change, [this](std::pair<std::string, std::string> d) {
+	devchange.set(lsnes_instance.dispatch->sound_change, [this](std::pair<std::string, std::string> d) {
 		runuifun([this, d]() {
 			if(this->closing) return;
 			auto pdevs = audioapi_driver_get_devices(false);
@@ -315,7 +316,7 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 
 	top_s->SetSizeHints(this);
 	Fit();
-	vulistener.set(notify_vu_change, [this]() {
+	vulistener.set(lsnes_instance.dispatch->vu_change, [this]() {
 		if(!this->update_sent) {
 			this->update_sent = true;
 			runuifun([this]() -> void { this->refresh(); });

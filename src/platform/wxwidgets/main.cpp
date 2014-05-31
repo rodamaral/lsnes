@@ -395,6 +395,8 @@ private:
 	bool exit_immediately;
 	bool fullscreen_mode;
 	bool start_unpaused;
+	struct dispatch::target<> screenupdate;
+	struct dispatch::target<> statusupdate;
 };
 
 IMPLEMENT_APP(lsnes_app)
@@ -454,6 +456,9 @@ bool lsnes_app::OnInit()
 	wxApp::OnInit();
 	if(exit_immediately)
 		return false;
+
+	screenupdate.set(lsnes_instance.dispatch->screen_update, []() { post_ui_event(UISERV_UPDATE_SCREEN); });
+	statusupdate.set(lsnes_instance.dispatch->status_update, []() { post_ui_event(UISERV_UPDATE_STATUS); });
 
 	try {
 		crandom::init();
@@ -593,14 +598,6 @@ namespace
 		.notify_message = []() -> void
 		{
 			post_ui_event(UISERV_UPDATE_MESSAGES);
-		},
-		.notify_status = []() -> void
-		{
-			post_ui_event(UISERV_UPDATE_STATUS);
-		},
-		.notify_screen = []() -> void
-		{
-			post_ui_event(UISERV_UPDATE_SCREEN);
 		},
 		.error_message = [](const std::string& text) -> void {
 			error_message_text = text;

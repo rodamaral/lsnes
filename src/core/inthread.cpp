@@ -74,8 +74,8 @@ namespace
 
 	struct voicesub_state
 	{
-		voicesub_state(settingvar::group& _settings)
-			: settings(_settings)
+		voicesub_state(settingvar::group& _settings, emulator_dispatch& _dispatch)
+			: settings(_settings), edispatch(_dispatch)
 		{
 			current_time = 0;
 			time_jump = false;
@@ -126,6 +126,7 @@ namespace
 			bitrate_tracker& brtrack);
 		void handle_tangent_negative_edge(opus_stream*& active_stream, bitrate_tracker& brtrack);
 		settingvar::group& settings;
+		emulator_dispatch& edispatch;
 	};
 
 	voicesub_state* get_state(void* ptr)
@@ -1568,7 +1569,7 @@ out:
 				messages << "Can't add stream: " << e.what() << std::endl;
 				active_stream->put_ref();
 			}
-			notify_voice_stream_change();
+			edispatch.voice_stream_change();
 		} else
 			active_stream->put_ref();
 		active_stream = NULL;
@@ -1726,8 +1727,8 @@ out:
 	keyboard::invbind_info itangent(lsnes_invbinds, "+tangent", "Movie‣Voice tangent");
 }
 
-voice_commentary::voice_commentary(settingvar::group& _settings)
-	: settings(_settings)
+voice_commentary::voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch)
+	: settings(_settings), edispatch(_dispatch)
 {
 	internal = NULL;
 }
@@ -1756,7 +1757,7 @@ void voice_commentary::frame_number(uint64_t newframe, double rate)
 
 void voice_commentary::init()
 {
-	internal = new voicesub_state(settings);
+	internal = new voicesub_state(settings, edispatch);
 	auto _internal = get_state(internal);
 	try {
 		_internal->int_task = new inthread_th(_internal);
@@ -1882,7 +1883,7 @@ uint64_t voice_commentary::import_stream(uint64_t ts, const std::string& filenam
 		throw;
 	}
 	st->unlock();	//Not locked.
-	notify_voice_stream_change();
+	edispatch.voice_stream_change();
 	return id;
 }
 
@@ -1893,7 +1894,7 @@ void voice_commentary::delete_stream(uint64_t id)
 	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
 	_internal->current_collection->delete_stream(id);
-	notify_voice_stream_change();
+	edispatch.voice_stream_change();
 }
 
 void voice_commentary::export_superstream(const std::string& filename)
@@ -1919,7 +1920,7 @@ void voice_commentary::load_collection(const std::string& filename)
 	if(_internal->current_collection)
 		delete _internal->current_collection;
 	_internal->current_collection = newc;
-	notify_voice_stream_change();
+	edispatch.voice_stream_change();
 }
 
 void voice_commentary::unload_collection()
@@ -1930,7 +1931,7 @@ void voice_commentary::unload_collection()
 	if(_internal->current_collection)
 		delete _internal->current_collection;
 	_internal->current_collection = NULL;
-	notify_voice_stream_change();
+	edispatch.voice_stream_change();
 }
 
 void voice_commentary::alter_timebase(uint64_t id, uint64_t ts)
@@ -1940,7 +1941,7 @@ void voice_commentary::alter_timebase(uint64_t id, uint64_t ts)
 	if(!_internal->current_collection)
 		throw std::runtime_error("No collection loaded");
 	_internal->current_collection->alter_stream_timebase(id, ts);
-	notify_voice_stream_change();
+	edispatch.voice_stream_change();
 }
 
 float voice_commentary::get_gain(uint64_t id)
@@ -1962,7 +1963,7 @@ void voice_commentary::set_gain(uint64_t id, float gain)
 	if(_gain < -32768 || _gain > 32767)
 		throw std::runtime_error("Gain out of range (+-128dB)");
 	_internal->current_collection->alter_stream_gain(id, _gain);
-	notify_voice_stream_change();
+	edispatch.voice_stream_change();
 }
 
 double voice_commentary::ts_seconds(uint64_t ts)

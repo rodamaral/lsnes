@@ -10,8 +10,8 @@
 
 void update_movie_state();
 
-multitrack_edit::multitrack_edit(movie_logic& _mlogic, controller_state& _controls)
-	: mlogic(_mlogic), controls(_controls)
+multitrack_edit::multitrack_edit(movie_logic& _mlogic, controller_state& _controls, emulator_dispatch& _dispatch)
+	: mlogic(_mlogic), controls(_controls), edispatch(_dispatch)
 {
 }
 
@@ -44,7 +44,7 @@ void multitrack_edit::set_and_notify(unsigned port, unsigned controller, state s
 	if(!mlogic || !mlogic.get_movie().readonly_mode())
 		return;
 	set(port, controller, s);
-	notify_multitrack_change(port, controller, (int)s);
+	edispatch.multitrack_change(port, controller, (int)s);
 }
 
 void multitrack_edit::rotate(bool forward)
@@ -74,7 +74,7 @@ void multitrack_edit::rotate(bool forward)
 				i2 = x.size() - 1;
 		}
 		controllerstate[x[i2]] = s;
-		notify_multitrack_change(x[i2].first, x[i2].second, s);
+		edispatch.multitrack_change(x[i2].first, x[i2].second, s);
 	}
 	update_movie_state();
 }

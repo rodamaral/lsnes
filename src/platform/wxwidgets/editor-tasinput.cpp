@@ -338,7 +338,7 @@ wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 	hsizer->SetSizeHints(this);
 	Fit();
 
-	ahreconfigure.set(notify_autohold_reconfigure, [this]() {
+	ahreconfigure.set(lsnes_instance.dispatch->autohold_reconfigure, [this]() {
 		runuifun([this]() {
 			try {
 				this->update_controls();

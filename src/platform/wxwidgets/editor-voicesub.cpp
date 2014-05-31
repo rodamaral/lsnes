@@ -137,8 +137,10 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 
 	top_s->SetSizeHints(this);
 	Fit();
-	vstreamchange.set(notify_voice_stream_change, [this]() { runuifun([this]() -> void { this->refresh(); }); });
-	corechange.set(notify_core_change, [this]() { runuifun([this]() -> void { this->refresh(); }); });
+	vstreamchange.set(lsnes_instance.dispatch->voice_stream_change, [this]() { runuifun([this]() -> void {
+		this->refresh(); }); });
+	corechange.set(lsnes_instance.dispatch->core_change, [this]() { runuifun([this]() -> void {
+		this->refresh(); }); });
 	refresh();
 }
 

@@ -132,7 +132,7 @@ void platform::sound_enable(bool enable) throw()
 {
 	audioapi_driver_enable(enable);
 	sounds_enabled = enable;
-	notify_sound_unmute(enable);
+	CORE().dispatch->sound_unmute(enable);
 }
 
 void platform::set_sound_device(const std::string& pdev, const std::string& rdev) throw()
@@ -150,7 +150,8 @@ void platform::set_sound_device(const std::string& pdev, const std::string& rdev
 		}
 	}
 	//After failed change, we don't know what is selected.
-	notify_sound_change(std::make_pair(audioapi_driver_get_device(true), audioapi_driver_get_device(false)));
+	CORE().dispatch->sound_change(std::make_pair(audioapi_driver_get_device(true),
+		audioapi_driver_get_device(false)));
 }
 
 bool platform::is_sound_enabled() throw()
@@ -388,21 +389,6 @@ void platform::run_queues() throw()
 namespace
 {
 	threads::lock _msgbuf_lock;
-	framebuffer::fb<false>* our_screen;
-
-	struct painter_listener
-	{
-		painter_listener()
-		{
-			screenupdate.set(notify_screen_update, []() { graphics_driver_notify_screen(); });
-			statusupdate.set(notify_status_update, []() { graphics_driver_notify_status(); });
-			setscreen.set(notify_set_screen, [](framebuffer::fb<false>& scr) { our_screen = &scr; });
-		}
-	private:
-		struct dispatch::target<> screenupdate;
-		struct dispatch::target<> statusupdate;
-		struct dispatch::target<framebuffer::fb<false>&> setscreen;
-	} x;
 }
 
 threads::lock& platform::msgbuf_lock() throw()

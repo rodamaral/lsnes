@@ -83,7 +83,8 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 	hsizer->SetSizeHints(this);
 	Fit();
 
-	ahupdate.set(notify_autohold_update, [this](unsigned port, unsigned controller, unsigned ctrlnum,
+	ahupdate.set(lsnes_instance.dispatch->autohold_update, [this](unsigned port, unsigned controller,
+		unsigned ctrlnum,
 		bool newstate) {
 		runuifun([this, port, controller, ctrlnum, newstate]() {
 			for(auto i : this->autoholds) {
@@ -94,8 +95,8 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 			}
 		});
 	});
-	afupdate.set(notify_autofire_update, [this](unsigned port, unsigned controller, unsigned ctrlnum,
-		unsigned duty, unsigned cyclelen) {
+	afupdate.set(lsnes_instance.dispatch->autofire_update, [this](unsigned port, unsigned controller,
+		unsigned ctrlnum, unsigned duty, unsigned cyclelen) {
 		runuifun([this, port, controller, ctrlnum, duty]() {
 			for(auto i : this->autoholds) {
 				if(i.second.port != port) continue;
@@ -105,7 +106,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 			}
 		});
 	});
-	ahreconfigure.set(notify_autohold_reconfigure, [this]() {
+	ahreconfigure.set(lsnes_instance.dispatch->autohold_reconfigure, [this]() {
 		runuifun([this]() {
 			try {
 				this->update_controls();

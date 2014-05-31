@@ -15,7 +15,7 @@ tracelog_menu::tracelog_menu(wxWindow* win, int wxid_low, int wxid_high)
 	win->Connect(wxid_low, wxid_high, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(tracelog_menu::on_select), NULL, this);
 	lsnes_instance.dbg->set_tracelog_change_cb([this]() { runuifun([this]() { this->update(); }); });
-	corechange.set(notify_core_change, [this]() { runuifun([this]() { this->update(); }); });
+	corechange.set(lsnes_instance.dispatch->core_change, [this]() { runuifun([this]() { this->update(); }); });
 }
 
 tracelog_menu::~tracelog_menu()

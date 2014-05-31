@@ -10,8 +10,8 @@
 
 void update_movie_state();
 
-movie_branches::movie_branches(movie_logic& _mlogic)
-	: mlogic(_mlogic)
+movie_branches::movie_branches(movie_logic& _mlogic, emulator_dispatch& _dispatch)
+	: mlogic(_mlogic), edispatch(_dispatch)
 {
 }
 
@@ -51,7 +51,7 @@ void movie_branches::set(const std::string& branch)
 	//Ok, execute the switch.
 	mf.input = &mf.branches[branch];
 	mlogic.get_movie().set_movie_data(mf.input);
-	notify_mbranch_change();
+	edispatch.mbranch_change();
 	update_movie_state();
 	messages << "Switched to branch '" << name(branch) << "'" << std::endl;
 }
@@ -63,7 +63,7 @@ void movie_branches::_new(const std::string& branch, const std::string& from)
 		(stringfmt() << "Branch '" << name(branch) << "' already exists.").throwex();
 	mf.fork_branch(from, branch);
 	messages << "Created branch '" << name(branch) << "'" << std::endl;
-	notify_mbranch_change();
+	edispatch.mbranch_change();
 }
 
 void movie_branches::rename(const std::string& oldn, const std::string& newn)
@@ -82,7 +82,7 @@ void movie_branches::rename(const std::string& oldn, const std::string& newn)
 	}
 	mf.branches.erase(oldn);
 	messages << "Renamed branch '" << name(oldn) << "' to '" << name(newn) << "'" << std::endl;
-	notify_mbranch_change();
+	edispatch.mbranch_change();
 	update_movie_state();
 }
 
@@ -95,7 +95,7 @@ void movie_branches::_delete(const std::string& branch)
 		(stringfmt() << "Can't delete current branch '" << name(branch) << "'.").throwex();
 	mlogic.get_mfile().branches.erase(branch);
 	messages << "Deleted branch '" << name(branch) << "'" << std::endl;
-	notify_mbranch_change();
+	edispatch.mbranch_change();
 }
 
 std::set<std::string> movie_branches::_movie_branches(const std::string& filename)

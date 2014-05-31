@@ -47,6 +47,11 @@ namespace
 	}
 }
 
+debug_context::debug_context(emulator_dispatch& _dispatch)
+	: edispatch(_dispatch)
+{
+}
+
 debug_context::callback_base::~callback_base()
 {
 }
@@ -57,7 +62,7 @@ void debug_context::add_callback(uint64_t addr, debug_context::etype type, debug
 {
 	std::map<uint64_t, cb_list>& xcb = get_lists(type);
 	if(!corechange_r) {
-		corechange.set(notify_core_change, [this]() { this->core_change(); });
+		corechange.set(edispatch.core_change, [this]() { this->core_change(); });
 		corechange_r = true;
 	}
 	if(!xcb.count(addr) && type != DEBUG_FRAME)

@@ -192,7 +192,8 @@ wxeditor_subtitles::wxeditor_subtitles(wxWindow* parent)
 	pbutton_s->SetSizeHints(this);
 	top_s->SetSizeHints(this);
 	Fit();
-	subchange.set(notify_subtitle_change, [this]() { runuifun([this]() -> void { this->refresh(); }); });
+	subchange.set(lsnes_instance.dispatch->subtitle_change, [this]() { runuifun([this]() -> void {
+		this->refresh(); }); });
 	refresh();
 }
 

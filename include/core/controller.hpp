@@ -10,6 +10,7 @@ struct controller_state;
 struct port_controller;
 struct port_type;
 struct emu_framebuffer;
+struct emulator_dispatch;
 namespace keyboard { class invbind; }
 namespace keyboard { class ctrlrkey; }
 namespace keyboard { class mapper; }
@@ -62,7 +63,7 @@ public:
  * Ctor.
  */
 	button_mapping(controller_state& _controls, keyboard::mapper& mapper, keyboard::keyboard& keyboard,
-		emu_framebuffer& fbuf);
+		emu_framebuffer& fbuf, emulator_dispatch& _dispatch);
 /**
  * Dtor.
  */
@@ -123,6 +124,7 @@ private:
 	keyboard::mapper& mapper;
 	keyboard::keyboard& keyboard;
 	emu_framebuffer& fbuf;
+	emulator_dispatch& edispatch;
 	struct dispatch::target<> ncore;
 };
 

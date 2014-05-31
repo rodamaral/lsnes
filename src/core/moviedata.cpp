@@ -535,8 +535,8 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		set_mprefix(get_mprefix_for_project(CORE().mlogic->get_mfile().projectid));
 		set_gameinfo(CORE().mlogic->get_mfile());
 	}
-	notify_mode_change(CORE().mlogic->get_movie().readonly_mode());
-	notify_mbranch_change();
+	CORE().dispatch->mode_change(CORE().mlogic->get_movie().readonly_mode());
+	CORE().dispatch->mbranch_change();
 	messages << "ROM reloaded." << std::endl;
 }
 
@@ -555,7 +555,7 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 
 	//Enter readonly mode.
 	CORE().mlogic->get_movie().readonly_mode(true);
-	notify_mode_change(true);
+	CORE().dispatch->mode_change(true);
 	try {
 		handle_load_core(CORE().mlogic->get_mfile(), portset, false);
 		CORE().mlogic->get_mfile().is_savestate = false;
@@ -633,7 +633,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 	} catch(...) {
 	}
 	delete &_movie;
-	notify_mode_change(CORE().mlogic->get_movie().readonly_mode());
+	CORE().dispatch->mode_change(CORE().mlogic->get_movie().readonly_mode());
 	messages << "Loadstated at earlier point of movie." << std::endl;
 }
 
@@ -775,9 +775,9 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 			CORE().fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
 	}
 
-	notify_mode_change(m.readonly_mode());
+	CORE().dispatch->mode_change(m.readonly_mode());
 	print_movie_info(_movie, our_rom, CORE().mlogic->get_rrdata());
-	notify_mbranch_change();
+	CORE().dispatch->mbranch_change();
 	set_gameinfo(CORE().mlogic->get_mfile());
 }
 
@@ -821,7 +821,7 @@ void try_request_rom(const std::string& moviefile)
 	core_type* selected_core = req.cores[req.selected];
 	loaded_rom newrom(req.filename, selected_core->get_core_identifier(), selected_core->get_iname(), "");
 	our_rom = newrom;
-	notify_core_change();
+	CORE().dispatch->core_change();
 }
 
 //Load state

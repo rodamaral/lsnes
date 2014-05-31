@@ -31,7 +31,8 @@ namespace
 			: wxTreeCtrl(parent, id), nosels(_nosels)
 		{
 			SetMinSize(wxSize(400, 300));
-			branchchange.set(notify_branch_change, [this]() { runuifun([this]() { this->update(); }); });
+			branchchange.set(lsnes_instance.dispatch->branch_change, [this]() { runuifun([this]() {
+				this->update(); }); });
 			update();
 		}
 		struct selection
@@ -384,7 +385,8 @@ branches_menu::branches_menu(wxWindow* win, int wxid_low, int wxid_high)
 	wxid_range_high = wxid_high;
 	win->Connect(wxid_low, wxid_high, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(branches_menu::on_select), NULL, this);
-	branchchange.set(notify_branch_change, [this]() { runuifun([this]() { this->update(); }); });
+	branchchange.set(lsnes_instance.dispatch->branch_change, [this]() { runuifun([this]() {
+		this->update(); }); });
 }
 
 branches_menu::~branches_menu()

@@ -3,8 +3,10 @@
 
 #include <map>
 #include "library/threads.hpp"
-#include "library/controller-data.hpp"
-#include "core/movie.hpp"
+
+class controller_state;
+class movie_logic;
+class emulator_dispatch;
 
 class multitrack_edit
 {
@@ -16,7 +18,7 @@ public:
 		MT_OR,
 		MT_XOR
 	};
-	multitrack_edit(movie_logic& _mlogic, controller_state& _controls);
+	multitrack_edit(movie_logic& _mlogic, controller_state& _controls, emulator_dispatch& _dispatch);
 	void enable(bool state);
 	void set(unsigned port, unsigned controller, state s);
 	void set_and_notify(unsigned port, unsigned controller, state s);
@@ -32,6 +34,7 @@ private:
 	std::map<std::pair<unsigned, unsigned>, state> controllerstate;
 	movie_logic& mlogic;
 	controller_state& controls;
+	emulator_dispatch& edispatch;
 };
 
 #endif

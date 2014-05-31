@@ -189,9 +189,10 @@ namespace
 }
 
 project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
-	controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons)
+	controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
+	emulator_dispatch& _edispatch)
 	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache),
-	buttons(_buttons)
+	buttons(_buttons), edispatch(_edispatch)
 {
 	active_project = NULL;
 }
@@ -206,7 +207,7 @@ project_info& project_state::load(const std::string& id)
 	std::ifstream f(file);
 	if(!f)
 		throw std::runtime_error("Can't open project file");
-	project_info& pi = *new project_info();
+	project_info& pi = *new project_info(edispatch);
 	pi.id = id;
 	pi.movie_rtc_second = 1000000000;
 	pi.movie_rtc_subsecond = 0;
@@ -331,8 +332,8 @@ bool project_state::set(project_info* p, bool current)
 		if(active_project)
 			commentary.unload_collection();
 		active_project = p;
-		notify_core_change();
-		notify_branch_change();
+		edispatch.core_change();
+		edispatch.branch_change();
 		return true;
 	}
 
@@ -410,8 +411,8 @@ skip_rom_movie:
 	if(switched) {
 		do_flush_slotinfo();
 		update_movie_state();
-		notify_core_change();
-		notify_branch_change();
+		edispatch.core_change();
+		edispatch.branch_change();
 	}
 	return switched;
 }
@@ -480,6 +481,11 @@ void project_state::copy_macros(project_info& p, controller_state& s)
 		p.macros[i] = s.get_macro(i).serialize();
 }
 
+project_info::project_info(emulator_dispatch& _dispatch)
+	: edispatch(_dispatch)
+{
+}
+
 uint64_t project_info::get_parent_branch(uint64_t bid)
 {
 	if(!bid)
@@ -494,7 +500,7 @@ void project_info::set_current_branch(uint64_t bid)
 	if(bid && !branches.count(bid))
 		throw std::runtime_error("Invalid branch ID");
 	active_branch = bid;
-	notify_branch_change();
+	edispatch.branch_change();
 	messages << "Set current slot branch to " << get_branch_string() << std::endl;
 }
 
@@ -515,7 +521,7 @@ void project_info::set_branch_name(uint64_t bid, const std::string& name)
 	if(!branches.count(bid))
 		throw std::runtime_error("Invalid branch ID");
 	branches[bid].name = name;
-	notify_branch_change();
+	edispatch.branch_change();
 }
 
 void project_info::set_parent_branch(uint64_t bid, uint64_t pbid)
@@ -535,7 +541,7 @@ void project_info::set_parent_branch(uint64_t bid, uint64_t pbid)
 		}
 	}
 	branches[bid].pbid = pbid;
-	notify_branch_change();
+	edispatch.branch_change();
 }
 
 std::set<uint64_t> project_info::branch_children(uint64_t bid)
@@ -559,7 +565,7 @@ uint64_t project_info::create_branch(uint64_t pbid, const std::string& name)
 	branches[assign_bid].name = name;
 	branches[assign_bid].pbid = pbid;
 	next_branch = assign_bid + 1;
-	notify_branch_change();
+	edispatch.branch_change();
 	return assign_bid;
 }
 
@@ -575,7 +581,7 @@ void project_info::delete_branch(uint64_t bid)
 		if(i.second.pbid == bid)
 			throw std::runtime_error("Can't delete branch with children");
 	branches.erase(bid);
-	notify_branch_change();
+	edispatch.branch_change();
 }
 
 std::string project_info::get_branch_string()

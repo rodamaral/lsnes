@@ -244,7 +244,7 @@ namespace
 			show_message_ok(this, "Error", "Can't start project without movie", wxICON_EXCLAMATION);
 			return;
 		}
-		project_info pinfo;
+		project_info pinfo(*lsnes_instance.dispatch);
 		pinfo.id = generate_project_id();
 		pinfo.name = tostdstring(projname->GetValue());
 		pinfo.rom = our_rom.load_filename;

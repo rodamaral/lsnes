@@ -113,7 +113,7 @@ namespace
 			else
 				CORE().mlogic->get_mfile().subtitles[key] =
 					subtitle_commentary::s_unescape(text);
-			notify_subtitle_change();
+			CORE().dispatch->subtitle_change();
 			CORE().fbuf->redraw_framebuffer();
 		});
 
@@ -160,8 +160,8 @@ namespace
 		});
 }
 
-subtitle_commentary::subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf)
-	: mlogic(_mlogic), fbuf(_fbuf)
+subtitle_commentary::subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf, emulator_dispatch& _dispatch)
+	: mlogic(_mlogic), fbuf(_fbuf), edispatch(_dispatch)
 {
 }
 
@@ -249,6 +249,6 @@ void subtitle_commentary::set(uint64_t f, uint64_t l, const std::string& x)
 		mlogic.get_mfile().subtitles.erase(key);
 	else
 		mlogic.get_mfile().subtitles[key] = s_unescape(x);
-	notify_subtitle_change();
+	edispatch.subtitle_change();
 	fbuf.redraw_framebuffer();
 }

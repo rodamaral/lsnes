@@ -16,8 +16,9 @@ namespace
 	port_type_set dummytypes;
 }
 
-controller_state::controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons) throw()
-	: project(_project), mlogic(_mlogic), buttons(_buttons)
+controller_state::controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons,
+	emulator_dispatch& _dispatch) throw()
+	: project(_project), mlogic(_mlogic), buttons(_buttons), edispatch(_dispatch)
 {
 	types = &dummytypes;
 	tasinput_enaged = false;
@@ -65,7 +66,7 @@ void controller_state::analog(unsigned port, unsigned controller, unsigned contr
 void controller_state::autohold2(unsigned port, unsigned controller, unsigned pbid, bool newstate) throw()
 {
 	_autohold.axis3(port, controller, pbid, newstate ? 1 : 0);
-	notify_autohold_update(port, controller, pbid, newstate);
+	edispatch.autohold_update(port, controller, pbid, newstate);
 }
 
 bool controller_state::autohold2(unsigned port, unsigned controller, unsigned pbid) throw()
@@ -188,7 +189,7 @@ void controller_state::set_ports(const port_type_set& ptype) throw(std::runtime_
 		reread_tasinput_mode(ptype);
 		_autohold = _autohold.blank_frame();
 		buttons.reread();
-		notify_autohold_reconfigure();
+		edispatch.autohold_reconfigure();
 	}
 }
 
@@ -360,7 +361,7 @@ void controller_state::do_macro(const std::string& a, int mode) {
 	}
 end:
 	update_movie_state();
-	notify_status_update();
+	edispatch.status_update();
 }
 
 std::set<std::string> controller_state::active_macro_set()

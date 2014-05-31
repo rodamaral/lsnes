@@ -271,7 +271,8 @@ public:
 			this->hpanel->request_paint();
 		});
 
-		corechange.set(notify_core_changed, [this](bool hard) { this->on_core_changed(hard); });
+		corechange.set(lsnes_instance.dispatch->core_changed, [this](bool hard) {
+			this->on_core_changed(hard); });
 		on_core_changed(true);
 		top->SetSizeHints(this);
 		Fit();

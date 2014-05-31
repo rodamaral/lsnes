@@ -9,6 +9,7 @@
 
 class subtitle_commentary;
 class memwatch_set;
+class emulator_dispatch;
 namespace settingvar
 {
 	class group;
@@ -25,7 +26,7 @@ class emu_framebuffer
 {
 public:
 	emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
-		keyboard::keyboard& _keyboard);
+		keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch);
 /**
  * The main framebuffer.
  */
@@ -98,6 +99,7 @@ private:
 	settingvar::group& settings;
 	memwatch_set& mwatch;
 	keyboard::keyboard& keyboard;
+	emulator_dispatch& edispatch;
 };
 
 #endif

@@ -28,14 +28,6 @@ namespace
 		}
 	}
 
-	void dummy_notify_status() throw()
-	{
-	}
-
-	void dummy_notify_screen() throw()
-	{
-	}
-
 	void dummy_error_message(const std::string& text) throw()
 	{
 		std::cerr << "Error message: " << text << std::endl;
@@ -61,8 +53,6 @@ namespace
 		.init = dummy_init,
 		.quit = dummy_quit,
 		.notify_message = dummy_notify_message,
-		.notify_status = dummy_notify_status,
-		.notify_screen = dummy_notify_screen,
 		.error_message = dummy_error_message,
 		.fatal_error = dummy_fatal_error,
 		.name = dummy_name,
@@ -96,16 +86,6 @@ void graphics_driver_quit() throw()
 void graphics_driver_notify_message() throw()
 {
 	driver.notify_message();
-}
-
-void graphics_driver_notify_status() throw()
-{
-	driver.notify_status();
-}
-
-void graphics_driver_notify_screen() throw()
-{
-	driver.notify_screen();
 }
 
 void graphics_driver_error_message(const std::string& text) throw()

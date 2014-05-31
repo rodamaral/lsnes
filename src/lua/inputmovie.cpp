@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
+#include "core/dispatch.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/messages.hpp"
@@ -192,7 +193,7 @@ namespace
 		if(&v == CORE().mlogic->get_mfile().input) {
 			//This can't add frames, so no need to adjust the movie.
 			update_movie_state();
-			platform::notify_status();
+			CORE().dispatch->status_update();
 		}
 		return 0;
 	}
@@ -247,7 +248,7 @@ namespace
 		}
 		if(&v == CORE().mlogic->get_mfile().input) {
 			update_movie_state();
-			platform::notify_status();
+			CORE().dispatch->status_update();
 		}
 		return 0;
 	}
@@ -262,7 +263,7 @@ namespace
 		v.append(v.blank_frame(true));
 		if(&v == CORE().mlogic->get_mfile().input) {
 			update_movie_state();
-			platform::notify_status();
+			CORE().dispatch->status_update();
 			check_can_edit(0, 0, 0, v.size() - 1);
 		}
 		v[v.size() - 1] = f->get_frame();
@@ -270,7 +271,7 @@ namespace
 			if(!v[v.size() - 1].sync()) {
 				update_movie_state();
 			}
-			platform::notify_status();
+			CORE().dispatch->status_update();
 		}
 		return 0;
 	}
@@ -289,7 +290,7 @@ namespace
 		v.resize(n);
 		if(&v == CORE().mlogic->get_mfile().input) {
 			update_movie_state();
-			platform::notify_status();
+			CORE().dispatch->status_update();
 		}
 		return 0;
 	}
@@ -313,7 +314,7 @@ namespace
 
 		if(&v == CORE().mlogic->get_mfile().input) {
 			update_movie_state();
-			platform::notify_status();
+			CORE().dispatch->status_update();
 		}
 		return 0;
 	}
@@ -349,7 +350,7 @@ namespace
 		}
 		if(&dstv == CORE().mlogic->get_mfile().input) {
 			update_movie_state();
-			platform::notify_status();
+			CORE().dispatch->status_update();
 		}
 		return 0;
 	}

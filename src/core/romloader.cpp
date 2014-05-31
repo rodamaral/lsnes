@@ -22,7 +22,7 @@ bool load_null_rom()
 			CORE().mlogic->get_mfile().romxml_sha256[i] = "";
 			CORE().mlogic->get_mfile().namehint[i] = "";
 		}
-	notify_core_change();
+	CORE().dispatch->core_change();
 	return true;
 }
 
@@ -107,7 +107,7 @@ bool _load_new_rom(const romload_request& req)
 		return false;
 	}
 	messages << "Using core: " << our_rom.rtype->get_core_identifier() << std::endl;
-	notify_core_change();
+	CORE().dispatch->core_change();
 	return true;
 }
 

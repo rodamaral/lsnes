@@ -21,11 +21,12 @@ private:
 
 class movie_logic;
 class emu_framebuffer;
+class emulator_dispatch;
 
 struct subtitle_commentary
 {
 public:
-	subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf);
+	subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf, emulator_dispatch& _dispatch);
 	std::set<std::pair<uint64_t, uint64_t>> get_all();
 	std::string get(uint64_t f, uint64_t l);
 	void set(uint64_t f, uint64_t l, const std::string& x);
@@ -35,6 +36,7 @@ public:
 private:
 	movie_logic& mlogic;
 	emu_framebuffer& fbuf;
+	emulator_dispatch& edispatch;
 };
 
 #endif

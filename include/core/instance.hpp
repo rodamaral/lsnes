@@ -22,6 +22,7 @@ class emu_framebuffer;
 class input_queue;
 class master_dumper;
 class button_mapping;
+class emulator_dispatch;
 namespace command { class group; }
 namespace lua { class state; }
 namespace settingvar { class group; }
@@ -82,6 +83,7 @@ struct emulator_instance
 {
 	emulator_instance();
 	~emulator_instance();
+	emulator_dispatch* dispatch;
 	movie_logic* mlogic;
 	memory_space* memory;
 	lua::state* lua;

@@ -12,6 +12,7 @@ class voice_commentary;
 class memwatch_set;
 class controller_state;
 class button_mapping;
+class emulator_dispatch;
 namespace command
 {
 	class group;
@@ -73,6 +74,10 @@ struct project_info
 	std::vector<char> anchor_savestate;
 	int64_t movie_rtc_second;
 	int64_t movie_rtc_subsecond;
+/**
+ * Make empty project info.
+ */
+	project_info(emulator_dispatch& _dispatch);
 /**
  * Obtain parent of branch.
  *
@@ -156,13 +161,15 @@ struct project_info
 	void flush();
 private:
 	void write(std::ostream& s);
+	emulator_dispatch& edispatch;
 };
 
 class project_state
 {
 public:
 	project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
-		controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons);
+		controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
+		emulator_dispatch& _edispatch);
 	~project_state();
 /**
  * Get currently active project.
@@ -224,6 +231,7 @@ private:
 	controller_state& controls;
 	settingvar::cache& setcache;
 	button_mapping& buttons;
+	emulator_dispatch& edispatch;
 };
 
 #endif

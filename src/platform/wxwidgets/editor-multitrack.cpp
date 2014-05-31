@@ -83,7 +83,7 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
 	vsizer->SetSizeHints(this);
 	Fit();
 
-	ahreconfigure.set(notify_autohold_reconfigure, [this]() {
+	ahreconfigure.set(lsnes_instance.dispatch->autohold_reconfigure, [this]() {
 		if(typeset && *typeset == CORE().controls->get_blank().porttypes())
 			return;  //Don't reconfigure if no change.
 		CORE().mteditor->config_altered();
@@ -101,13 +101,14 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
 			}
 		});
 	});
-	ahmodechange.set(notify_mode_change, [this](bool readonly) {
+	ahmodechange.set(lsnes_instance.dispatch->mode_change, [this](bool readonly) {
 		runuifun([this, readonly]() {
 			for(auto i : controllers)
 				i.mode->Enable(readonly);
 		});
 	});
-	ahmtchange.set(notify_multitrack_change, [this](unsigned port, unsigned controller, int state) {
+	ahmtchange.set(lsnes_instance.dispatch->multitrack_change, [this](unsigned port, unsigned controller,
+		int state) {
 		runuifun([this, port, controller, state]() {
 			for(auto i : controllers) {
 				if(i.port == port && i.controller == controller) {

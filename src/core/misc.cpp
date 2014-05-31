@@ -1,6 +1,7 @@
 #include "lsnes.hpp"
 
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/memorymanip.hpp"
 #include "core/messages.hpp"
 #include "core/misc.hpp"
@@ -203,6 +204,7 @@ bool in_global_ctors()
 
 void reached_main()
 {
+	notify_new_core.errors_to(&messages.getstream());
 	crandom::init();
 	new_core_flag = false;	//We'll process the static cores anyway.
 	reached_main_flag = true;

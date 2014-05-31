@@ -5,9 +5,11 @@
 #define MBRANCH_IMPORT_BINARY 1
 #define MBRANCH_IMPORT_MOVIE 2
 
+class emulator_dispatch;
+
 struct movie_branches
 {
-	movie_branches(movie_logic& _mlogic);
+	movie_branches(movie_logic& _mlogic, emulator_dispatch& _dispatch);
 	std::string name(const std::string& internal);
 	std::set<std::string> enumerate();
 	std::string get();
@@ -21,6 +23,7 @@ struct movie_branches
 	void export_branch(const std::string& filename, const std::string& branchname, bool binary);
 private:
 	movie_logic& mlogic;
+	emulator_dispatch& edispatch;
 };
 
 #endif

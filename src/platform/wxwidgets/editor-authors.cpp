@@ -232,7 +232,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			//For save status to immediately update.
 			do_flush_slotinfo();
 			update_movie_state();
-			notify_title_change();
+			CORE().dispatch->title_change();
 		} else {
 			lsnes_instance.mlogic->get_mfile().gamename = gamename;
 			lsnes_instance.mlogic->get_mfile().authors = newauthors;

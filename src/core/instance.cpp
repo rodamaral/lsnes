@@ -3,6 +3,7 @@
 #include "core/controllerframe.hpp"
 #include "core/controller.hpp"
 #include "core/debug.hpp"
+#include "core/dispatch.hpp"
 #include "core/emustatus.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
@@ -12,6 +13,7 @@
 #include "core/mbranch.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
+#include "core/messages.hpp"
 #include "core/moviedata.hpp"
 #include "core/movie.hpp"
 #include "core/multitrack.hpp"
@@ -65,22 +67,23 @@ emulator_instance::emulator_instance()
 	D.prealloc(project);
 	D.prealloc(buttons);
 
+	D.init(dispatch);
 	D.init(mlogic);
 	D.init(memory);
 	D.init(lua);
 	D.init(mwatch, *memory, *project, *fbuf);
 	D.init(settings);
 	D.init(setcache, *settings);
-	D.init(commentary, *settings);
-	D.init(subtitles, *mlogic, *fbuf);
-	D.init(mbranch, *mlogic);
-	D.init(controls, *project, *mlogic, *buttons);
+	D.init(commentary, *settings, *dispatch);
+	D.init(subtitles, *mlogic, *fbuf, *dispatch);
+	D.init(mbranch, *mlogic, *dispatch);
+	D.init(controls, *project, *mlogic, *buttons, *dispatch);
 	D.init(keyboard);
 	D.init(command);
 	D.init(mapper, *keyboard, *command);
-	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard);
-	D.init(buttons, *controls, *mapper, *keyboard, *fbuf);
-	D.init(mteditor, *mlogic, *controls);
+	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch);
+	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch);
+	D.init(mteditor, *mlogic, *controls, *dispatch);
 	D.init(status_A);
 	D.init(status_B);
 	D.init(status_C);
@@ -88,8 +91,8 @@ emulator_instance::emulator_instance()
 	D.init(abindmanager, *mapper, *command);
 	D.init(nrrdata);
 	D.init(cmapper, *memory);
-	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons);
-	D.init(dbg);
+	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch);
+	D.init(dbg, *dispatch);
 	D.init(framerate);
 	D.init(iqueue, *command);
 	D.init(mdumper);
@@ -100,6 +103,7 @@ emulator_instance::emulator_instance()
 	command->add_set(lsnes_cmds);
 	mapper->add_invbind_set(lsnes_invbinds);
 	settings->add_set(lsnes_setgrp);
+	dispatch->set_error_streams(&messages.getstream());
 }
 
 emulator_instance::~emulator_instance()

@@ -1,6 +1,7 @@
 #include "platform/wxwidgets/menu_loadrom.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 
 loadrom_menu::loadrom_menu(wxWindow* win, int wxid_low, int wxid_high, std::function<void(core_type* name)> cb)
 {

@@ -1203,13 +1203,13 @@ wxwin_mainwindow::wxwin_mainwindow(bool fscreen)
 	menu_start(wxT("Help"));
 	menu_entry(wxID_ABOUT, wxT("About..."));
 
-	corechange.set(notify_core_change, []() { signal_core_change(); });
-	titlechange.set(notify_title_change, []() { signal_core_change(); });
+	corechange.set(lsnes_instance.dispatch->core_change, []() { signal_core_change(); });
+	titlechange.set(lsnes_instance.dispatch->title_change, []() { signal_core_change(); });
 	newcore.set(notify_new_core, []() { update_preferences(); });
-	unmuted.set(notify_sound_unmute, [this](bool unmute) {
+	unmuted.set(lsnes_instance.dispatch->sound_unmute, [this](bool unmute) {
 		runuifun([this, unmute]() { this->menu_check(wxID_AUDIO_ENABLED, unmute); });
 	});
-	modechange.set(notify_mode_change, [this](bool readonly) {
+	modechange.set(lsnes_instance.dispatch->mode_change, [this](bool readonly) {
 		runuifun([this, readonly]() { this->menu_check(wxID_READONLY_MODE, readonly); });
 	});
 	gpanel->SetDropTarget(new loadfile(this));
@@ -1557,11 +1557,11 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 			if(!s)
 				lua_callback_movie_lost("readwrite");
 			if(*CORE().mlogic) CORE().mlogic->get_movie().readonly_mode(s);
-			notify_mode_change(s);
+			CORE().dispatch->mode_change(s);
 			if(!s)
 				lua_callback_do_readwrite();
 			update_movie_state();
-			graphics_driver_notify_status();
+			CORE().dispatch->status_update();
 		});
 		return;
 	case wxID_AUTOHOLD:

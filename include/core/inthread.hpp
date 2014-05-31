@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <string>
 
+class emulator_dispatch;
+
 namespace settingvar
 {
 	class group;
@@ -26,7 +28,7 @@ public:
 		uint64_t length;
 	};
 
-	voice_commentary(settingvar::group& _settings);
+	voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch);
 	~voice_commentary();
 	void init();
 	void kill();
@@ -49,6 +51,7 @@ public:
 private:
 	void* internal;
 	settingvar::group& settings;
+	emulator_dispatch& edispatch;
 };
 
 #endif

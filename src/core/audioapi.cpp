@@ -519,7 +519,7 @@ void audioapi_vumeter::update_vu()
 		accumulator = 0;
 		samples = 0;
 	}
-	notify_vu_change();
+	CORE().dispatch->vu_change();
 }
 
 //VU values.

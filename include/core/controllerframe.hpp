@@ -21,6 +21,7 @@
 class project_state;
 class movie_logic;
 class button_mapping;
+class emulator_dispatch;
 
 /**
  * Controllers state.
@@ -31,7 +32,8 @@ public:
 /**
  * Constructor.
  */
-	controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons) throw();
+	controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons,
+		emulator_dispatch& _dispatch) throw();
 /**
  * Convert lcid (Logical Controller ID) into pcid (Physical Controler ID).
  *
@@ -235,6 +237,7 @@ private:
 	project_state& project;
 	movie_logic& mlogic;
 	button_mapping& buttons;
+	emulator_dispatch& edispatch;
 };
 
 #endif

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include "library/dispatch.hpp"
 
+class emulator_dispatch;
 
 /**
  * Debugging context.
@@ -13,6 +14,7 @@
 class debug_context
 {
 public:
+	debug_context(emulator_dispatch& _dispatch);
 /**
  * Type of event.
  */
@@ -154,6 +156,7 @@ private:
 	cb_list dummy_cb;  //Always empty.
 	uint64_t xmask = 1;
 	std::function<void()> tracelog_change_cb;
+	emulator_dispatch& edispatch;
 	struct dispatch::target<> corechange;
 	bool corechange_r = false;
 	bool requesting_break = false;

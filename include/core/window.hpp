@@ -18,8 +18,6 @@ struct _graphics_driver
 	void (*init)();
 	void (*quit)();
 	void (*notify_message)();
-	void (*notify_status)();
-	void (*notify_screen)();
 	void (*error_message)(const std::string& text);
 	void (*fatal_error)();
 	const char* (*name)();
@@ -50,14 +48,6 @@ void graphics_driver_quit() throw();
  * Notification when messages get updated.
  */
 void graphics_driver_notify_message() throw();
-/**
- * Notification when status gets updated.
- */
-void graphics_driver_notify_status() throw();
-/**
- * Notification when main screen gets updated.
- */
-void graphics_driver_notify_screen() throw();
 /**
  * Show error message dialog when UI thread is free.
  *
@@ -192,20 +182,6 @@ struct platform
 	static void notify_message() throw()
 	{
 		graphics_driver_notify_message();
-	}
-/**
- * Notify changed status.
- */
-	static void notify_status() throw()
-	{
-		graphics_driver_notify_status();
-	}
-/**
- * Notify changed screen.
- */
-	static void notify_screen() throw()
-	{
-		graphics_driver_notify_screen();
 	}
 /**
  * Set modal pause mode.
