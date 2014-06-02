@@ -446,7 +446,7 @@ bool lsnes_app::OnInit()
 			wxeditor_hexeditor_update();
 		});
 	});
-	statusupdate.set(lsnes_instance.dispatch->action_update, []() { main_window->action_updated(); });
+	actionupdate.set(lsnes_instance.dispatch->action_update, []() { main_window->action_updated(); });
 
 	try {
 		crandom::init();
