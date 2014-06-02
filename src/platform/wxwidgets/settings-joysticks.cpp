@@ -140,8 +140,8 @@ namespace
 	class joystick_panel : public text_framebuffer_panel
 	{
 	public:
-		joystick_panel(wxWindow* parent, unsigned jid, gamepad::pad& gp)
-			: text_framebuffer_panel(parent, 60, 32, -1, NULL), _jid(jid), _gp(gp)
+		joystick_panel(wxWindow* parent, emulator_instance& _inst, unsigned jid, gamepad::pad& gp)
+			: text_framebuffer_panel(parent, 60, 32, -1, NULL), inst(_inst), _jid(jid), _gp(gp)
 		{
 			const unsigned pwidth = 80;
 			const unsigned b_perrow = 8;
@@ -275,6 +275,7 @@ namespace
 		{
 			return _gp.hat_status(i);
 		}
+		emulator_instance& inst;
 		unsigned _jid;
 		gamepad::pad& _gp;
 		size_t base_width;
@@ -416,8 +417,8 @@ namespace
 	class joystick_config_window : public settings_tab
 	{
 	public:
-		joystick_config_window(wxWindow* parent)
-			: settings_tab(parent)
+		joystick_config_window(wxWindow* parent, emulator_instance& _inst)
+			: settings_tab(parent, _inst)
 		{
 			if(!lsnes_gamepads.gamepads())
 				throw std::runtime_error("No joysticks available");
@@ -431,7 +432,7 @@ namespace
 				jsnum[name] = jsnum.count(name) ? (jsnum[name] + 1) : 1;
 				std::string tname = (stringfmt() << "joystick" << i << ": " << name).str();
 				joystick_panel* tmp;
-				jsp->AddPage(tmp = new joystick_panel(jsp, i, gp), towxstring(tname));
+				jsp->AddPage(tmp = new joystick_panel(jsp, inst, i, gp), towxstring(tname));
 				panels.insert(tmp);
 			}
 			top1_s->SetSizeHints(this);
@@ -478,7 +479,7 @@ namespace
 		std::set<joystick_panel*> panels;
 	};
 
-	settings_tab_factory joysticks("Joysticks", [](wxWindow* parent) -> settings_tab* {
-		return new joystick_config_window(parent);
+	settings_tab_factory joysticks("Joysticks", [](wxWindow* parent, emulator_instance& _inst) -> settings_tab* {
+		return new joystick_config_window(parent, _inst);
 	});
 }

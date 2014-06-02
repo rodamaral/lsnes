@@ -184,22 +184,25 @@ namespace
 class wxwindow_memorysearch_vmasel : public wxDialog
 {
 public:
-	wxwindow_memorysearch_vmasel(wxWindow* p, const std::set<std::string>& enabled);
+	wxwindow_memorysearch_vmasel(wxWindow* p, emulator_instance& _inst, const std::set<std::string>& enabled);
 	bool ShouldPreventAppExit() const;
 	std::set<std::string> get_vmas();
 	void on_ok(wxCommandEvent& e);
 	void on_cancel(wxCommandEvent& e);
 private:
+	emulator_instance& inst;
 	std::set<std::string> vmas;
 	std::vector<wxCheckBox*> checkboxes;
 	wxButton* ok;
 	wxButton* cancel;
 };
 
-wxwindow_memorysearch_vmasel::wxwindow_memorysearch_vmasel(wxWindow* p, const std::set<std::string>& enabled)
-	: wxDialog(p, wxID_ANY, towxstring("lsnes: Select enabled regions"), wxDefaultPosition, wxSize(300, -1))
+wxwindow_memorysearch_vmasel::wxwindow_memorysearch_vmasel(wxWindow* p, emulator_instance& _inst, 
+	const std::set<std::string>& enabled)
+	: wxDialog(p, wxID_ANY, towxstring("lsnes: Select enabled regions"), wxDefaultPosition, wxSize(300, -1)),
+	inst(_inst)
 {
-	auto i = lsnes_instance.memory->get_regions();
+	auto i = inst.memory->get_regions();
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(i.size() + 1, 1, 0, 0);
 	SetSizer(top_s);
@@ -257,17 +260,18 @@ public:
 	class panel : public text_framebuffer_panel
 	{
 	public:
-		panel(wxwindow_memorysearch* parent);
+		panel(wxwindow_memorysearch* parent, emulator_instance& _inst);
 		void set_selection(uint64_t first, uint64_t last);
 		void get_selection(uint64_t& first, uint64_t& last);
 	protected:
 		void prepare_paint();
 	private:
+		emulator_instance& inst;
 		wxwindow_memorysearch* parent;
 		uint64_t first_sel;
 		uint64_t last_sel;
 	};
-	wxwindow_memorysearch();
+	wxwindow_memorysearch(emulator_instance& _inst);
 	~wxwindow_memorysearch();
 	bool ShouldPreventAppExit() const;
 	void on_close(wxCloseEvent& e);
@@ -275,6 +279,7 @@ public:
 	void auto_update();
 	void on_mousedrag(wxMouseEvent& e);
 	void on_mouse(wxMouseEvent& e);
+	emulator_instance& inst;
 	bool update_queued;
 	template<void(memory_search::*sfn)()> void search_0();
 	template<typename T, typename T2, void(memory_search::*sfn)(T2 val)> void search_1();
@@ -284,21 +289,21 @@ public:
 		if(old)
 			return format_number_signed<T>(msearch->v_readold<T>(addr), hex);
 		else
-			return format_number_signed<T>(lsnes_instance.memory->read<T>(addr), hex);
+			return format_number_signed<T>(inst.memory->read<T>(addr), hex);
 	}
 	template<typename T> std::string _do_format_unsigned(uint64_t addr, bool hex, bool old)
 	{
 		if(old)
 			return format_number_unsigned<T>(msearch->v_readold<T>(addr), hex);
 		else
-			return format_number_unsigned<T>(lsnes_instance.memory->read<T>(addr), hex);
+			return format_number_unsigned<T>(inst.memory->read<T>(addr), hex);
 	}
 	template<typename T> std::string _do_format_float(uint64_t addr, bool hex, bool old)
 	{
 		if(old)
 			return format_number_float(msearch->v_readold<T>(addr));
 		else
-			return format_number_float(lsnes_instance.memory->read<T>(addr));
+			return format_number_float(inst.memory->read<T>(addr));
 	}
 	void dump_candidates_text();
 private:
@@ -612,15 +617,15 @@ namespace
 	};
 }
 
-wxwindow_memorysearch::wxwindow_memorysearch()
+wxwindow_memorysearch::wxwindow_memorysearch(emulator_instance& _inst)
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Memory Search"), wxDefaultPosition, wxSize(-1, -1),
-		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
+		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX), inst(_inst)
 {
 	typecode = 0;
 	wxButton* tmp;
 	Centre();
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwindow_memorysearch::on_close));
-	msearch = new memory_search(*lsnes_instance.memory);
+	msearch = new memory_search(*inst.memory);
 
 	wxFlexGridSizer* toplevel = new wxFlexGridSizer(4, 1, 0, 0);
 	SetSizer(toplevel);
@@ -656,13 +661,13 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 
 	toplevel->Add(count = new wxStaticText(this, wxID_ANY, wxT("XXXXXX candidates")), 0, wxGROW);
 	wxBoxSizer* matchesb = new wxBoxSizer(wxHORIZONTAL);
-	matchesb->Add(matches = new panel(this), 1, wxGROW);
+	matchesb->Add(matches = new panel(this, inst), 1, wxGROW);
 	matchesb->Add(scroll = new scroll_bar(this, wxID_ANY, true), 0, wxGROW);
 	toplevel->Add(matchesb, 1, wxGROW);
 
 	scroll->set_page_size(matches->get_characters().second);
 
-	for(auto i : lsnes_instance.memory->get_regions()) {
+	for(auto i : inst.memory->get_regions()) {
 		if(memory_search::searchable_region(i))
 			vmas_enabled.insert(i->name);
 		vma_info[i->name] = std::make_pair(i->base, i->size);
@@ -719,8 +724,8 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	hexmode = false;
 }
 
-wxwindow_memorysearch::panel::panel(wxwindow_memorysearch* _parent)
-	: text_framebuffer_panel(_parent, 40, 25, wxID_ANY, NULL)
+wxwindow_memorysearch::panel::panel(wxwindow_memorysearch* _parent, emulator_instance& _inst)
+	: text_framebuffer_panel(_parent, 40, 25, wxID_ANY, NULL), inst(_inst)
 {
 	parent = _parent;
 	first_sel = 0;
@@ -739,7 +744,7 @@ void wxwindow_memorysearch::panel::prepare_paint()
 	uint64_t addr_count;
 	bool toomany = false;
 	auto _parent = parent;
-	lsnes_instance.iqueue->run([&toomany, &first, &last, ms, &lines, &addrs, &addr_count, _parent]() {
+	inst.iqueue->run([&toomany, &first, &last, ms, &lines, &addrs, &addr_count, _parent]() {
 		addr_count = ms->get_candidate_count();
 		if(last > addr_count) {
 			uint64_t delta = last - addr_count;
@@ -818,10 +823,10 @@ void wxwindow_memorysearch::dump_candidates_text()
 {
 	try {
 		std::string filename = choose_file_save(this, "Dump memory search",
-			lsnes_instance.project->otherpath(), filetype_textfile);
+			inst.project->otherpath(), filetype_textfile);
 		std::ofstream out(filename);
 		auto ms = msearch;
-		lsnes_instance.iqueue->run([ms, this, &out]() {
+		inst.iqueue->run([ms, this, &out]() {
 			std::list<uint64_t> addrs2 = ms->get_candidates();
 			for(auto i : addrs2) {
 				std::string row = format_address(i) + " ";
@@ -847,7 +852,7 @@ void wxwindow_memorysearch::handle_save(memory_search::savestate_type type)
 		std::vector<char> state;
 		msearch->savestate(state, type);
 		std::string filename = choose_file_save(this, "Save memory search",
-			lsnes_instance.project->otherpath(), filetype_memorysearch);
+			inst.project->otherpath(), filetype_memorysearch);
 		std::ofstream out(filename, std::ios::binary);
 		out.write(&state[0], state.size());
 		if(!out)
@@ -863,7 +868,7 @@ void wxwindow_memorysearch::handle_load()
 {
 	try {
 		std::string filename = choose_file_load(this, "Load memory search",
-			lsnes_instance.project->otherpath(), filetype_memorysearch);
+			inst.project->otherpath(), filetype_memorysearch);
 		std::vector<char> state = zip::readrel(filename, "");
 		push_undo();
 		msearch->loadstate(state);
@@ -1012,7 +1017,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		push_undo();
 		msearch->reset();
 		//Update all VMA info too.
-		for(auto i : lsnes_instance.memory->get_regions()) {
+		for(auto i : inst.memory->get_regions()) {
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
 			vma_info[i->name] = std::make_pair(i->base, i->size);
@@ -1043,7 +1048,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 					<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 				if(n == "")
 					continue;
-				memwatch_item e(*lsnes_instance.memory);
+				memwatch_item e(*inst.memory);
 				e.expr = (stringfmt() << addr).str();
 				bool is_hex = hexmode2->GetValue();
 				e.bytes = watch_properties[typecode].len;
@@ -1051,14 +1056,14 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 				e.float_flag = (watch_properties[typecode].type == 2);
 				if(e.float_flag) is_hex = false;
 				e.format = is_hex ? watch_properties[typecode].hformat : "";
-				auto i = lsnes_instance.memory->get_regions();
+				auto i = inst.memory->get_regions();
 				int endianess = 0;
 				for(auto& j : i) {
 					if(addr >= j->base && addr < j->base + j->size)
 						endianess = j->endian;
 				}
 				e.endianess = endianess;
-				lsnes_instance.iqueue->run([n, &e]() { CORE().mwatch->set(n, e); });
+				inst.iqueue->run([n, &e]() { CORE().mwatch->set(n, e); });
 			} catch(canceled_exception& e) {
 			}
 		}
@@ -1076,12 +1081,12 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 				return;
 			uint64_t addr = addresses[r];
 			auto ms = msearch;
-			lsnes_instance.iqueue->run([addr, ms]() { ms->dq_range(addr, addr); });
+			inst.iqueue->run([addr, ms]() { ms->dq_range(addr, addr); });
 		}
 		matches->set_selection(0, 0);
 		wxeditor_hexeditor_update();
 	} else if(id == wxID_SET_REGIONS) {
-		wxwindow_memorysearch_vmasel* d = new wxwindow_memorysearch_vmasel(this, vmas_enabled);
+		wxwindow_memorysearch_vmasel* d = new wxwindow_memorysearch_vmasel(this, inst, vmas_enabled);
 		if(d->ShowModal() == wxID_OK)
 			vmas_enabled = d->get_vmas();
 		else {
@@ -1090,7 +1095,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		}
 		d->Destroy();
 		push_undo();
-		for(auto i : lsnes_instance.memory->get_regions())
+		for(auto i : inst.memory->get_regions())
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
 		wxeditor_hexeditor_update();
@@ -1213,7 +1218,7 @@ void wxwindow_memorysearch_display()
 		mwatch->Raise();
 		return;
 	}
-	mwatch = new wxwindow_memorysearch();
+	mwatch = new wxwindow_memorysearch(lsnes_instance);
 	mwatch->Show();
 }
 

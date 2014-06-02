@@ -16,7 +16,7 @@ void do_flush_slotinfo();
 class wxeditor_authors : public wxDialog
 {
 public:
-	wxeditor_authors(wxWindow* parent);
+	wxeditor_authors(wxWindow* parent, emulator_instance& _inst);
 	bool ShouldPreventAppExit() const;
 	void on_authors_change(wxCommandEvent& e);
 	void on_cancel(wxCommandEvent& e);
@@ -29,6 +29,7 @@ public:
 	void on_luasel(wxCommandEvent& e);
 private:
 	void reorder_scripts(int delta);
+	emulator_instance& inst;
 	wxTextCtrl* gamename;
 	wxTextCtrl* pname;
 	wxTextCtrl* directory;
@@ -45,10 +46,11 @@ private:
 };
 
 
-wxeditor_authors::wxeditor_authors(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit game name & authors"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_authors::wxeditor_authors(wxWindow* parent, emulator_instance& _inst)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit game name & authors"), wxDefaultPosition, wxSize(-1, -1)),
+	inst(_inst)
 {
-	project_author_info ainfo = UI_load_author_info(lsnes_instance);
+	project_author_info ainfo = UI_load_author_info(inst);
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(ainfo.is_project ? 12 : 5, 1, 0, 0);
 	SetSizer(top_s);
@@ -199,7 +201,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			ainfo.luascripts.push_back(tostdstring(luascripts->GetString(i)));
 	ainfo.autorunlua = autorunlua ? autorunlua->GetValue() : false;
 
-	UI_save_author_info(lsnes_instance, ainfo);
+	UI_save_author_info(inst, ainfo);
 	EndModal(wxID_OK);
 }
 
@@ -280,16 +282,16 @@ void wxeditor_authors::on_luasel(wxCommandEvent& e)
 	downbutton->Enable(sel != wxNOT_FOUND && sel < count - 1);
 }
 
-void wxeditor_authors_display(wxWindow* parent)
+void wxeditor_authors_display(wxWindow* parent, emulator_instance& inst)
 {
 	modal_pause_holder hld;
-	if(!*lsnes_instance.mlogic) {
+	if(!*inst.mlogic) {
 		show_message_ok(parent, "No movie", "Can't edit authors of nonexistent movie", wxICON_EXCLAMATION);
 		return;
 	}
 	wxDialog* editor;
 	try {
-		editor = new wxeditor_authors(parent);
+		editor = new wxeditor_authors(parent, inst);
 		editor->ShowModal();
 	} catch(...) {
 		return;

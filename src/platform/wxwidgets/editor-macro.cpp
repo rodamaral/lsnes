@@ -19,10 +19,10 @@
 
 namespace
 {
-	std::map<unsigned, const port_controller*> get_controller_set()
+	std::map<unsigned, const port_controller*> get_controller_set(emulator_instance& inst)
 	{
 		std::map<unsigned, const port_controller*> r;
-		const port_type_set& s = lsnes_instance.controls->get_blank().porttypes();
+		const port_type_set& s = inst.controls->get_blank().porttypes();
 		for(unsigned i = 0; i < s.number_of_controllers(); i++) {
 			auto g = s.lcid_to_pcid(i);
 			if(g.first < 0)
@@ -66,12 +66,14 @@ namespace
 	class wxeditor_macro_1 : public wxDialog
 	{
 	public:
-		wxeditor_macro_1(wxWindow* parent, const std::string& title, const controller_macro& m);
+		wxeditor_macro_1(wxWindow* parent, emulator_instance& _inst, const std::string& title,
+			const controller_macro& m);
 		void on_ok(wxCommandEvent& e);
 		void on_cancel(wxCommandEvent& e);
 		void on_macro_edit(wxCommandEvent& e);
 		controller_macro get_macro() { return curmacro; }
 	private:
+		emulator_instance& inst;
 		std::vector<wxCheckBox*> enabled;
 		std::vector<wxTextCtrl*> macros;
 		wxButton* okbutton;
@@ -83,8 +85,9 @@ namespace
 		bool constructing;
 	};
 
-	wxeditor_macro_1::wxeditor_macro_1(wxWindow* parent, const std::string& title, const controller_macro& m)
-		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1))
+	wxeditor_macro_1::wxeditor_macro_1(wxWindow* parent, emulator_instance& _inst, const std::string& title,
+		const controller_macro& m)
+		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 	{
 		constructing = true;
 		curmacro = m;
@@ -178,7 +181,7 @@ namespace
 		if(constructing)
 			return;
 		bool ret = true;
-		auto c = get_controller_set();
+		auto c = get_controller_set(inst);
 		for(auto i : curmacro.macros) {
 			if(!controller_macro_data::syntax_check(tostdstring(macros[i.first]->GetValue()).c_str(),
 				curmacro.macros[i.first].get_descriptor()))
@@ -191,7 +194,7 @@ namespace
 class wxeditor_macro : public wxDialog
 {
 public:
-	wxeditor_macro(wxWindow* parent);
+	wxeditor_macro(wxWindow* parent, emulator_instance& _inst);
 	bool ShouldPreventAppExit() const;
 	void on_close(wxCommandEvent& e);
 	void on_change(wxCommandEvent& e);
@@ -204,6 +207,7 @@ public:
 private:
 	bool do_edit(const std::string& mname, controller_macro& m);
 	void update();
+	emulator_instance& inst;
 	wxButton* closebutton;
 	wxButton* addbutton;
 	wxButton* editbutton;
@@ -220,8 +224,8 @@ bool wxeditor_macro::ShouldPreventAppExit() const
 	return false;
 }
 
-wxeditor_macro::wxeditor_macro(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit macros"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_macro::wxeditor_macro(wxWindow* parent, emulator_instance& _inst)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit macros"), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
 	Centre();
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -266,7 +270,7 @@ wxeditor_macro::wxeditor_macro(wxWindow* parent)
 
 void wxeditor_macro::update()
 {
-	std::set<std::string> macro_list = lsnes_instance.controls->enumerate_macro();
+	std::set<std::string> macro_list = inst.controls->enumerate_macro();
 	std::string current;
 	int sel = macros->GetSelection();
 	int selpos = -1;
@@ -313,7 +317,7 @@ void wxeditor_macro::on_delete(wxCommandEvent& e)
 	if(sel == wxNOT_FOUND)
 		return;
 	std::string macro = macronames[sel];
-	lsnes_instance.controls->erase_macro(macro);
+	inst.controls->erase_macro(macro);
 	update();
 }
 
@@ -325,14 +329,14 @@ void wxeditor_macro::on_add(wxCommandEvent& e)
 			return;
 		controller_macro _macro;
 		_macro.amode = controller_macro_data::AM_XOR;
-		auto c = get_controller_set();
+		auto c = get_controller_set(inst);
 		for(auto i : c) {
 			_macro.macros[i.first] = controller_macro_data("",
 				controller_macro_data::make_descriptor(*i.second), i.first);
 			_macro.macros[i.first].enabled = false;
 		}
 		if(do_edit("", _macro))
-			lsnes_instance.controls->set_macro(mname, _macro);
+			inst.controls->set_macro(mname, _macro);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		wxMessageBox(towxstring(e.what()), _T("Error creating macro"), wxICON_EXCLAMATION | wxOK, this);
@@ -348,12 +352,12 @@ void wxeditor_macro::on_edit(wxCommandEvent& e)
 	std::string macro = macronames[sel];
 	controller_macro _macro;
 	try {
-		_macro = lsnes_instance.controls->get_macro(macro);
+		_macro = inst.controls->get_macro(macro);
 	} catch(...) {
 		return;
 	}
 	if(do_edit(macro, _macro))
-		lsnes_instance.controls->set_macro(macro, _macro);
+		inst.controls->set_macro(macro, _macro);
 }
 
 void wxeditor_macro::on_rename(wxCommandEvent& e)
@@ -366,7 +370,7 @@ void wxeditor_macro::on_rename(wxCommandEvent& e)
 		std::string mname = pick_text(this, "Rename macro", "Enter new name for the macro:", "");
 		if(mname == "")
 			return;
-		lsnes_instance.controls->rename_macro(macro, mname);
+		inst.controls->rename_macro(macro, mname);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		wxMessageBox(towxstring(e.what()), _T("Error renaming macro"), wxICON_EXCLAMATION | wxOK, this);
@@ -380,11 +384,11 @@ void wxeditor_macro::on_load(wxCommandEvent& e)
 		std::string mname = pick_text(this, "Name new macro", "Enter name for the new macro:", "");
 		if(mname == "")
 			return;
-		std::string file = choose_file_load(this, "Load macro from", lsnes_instance.project->otherpath(),
+		std::string file = choose_file_load(this, "Load macro from", inst.project->otherpath(),
 			filetype_macro);
 		std::vector<char> contents = zip::readrel(file, "");
 		controller_macro m(JSON::node(std::string(contents.begin(), contents.end())));
-		lsnes_instance.controls->set_macro(mname, m);
+		inst.controls->set_macro(mname, m);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		wxMessageBox(towxstring(e.what()), _T("Error loading macro"), wxICON_EXCLAMATION | wxOK, this);
@@ -400,14 +404,14 @@ void wxeditor_macro::on_save(wxCommandEvent& e)
 	std::string macro = macronames[sel];
 	controller_macro* _macro;
 	try {
-		_macro = &lsnes_instance.controls->get_macro(macro);
+		_macro = &inst.controls->get_macro(macro);
 	} catch(...) {
 		return;
 	}
 	std::string mdata = _macro->serialize().serialize();
 	//Okay, have the macro data, now prompt for file and save.
 	try {
-		std::string tfile = choose_file_save(this, "Save macro to", lsnes_instance.project->otherpath(),
+		std::string tfile = choose_file_save(this, "Save macro to", inst.project->otherpath(),
 			filetype_macro);
 		std::ofstream f(tfile);
 		f << mdata;
@@ -428,7 +432,7 @@ bool wxeditor_macro::do_edit(const std::string& mname, controller_macro& m)
 			title = "Editing macro " + mname;
 		else
 			title = "Create a new macro";
-		editor = new wxeditor_macro_1(this, title, m);
+		editor = new wxeditor_macro_1(this, inst, title, m);
 		ret = (editor->ShowModal() == wxID_OK);
 		if(ret)
 			m = editor->get_macro();
@@ -439,12 +443,12 @@ bool wxeditor_macro::do_edit(const std::string& mname, controller_macro& m)
 	return ret;
 }
 
-void wxeditor_macro_display(wxWindow* parent)
+void wxeditor_macro_display(wxWindow* parent, emulator_instance& inst)
 {
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
-		editor = new wxeditor_macro(parent);
+		editor = new wxeditor_macro(parent, inst);
 		editor->ShowModal();
 	} catch(...) {
 		return;

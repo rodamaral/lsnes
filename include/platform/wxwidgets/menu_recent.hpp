@@ -6,16 +6,19 @@
 #include "library/recentfiles.hpp"
 #include <map>
 
+class emulator_instance;
+
 template<class T>
 class recent_menu : public wxMenu
 {
 public:
-	recent_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg,
-		void (*cb)(const T& name))  __attribute__((noinline));
+	recent_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high, const std::string& cfg,
+		void (*cb)(emulator_instance& inst, const T& name))  __attribute__((noinline));
 	void on_select(wxCommandEvent& e);
 	void update();
 	void add(const T& file);
 private:
+	emulator_instance& inst;
 	class rhook : public recentfiles::hook
 	{
 	public:
@@ -31,7 +34,7 @@ private:
 	std::map<int, wxMenuItem*> items;
 	int wxid_range_low;
 	int wxid_range_high;
-	void (*callback)(const T& name);
+	void (*callback)(emulator_instance& inst, const T& name);
 };
 
 #endif

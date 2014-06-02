@@ -27,7 +27,7 @@ namespace
 class wxeditor_subtitles : public wxFrame
 {
 public:
-	wxeditor_subtitles(wxWindow* parent);
+	wxeditor_subtitles(wxWindow* parent, emulator_instance& _inst);
 	~wxeditor_subtitles() throw();
 	bool ShouldPreventAppExit() const;
 	void on_change(wxCommandEvent& e);
@@ -38,6 +38,7 @@ public:
 	void on_wclose(wxCloseEvent& e);
 	void refresh();
 private:
+	emulator_instance& inst;
 	bool closing;
 	wxListBox* subs;
 	wxTextCtrl* subtext;
@@ -162,8 +163,8 @@ namespace
 }
 
 
-wxeditor_subtitles::wxeditor_subtitles(wxWindow* parent)
-	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Edit subtitles"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_subtitles::wxeditor_subtitles(wxWindow* parent, emulator_instance& _inst)
+	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Edit subtitles"), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
 	closing = false;
 	Centre();
@@ -192,7 +193,7 @@ wxeditor_subtitles::wxeditor_subtitles(wxWindow* parent)
 	pbutton_s->SetSizeHints(this);
 	top_s->SetSizeHints(this);
 	Fit();
-	subchange.set(lsnes_instance.dispatch->subtitle_change, [this]() { runuifun([this]() -> void {
+	subchange.set(inst.dispatch->subtitle_change, [this]() { runuifun([this]() -> void {
 		this->refresh(); }); });
 	refresh();
 }
@@ -222,7 +223,7 @@ void wxeditor_subtitles::refresh()
 	if(closing)
 		return;
 	std::map<std::pair<uint64_t, uint64_t>, std::string> _subtitles;
-	lsnes_instance.iqueue->run([&_subtitles]() -> void {
+	inst.iqueue->run([&_subtitles]() -> void {
 		auto keys = CORE().subtitles->get_all();
 		for(auto i : keys)
 			_subtitles[i] = CORE().subtitles->get(i.first, i.second);
@@ -272,7 +273,7 @@ void wxeditor_subtitles::on_add(wxCommandEvent& e)
 	t.last = 0;
 	t.text = "";
 	if(edit_subtext(this, t))
-		lsnes_instance.subtitles->set(t.first, t.last, t.text);
+		inst.subtitles->set(t.first, t.last, t.text);
 }
 
 void wxeditor_subtitles::on_edit(wxCommandEvent& e)
@@ -285,8 +286,8 @@ void wxeditor_subtitles::on_edit(wxCommandEvent& e)
 	auto t = subtexts[sel];
 	auto old = t;
 	if(edit_subtext(this, t)) {
-		lsnes_instance.subtitles->set(old.first, old.last, "");
-		lsnes_instance.subtitles->set(t.first, t.last, t.text);
+		inst.subtitles->set(old.first, old.last, "");
+		inst.subtitles->set(t.first, t.last, t.text);
 	}
 }
 
@@ -298,18 +299,18 @@ void wxeditor_subtitles::on_delete(wxCommandEvent& e)
 	if(!subtexts.count(sel))
 		return;
 	auto t = subtexts[sel];
-	lsnes_instance.subtitles->set(t.first, t.last, "");
+	inst.subtitles->set(t.first, t.last, "");
 }
 
-void wxeditor_subtitles_display(wxWindow* parent)
+void wxeditor_subtitles_display(wxWindow* parent, emulator_instance& inst)
 {
 	wxFrame* editor;
-	if(!lsnes_instance.mlogic) {
-		show_message_ok(parent, "No movie", "Can't edit authors of nonexistent movie", wxICON_EXCLAMATION);
+	if(!inst.mlogic) {
+		show_message_ok(parent, "No movie", "Can't edit subtitles of nonexistent movie", wxICON_EXCLAMATION);
 		return;
 	}
 	try {
-		editor = new wxeditor_subtitles(parent);
+		editor = new wxeditor_subtitles(parent, inst);
 		editor->Show();
 	} catch(...) {
 	}

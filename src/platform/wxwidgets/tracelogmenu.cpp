@@ -7,15 +7,16 @@
 #include "core/project.hpp"
 #include "core/moviedata.hpp"
 
-tracelog_menu::tracelog_menu(wxWindow* win, int wxid_low, int wxid_high)
+tracelog_menu::tracelog_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
+	: inst(_inst)
 {
 	pwin = win;
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
 	win->Connect(wxid_low, wxid_high, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(tracelog_menu::on_select), NULL, this);
-	lsnes_instance.dbg->set_tracelog_change_cb([this]() { runuifun([this]() { this->update(); }); });
-	corechange.set(lsnes_instance.dispatch->core_change, [this]() { runuifun([this]() { this->update(); }); });
+	inst.dbg->set_tracelog_change_cb([this]() { runuifun([this]() { this->update(); }); });
+	corechange.set(inst.dispatch->core_change, [this]() { runuifun([this]() { this->update(); }); });
 }
 
 tracelog_menu::~tracelog_menu()
@@ -30,18 +31,18 @@ void tracelog_menu::on_select(wxCommandEvent& e)
 	if(!cpunames.count(rid))
 		return;
 	if(id % 2) {
-		wxeditor_tracelog_display(pwin, rid, cpunames[rid]);
+		wxeditor_tracelog_display(pwin, inst, rid, cpunames[rid]);
 	} else {
 		bool ch = items[rid]->IsChecked();
 		if(ch) {
 			try {
 				std::string filename = choose_file_save(pwin, "Save " + cpunames[rid] + " Trace",
-					lsnes_instance.project->moviepath(), filetype_trace, "");
-				lsnes_instance.dbg->tracelog(rid, filename);
+					inst.project->moviepath(), filetype_trace, "");
+				inst.dbg->tracelog(rid, filename);
 			} catch(canceled_exception& e) {
 			}
 		} else {
-			lsnes_instance.dbg->tracelog(rid, "");
+			inst.dbg->tracelog(rid, "");
 		}
 	}
 	update();
@@ -57,7 +58,7 @@ void tracelog_menu::update()
 	for(auto i : _items) {
 		items.push_back(AppendCheckItem(wxid_range_low + 2 * id, towxstring(i + " (to file)...")));
 		cpunames[id] = i;
-		items[id]->Check(lsnes_instance.dbg->is_tracelogging(id));
+		items[id]->Check(inst.dbg->is_tracelogging(id));
 		id++;
 	}
 	items.push_back(AppendSeparator());

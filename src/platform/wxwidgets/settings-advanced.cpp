@@ -12,7 +12,7 @@ namespace
 	class wxeditor_esettings_advanced : public settings_tab
 	{
 	public:
-		wxeditor_esettings_advanced(wxWindow* parent);
+		wxeditor_esettings_advanced(wxWindow* parent, emulator_instance& _inst);
 		~wxeditor_esettings_advanced();
 		void on_change(wxCommandEvent& e);
 		void on_change2(wxMouseEvent& e);
@@ -51,8 +51,8 @@ namespace
 		wxListBox* _settings;
 	};
 
-	wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
-		: settings_tab(parent), _listener(*lsnes_instance.settings, *this)
+	wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent, emulator_instance& _inst)
+		: settings_tab(parent, _inst), _listener(*inst.settings, *this)
 	{
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
@@ -264,8 +264,8 @@ namespace
 			return;
 		std::string value;
 		std::string err;
-		value = lsnes_instance.setcache->get(name);
-		auto model = lsnes_instance.setcache->get_description(name);
+		value = inst.setcache->get(name);
+		auto model = inst.setcache->get_description(name);
 		try {
 			switch(model.type) {
 			case settingvar::description::T_BOOLEAN:
@@ -284,9 +284,9 @@ namespace
 		} catch(...) {
 			return;
 		}
-		lsnes_instance.iqueue->run([this, name, value]() {
+		inst.iqueue->run([this, name, value]() {
 			run_show_error(this, "Error setting value", "", [name, value]() {
-				lsnes_instance.setcache->set(name, value);
+				CORE().setcache->set(name, value);
 			});
 		});
 	}
@@ -317,10 +317,10 @@ namespace
 	{
 		if(closing())
 			return;
-		settings = lsnes_instance.setcache->get_keys();
+		settings = inst.setcache->get_keys();
 		for(auto i : settings) {
-			values[i] = lsnes_instance.setcache->get(i);
-			names[i] = lsnes_instance.setcache->get_hname(i);
+			values[i] = inst.setcache->get(i);
+			names[i] = inst.setcache->get_hname(i);
 		}
 		_refresh();
 	}
@@ -347,14 +347,15 @@ namespace
 			sort.insert(std::make_pair(names[i], i));
 		for(auto i : sort) {
 			//FIXME: Do something with this?
-			//auto description = lsnes_instance.setcache->get_description(i.second);
+			//auto description = inst.setcache->get_description(i.second);
 			strings.push_back(towxstring(names[i.second] + " (Value: " + values[i.second] + ")"));
 			selections[k++] = i.second;
 		}
 		_settings->Set(strings.size(), &strings[0]);
 	}
 
-	settings_tab_factory advanced_tab("Advanced", [](wxWindow* parent) -> settings_tab* {
-		return new wxeditor_esettings_advanced(parent);
+	settings_tab_factory advanced_tab("Advanced", [](wxWindow* parent, emulator_instance& _inst) ->
+		settings_tab* {
+		return new wxeditor_esettings_advanced(parent, _inst);
 	});
 }

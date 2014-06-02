@@ -18,11 +18,11 @@ namespace
 	class branches_tree : public wxTreeCtrl
 	{
 	public:
-		branches_tree(wxWindow* parent, int id, bool _nosels)
-			: wxTreeCtrl(parent, id), nosels(_nosels)
+		branches_tree(wxWindow* parent, emulator_instance& _inst, int id, bool _nosels)
+			: wxTreeCtrl(parent, id), inst(_inst), nosels(_nosels)
 		{
 			SetMinSize(wxSize(400, 300));
-			branchchange.set(lsnes_instance.dispatch->branch_change, [this]() { runuifun([this]() {
+			branchchange.set(inst.dispatch->branch_change, [this]() { runuifun([this]() {
 				this->update(); }); });
 			update();
 		}
@@ -59,7 +59,7 @@ namespace
 			std::map<uint64_t, std::string> namemap;
 			std::map<uint64_t, std::set<uint64_t>> childmap;
 			uint64_t cur = 0;
-			UI_get_branch_map(lsnes_instance, cur, namemap, childmap);
+			UI_get_branch_map(inst, cur, namemap, childmap);
 			current = cur;
 			selection cursel = get_selection();
 			std::set<uint64_t> expanded;
@@ -101,6 +101,7 @@ namespace
 				build_tree(i, ids[i], childmap, namemap);
 			}
 		}
+		emulator_instance& inst;
 		uint64_t current;
 		std::map<uint64_t, std::string> names;
 		std::map<uint64_t, wxTreeItemId> ids;
@@ -112,7 +113,7 @@ namespace
 	class branch_select : public wxDialog
 	{
 	public:
-		branch_select(wxWindow* parent)
+		branch_select(wxWindow* parent, emulator_instance& _inst)
 			: wxDialog(parent, wxID_ANY, towxstring("lsnes: Select new parent branch"))
 		{
 			Centre();
@@ -120,7 +121,7 @@ namespace
 			SetSizer(top_s);
 			Center();
 
-			top_s->Add(branches = new branches_tree(this, wxID_ANY, true), 1, wxGROW);
+			top_s->Add(branches = new branches_tree(this, _inst, wxID_ANY, true), 1, wxGROW);
 			branches->Connect(wxEVT_COMMAND_TREE_SEL_CHANGED,
 				wxCommandEventHandler(branch_select::on_change), NULL, this);
 
@@ -165,15 +166,15 @@ namespace
 	class branch_config : public wxDialog
 	{
 	public:
-		branch_config(wxWindow* parent)
-			: wxDialog(parent, wxID_ANY, towxstring("lsnes: Edit slot branches"))
+		branch_config(wxWindow* parent, emulator_instance& _inst)
+			: wxDialog(parent, wxID_ANY, towxstring("lsnes: Edit slot branches")), inst(_inst)
 		{
 			Centre();
 			wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 			SetSizer(top_s);
 			Center();
 
-			top_s->Add(branches = new branches_tree(this, wxID_ANY, false), 1, wxGROW);
+			top_s->Add(branches = new branches_tree(this, inst, wxID_ANY, false), 1, wxGROW);
 			branches->Connect(wxEVT_COMMAND_TREE_SEL_CHANGED,
 				wxCommandEventHandler(branch_config::on_change), NULL, this);
 
@@ -215,7 +216,7 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			UI_create_branch(lsnes_instance, id, newname, [this](std::exception& e) {
+			UI_create_branch(inst, id, newname, [this](std::exception& e) {
 				show_exception_any(this, "Error creating branch", "Can't create branch", e);
 			});
 		}
@@ -223,7 +224,7 @@ namespace
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			UI_switch_branch(lsnes_instance, id, [this](std::exception& e) {
+			UI_switch_branch(inst, id, [this](std::exception& e) {
 				show_exception_any(this, "Error setting branch", "Can't set branch", e);
 			});
 		}
@@ -238,7 +239,7 @@ namespace
 			} catch(canceled_exception& e) {
 				return;
 			}
-			UI_rename_branch(lsnes_instance, id, newname, [this](std::exception& e) {
+			UI_rename_branch(inst, id, newname, [this](std::exception& e) {
 				show_exception_any(this, "Error renaming branch", "Can't rename branch", e);
 			});
 		}
@@ -247,7 +248,7 @@ namespace
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			uint64_t pid;
-			branch_select* bsel = new branch_select(this);
+			branch_select* bsel = new branch_select(this, inst);
 			int r = bsel->ShowModal();
 			if(r != wxID_OK) {
 				bsel->Destroy();
@@ -256,7 +257,7 @@ namespace
 			pid = bsel->get_selection();
 			if(pid == 0xFFFFFFFFFFFFFFFFULL) return;
 			bsel->Destroy();
-			UI_reparent_branch(lsnes_instance, id, pid, [this](std::exception& e) {
+			UI_reparent_branch(inst, id, pid, [this](std::exception& e) {
 				show_exception_any(this, "Error reparenting branch", "Can't reparent branch", e);
 			});
 		}
@@ -264,7 +265,7 @@ namespace
 		{
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
-			UI_delete_branch(lsnes_instance, id, [this](std::exception& e) {
+			UI_delete_branch(inst, id, [this](std::exception& e) {
 				show_exception_any(this, "Error deleting branch", "Can't delete branch", e);
 			});
 		}
@@ -296,6 +297,7 @@ namespace
 		wxButton* deletebutton;
 		wxButton* okbutton;
 		branches_tree* branches;
+		emulator_instance& inst;
 	};
 
 	void build_menus(wxMenu* root, uint64_t id, std::list<branches_menu::miteminfo>& otheritems,
@@ -333,14 +335,15 @@ namespace
 	}
 }
 
-branches_menu::branches_menu(wxWindow* win, int wxid_low, int wxid_high)
+branches_menu::branches_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
+	: inst(_inst)
 {
 	pwin = win;
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
 	win->Connect(wxid_low, wxid_high, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(branches_menu::on_select), NULL, this);
-	branchchange.set(lsnes_instance.dispatch->branch_change, [this]() { runuifun([this]() {
+	branchchange.set(inst.dispatch->branch_change, [this]() { runuifun([this]() {
 		this->update(); }); });
 }
 
@@ -354,7 +357,7 @@ void branches_menu::on_select(wxCommandEvent& e)
 	if(id < wxid_range_low || id > wxid_range_high) return;
 	if(id == wxid_range_low) {
 		//Configure.
-		branch_config* bcfg = new branch_config(pwin);
+		branch_config* bcfg = new branch_config(pwin, inst);
 		bcfg->ShowModal();
 		bcfg->Destroy();
 		return;
@@ -362,7 +365,7 @@ void branches_menu::on_select(wxCommandEvent& e)
 	if(!branch_ids.count(id)) return;
 	uint64_t bid = branch_ids[id];
 	std::string err;
-	UI_switch_branch(lsnes_instance, bid, [this](std::exception& e) {
+	UI_switch_branch(inst, bid, [this](std::exception& e) {
 		show_exception_any(this->pwin, "Error changing branch", "Can't change branch", e);
 	});
 }
@@ -372,7 +375,7 @@ void branches_menu::update()
 	std::map<uint64_t, std::string> namemap;
 	std::map<uint64_t, std::set<uint64_t>> childmap;
 	uint64_t cur;
-	UI_get_branch_map(lsnes_instance, cur, namemap, childmap);
+	UI_get_branch_map(inst, cur, namemap, childmap);
 	//First destroy everything that isn't a menu.
 	for(auto i : otheritems)
 		i.parent->Delete(i.item);
@@ -396,5 +399,5 @@ void branches_menu::update()
 
 bool branches_menu::any_enabled()
 {
-	return lsnes_instance.project->get();
+	return inst.project->get();
 }

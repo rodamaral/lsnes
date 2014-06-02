@@ -8,10 +8,12 @@
 #include <set>
 #include <vector>
 
+class emulator_instance;
+
 class branches_menu : public wxMenu
 {
 public:
-	branches_menu(wxWindow* win, int wxid_low, int wxid_high);
+	branches_menu(wxWindow* win, emulator_instance& inst, int wxid_low, int wxid_high);
 	~branches_menu();
 	void on_select(wxCommandEvent& e);
 	void update();
@@ -36,6 +38,7 @@ private:
 	std::list<wxMenu*> menus;
 	std::list<miteminfo> otheritems;
 	std::function<void(bool enabled)> disabler_fn;
+	emulator_instance& inst;
 };
 
 #endif

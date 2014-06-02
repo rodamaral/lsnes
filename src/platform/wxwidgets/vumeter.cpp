@@ -88,7 +88,7 @@ namespace
 class wxwin_vumeter : public wxDialog
 {
 public:
-	wxwin_vumeter(wxWindow* parent);
+	wxwin_vumeter(wxWindow* parent, emulator_instance& _inst);
 	~wxwin_vumeter() throw();
 	bool ShouldPreventAppExit() const;
 	void on_close(wxCommandEvent& e);
@@ -200,6 +200,7 @@ private:
 			}
 		}
 	};
+	emulator_instance& inst;
 	volatile bool update_sent;
 	bool closing;
 	wxButton* closebutton;
@@ -219,8 +220,8 @@ private:
 	struct dispatch::target<std::pair<std::string, std::string>> devchange;
 };
 
-wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: VU meter"), wxDefaultPosition, wxSize(-1, -1))
+wxwin_vumeter::wxwin_vumeter(wxWindow* parent, emulator_instance& _inst)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: VU meter"), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
 	update_sent = false;
 	closing = false;
@@ -301,10 +302,10 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 		wxCommandEventHandler(wxwin_vumeter::on_mute), NULL, this);
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwin_vumeter::on_wclose));
 
-	unmuted.set(lsnes_instance.dispatch->sound_unmute, [this](bool unmute) {
+	unmuted.set(inst.dispatch->sound_unmute, [this](bool unmute) {
 		runuifun([this, unmute]() { if(!this->closing) this->mute->SetValue(!unmute); });
 	});
-	devchange.set(lsnes_instance.dispatch->sound_change, [this](std::pair<std::string, std::string> d) {
+	devchange.set(inst.dispatch->sound_change, [this](std::pair<std::string, std::string> d) {
 		runuifun([this, d]() {
 			if(this->closing) return;
 			auto pdevs = audioapi_driver_get_devices(false);
@@ -316,7 +317,7 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 
 	top_s->SetSizeHints(this);
 	Fit();
-	vulistener.set(lsnes_instance.dispatch->vu_change, [this]() {
+	vulistener.set(inst.dispatch->vu_change, [this]() {
 		if(!this->update_sent) {
 			this->update_sent = true;
 			runuifun([this]() -> void { this->refresh(); });
@@ -413,7 +414,7 @@ void open_vumeter_window(wxWindow* parent)
 {
 	if(vumeter_open)
 		return;
-	wxwin_vumeter* v = new wxwin_vumeter(parent);
+	wxwin_vumeter* v = new wxwin_vumeter(parent, lsnes_instance);
 	v->Show();
 	vumeter_open = true;
 }

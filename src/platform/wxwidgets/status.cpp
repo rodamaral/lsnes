@@ -23,18 +23,18 @@ namespace
 	}
 }
 
-wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines)
-	: text_framebuffer_panel(_parent, STATWIDTH, lines ? lines : MAXSTATUS, wxID_ANY, focuswin)
+wxwin_status::panel::panel(wxWindow* _parent, emulator_instance& _inst, wxWindow* focuswin, unsigned lines)
+	: text_framebuffer_panel(_parent, STATWIDTH, lines ? lines : MAXSTATUS, wxID_ANY, focuswin), inst(_inst)
 {
 	watch_flag = 0;
 }
 
-wxwin_status::wxwin_status(int flag, const std::string& title)
+wxwin_status::wxwin_status(int flag, emulator_instance& _inst, const std::string& title)
 	: wxFrame(NULL, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1),
-		wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN)
+		wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN), inst(_inst)
 {
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
-	top_s->Add(spanel = new wxwin_status::panel(this, NULL, MAXSTATUS), 1, wxGROW);
+	top_s->Add(spanel = new wxwin_status::panel(this, inst, NULL, MAXSTATUS), 1, wxGROW);
 	spanel->set_watch_flag(flag);
 	top_s->SetSizeHints(this);
 	SetSizer(top_s);
@@ -80,7 +80,7 @@ void wxwin_status::panel::prepare_paint()
 {
 	clear();
 
-	auto& newstatus = lsnes_instance.status->get_read();
+	auto& newstatus = inst.status->get_read();
 	try {
 		bool entry_so_far = false;
 		size_t mem_width = 0;
@@ -130,7 +130,7 @@ void wxwin_status::panel::prepare_paint()
 		}
 	} catch(...) {
 	}
-	lsnes_instance.status->put_read();
+	inst.status->put_read();
 }
 
 void wxwin_status::notify_update() throw()

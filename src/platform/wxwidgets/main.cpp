@@ -508,7 +508,7 @@ bool lsnes_app::OnInit()
 
 	joystick_thread_handle = new threads::thread(joystick_thread, 7);
 
-	msg_window = new wxwin_messages();
+	msg_window = new wxwin_messages(lsnes_instance);
 	msg_window->Show();
 
 	init_main_callbacks();
@@ -545,7 +545,7 @@ bool lsnes_app::OnInit()
 	mov->start_paused = start_unpaused ? !(rom.rtype && !rom.rtype->isnull()) : true;
 	for(auto i : c_lua)
 		lua_add_startup_script(i);
-	boot_emulator(rom, *mov, fullscreen_mode);
+	boot_emulator(lsnes_instance, rom, *mov, fullscreen_mode);
 	return true;
 }
 

@@ -96,7 +96,7 @@ namespace
 class wxeditor_tasinput : public wxDialog
 {
 public:
-	wxeditor_tasinput(wxWindow* parent);
+	wxeditor_tasinput(wxWindow* parent, emulator_instance& _inst);
 	~wxeditor_tasinput() throw();
 	bool ShouldPreventAppExit() const;
 	void on_wclose(wxCloseEvent& e);
@@ -135,8 +135,8 @@ private:
 	};
 	struct xypanel : public wxEvtHandler
 	{
-		xypanel(wxWindow* win, wxSizer* s, control_triple _t, wxEvtHandler* _obj, wxObjectEventFunction _fun,
-			int _wxid);
+		xypanel(wxWindow* win, emulator_instance& _inst, wxSizer* s, control_triple _t, wxEvtHandler* _obj,
+			wxObjectEventFunction _fun, int _wxid);
 		~xypanel();
 		short get_x() { return x; }
 		short get_y() { return y; }
@@ -147,6 +147,7 @@ private:
 		void do_redraw();
 	private:
 		friend class wxeditor_tasinput;
+		emulator_instance& inst;
 		short x, y;
 		wxEvtHandler* obj;
 		wxObjectEventFunction fun;
@@ -160,6 +161,7 @@ private:
 		struct SwsContext* rctx;
 		int xstep, ystep;
 	};
+	emulator_instance& inst;
 	std::map<int, control_triple> inputs;
 	std::vector<controller_double> panels;
 	void update_controls();
@@ -176,8 +178,9 @@ namespace
 	wxeditor_tasinput* tasinput_open;
 }
 
-wxeditor_tasinput::xypanel::xypanel(wxWindow* win, wxSizer* s, control_triple _t, wxEvtHandler* _obj,
-	wxObjectEventFunction _fun, int _wxid)
+wxeditor_tasinput::xypanel::xypanel(wxWindow* win, emulator_instance& _inst, wxSizer* s, control_triple _t,
+	wxEvtHandler* _obj, wxObjectEventFunction _fun, int _wxid)
+	: inst(_inst)
 {
 	x = 0;
 	y = 0;
@@ -265,13 +268,13 @@ void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 	wxPaintDC dc(graphics);
 	if(lightgun) {
 		//Draw the current screen.
-		framebuffer::raw& _fb = lsnes_instance.fbuf->render_get_latest_screen();
+		framebuffer::raw& _fb = inst.fbuf->render_get_latest_screen();
 		framebuffer::fb<false> fb;
 		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
 		auto size = our_rom.rtype->lightgun_scale();
 		fb.reallocate(osize.first, osize.second, false);
 		fb.copy_from(_fb, 1, 1);
-		lsnes_instance.fbuf->render_get_latest_screen_end();
+		inst.fbuf->render_get_latest_screen_end();
 		std::vector<uint8_t> buf;
 		buf.resize(3 * (t.xmax - t.xmin + 1) * (t.ymax - t.ymin + 1));
 		unsigned offX = -t.xmin;
@@ -324,8 +327,9 @@ void wxeditor_tasinput::xypanel::Destroy()
 
 wxeditor_tasinput::~wxeditor_tasinput() throw() {}
 
-wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: TAS input plugin"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent, emulator_instance& _inst)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: TAS input plugin"), wxDefaultPosition, wxSize(-1, -1)),
+	inst(_inst)
 {
 	current_controller = 0;
 	current_button = 0;
@@ -338,7 +342,7 @@ wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 	hsizer->SetSizeHints(this);
 	Fit();
 
-	ahreconfigure.set(lsnes_instance.dispatch->autohold_reconfigure, [this]() {
+	ahreconfigure.set(inst.dispatch->autohold_reconfigure, [this]() {
 		runuifun([this]() {
 			try {
 				this->update_controls();
@@ -347,7 +351,7 @@ wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 				bool wasc = closing;
 				closing = true;
 				tasinput_open = NULL;
-				lsnes_instance.controls->tasinput_enable(false);
+				inst.controls->tasinput_enable(false);
 				if(!wasc)
 					Destroy();
 			}
@@ -380,7 +384,7 @@ void wxeditor_tasinput::on_control(wxCommandEvent& e)
 		xstate = t.panel->get_x();
 		ystate = t.panel->get_y();
 	}
-	lsnes_instance.iqueue->run_async([t, xstate, ystate]() {
+	inst.iqueue->run_async([t, xstate, ystate]() {
 		CORE().controls->tasinput(t.port, t.controller, t.xindex, xstate);
 		if(t.yindex != std::numeric_limits<unsigned>::max())
 			CORE().controls->tasinput(t.port, t.controller, t.yindex, ystate);
@@ -404,7 +408,7 @@ void wxeditor_tasinput::update_controls()
 
 	std::vector<control_triple> _inputs;
 	std::vector<std::string> _controller_labels;
-	lsnes_instance.iqueue->run([&_inputs, &_controller_labels](){
+	inst.iqueue->run([&_inputs, &_controller_labels](){
 		std::map<std::string, unsigned> next_in_class;
 		controller_frame model = CORE().controls->get_blank();
 		const port_type_set& pts = model.porttypes();
@@ -516,7 +520,7 @@ void wxeditor_tasinput::update_controls()
 			t.check->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 				wxCommandEventHandler(wxeditor_tasinput::on_control), NULL, this);
 		} else {
-			t.panel = new xypanel(current_p, current, i, this,
+			t.panel = new xypanel(current_p, inst, current, i, this,
 				wxCommandEventHandler(wxeditor_tasinput::on_control), next_id);
 		}
 		inputs[next_id++] = t;
@@ -542,7 +546,7 @@ void wxeditor_tasinput::on_wclose(wxCloseEvent& e)
 	bool wasc = closing;
 	closing = true;
 	tasinput_open = NULL;
-	lsnes_instance.controls->tasinput_enable(false);
+	inst.controls->tasinput_enable(false);
 	if(!wasc)
 		Destroy();
 }
@@ -582,7 +586,7 @@ void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
 		}
 		return;
 	}
-	if(key == WXK_F5) lsnes_instance.iqueue->queue("+advance-frame");
+	if(key == WXK_F5) inst.iqueue->queue("+advance-frame");
 }
 
 void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
@@ -696,11 +700,11 @@ void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
 			return;
 		}
 	}
-	if(key == WXK_F1) lsnes_instance.iqueue->queue("cycle-jukebox-backward");
-	if(key == WXK_F2) lsnes_instance.iqueue->queue("cycle-jukebox-forward");
-	if(key == WXK_F3) lsnes_instance.iqueue->queue("save-jukebox");
-	if(key == WXK_F4) lsnes_instance.iqueue->queue("load-jukebox");
-	if(key == WXK_F5) lsnes_instance.iqueue->queue("-advance-frame");
+	if(key == WXK_F1) inst.iqueue->queue("cycle-jukebox-backward");
+	if(key == WXK_F2) inst.iqueue->queue("cycle-jukebox-forward");
+	if(key == WXK_F3) inst.iqueue->queue("save-jukebox");
+	if(key == WXK_F4) inst.iqueue->queue("load-jukebox");
+	if(key == WXK_F5) inst.iqueue->queue("-advance-frame");
 }
 
 wxeditor_tasinput::control_triple* wxeditor_tasinput::find_triple(unsigned controller, unsigned control)
@@ -722,7 +726,7 @@ void wxeditor_tasinput_display(wxWindow* parent)
 		return;
 	wxeditor_tasinput* v;
 	try {
-		v = new wxeditor_tasinput(parent);
+		v = new wxeditor_tasinput(parent, lsnes_instance);
 	} catch(std::runtime_error& e) {
 		wxMessageBox(_T("No controllers present"), _T("Error"), wxICON_EXCLAMATION | wxOK, parent);
 		return;

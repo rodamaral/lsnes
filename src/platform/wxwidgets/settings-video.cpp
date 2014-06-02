@@ -38,7 +38,7 @@ namespace
 	class wxeditor_esettings_video : public settings_tab
 	{
 	public:
-		wxeditor_esettings_video(wxWindow* parent);
+		wxeditor_esettings_video(wxWindow* parent, emulator_instance& _inst);
 		~wxeditor_esettings_video();
 		void on_configure(wxCommandEvent& e);
 		wxCheckBox* arcorrect;
@@ -51,8 +51,8 @@ namespace
 		wxFlexGridSizer* top_s;
 	};
 
-	wxeditor_esettings_video::wxeditor_esettings_video(wxWindow* parent)
-		: settings_tab(parent)
+	wxeditor_esettings_video::wxeditor_esettings_video(wxWindow* parent, emulator_instance& _inst)
+		: settings_tab(parent, _inst)
 	{
 		std::vector<wxString> scales;
 		std::vector<wxString> orients;
@@ -139,7 +139,7 @@ namespace
 	{
 	}
 
-	settings_tab_factory _settings_tab("Video", [](wxWindow* parent) -> settings_tab* {
-		return new wxeditor_esettings_video(parent);
+	settings_tab_factory _settings_tab("Video", [](wxWindow* parent, emulator_instance& _inst) -> settings_tab* {
+		return new wxeditor_esettings_video(parent, _inst);
 	});
 }

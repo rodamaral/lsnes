@@ -12,11 +12,6 @@
 
 namespace
 {
-	std::string rom_path()
-	{
-		return lsnes_instance.setcache->get("rompath");
-	}
-
 	bool can_load_singlefile(core_type* t)
 	{
 		unsigned icnt = t->get_image_count();
@@ -90,7 +85,7 @@ namespace
 		return 0;
 	}
 
-	void do_load_rom_image_single(wxwin_mainwindow* parent)
+	void do_load_rom_image_single(wxwin_mainwindow* parent, emulator_instance& inst)
 	{
 		std::map<std::string, core_type*> cores;
 		std::map<unsigned, core_type*> coreid;
@@ -122,7 +117,7 @@ namespace
 			coreid[++corecount] = i.second;
 		}
 		filter += "|All files|*";
-		std::string directory = lsnes_instance.setcache->get("rompath");
+		std::string directory = inst.setcache->get("rompath");
 		wxFileDialog* d = new wxFileDialog(parent, towxstring("Choose ROM to load"), towxstring(directory),
 			wxT(""), towxstring(filter), wxFD_OPEN);
 		if(d->ShowModal() == wxID_CANCEL) {
@@ -147,7 +142,7 @@ namespace
 			mr.singlefile = req.singlefile = filename;
 		}
 		parent->recent_roms->add(mr);
-		lsnes_instance.iqueue->run_async([req]() {
+		inst.iqueue->run_async([req]() {
 			CORE().command->invoke("unpause-emulator");
 			load_new_rom(req);
 		}, [](std::exception& e) {});
@@ -160,8 +155,8 @@ namespace
 		{
 			EndModal(wxID_CANCEL);
 		}
-		multirom_dialog(wxWindow* parent, std::string rtype, core_type& _t)
-			: wxDialog(parent, wxID_ANY, towxstring("lsnes: Load " + rtype + " ROM")), t(_t)
+		multirom_dialog(wxWindow* parent, emulator_instance& _inst, std::string rtype, core_type& _t)
+			: wxDialog(parent, wxID_ANY, towxstring("lsnes: Load " + rtype + " ROM")), inst(_inst), t(_t)
 		{
 			Centre();
 			wxSizer* vsizer = new wxBoxSizer(wxVERTICAL);
@@ -301,7 +296,7 @@ namespace
 				directory = "firmwarepath";
 			else
 				directory = "rompath";
-			directory = lsnes_instance.setcache->get(directory);
+			directory = inst.setcache->get(directory);
 			core_romimage_info iinfo = t.get_image_info(i);
 			wxFileDialog* d = new wxFileDialog(this, towxstring("Load " + iinfo.hname),
 				towxstring(directory), wxT(""), towxstring(filter), wxFD_OPEN);
@@ -351,6 +346,7 @@ namespace
 		private:
 			multirom_dialog* w;
 		};
+		emulator_instance& inst;
 		wxComboBox* regions;
 		wxTextCtrl* filenames[ROM_SLOT_COUNT];
 		wxButton* fileselect[ROM_SLOT_COUNT];
@@ -364,9 +360,9 @@ namespace
 		std::vector<core_region*> regions_known;
 	};
 
-	void do_load_rom_image_multiple(wxwin_mainwindow* parent, core_type& t)
+	void do_load_rom_image_multiple(wxwin_mainwindow* parent, emulator_instance& inst, core_type& t)
 	{
-		multirom_dialog* d = new multirom_dialog(parent, t.get_hname(), t);
+		multirom_dialog* d = new multirom_dialog(parent, inst, t.get_hname(), t);
 		if(d->ShowModal() == wxID_CANCEL) {
 			delete d;
 			return;
@@ -389,8 +385,8 @@ namespace
 			req.files[i] = files[i];
 		}
 		parent->recent_roms->add(mr);
-		lsnes_instance.iqueue->run([req]() {
-			lsnes_instance.command->invoke("unpause-emulator");
+		inst.iqueue->run([req]() {
+			CORE().command->invoke("unpause-emulator");
 			load_new_rom(req);
 		});
 		return;
@@ -434,7 +430,7 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 			directory = "firmwarepath";
 		else
 			directory = "rompath";
-		directory = lsnes_instance.setcache->get(directory);
+		directory = inst.setcache->get(directory);
 		std::string _title = "Select " + iinfo.hname;
 		std::string filespec = "Known ROMs|";
 		std::string exts = "";
@@ -497,8 +493,8 @@ again:
 void wxwin_mainwindow::do_load_rom_image(core_type* t)
 {
 	if(!t) {
-		return do_load_rom_image_single(this);
+		return do_load_rom_image_single(this, inst);
 	} else {
-		return do_load_rom_image_multiple(this, *t);
+		return do_load_rom_image_multiple(this, inst, *t);
 	}
 }

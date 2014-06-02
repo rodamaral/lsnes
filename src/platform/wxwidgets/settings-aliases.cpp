@@ -9,7 +9,7 @@ namespace
 	class wxeditor_esettings_aliases : public settings_tab
 	{
 	public:
-		wxeditor_esettings_aliases(wxWindow* parent);
+		wxeditor_esettings_aliases(wxWindow* parent, emulator_instance& _inst);
 		~wxeditor_esettings_aliases();
 		void on_add(wxCommandEvent& e);
 		void on_edit(wxCommandEvent& e);
@@ -26,8 +26,8 @@ namespace
 		std::string selected();
 	};
 
-	wxeditor_esettings_aliases::wxeditor_esettings_aliases(wxWindow* parent)
-		: settings_tab(parent)
+	wxeditor_esettings_aliases::wxeditor_esettings_aliases(wxWindow* parent, emulator_instance& _inst)
+		: settings_tab(parent, _inst)
 	{
 		wxButton* tmp;
 
@@ -107,15 +107,15 @@ namespace
 			return;
 		try {
 			std::string name = pick_text(this, "Enter alias name", "Enter name for the new alias:");
-			if(!lsnes_instance.command->valid_alias_name(name)) {
+			if(!inst.command->valid_alias_name(name)) {
 				show_message_ok(this, "Error", "Not a valid alias name: " + name, wxICON_EXCLAMATION);
 				throw canceled_exception();
 			}
-			std::string old_alias_value = lsnes_instance.command->get_alias_for(name);
+			std::string old_alias_value = inst.command->get_alias_for(name);
 			std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 				old_alias_value, true);
-			lsnes_instance.command->set_alias_for(name, newcmd);
-			(*lsnes_instance.abindmanager)();
+			inst.command->set_alias_for(name, newcmd);
+			(*inst.abindmanager)();
 			do_notify();
 		} catch(...) {
 		}
@@ -132,11 +132,11 @@ namespace
 			return;
 		}
 		try {
-			std::string old_alias_value = lsnes_instance.command->get_alias_for(name);
+			std::string old_alias_value = inst.command->get_alias_for(name);
 			std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 				old_alias_value, true);
-			lsnes_instance.command->set_alias_for(name, newcmd);
-			(*lsnes_instance.abindmanager)();
+			inst.command->set_alias_for(name, newcmd);
+			(*inst.abindmanager)();
 			do_notify();
 		} catch(...) {
 		}
@@ -152,8 +152,8 @@ namespace
 			refresh();
 			return;
 		}
-		lsnes_instance.command->set_alias_for(name, "");
-		(*lsnes_instance.abindmanager)();
+		inst.command->set_alias_for(name, "");
+		(*inst.abindmanager)();
 		do_notify();
 		refresh();
 	}
@@ -165,7 +165,7 @@ namespace
 		int n = select->GetSelection();
 		std::set<std::string> bind;
 		std::vector<wxString> choices;
-		bind = lsnes_instance.command->get_aliases();
+		bind = inst.command->get_aliases();
 		for(auto i : bind) {
 			numbers[choices.size()] = i;
 			choices.push_back(towxstring(i));
@@ -193,7 +193,7 @@ namespace
 			return "";
 	}
 
-	settings_tab_factory aliases("Aliases", [](wxWindow* parent) -> settings_tab* {
-		return new wxeditor_esettings_aliases(parent);
+	settings_tab_factory aliases("Aliases", [](wxWindow* parent, emulator_instance& _inst) -> settings_tab* {
+		return new wxeditor_esettings_aliases(parent, _inst);
 	});
 }

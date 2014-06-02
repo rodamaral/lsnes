@@ -34,7 +34,7 @@ namespace
 class wxeditor_multitrack : public wxDialog
 {
 public:
-	wxeditor_multitrack(wxWindow* parent);
+	wxeditor_multitrack(wxWindow* parent, emulator_instance& _inst);
 	~wxeditor_multitrack() throw();
 	bool ShouldPreventAppExit() const;
 	void on_wclose(wxCloseEvent& e);
@@ -56,6 +56,7 @@ private:
 		unsigned port;
 		unsigned controller;
 	};
+	emulator_instance& inst;
 	std::vector<controller_info> controllers;
 	void update_controls();
 	bool closing;
@@ -70,8 +71,9 @@ namespace
 
 wxeditor_multitrack::~wxeditor_multitrack() throw() {}
 
-wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Multitrack recording"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent, emulator_instance& _inst)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Multitrack recording"), wxDefaultPosition, wxSize(-1, -1)),
+	inst(_inst)
 {
 	typeset = NULL;
 	closing = false;
@@ -83,7 +85,7 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
 	vsizer->SetSizeHints(this);
 	Fit();
 
-	ahreconfigure.set(lsnes_instance.dispatch->autohold_reconfigure, [this]() {
+	ahreconfigure.set(inst.dispatch->autohold_reconfigure, [this]() {
 		if(typeset && *typeset == CORE().controls->get_blank().porttypes())
 			return;  //Don't reconfigure if no change.
 		CORE().mteditor->config_altered();
@@ -95,19 +97,19 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent)
 				bool wasc = closing;
 				closing = true;
 				multitrack_open = NULL;
-				lsnes_instance.iqueue->run([]() { CORE().mteditor->enable(false); });
+				inst.iqueue->run([]() { CORE().mteditor->enable(false); });
 				if(!wasc)
 					Destroy();
 			}
 		});
 	});
-	ahmodechange.set(lsnes_instance.dispatch->mode_change, [this](bool readonly) {
+	ahmodechange.set(inst.dispatch->mode_change, [this](bool readonly) {
 		runuifun([this, readonly]() {
 			for(auto i : controllers)
 				i.mode->Enable(readonly);
 		});
 	});
-	ahmtchange.set(lsnes_instance.dispatch->multitrack_change, [this](unsigned port, unsigned controller,
+	ahmtchange.set(inst.dispatch->multitrack_change, [this](unsigned port, unsigned controller,
 		int state) {
 		runuifun([this, port, controller, state]() {
 			for(auto i : controllers) {
@@ -137,7 +139,7 @@ void wxeditor_multitrack::on_control(wxCommandEvent& e)
 		return;
 	controller_info& ci = controllers[ctrl];
 	std::string mode = tostdstring(ci.mode->GetStringSelection());
-	lsnes_instance.iqueue->run([ci, mode]() {
+	inst.iqueue->run([ci, mode]() {
 		if(mode == MTMODE_PRESERVE)
 			CORE().mteditor->set(ci.port, ci.controller, multitrack_edit::MT_PRESERVE);
 		else if(mode == MTMODE_OVERWRITE)
@@ -151,7 +153,7 @@ void wxeditor_multitrack::on_control(wxCommandEvent& e)
 
 void wxeditor_multitrack::update_controls()
 {
-	bool readonly = lsnes_instance.mlogic->get_movie().readonly_mode();
+	bool readonly = inst.mlogic->get_movie().readonly_mode();
 
 	for(auto i : controllers) {
 		vsizer->Detach(i.text);
@@ -161,7 +163,7 @@ void wxeditor_multitrack::update_controls()
 	}
 	controllers.clear();
 	std::vector<controller_info2> info;
-	lsnes_instance.iqueue->run([this, &info](){
+	inst.iqueue->run([this, &info](){
 		std::map<std::string, unsigned> next_in_class;
 		controller_frame model = CORE().controls->get_blank();
 		const port_type_set& pts = model.porttypes();
@@ -232,23 +234,23 @@ void wxeditor_multitrack::on_wclose(wxCloseEvent& e)
 	bool wasc = closing;
 	closing = true;
 	multitrack_open = NULL;
-	lsnes_instance.iqueue->run([]() { CORE().mteditor->enable(false); });
+	inst.iqueue->run([]() { CORE().mteditor->enable(false); });
 	if(!wasc)
 		Destroy();
 }
 
-void wxeditor_multitrack_display(wxWindow* parent)
+void wxeditor_multitrack_display(wxWindow* parent, emulator_instance& inst)
 {
 	if(multitrack_open)
 		return;
 	wxeditor_multitrack* v;
 	try {
-		v = new wxeditor_multitrack(parent);
+		v = new wxeditor_multitrack(parent, inst);
 	} catch(std::runtime_error& e) {
 		wxMessageBox(_T("No controllers present"), _T("Error"), wxICON_EXCLAMATION | wxOK, parent);
 		return;
 	}
 	v->Show();
 	multitrack_open = v;
-	lsnes_instance.iqueue->run([]() { CORE().mteditor->enable(true); });
+	inst.iqueue->run([]() { CORE().mteditor->enable(true); });
 }

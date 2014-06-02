@@ -279,7 +279,7 @@ std::string map_keycode_to_key(int kcode)
 	return "";
 }
 
-void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
+void handle_wx_keyboard(emulator_instance& inst, wxKeyEvent& e, bool polarity)
 {
 	int mods = e.GetModifiers();
 	int keyc = e.GetKeyCode();
@@ -315,7 +315,7 @@ void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 		k++;
 	}
 	if(grp)
-		UI_do_keypress(lsnes_instance, mset, *grp, polarity);
+		UI_do_keypress(inst, mset, *grp, polarity);
 	e.Skip();
 }
 

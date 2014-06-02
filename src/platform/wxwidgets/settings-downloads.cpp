@@ -6,7 +6,7 @@ namespace
 	class wxeditor_esettings_download : public settings_tab
 	{
 	public:
-		wxeditor_esettings_download(wxWindow* parent);
+		wxeditor_esettings_download(wxWindow* parent, emulator_instance& _inst);
 		~wxeditor_esettings_download();
 		void on_add(wxCommandEvent& e);
 		void on_delete(wxCommandEvent& e);
@@ -29,8 +29,8 @@ namespace
 		wxListBox* _settings;
 	};
 
-	wxeditor_esettings_download::wxeditor_esettings_download(wxWindow* parent)
-		: settings_tab(parent)
+	wxeditor_esettings_download::wxeditor_esettings_download(wxWindow* parent, emulator_instance& _inst)
+		: settings_tab(parent, inst)
 	{
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
@@ -222,7 +222,8 @@ namespace
 		_settings->Set(strings.size(), &strings[0]);
 	}
 
-	settings_tab_factory download_tab("URI shortcuts", [](wxWindow* parent) -> settings_tab* {
-		return new wxeditor_esettings_download(parent);
+	settings_tab_factory download_tab("URI shortcuts", [](wxWindow* parent, emulator_instance& _inst) ->
+		settings_tab* {
+		return new wxeditor_esettings_download(parent, _inst);
 	});
 }

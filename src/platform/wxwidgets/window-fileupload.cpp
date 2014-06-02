@@ -527,7 +527,7 @@ void wxeditor_uploadtargets::refresh()
 class wxeditor_uploaddialog : public wxDialog
 {
 public:
-	wxeditor_uploaddialog(wxWindow* parent, upload_menu::upload_entry entry);
+	wxeditor_uploaddialog(wxWindow* parent, emulator_instance& inst, upload_menu::upload_entry entry);
 	void on_ok(wxCommandEvent& e);
 	void on_cancel(wxCommandEvent& e);
 	void on_source_sel(wxCommandEvent& e);
@@ -578,6 +578,7 @@ private:
 		std::string incomplete_line;
 		std::set<std::string> choices;
 	} games_output_handler;
+	emulator_instance& inst;
 	wxTextCtrl* status;
 	wxTextCtrl* filename;
 	wxTextCtrl* title;
@@ -598,9 +599,10 @@ private:
 	upload_menu::upload_entry _entry;
 };
 
-wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, upload_menu::upload_entry entry)
+wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, emulator_instance& _inst,
+	upload_menu::upload_entry entry)
 	: wxDialog(parent, wxID_ANY, towxstring("lsnes: Upload file: " + entry.name), wxDefaultPosition,
-		wxSize(-1, -1))
+		wxSize(-1, -1)), inst(_inst)
 {
 	_entry = entry;
 	upload = NULL;
@@ -636,7 +638,7 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, upload_menu::uplo
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
 	file->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
-	if(!lsnes_instance.mlogic || !our_rom.rtype || our_rom.rtype->isnull()) {
+	if(!inst.mlogic || !our_rom.rtype || our_rom.rtype->isnull()) {
 		current->Enable(false);
 		file->SetValue(true);
 	}
@@ -749,15 +751,15 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 	} else {
 		if(fn.length() < 6 || fn.substr(fn.length() - 5) != ".lsmv")
 			filename->SetValue(towxstring(fn + ".lsmv"));
-		lsnes_instance.mlogic->get_mfile().is_savestate = false;
-		auto prj = lsnes_instance.project->get();
+		inst.mlogic->get_mfile().is_savestate = false;
+		auto prj = inst.project->get();
 		if(prj) {
-			lsnes_instance.mlogic->get_mfile().gamename = prj->gamename;
-			lsnes_instance.mlogic->get_mfile().authors = prj->authors;
+			inst.mlogic->get_mfile().gamename = prj->gamename;
+			inst.mlogic->get_mfile().authors = prj->authors;
 		}
-		lsnes_instance.mlogic->get_mfile().active_macros.clear();
+		inst.mlogic->get_mfile().active_macros.clear();
 		std::ostringstream stream;
-		lsnes_instance.mlogic->get_mfile().save(stream, lsnes_instance.mlogic->get_rrdata());
+		inst.mlogic->get_mfile().save(stream, inst.mlogic->get_rrdata());
 		std::string _stream = stream.str();
 		content = std::vector<char>(_stream.begin(), _stream.end());
 	}
@@ -780,14 +782,14 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 	if(!games_req) {
 		if(current->GetValue()) {
 			std::string curgame;
-			auto prj = lsnes_instance.project->get();
+			auto prj = inst.project->get();
 			if(prj)
 				curgame = prj->gamename;
 			else
-				curgame = lsnes_instance.mlogic->get_mfile().gamename;
+				curgame = inst.mlogic->get_mfile().gamename;
 
 			std::string plat = lookup_sysregion_mapping(
-				lsnes_instance.mlogic->get_mfile().gametype->get_name()) + " ";
+				inst.mlogic->get_mfile().gametype->get_name()) + " ";
 			size_t platlen = plat.length();
 			std::string c = tostdstring(game->GetLabel());
 			std::string fullname = plat + curgame;
@@ -829,7 +831,7 @@ void wxeditor_uploaddialog::on_game_sel(wxCommandEvent& e)
 	auto pos = game_sel_button->GetScreenPosition();
 	std::string system;
 	if(current->GetValue())
-		system = lookup_sysregion_mapping(lsnes_instance.mlogic->get_mfile().gametype->get_name());
+		system = lookup_sysregion_mapping(inst.mlogic->get_mfile().gametype->get_name());
 	wxwin_gameselect* gs = new wxwin_gameselect(this, games_list, tostdstring(game->GetLabel()), system,
 		pos.x, pos.y);
 	if(gs->ShowModal() != wxID_OK) {
@@ -867,7 +869,8 @@ void wxeditor_uploaddialog::on_wclose(wxCloseEvent& e)
 
 }
 
-upload_menu::upload_menu(wxWindow* win, int wxid_low, int wxid_high)
+upload_menu::upload_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
+	: inst(_inst)
 {
 	pwin = win;
 	wxid_range_low = wxid_low;
@@ -989,7 +992,7 @@ void upload_menu::on_select(wxCommandEvent& e)
 		if(id == wxid_range_high) {
 			f = new wxeditor_uploadtargets(pwin, this);
 		} else if(destinations.count(id)) {
-			f = new wxeditor_uploaddialog(pwin, destinations[id]);
+			f = new wxeditor_uploaddialog(pwin, inst, destinations[id]);
 		} else
 			return;
 		f->ShowModal();

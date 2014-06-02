@@ -25,7 +25,7 @@ namespace
 class wxeditor_voicesub : public wxDialog
 {
 public:
-	wxeditor_voicesub(wxWindow* parent);
+	wxeditor_voicesub(wxWindow* parent, emulator_instance& _inst);
 	~wxeditor_voicesub() throw();
 	bool ShouldPreventAppExit() const;
 	void on_select(wxCommandEvent& e);
@@ -43,6 +43,7 @@ public:
 	void on_wclose(wxCloseEvent& e);
 	void refresh();
 private:
+	emulator_instance& inst;
 	bool closing;
 	uint64_t get_id();
 	std::map<int, uint64_t> smap;
@@ -62,8 +63,9 @@ private:
 	struct dispatch::target<> vstreamchange;
 };
 
-wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit commentary track"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent, emulator_instance& _inst)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit commentary track"), wxDefaultPosition, wxSize(-1, -1)),
+	inst(_inst)
 {
 	closing = false;
 	Centre();
@@ -137,9 +139,9 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 
 	top_s->SetSizeHints(this);
 	Fit();
-	vstreamchange.set(lsnes_instance.dispatch->voice_stream_change, [this]() { runuifun([this]() -> void {
+	vstreamchange.set(inst.dispatch->voice_stream_change, [this]() { runuifun([this]() -> void {
 		this->refresh(); }); });
-	corechange.set(lsnes_instance.dispatch->core_change, [this]() { runuifun([this]() -> void {
+	corechange.set(inst.dispatch->core_change, [this]() { runuifun([this]() -> void {
 		this->refresh(); }); });
 	refresh();
 }
@@ -167,7 +169,7 @@ void wxeditor_voicesub::on_play(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		lsnes_instance.commentary->play_stream(id);
+		inst.commentary->play_stream(id);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error playing", e.what(), wxICON_EXCLAMATION);
 	}
@@ -179,7 +181,7 @@ void wxeditor_voicesub::on_delete(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		lsnes_instance.commentary->delete_stream(id);
+		inst.commentary->delete_stream(id);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error deleting", e.what(), wxICON_EXCLAMATION);
 	}
@@ -215,9 +217,9 @@ void wxeditor_voicesub::on_export(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		auto filename = choose_file_save(this, "Select file to epxort", lsnes_instance.project->otherpath(),
+		auto filename = choose_file_save(this, "Select file to epxort", inst.project->otherpath(),
 			filetype_opus_sox);
-		lsnes_instance.commentary->export_stream(id, filename.first, filename.second);
+		inst.commentary->export_stream(id, filename.first, filename.second);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
@@ -229,8 +231,8 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 	try {
 		std::string filename;
 		filename = choose_file_save(this, "Select file to export superstream",
-			lsnes_instance.project->otherpath(), filetype_sox);
-		lsnes_instance.commentary->export_superstream(filename);
+			inst.project->otherpath(), filetype_sox);
+		inst.commentary->export_superstream(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting superstream", e.what(), wxICON_EXCLAMATION);
@@ -241,11 +243,11 @@ void wxeditor_voicesub::on_import(wxCommandEvent& e)
 {
 	try {
 		uint64_t ts;
-		ts = lsnes_instance.commentary->parse_timebase(pick_text(this, "Enter timebase",
+		ts = inst.commentary->parse_timebase(pick_text(this, "Enter timebase",
 			"Enter position for newly imported stream"));
-		auto filename = choose_file_save(this, "Select file to import", lsnes_instance.project->otherpath(),
+		auto filename = choose_file_save(this, "Select file to import", inst.project->otherpath(),
 			filetype_opus_sox);
-		lsnes_instance.commentary->import_stream(ts, filename.first, filename.second);
+		inst.commentary->import_stream(ts, filename.first, filename.second);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
@@ -259,9 +261,9 @@ void wxeditor_voicesub::on_change_ts(wxCommandEvent& e)
 		return;
 	try {
 		uint64_t ts;
-		ts = lsnes_instance.commentary->parse_timebase(pick_text(this, "Enter timebase",
+		ts = inst.commentary->parse_timebase(pick_text(this, "Enter timebase",
 			"Enter new position for stream"));
-		lsnes_instance.commentary->alter_timebase(id, ts);
+		inst.commentary->alter_timebase(id, ts);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error changing timebase", e.what(), wxICON_EXCLAMATION);
@@ -275,9 +277,9 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 		return;
 	try {
 		float gain;
-		std::string old = (stringfmt() << lsnes_instance.commentary->get_gain(id)).str();
+		std::string old = (stringfmt() << inst.commentary->get_gain(id)).str();
 		gain = parse_value<float>(pick_text(this, "Enter gain", "Enter new gain (dB) for stream", old));
-		lsnes_instance.commentary->set_gain(id, gain);
+		inst.commentary->set_gain(id, gain);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error changing gain", e.what(), wxICON_EXCLAMATION);
@@ -286,7 +288,7 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_load(wxCommandEvent& e)
 {
-	if(lsnes_instance.project->get() != NULL)
+	if(inst.project->get() != NULL)
 		return;
 	try {
 		std::string filename;
@@ -296,7 +298,7 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 		} catch(...) {
 			return;
 		}
-		lsnes_instance.commentary->load_collection(filename);
+		inst.commentary->load_collection(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading collection", e.what(), wxICON_EXCLAMATION);
@@ -305,9 +307,9 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_unload(wxCommandEvent& e)
 {
-	if(lsnes_instance.project->get() != NULL)
+	if(inst.project->get() != NULL)
 		return;
-	lsnes_instance.commentary->unload_collection();
+	inst.commentary->unload_collection();
 }
 
 void wxeditor_voicesub::on_refresh(wxCommandEvent& e)
@@ -325,8 +327,8 @@ void wxeditor_voicesub::refresh()
 {
 	if(closing)
 		return;
-	bool cflag = lsnes_instance.commentary->collection_loaded();
-	bool pflag = (lsnes_instance.project->get() != NULL);
+	bool cflag = inst.commentary->collection_loaded();
+	bool pflag = (inst.project->get() != NULL);
 	unloadbutton->Enable(cflag && !pflag);
 	loadbutton->Enable(!pflag);
 	exportsbutton->Enable(cflag);
@@ -335,12 +337,12 @@ void wxeditor_voicesub::refresh()
 	subtitles->Clear();
 	smap.clear();
 	int next = 0;
-	for(auto i : lsnes_instance.commentary->get_stream_info()) {
+	for(auto i : inst.commentary->get_stream_info()) {
 		smap[next++] = i.id;
 		std::ostringstream tmp;
-		tmp << "#" << i.id << " " << lsnes_instance.commentary->ts_seconds(i.length) << "s@"
-			<< lsnes_instance.commentary->ts_seconds(i.base) << "s";
-		float gain = lsnes_instance.commentary->get_gain(i.id);
+		tmp << "#" << i.id << " " << inst.commentary->ts_seconds(i.length) << "s@"
+			<< inst.commentary->ts_seconds(i.base) << "s";
+		float gain = inst.commentary->get_gain(i.id);
 		if(gain < -1e-5 || gain > 1e-5)
 			tmp << " (gain " << gain << "dB)";
 		std::string text = tmp.str();
@@ -375,7 +377,7 @@ void show_wxeditor_voicesub(wxWindow* parent)
 {
 	if(voicesub_open)
 		return;
-	wxeditor_voicesub* v = new wxeditor_voicesub(parent);
+	wxeditor_voicesub* v = new wxeditor_voicesub(parent, lsnes_instance);
 	v->Show();
 	voicesub_open = true;
 }

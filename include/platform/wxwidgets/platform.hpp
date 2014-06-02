@@ -16,6 +16,7 @@ class wxwin_messages;
 class wxwin_status;
 class wxWindow;
 class wxKeyEvent;
+class emulator_instance;
 
 //Scaling
 extern double video_scale_factor;
@@ -32,15 +33,15 @@ wxString towxstring(const std::u32string& str) throw(std::bad_alloc);
 std::u32string tou32string(const wxString& str) throw(std::bad_alloc);
 void bring_app_foreground();
 std::string pick_archive_member(wxWindow* parent, const std::string& filename) throw(std::bad_alloc);
-void boot_emulator(loaded_rom& rom, moviefile& movie, bool fscreen);
-void handle_wx_keyboard(wxKeyEvent& e, bool polarity);
+void boot_emulator(emulator_instance& inst, loaded_rom& rom, moviefile& movie, bool fscreen);
+void handle_wx_keyboard(emulator_instance& inst, wxKeyEvent& e, bool polarity);
 std::string map_keycode_to_key(int kcode);
 void initialize_wx_keyboard();
 void deinitialize_wx_keyboard();
 void signal_program_exit();
 void signal_resize_needed();
 void _runuifun_async(void (*fn)(void*), void* arg);
-void show_projectwindow(wxWindow* modwin);
+void show_projectwindow(wxWindow* modwin, emulator_instance& inst);
 void signal_core_change();
 void do_save_configuration();
 
@@ -49,26 +50,26 @@ std::vector<interface_action_paramval> prompt_action_params(wxWindow* parent, co
 
 
 //Editor dialogs.
-void wxeditor_authors_display(wxWindow* parent);
+void wxeditor_authors_display(wxWindow* parent, emulator_instance& inst);
 void wxeditor_hotkeys_display(wxWindow* parent);
-void wxeditor_memorywatches_display(wxWindow* parent);
-void wxeditor_subtitles_display(wxWindow* parent);
+void wxeditor_memorywatches_display(wxWindow* parent, emulator_instance& inst);
+void wxeditor_subtitles_display(wxWindow* parent, emulator_instance& inst);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
 void show_wxeditor_voicesub(wxWindow* parent);
 void open_rom_select_window();
-void open_new_project_window(wxWindow* parent);
+void open_new_project_window(wxWindow* parent, emulator_instance& inst);
 void show_conflictwindow(wxWindow* parent);
 void open_vumeter_window(wxWindow* parent);
 void wxeditor_movie_display(wxWindow* parent);
 void wxeditor_movie_update();
-void wxeditor_autohold_display(wxWindow* parent);
+void wxeditor_autohold_display(wxWindow* parent, emulator_instance& inst);
 void wxeditor_tasinput_display(wxWindow* parent);
-void wxeditor_macro_display(wxWindow* parent);
+void wxeditor_macro_display(wxWindow* parent, emulator_instance& inst);
 void wxeditor_hexedit_display(wxWindow* parent);
-void wxeditor_multitrack_display(wxWindow* parent);
+void wxeditor_multitrack_display(wxWindow* parent, emulator_instance& inst);
 bool wxeditor_plugin_manager_display(wxWindow* parent);
-void wxeditor_tracelog_display(wxWindow* parent, int cpuid, const std::string& cpuname);
-void wxeditor_disassembler_display(wxWindow* parent);
+void wxeditor_tracelog_display(wxWindow* parent, emulator_instance& inst, int cpuid, const std::string& cpuname);
+void wxeditor_disassembler_display(wxWindow* parent, emulator_instance& inst);
 void wxeditor_plugin_manager_notify_fail(const std::string& libname);
 
 //Auxillary windows.

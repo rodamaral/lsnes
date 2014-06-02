@@ -120,7 +120,7 @@ namespace
 	class wxwin_newproject : public wxDialog
 	{
 	public:
-		wxwin_newproject(wxWindow* parent);
+		wxwin_newproject(wxWindow* parent, emulator_instance& _inst);
 		~wxwin_newproject();
 		void on_ok(wxCommandEvent& e);
 		void on_cancel(wxCommandEvent& e);
@@ -134,6 +134,7 @@ namespace
 		void on_luasel(wxCommandEvent& e);
 	private:
 		void reorder_scripts(int delta);
+		emulator_instance& inst;
 		wxTextCtrl* projname;
 		wxTextCtrl* memwatch;
 		wxTextCtrl* projdir;
@@ -153,9 +154,9 @@ namespace
 	{
 	}
 
-	wxwin_newproject::wxwin_newproject(wxWindow* parent)
+	wxwin_newproject::wxwin_newproject(wxWindow* parent, emulator_instance& _inst)
 		: wxDialog(parent, wxID_ANY, wxT("New Project"), wxDefaultPosition, wxSize(-1, -1),
-			wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
+			wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX), inst(_inst)
 	{
 		Centre();
 		wxBoxSizer* toplevel = new wxBoxSizer(wxVERTICAL);
@@ -240,18 +241,18 @@ namespace
 
 	void wxwin_newproject::on_ok(wxCommandEvent& e)
 	{
-		if(!lsnes_instance.mlogic) {
+		if(!inst.mlogic) {
 			show_message_ok(this, "Error", "Can't start project without movie", wxICON_EXCLAMATION);
 			return;
 		}
-		project_info pinfo(*lsnes_instance.dispatch);
+		project_info pinfo(*inst.dispatch);
 		pinfo.id = generate_project_id();
 		pinfo.name = tostdstring(projname->GetValue());
 		pinfo.rom = our_rom.load_filename;
 		pinfo.last_save = "";
 		pinfo.directory = tostdstring(projdir->GetValue());
 		pinfo.prefix = tostdstring(projpfx->GetValue());
-		auto& m = lsnes_instance.mlogic->get_mfile();
+		auto& m = inst.mlogic->get_mfile();
 		pinfo.gametype = m.gametype->get_name();
 		pinfo.settings = m.settings;
 		pinfo.coreversion = m.coreversion;
@@ -264,8 +265,8 @@ namespace
 		pinfo.projectid = m.projectid;
 		pinfo.active_branch = 0;
 		pinfo.next_branch = 0;
-		lsnes_instance.project->copy_watches(pinfo);
-		lsnes_instance.project->copy_macros(pinfo, *lsnes_instance.controls);
+		inst.project->copy_watches(pinfo);
+		inst.project->copy_macros(pinfo, *inst.controls);
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			pinfo.roms[i] = our_rom.romimg[i].filename;
 			pinfo.romimg_sha256[i] = m.romimg_sha256[i];
@@ -294,8 +295,8 @@ namespace
 no_watch:
 		project_info* pinfo2 = new project_info(pinfo);
 		pinfo2->flush();
-		project_info* old_proj = lsnes_instance.project->get();
-		lsnes_instance.project->set(pinfo2, true);
+		project_info* old_proj = inst.project->get();
+		inst.project->set(pinfo2, true);
 		if(old_proj)
 			delete old_proj;
 		EndModal(wxID_OK);
@@ -445,7 +446,7 @@ no_watch:
 class wxwin_project : public wxDialog
 {
 public:
-	wxwin_project();
+	wxwin_project(emulator_instance& _inst);
 	~wxwin_project();
 	void on_file_select(wxCommandEvent& e);
 	void on_new_select(wxCommandEvent& e);
@@ -455,6 +456,7 @@ public:
 	void on_load(wxCommandEvent& e);
 private:
 	struct moviefile& make_movie();
+	emulator_instance& inst;
 	std::map<std::string, wxTextCtrl*> sram_files;
 	std::map<std::string, wxButton*> sram_choosers;
 	std::map<std::string, setting_select> settings;
@@ -470,22 +472,22 @@ private:
 
 
 
-void show_projectwindow(wxWindow* modwin)
+void show_projectwindow(wxWindow* modwin, emulator_instance& inst)
 {
 	if(!our_rom.rtype) {
 		show_message_ok(modwin, "Can't start new movie", "No ROM loaded", wxICON_EXCLAMATION);
 		return;
 	}
-	wxwin_project* projwin = new wxwin_project();
+	wxwin_project* projwin = new wxwin_project(inst);
 	projwin->ShowModal();
 	projwin->Destroy();
 }
 
 //------------------------------------------------------------
 
-wxwin_project::wxwin_project()
+wxwin_project::wxwin_project(emulator_instance& _inst)
 	: wxDialog(NULL, wxID_ANY, wxT("Project settings"), wxDefaultPosition, wxSize(-1, -1),
-		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
+		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX), inst(_inst)
 {
 	std::vector<wxString> cchoices;
 
@@ -631,7 +633,7 @@ void wxwin_project::on_load(wxCommandEvent& e)
 		mov.start_paused = false;
 		rrdata_set tmp_rdata;
 		mov.save("$MEMORY:wxwidgets-romload-tmp", 0, true, tmp_rdata);
-		lsnes_instance.iqueue->queue("load-state $MEMORY:wxwidgets-romload-tmp");
+		inst.iqueue->queue("load-state $MEMORY:wxwidgets-romload-tmp");
 		EndModal(0);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading movie", e.what(), wxICON_EXCLAMATION);
@@ -686,13 +688,13 @@ struct moviefile& wxwin_project::make_movie()
 	return f;
 }
 
-void open_new_project_window(wxWindow* parent)
+void open_new_project_window(wxWindow* parent, emulator_instance& inst)
 {
 	if(our_rom.rtype->isnull()) {
 		show_message_ok(parent, "Can't start new project", "No ROM loaded", wxICON_EXCLAMATION);
 		return;
 	}
-	wxwin_newproject* projwin = new wxwin_newproject(parent);
+	wxwin_newproject* projwin = new wxwin_newproject(parent, inst);
 	projwin->ShowModal();
 	projwin->Destroy();
 }

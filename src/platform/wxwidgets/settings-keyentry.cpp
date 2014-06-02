@@ -9,8 +9,9 @@ namespace
 	int horiz_padding = 60;
 }
 
-press_button_dialog::press_button_dialog(wxWindow* parent, const std::string& title, bool _axis)
-	: wxDialog(parent, wxID_ANY, towxstring(title))
+press_button_dialog::press_button_dialog(wxWindow* parent, emulator_instance& _inst, const std::string& title,
+	bool _axis)
+	: wxDialog(parent, wxID_ANY, towxstring(title)), inst(_inst)
 {
 	axis = _axis;
 	wxStaticText* t;
@@ -108,7 +109,7 @@ void press_button_dialog::dismiss_with(const std::string& _k)
 				if(lch == '+' || lch == '-')
 					k = k.substr(0, k.length() - 1);
 			}
-			keyboard::key& key = lsnes_instance.keyboard->lookup_key(k);
+			keyboard::key& key = inst.keyboard->lookup_key(k);
 			if(key.get_type() != keyboard::KBD_KEYTYPE_AXIS)
 				return;
 		} catch(...) {
@@ -122,9 +123,9 @@ void press_button_dialog::dismiss_with(const std::string& _k)
 	}
 }
 
-key_entry_dialog::key_entry_dialog(wxWindow* parent, const std::string& title, const std::string& spec,
-	bool clearable)
-	: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1))
+key_entry_dialog::key_entry_dialog(wxWindow* parent, emulator_instance& _inst, const std::string& title,
+	const std::string& spec, bool clearable)
+	: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
 	wxString boxchoices[] = { wxT("Released"), wxT("Don't care"), wxT("Pressed") };
 	std::vector<wxString> classeslist;
@@ -136,8 +137,8 @@ key_entry_dialog::key_entry_dialog(wxWindow* parent, const std::string& title, c
 
 	cleared = false;
 	std::set<std::string> x;
-	mods = lsnes_instance.keyboard->all_modifiers();
-	keys = lsnes_instance.keyboard->all_keys();
+	mods = inst.keyboard->all_modifiers();
+	keys = inst.keyboard->all_keys();
 	for(auto i : keys) {
 		std::string kclass = i->get_class();
 		if(!x.count(kclass))
@@ -286,7 +287,7 @@ void key_entry_dialog::on_change_setting(wxCommandEvent& e)
 
 void key_entry_dialog::on_pressbutton(wxCommandEvent& e)
 {
-	press_button_dialog* p = new press_button_dialog(this, wtitle, false);
+	press_button_dialog* p = new press_button_dialog(this, inst, wtitle, false);
 	p->ShowModal();
 	std::string key = p->getkey();
 	p->Destroy();

@@ -116,7 +116,7 @@ namespace
 class wxeditor_memorywatch : public wxDialog
 {
 public:
-	wxeditor_memorywatch(wxWindow* parent, const std::string& name);
+	wxeditor_memorywatch(wxWindow* parent, emulator_instance& _inst, const std::string& name);
 	bool ShouldPreventAppExit() const;
 	void on_position_change(wxCommandEvent& e);
 	void on_fontsel(wxCommandEvent& e);
@@ -129,6 +129,7 @@ private:
 	void enable_for_vma(bool free, uint64_t _base, uint64_t _size);
 	void enable_condenable();
 	memwatch_printer::position_category get_poscategory();
+	emulator_instance& inst;
 	label_control<wxComboBox> type;
 	label_control<wxTextCtrl> expr;
 	label_control<wxTextCtrl> format;
@@ -160,8 +161,8 @@ private:
 	std::map<int, std::pair<uint64_t, uint64_t>> vmas_available;
 };
 
-wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, const std::string& _name)
-	: wxDialog(parent, wxID_ANY, towxstring("Edit memory watch '" + _name + "'")), name(_name)
+wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, emulator_instance& _inst, const std::string& _name)
+	: wxDialog(parent, wxID_ANY, towxstring("Edit memory watch '" + _name + "'")), inst(_inst), name(_name)
 {
 	Center();
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -206,7 +207,7 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, const std::string& 
 		nullptr, wxCB_READONLY);
 	vma.add(s5, true);
 	vma->Append(wxT("(All)"));
-	auto i = lsnes_instance.memory->get_regions();
+	auto i = inst.memory->get_regions();
 	for(auto j : i) {
 		int id = vma->GetCount();
 		vma->Append(towxstring(j->name));
@@ -300,10 +301,10 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, const std::string& 
 		this);
 	top_s->Add(s12, 0, wxGROW);
 
-	memwatch_item it(*lsnes_instance.memory);
+	memwatch_item it(*inst.memory);
 	bool had_it = false;
 	try {
-		it = lsnes_instance.mwatch->get(name);
+		it = inst.mwatch->get(name);
 		had_it = true;
 	} catch(...) {
 	}
@@ -443,7 +444,7 @@ void wxeditor_memorywatch::on_position_change(wxCommandEvent& e)
 void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 {
 	try {
-		std::string filename = choose_file_load(this, "Choose font file", lsnes_instance.project->otherpath(),
+		std::string filename = choose_file_load(this, "Choose font file", inst.project->otherpath(),
 			filetype_font);
 		font->SetValue(towxstring(filename));
 	} catch(canceled_exception& e) {
@@ -452,7 +453,7 @@ void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 
 void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 {
-	memwatch_item it(*lsnes_instance.memory);
+	memwatch_item it(*inst.memory);
 	it.expr = tostdstring(expr->GetValue());
 	it.format = tostdstring(format->GetValue());
 	it.printer.cond_enable = cond_enable->GetValue();
@@ -504,19 +505,12 @@ void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 			wxICON_EXCLAMATION);
 		return;
 	}
-	bool did_error = false;
-	std::string error;
-	lsnes_instance.iqueue->run([this, &it, &did_error, &error]() {
-		try {
-			lsnes_instance.mwatch->set(name, it);
-		} catch(std::exception& e) {
-			did_error = true;
-			error = e.what();
-		}
-	});
-	if(did_error) {
-		show_message_ok(NULL, "Bad values", std::string("Error setting memory watch: ") + error,
-			wxICON_EXCLAMATION);
+	try {
+		inst.iqueue->run([this, &it]() {
+			CORE().mwatch->set(name, it);
+		});
+	} catch(std::exception& e) {
+		show_exception(NULL, "Bad values", "Error setting memory watch", e);
 		return;
 	}
 	EndModal(wxID_OK);
@@ -530,7 +524,7 @@ void wxeditor_memorywatch::on_cancel(wxCommandEvent& e)
 class wxeditor_memorywatches : public wxDialog
 {
 public:
-	wxeditor_memorywatches(wxWindow* parent);
+	wxeditor_memorywatches(wxWindow* parent, emulator_instance& _inst);
 	bool ShouldPreventAppExit() const;
 	void on_memorywatch_change(wxCommandEvent& e);
 	void on_new(wxCommandEvent& e);
@@ -540,6 +534,7 @@ public:
 	void on_close(wxCommandEvent& e);
 private:
 	void refresh();
+	emulator_instance& inst;
 	//TODO: Make this a wxGrid.
 	wxListBox* watches;
 	wxButton* newbutton;
@@ -550,8 +545,9 @@ private:
 };
 
 
-wxeditor_memorywatches::wxeditor_memorywatches(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit memory watches"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_memorywatches::wxeditor_memorywatches(wxWindow* parent, emulator_instance& _inst)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit memory watches"), wxDefaultPosition, wxSize(-1, -1)),
+	inst(_inst)
 {
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
@@ -606,7 +602,7 @@ void wxeditor_memorywatches::on_new(wxCommandEvent& e)
 		std::string newname = pick_text(this, "New watch", "Enter name for watch:");
 		if(newname == "")
 			return;
-		wxeditor_memorywatch* nwch = new wxeditor_memorywatch(this, newname);
+		wxeditor_memorywatch* nwch = new wxeditor_memorywatch(this, inst, newname);
 		nwch->ShowModal();
 		nwch->Destroy();
 		refresh();
@@ -624,8 +620,8 @@ void wxeditor_memorywatches::on_rename(wxCommandEvent& e)
 	try {
 		bool exists = false;
 		std::string newname = pick_text(this, "Rename watch", "Enter New name for watch:");
-		lsnes_instance.iqueue->run([watch, newname, &exists]() {
-			exists = !lsnes_instance.mwatch->rename(watch, newname);
+		inst.iqueue->run([watch, newname, &exists]() {
+			exists = !CORE().mwatch->rename(watch, newname);
 		});
 		if(exists)
 			show_message_ok(this, "Error", "The target watch already exists", wxICON_EXCLAMATION);
@@ -640,7 +636,7 @@ void wxeditor_memorywatches::on_delete(wxCommandEvent& e)
 {
 	std::string watch = tostdstring(watches->GetStringSelection());
 	if(watch != "")
-		lsnes_instance.iqueue->run([watch]() { lsnes_instance.mwatch->clear(watch); });
+		inst.iqueue->run([watch]() { CORE().mwatch->clear(watch); });
 	refresh();
 	on_memorywatch_change(e);
 }
@@ -652,7 +648,7 @@ void wxeditor_memorywatches::on_edit(wxCommandEvent& e)
 		if(watch == "")
 			return;
 		std::string wtxt;
-		wxeditor_memorywatch* ewch = new wxeditor_memorywatch(this, watch);
+		wxeditor_memorywatch* ewch = new wxeditor_memorywatch(this, inst, watch);
 		ewch->ShowModal();
 		ewch->Destroy();
 		refresh();
@@ -670,8 +666,8 @@ void wxeditor_memorywatches::on_close(wxCommandEvent& e)
 void wxeditor_memorywatches::refresh()
 {
 	std::set<std::string> bind;
-	lsnes_instance.iqueue->run([&bind]() {
-		bind = lsnes_instance.mwatch->enumerate();
+	inst.iqueue->run([&bind]() {
+		bind = CORE().mwatch->enumerate();
 	});
 	watches->Clear();
 	for(auto i : bind)
@@ -682,12 +678,12 @@ void wxeditor_memorywatches::refresh()
 	on_memorywatch_change(e);
 }
 
-void wxeditor_memorywatches_display(wxWindow* parent)
+void wxeditor_memorywatches_display(wxWindow* parent, emulator_instance& inst)
 {
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
-		editor = new wxeditor_memorywatches(parent);
+		editor = new wxeditor_memorywatches(parent, inst);
 		editor->ShowModal();
 	} catch(...) {
 		return;

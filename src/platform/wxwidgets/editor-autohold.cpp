@@ -24,7 +24,7 @@
 class wxeditor_autohold : public wxDialog
 {
 public:
-	wxeditor_autohold(wxWindow* parent);
+	wxeditor_autohold(wxWindow* parent, emulator_instance& _inst);
 	~wxeditor_autohold() throw();
 	bool ShouldPreventAppExit() const;
 	void on_wclose(wxCloseEvent& e);
@@ -57,6 +57,7 @@ private:
 		wxSizer* top;
 		wxSizer* grid;
 	};
+	emulator_instance& inst;
 	std::map<int, control_triple> autoholds;
 	std::vector<controller_double> panels;
 	void update_controls();
@@ -71,8 +72,9 @@ namespace
 
 wxeditor_autohold::~wxeditor_autohold() throw() {}
 
-wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Autohold/Autofire"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_autohold::wxeditor_autohold(wxWindow* parent, emulator_instance& _inst)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Autohold/Autofire"), wxDefaultPosition, wxSize(-1, -1)),
+	inst(_inst)
 {
 	closing = false;
 	Centre();
@@ -83,7 +85,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 	hsizer->SetSizeHints(this);
 	Fit();
 
-	ahupdate.set(lsnes_instance.dispatch->autohold_update, [this](unsigned port, unsigned controller,
+	ahupdate.set(inst.dispatch->autohold_update, [this](unsigned port, unsigned controller,
 		unsigned ctrlnum,
 		bool newstate) {
 		runuifun([this, port, controller, ctrlnum, newstate]() {
@@ -95,7 +97,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 			}
 		});
 	});
-	afupdate.set(lsnes_instance.dispatch->autofire_update, [this](unsigned port, unsigned controller,
+	afupdate.set(inst.dispatch->autofire_update, [this](unsigned port, unsigned controller,
 		unsigned ctrlnum, unsigned duty, unsigned cyclelen) {
 		runuifun([this, port, controller, ctrlnum, duty]() {
 			for(auto i : this->autoholds) {
@@ -106,7 +108,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 			}
 		});
 	});
-	ahreconfigure.set(lsnes_instance.dispatch->autohold_reconfigure, [this]() {
+	ahreconfigure.set(inst.dispatch->autohold_reconfigure, [this]() {
 		runuifun([this]() {
 			try {
 				this->update_controls();
@@ -131,7 +133,7 @@ void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
 	bool isaf = (t.afid == id);
 	bool newstate = isaf ? t.afcheck->IsChecked() : t.check->IsChecked();
 	bool state = false;
-	lsnes_instance.iqueue->run([t, newstate, &state, isaf]() {
+	inst.iqueue->run([t, newstate, &state, isaf]() {
 		if(isaf) {
 			auto _state = CORE().controls->autofire2(t.port, t.controller, t.index);
 			state = (_state.first != 0);
@@ -172,7 +174,7 @@ void wxeditor_autohold::update_controls()
 	panels.clear();
 	std::vector<control_triple> _autoholds;
 	std::vector<std::string> _controller_labels;
-	lsnes_instance.iqueue->run([&_autoholds, &_controller_labels](){
+	inst.iqueue->run([&_autoholds, &_controller_labels](){
 		std::map<std::string, unsigned> next_in_class;
 		controller_frame model = CORE().controls->get_blank();
 		const port_type_set& pts = model.porttypes();
@@ -295,13 +297,13 @@ void wxeditor_autohold::on_wclose(wxCloseEvent& e)
 		Destroy();
 }
 
-void wxeditor_autohold_display(wxWindow* parent)
+void wxeditor_autohold_display(wxWindow* parent, emulator_instance& inst)
 {
 	if(autohold_open)
 		return;
 	wxeditor_autohold* v;
 	try {
-		v = new wxeditor_autohold(parent);
+		v = new wxeditor_autohold(parent, inst);
 	} catch(std::runtime_error& e) {
 		wxMessageBox(_T("No controllers present"), _T("Error"), wxICON_EXCLAMATION | wxOK, parent);
 		return;

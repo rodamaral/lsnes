@@ -15,7 +15,7 @@ namespace
 	class wxeditor_esettings_controllers : public settings_tab
 	{
 	public:
-		wxeditor_esettings_controllers(wxWindow* parent);
+		wxeditor_esettings_controllers(wxWindow* parent, emulator_instance& _inst);
 		~wxeditor_esettings_controllers();
 		void on_setkey(wxCommandEvent& e);
 		void on_clearkey(wxCommandEvent& e);
@@ -34,8 +34,8 @@ namespace
 		wxTreeItemId get_item(const string_list<char>& i);
 	};
 
-	wxeditor_esettings_controllers::wxeditor_esettings_controllers(wxWindow* parent)
-		: settings_tab(parent)
+	wxeditor_esettings_controllers::wxeditor_esettings_controllers(wxWindow* parent, emulator_instance& _inst)
+		: settings_tab(parent, _inst)
 	{
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
@@ -122,7 +122,7 @@ namespace
 			}
 			bool axis = ik->is_axis();
 			std::string wtitle = (axis ? "Specify axis for " : "Specify key for ") + name;
-			press_button_dialog* p = new press_button_dialog(this, wtitle, axis);
+			press_button_dialog* p = new press_button_dialog(this, inst, wtitle, axis);
 			p->ShowModal();
 			std::string key = p->getkey();
 			p->Destroy();
@@ -229,7 +229,7 @@ namespace
 		if(closing())
 			return;
 		std::map<keyboard::ctrlrkey*, std::string> data;
-		auto x = lsnes_instance.mapper->get_controller_keys();
+		auto x = inst.mapper->get_controller_keys();
 		realitems.clear();
 		for(auto y : x) {
 			string_list<char> key = split_on_codepoint(y->get_name(), U'\u2023');
@@ -266,7 +266,8 @@ namespace
 		on_change(e);
 	}
 
-	settings_tab_factory controllers("Controllers", [](wxWindow* parent) -> settings_tab* {
-		return new wxeditor_esettings_controllers(parent);
+	settings_tab_factory controllers("Controllers", [](wxWindow* parent, emulator_instance& _inst) ->
+		settings_tab* {
+		return new wxeditor_esettings_controllers(parent, _inst);
 	});
 }

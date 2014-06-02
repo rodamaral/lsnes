@@ -14,9 +14,12 @@
 #include <string>
 #include <list>
 
+class emulator_instance;
+
 struct settings_tab : public wxPanel
 {
-	settings_tab(wxWindow* parent) : wxPanel(parent, -1), closing_flag(false) {}
+	settings_tab(wxWindow* parent, emulator_instance& _inst) : wxPanel(parent, -1), inst(_inst),
+		closing_flag(false) {}
 	~settings_tab() {}
 	void notify_close() { closing_flag = true; }
 	bool closing() { return closing_flag; }
@@ -25,6 +28,8 @@ struct settings_tab : public wxPanel
 	void set_notify(std::function<void()> _notify) { notify = _notify; }
 	void do_notify() { notify(); }
 	void call_window_fit();
+protected:
+	emulator_instance& inst;
 private:
 	bool closing_flag;
 	std::function<void()> notify;
@@ -32,21 +37,23 @@ private:
 
 struct settings_tab_factory
 {
-	settings_tab_factory(const std::string& tabname, std::function<settings_tab*(wxWindow* parent)> create_fn);
+	settings_tab_factory(const std::string& tabname, std::function<settings_tab*(wxWindow* parent,
+		emulator_instance& inst)> create_fn);
 	~settings_tab_factory();
-	settings_tab* create(wxWindow* parent) { return _create_fn(parent); }
+	settings_tab* create(wxWindow* parent, emulator_instance& inst) { return _create_fn(parent, inst); }
 	std::string get_name() { return _tabname; }
 	static std::list<settings_tab_factory*> factories();
 private:
 	std::string _tabname;
-	std::function<settings_tab*(wxWindow* parent)> _create_fn;
+	std::function<settings_tab*(wxWindow* parent, emulator_instance& inst)> _create_fn;
 };
 
 struct settings_menu : public wxMenu
 {
-	settings_menu(wxWindow* win, int wxid_low);
+	settings_menu(wxWindow* win, emulator_instance& _inst, int wxid_low);
 	void on_selected(wxCommandEvent& e);
 private:
+	emulator_instance& inst;
 	wxWindow* parent;
 	std::map<int, settings_tab_factory*> items;
 };

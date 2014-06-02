@@ -55,9 +55,8 @@ private:
 	dumper_menu* linked;
 };
 
-
-
-dumper_menu::dumper_menu(wxWindow* win, int wxid_low, int wxid_high)
+dumper_menu::dumper_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
+	: inst(_inst)
 {
 	pwin = win;
 	win->Connect(wxid_low, wxid_high, wxEVT_COMMAND_MENU_SELECTED,
@@ -65,13 +64,13 @@ dumper_menu::dumper_menu(wxWindow* win, int wxid_low, int wxid_high)
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
 	monitor = new dumper_menu_monitor(this);
-	lsnes_instance.mdumper->add_notifier(*monitor);
+	inst.mdumper->add_notifier(*monitor);
 	update();
 }
 
 dumper_menu::~dumper_menu()
 {
-	lsnes_instance.mdumper->drop_notifier(*monitor);
+	inst.mdumper->drop_notifier(*monitor);
 	delete monitor;
 }
 
@@ -83,7 +82,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 	for(auto i : menustructure) {
 		dumper_factory_base* t = existing_dumpers[i.first].factory;
 		if(i.second.end_wxid == id) {
-			UI_end_dump(lsnes_instance, *t);
+			UI_end_dump(inst, *t);
 			return;
 		}
 		if(i.second.start_wxids.count(id)) {
@@ -93,11 +92,11 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			std::string prefix;
 			if((d & dumper_factory_base::target_type_mask) == dumper_factory_base::target_type_file) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"),
-					towxstring(lsnes_instance.project->otherpath()), wxT(""), wxT("*.*"),
+					towxstring(inst.project->otherpath()), wxT(""), wxT("*.*"),
 					wxFD_SAVE);
 				std::string modext = t->mode_extension(mode);
 					d->SetWildcard(towxstring(modext + " files|*." + modext));
-				auto p = lsnes_instance.project->get();
+				auto p = inst.project->get();
 				if(p)
 					d->SetFilename(towxstring(p->prefix + "." + modext));
 				if(d->ShowModal() == wxID_OK)
@@ -106,9 +105,9 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			} else if((d & dumper_factory_base::target_type_mask) ==
 				dumper_factory_base::target_type_prefix) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose prefix"),
-					towxstring(lsnes_instance.project->otherpath()), wxT(""), wxT("*.*"),
+					towxstring(inst.project->otherpath()), wxT(""), wxT("*.*"),
 					wxFD_SAVE);
-				auto p = lsnes_instance.project->get();
+				auto p = inst.project->get();
 				if(p)
 					d->SetFilename(towxstring(p->prefix));
 				if(d->ShowModal() == wxID_OK)
@@ -129,7 +128,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			if(prefix == "")
 				return;
 			try {
-				UI_start_dump(lsnes_instance, *t, mode, prefix);
+				UI_start_dump(inst, *t, mode, prefix);
 			} catch(std::exception& e) {
 				show_exception(this->pwin, "Error starting dump", "", e);
 			}
@@ -140,7 +139,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 
 void dumper_menu::update()
 {
-	dumper_information dinfo = UI_get_dumpers(lsnes_instance);
+	dumper_information dinfo = UI_get_dumpers(inst);
 	//Destroy all old entries.
 	for(auto i : menustructure) {
 		struct dumper_menu_struct& m = i.second;

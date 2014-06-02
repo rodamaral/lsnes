@@ -9,16 +9,19 @@
 #include <set>
 #include <vector>
 
+class emulator_instance;
+
 class projects_menu : public wxMenu
 {
 public:
-	projects_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg, 
+	projects_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high, const std::string& cfg, 
 		std::function<void(const std::string& id)> cb);
 	~projects_menu();
 	void on_select(wxCommandEvent& e);
 	void update();
 	void add(recentfiles::namedobj obj) { rfiles.add(obj); }
 private:
+	emulator_instance& inst;
 	class rhook : public recentfiles::hook
 	{
 	public:

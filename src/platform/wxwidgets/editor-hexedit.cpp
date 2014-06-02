@@ -187,9 +187,9 @@ namespace
 class wxeditor_hexedit : public wxFrame
 {
 public:
-	wxeditor_hexedit(wxWindow* parent)
+	wxeditor_hexedit(wxWindow* parent, emulator_instance& _inst)
 		: wxFrame(parent, wxID_ANY, wxT("lsnes: Memory editor"), wxDefaultPosition, wxSize(-1, -1),
-			wxCAPTION | wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU)
+			wxCAPTION | wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU), inst(_inst)
 	{
 		Centre();
 		wxBoxSizer* top = new wxBoxSizer(wxVERTICAL);
@@ -201,7 +201,7 @@ public:
 		Connect(wxEVT_CHAR, wxKeyEventHandler(wxeditor_hexedit::on_keyboard), NULL, this);
 
 		wxBoxSizer* parea = new wxBoxSizer(wxHORIZONTAL);
-		parea->Add(hpanel = new _panel(this), 1, wxGROW);
+		parea->Add(hpanel = new _panel(this, inst), 1, wxGROW);
 		hpanel->SetFocus();
 		parea->Add(scroll = new scroll_bar(this, wxID_ANY, true), 0, wxGROW);
 		top->Add(parea, 1, wxGROW);
@@ -271,7 +271,7 @@ public:
 			this->hpanel->request_paint();
 		});
 
-		corechange.set(lsnes_instance.dispatch->core_changed, [this](bool hard) {
+		corechange.set(inst.dispatch->core_changed, [this](bool hard) {
 			this->on_core_changed(hard); });
 		on_core_changed(true);
 		top->SetSizeHints(this);
@@ -366,7 +366,7 @@ public:
 	{
 		try {
 			std::string filename = choose_file_load(this, "Load bookmarks from file",
-				lsnes_instance.project->otherpath(), filetype_hexbookmarks);
+				inst.project->otherpath(), filetype_hexbookmarks);
 			auto _in = zip::readrel(filename, "");
 			std::string in(_in.begin(), _in.end());
 			JSON::node root(in);
@@ -413,7 +413,7 @@ public:
 		std::string doc = root.serialize();
 		try {
 			std::string filename = choose_file_save(this, "Save bookmarks to file",
-				lsnes_instance.project->otherpath(), filetype_hexbookmarks);
+				inst.project->otherpath(), filetype_hexbookmarks);
 			std::ofstream out(filename.c_str());
 			out << doc << std::endl;
 			out.close();
@@ -503,14 +503,14 @@ public:
 				<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 			if(n == "")
 				return;
-			memwatch_item e(*lsnes_instance.memory);
+			memwatch_item e(*inst.memory);
 			e.expr = (stringfmt() << addr).str();
 			e.format = datatypes[curtype].format;
 			e.bytes = datatypes[curtype].len;
 			e.signed_flag = (datatypes[curtype].type == 1);
 			e.float_flag = (datatypes[curtype].type == 2);
 			//Handle hostendian VMAs.
-			auto i = lsnes_instance.memory->get_regions();
+			auto i = inst.memory->get_regions();
 			bool hostendian = false;
 			for(auto& j : i) {
 				if(addr >= j->base && addr < j->base + j->size && !j->endian)
@@ -518,7 +518,7 @@ public:
 			}
 			e.endianess = hostendian ? 0 : (littleendian ? -1 : 1);
 			e.scale_div = 1ULL << datatypes[curtype].scale;
-			lsnes_instance.iqueue->run([n, &e]() { lsnes_instance.mwatch->set(n, e); });
+			inst.iqueue->run([n, &e]() { CORE().mwatch->set(n, e); });
 		} catch(canceled_exception& e) {
 		}
 	}
@@ -542,7 +542,7 @@ public:
 		bookmark_entry ent = bookmarks[id - wxID_BOOKMARKS_FIRST];
 		int r = vma_index_for_name(ent.vma);
 		uint64_t base = 0, size = 0;
-		auto i = lsnes_instance.memory->get_regions();
+		auto i = inst.memory->get_regions();
 		for(auto j : i) {
 			if(j->readonly || j->special)
 				continue;
@@ -574,7 +574,7 @@ invalid_bookmark:
 		if(selected < wxID_REGIONS_FIRST || selected > wxID_REGIONS_LAST)
 			return;
 		selected -= wxID_REGIONS_FIRST;
-		auto i = lsnes_instance.memory->get_regions();
+		auto i = inst.memory->get_regions();
 		int index = 0;
 		for(auto j : i) {
 			if(j->readonly || j->special)
@@ -641,7 +641,7 @@ invalid_bookmark:
 		if(destructing)
 			return;
 		//Switch to correct VMA.
-		auto i = lsnes_instance.memory->get_regions();
+		auto i = inst.memory->get_regions();
 		int index = 0;
 		for(auto j : i) {
 			if(j->readonly || j->special)
@@ -709,7 +709,7 @@ invalid_bookmark:
 			}
 			std::string current_reg = get_current_vma_name();
 			uint64_t nsbase = 0, nssize = 0;
-			auto i = lsnes_instance.memory->get_regions();
+			auto i = inst.memory->get_regions();
 			vma_names.clear();
 			if(hard)
 				vma_endians.clear();
@@ -756,8 +756,8 @@ invalid_bookmark:
 			hex_input_state = -1;
 			if(hpanel->seloff + 1 < hpanel->vmasize)
 				hpanel->seloff++;
-			lsnes_instance.iqueue->run([addr, byte]() {
-				lsnes_instance.memory->write<uint8_t>(addr, byte);
+			inst.iqueue->run([addr, byte]() {
+				CORE().memory->write<uint8_t>(addr, byte);
 			});
 		}
 		hpanel->request_paint();
@@ -765,8 +765,8 @@ invalid_bookmark:
 	class _panel : public text_framebuffer_panel
 	{
 	public:
-		_panel(wxeditor_hexedit* parent)
-			: text_framebuffer_panel(parent, 59, lines = 28, wxID_ANY, NULL)
+		_panel(wxeditor_hexedit* parent, emulator_instance& _inst)
+			: text_framebuffer_panel(parent, 59, lines = 28, wxID_ANY, NULL), inst(_inst)
 		{
 			rparent = parent;
 			vmabase = 0;
@@ -789,7 +789,7 @@ invalid_bookmark:
 			uint64_t _seloff = seloff;
 			int _lines = lines;
 			uint8_t* _value = value;
-			lsnes_instance.iqueue->run([_vmabase, _vmasize, paint_offset, _seloff, _value, _lines,
+			inst.iqueue->run([_vmabase, _vmasize, paint_offset, _seloff, _value, _lines,
 				this]() {
 				memory_search* memsearch = wxwindow_memorysearch_active();
 				//Paint the stuff
@@ -819,7 +819,7 @@ invalid_bookmark:
 						if(candidate) bg = (bg & 0xC0C0C0) | 0x3F0000;
 						if(addr + i == _seloff)
 							std::swap(fg, bg);
-						uint8_t b = lsnes_instance.memory->read<uint8_t>(laddr + i);
+						uint8_t b = inst.memory->read<uint8_t>(laddr + i);
 						if(rparent->hex_input_state < 0 || addr + i != seloff
 						)
 							write(hexes[(b >> 4) & 15], 1, hexcol[i], j, fg, bg);
@@ -837,7 +837,7 @@ invalid_bookmark:
 					}
 				}
 				memset(_value, 0, maxvaluelen);
-				lsnes_instance.memory->read_range(_vmabase + _seloff, _value, maxvaluelen);
+				inst.memory->read_range(_vmabase + _seloff, _value, maxvaluelen);
 			});
 			rparent->refresh_curvalue();
 			rparent->set_search_status();
@@ -864,6 +864,7 @@ invalid_bookmark:
 			seloff = rowaddr + coladdr;
 			request_paint();
 		}
+		emulator_instance& inst;
 		wxeditor_hexedit* rparent;
 		int offset;
 		uint64_t vmabase;
@@ -880,6 +881,7 @@ private:
 		int scroll;
 		uint64_t sel;
 	};
+	emulator_instance& inst;
 	wxMenu* regionmenu;
 	wxMenu* bookmarkmenu;
 	wxMenu* searchmenu;
@@ -907,7 +909,7 @@ void wxeditor_hexedit_display(wxWindow* parent)
 	if(editor)
 		return;
 	try {
-		editor = new wxeditor_hexedit(parent);
+		editor = new wxeditor_hexedit(parent, lsnes_instance);
 		editor->Show();
 	} catch(...) {
 	}

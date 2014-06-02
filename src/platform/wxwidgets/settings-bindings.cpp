@@ -10,7 +10,7 @@ namespace
 	class wxeditor_esettings_bindings : public settings_tab
 	{
 	public:
-		wxeditor_esettings_bindings(wxWindow* parent);
+		wxeditor_esettings_bindings(wxWindow* parent, emulator_instance& _inst);
 		~wxeditor_esettings_bindings();
 		void on_add(wxCommandEvent& e);
 		void on_edit(wxCommandEvent& e);
@@ -31,8 +31,8 @@ namespace
 		wxListBox* _settings;
 	};
 
-	wxeditor_esettings_bindings::wxeditor_esettings_bindings(wxWindow* parent)
-		: settings_tab(parent)
+	wxeditor_esettings_bindings::wxeditor_esettings_bindings(wxWindow* parent, emulator_instance& _inst)
+		: settings_tab(parent, _inst)
 	{
 		wxButton* tmp;
 
@@ -112,7 +112,7 @@ namespace
 			return;
 		try {
 			std::string name;
-			key_entry_dialog* d = new key_entry_dialog(this, "Specify new key", "", false);
+			key_entry_dialog* d = new key_entry_dialog(this, inst, "Specify new key", "", false);
 			if(d->ShowModal() == wxID_CANCEL) {
 				d->Destroy();
 				throw 42;
@@ -122,7 +122,7 @@ namespace
 
 			std::string newcommand = pick_text(this, "New binding", "Enter command for binding:", "");
 			try {
-				lsnes_instance.mapper->set(name, newcommand);
+				inst.mapper->set(name, newcommand);
 			} catch(std::exception& e) {
 				wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
 					wxICON_EXCLAMATION);
@@ -142,11 +142,11 @@ namespace
 			return;
 		}
 		try {
-			std::string old_command_value = lsnes_instance.mapper->get(name);
+			std::string old_command_value = inst.mapper->get(name);
 			std::string newcommand = pick_text(this, "Edit binding", "Enter new command for binding:",
 				old_command_value);
 			try {
-				lsnes_instance.mapper->set(name, newcommand);
+				inst.mapper->set(name, newcommand);
 			} catch(std::exception& e) {
 				wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
 					wxICON_EXCLAMATION);
@@ -165,7 +165,7 @@ namespace
 			refresh();
 			return;
 		}
-		try { lsnes_instance.mapper->set(name, ""); } catch(...) {}
+		try { inst.mapper->set(name, ""); } catch(...) {}
 		refresh();
 	}
 
@@ -176,9 +176,9 @@ namespace
 		int n = select->GetSelection();
 		std::map<std::string, std::string> bind;
 		std::vector<wxString> choices;
-		std::list<keyboard::keyspec> a = lsnes_instance.mapper->get_bindings();
+		std::list<keyboard::keyspec> a = inst.mapper->get_bindings();
 		for(auto i : a)
-			bind[i] = lsnes_instance.mapper->get(i);
+			bind[i] = inst.mapper->get(i);
 		for(auto i : bind) {
 			if(i.second == "")
 				continue;
@@ -208,7 +208,7 @@ namespace
 			return "";
 	}
 
-	settings_tab_factory bindings("Bindings", [](wxWindow* parent) -> settings_tab* {
-		return new wxeditor_esettings_bindings(parent);
+	settings_tab_factory bindings("Bindings", [](wxWindow* parent, emulator_instance& _inst) -> settings_tab* {
+		return new wxeditor_esettings_bindings(parent, _inst);
 	});
 }

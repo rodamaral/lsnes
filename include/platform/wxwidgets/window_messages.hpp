@@ -5,13 +5,15 @@
 #include <wx/wx.h>
 #include "platform/wxwidgets/textrender.hpp"
 
+class emulator_instance;
+
 class wxwin_messages : public wxFrame
 {
 public:
 	class panel : public text_framebuffer_panel
 	{
 	public:
-		panel(wxwin_messages* _parent, unsigned lines);
+		panel(wxwin_messages* _parent, emulator_instance& _inst, unsigned lines);
 		void on_resize(wxSizeEvent& e);
 		void on_mouse(wxMouseEvent& e);
 		void on_menu(wxCommandEvent& e);
@@ -19,6 +21,7 @@ public:
 	protected:
 		void prepare_paint();
 	private:
+		emulator_instance& inst;
 		wxwin_messages* parent;
 		size_t ilines;
 		uint64_t line_clicked;
@@ -28,7 +31,7 @@ public:
 		bool mouse_held;
 		int scroll_acc;
 	};
-	wxwin_messages();
+	wxwin_messages(emulator_instance& _inst);
 	~wxwin_messages();
 	void notify_update() throw();
 	bool ShouldPreventAppExit() const;
@@ -43,6 +46,7 @@ public:
 	void on_close(wxCloseEvent& e);
 	void reshow();
 private:
+	emulator_instance& inst;
 	wxComboBox* command;
 	panel* mpanel;
 };

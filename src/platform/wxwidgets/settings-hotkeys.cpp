@@ -15,7 +15,7 @@ namespace
 	class wxeditor_esettings_hotkeys : public settings_tab
 	{
 	public:
-		wxeditor_esettings_hotkeys(wxWindow* parent);
+		wxeditor_esettings_hotkeys(wxWindow* parent, emulator_instance& _inst);
 		~wxeditor_esettings_hotkeys();
 		void on_add(wxCommandEvent& e);
 		void on_drop(wxCommandEvent& e);
@@ -36,8 +36,8 @@ namespace
 	};
 
 
-	wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
-		: settings_tab(parent)
+	wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent, emulator_instance& _inst)
+		: settings_tab(parent, _inst)
 	{
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
@@ -119,7 +119,7 @@ namespace
 				refresh();
 				return;
 			}
-			key_entry_dialog* d = new key_entry_dialog(this, "Specify key for " + name, "", false);
+			key_entry_dialog* d = new key_entry_dialog(this, inst, "Specify key for " + name, "", false);
 			if(d->ShowModal() == wxID_CANCEL) {
 				d->Destroy();
 				return;
@@ -224,7 +224,7 @@ namespace
 			return;
 		std::map<keyboard::invbind*, std::list<keyboard::keyspec>> data;
 		realitems.clear();
-		auto x = lsnes_instance.mapper->get_inverses();
+		auto x = inst.mapper->get_inverses();
 		for(auto y : x) {
 			string_list<char> key = split_on_codepoint(y->getname(), U'\u2023');
 			names[key] = y->getname();
@@ -267,7 +267,7 @@ namespace
 		}
 	}
 
-	settings_tab_factory hotkeys("Hotkeys", [](wxWindow* parent) -> settings_tab* {
-		return new wxeditor_esettings_hotkeys(parent);
+	settings_tab_factory hotkeys("Hotkeys", [](wxWindow* parent, emulator_instance& _inst) -> settings_tab* {
+		return new wxeditor_esettings_hotkeys(parent, _inst);
 	});
 }

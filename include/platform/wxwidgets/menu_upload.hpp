@@ -6,10 +6,12 @@
 #include <map>
 #include <set>
 
+class emulator_instance;
+
 class upload_menu : public wxMenu
 {
 public:
-	upload_menu(wxWindow* win, int wxid_low, int wxid_high);
+	upload_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high);
 	~upload_menu();
 	void on_select(wxCommandEvent& e);
 	struct upload_entry
@@ -28,6 +30,7 @@ public:
 	void delete_entry(unsigned num);
 private:
 	void save();
+	emulator_instance& inst;
 	wxWindow* pwin;
 	int wxid_range_low;
 	int wxid_range_high;

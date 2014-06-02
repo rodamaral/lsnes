@@ -17,7 +17,7 @@
 class press_button_dialog: public wxDialog
 {
 public:
-	press_button_dialog(wxWindow* parent, const std::string& title, bool axis);
+	press_button_dialog(wxWindow* parent, emulator_instance& _inst, const std::string& title, bool axis);
 	std::string getkey() { return key; }
 	void on_mouse(wxMouseEvent& e);
 	void on_keyboard_up(wxKeyEvent& e);
@@ -26,6 +26,7 @@ public:
 private:
 	bool handle_mousebtn(wxMouseEvent& e, bool(wxMouseEvent::*down)()const, bool(wxMouseEvent::*up)()const,
 		const std::string& k, int flag);
+	emulator_instance& inst;
 	std::string key;
 	int mouseflag;
 	int lastkbdkey;
@@ -35,7 +36,8 @@ private:
 class key_entry_dialog : public wxDialog
 {
 public:
-	key_entry_dialog(wxWindow* parent, const std::string& title, const std::string& spec, bool clearable);
+	key_entry_dialog(wxWindow* parent, emulator_instance& _inst, const std::string& title,
+		const std::string& spec, bool clearable);
 	void on_change_setting(wxCommandEvent& e);
 	void on_ok(wxCommandEvent& e);
 	void on_cancel(wxCommandEvent& e);
@@ -55,6 +57,7 @@ private:
 		void (key_entry_dialog::*fn)(const std::string& mod));
 	void load_spec(const std::string& spec);
 	void set_class(const std::string& _class);
+	emulator_instance& inst;
 	std::map<std::string, keyentry_mod_data> modifiers;
 	std::map<std::string, std::set<std::string>> classes;
 	std::string wtitle;

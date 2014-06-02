@@ -3,9 +3,9 @@
 #include "library/eatarg.hpp"
 
 template<class T>
-recent_menu<T>::recent_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg,
-	void (*cb)(const T& name))
-	: hook(*this), rfiles(cfg, wxid_high - wxid_low)	//Reserve wxid_high for refresh.
+recent_menu<T>::recent_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high,
+	const std::string& cfg, void (*cb)(emulator_instance& inst, const T& name))
+	: inst(_inst), hook(*this), rfiles(cfg, wxid_high - wxid_low)	//Reserve wxid_high for refresh.
 {
 	pwin = win;
 	wxid_range_low = wxid_low;
@@ -28,7 +28,7 @@ template<class T> void recent_menu<T>::on_select(wxCommandEvent& e)
 	} else {
 		//Select.
 		if(entries.count(id)) {
-			callback(entries[id]);
+			callback(inst, entries[id]);
 			rfiles.add(entries[id]);
 		}
 	}
@@ -62,8 +62,8 @@ template<class T> void recent_menu<T>::add(const T& file)
 
 void _dummy_3642632773273272787237272723()
 {
-	recent_menu<recentfiles::path> x(NULL, 0, 0, "", NULL);
-	recent_menu<recentfiles::multirom> y(NULL, 0, 0, "", NULL);
+	recent_menu<recentfiles::path> x(NULL, *(emulator_instance*)NULL, 0, 0, "", NULL);
+	recent_menu<recentfiles::multirom> y(NULL, *(emulator_instance*)NULL, 0, 0, "", NULL);
 	eat_argument(&recent_menu<recentfiles::path>::add);
 	eat_argument(&recent_menu<recentfiles::multirom>::add);
 }

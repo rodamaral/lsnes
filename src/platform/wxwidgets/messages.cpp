@@ -12,8 +12,8 @@
 #define PANELWIDTH 48
 #define COMMAND_HISTORY_SIZE 500
 
-wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
-	: text_framebuffer_panel(_parent, PANELWIDTH, lines, wxID_ANY, NULL)
+wxwin_messages::panel::panel(wxwin_messages* _parent, emulator_instance& _inst, unsigned lines)
+	: text_framebuffer_panel(_parent, PANELWIDTH, lines, wxID_ANY, NULL), inst(_inst)
 {
 	parent = _parent;
 	auto pcell = get_cell();
@@ -104,7 +104,7 @@ void wxwin_messages::panel::on_menu(wxCommandEvent& e)
 	case wxID_SAVE:
 		try {
 			std::string filename = choose_file_save(this, "Save messages to",
-				lsnes_instance.project->otherpath(), filetype_textfile);
+				inst.project->otherpath(), filetype_textfile);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			if(lines == 1) str += "\n";
@@ -124,14 +124,14 @@ wxSize wxwin_messages::panel::DoGetBestSize() const
 	return wxSize(80 * 8, ilines * 16);
 }
 
-wxwin_messages::wxwin_messages()
+wxwin_messages::wxwin_messages(emulator_instance& _inst)
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Messages"), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN |
-		wxRESIZE_BORDER)
+		wxRESIZE_BORDER), inst(_inst)
 {
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
-	top_s->Add(mpanel = new panel(this, MAXMESSAGES), 1, wxEXPAND);
+	top_s->Add(mpanel = new panel(this, inst, MAXMESSAGES), 1, wxEXPAND);
 	platform::msgbuf.set_max_window_size(MAXMESSAGES);
 
 	wxFlexGridSizer* buttons_s = new wxFlexGridSizer(1, 6, 0, 0);
@@ -288,7 +288,7 @@ void wxwin_messages::on_execute(wxCommandEvent& e)
 	//Delete old commands to prevent box becoming unmageable.
 	if(command->GetCount() > COMMAND_HISTORY_SIZE)
 		command->Delete(command->GetCount() - 1);
-	lsnes_instance.iqueue->queue(cmd);
+	inst.iqueue->queue(cmd);
 }
 
 void wxwin_messages::notify_update() throw()

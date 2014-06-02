@@ -117,8 +117,9 @@ namespace
 	class dialog_disassemble : public wxDialog
 	{
 	public:
-		dialog_disassemble(wxWindow* parent);
-		dialog_disassemble(wxWindow* parent, uint64_t dflt_base, const std::string& dflt_lang);
+		dialog_disassemble(wxWindow* parent, emulator_instance& _inst);
+		dialog_disassemble(wxWindow* parent, emulator_instance& _inst, uint64_t dflt_base,
+			const std::string& dflt_lang);
 		std::string get_disassembler();
 		uint64_t get_address();
 		uint64_t get_count();
@@ -127,6 +128,7 @@ namespace
 		void on_cancel(wxCommandEvent& e) { EndModal(wxID_CANCEL); }
 	private:
 		void init(bool spec, uint64_t dflt_base, std::string dflt_lang);
+		emulator_instance& inst;
 		wxComboBox* type;
 		wxComboBox* endian;
 		wxComboBox* vma;
@@ -143,14 +145,15 @@ namespace
 	std::string dialog_disassemble::old_dflt_lang;
 	uint64_t dialog_disassemble::old_dflt_base;
 
-	dialog_disassemble::dialog_disassemble(wxWindow* parent)
-		: wxDialog(parent, wxID_ANY, wxT("Disassemble region"))
+	dialog_disassemble::dialog_disassemble(wxWindow* parent, emulator_instance& _inst)
+		: wxDialog(parent, wxID_ANY, wxT("Disassemble region")), inst(_inst)
 	{
 		init(false, 0, "");
 	}
 
-	dialog_disassemble::dialog_disassemble(wxWindow* parent, uint64_t dflt_base, const std::string& dflt_lang)
-		: wxDialog(parent, wxID_ANY, wxT("Disassemble region"))
+	dialog_disassemble::dialog_disassemble(wxWindow* parent, emulator_instance& _inst, uint64_t dflt_base,
+		const std::string& dflt_lang)
+		: wxDialog(parent, wxID_ANY, wxT("Disassemble region")), inst(_inst)
 	{
 		init(true, dflt_base, dflt_lang);
 	}
@@ -159,7 +162,7 @@ namespace
 	{
 		std::map<std::string, std::pair<uint64_t, uint64_t>> regions;
 		std::set<std::string> disasms;
-		lsnes_instance.iqueue->run([&regions, &disasms]() {
+		inst.iqueue->run([&regions, &disasms]() {
 			for(auto i : CORE().memory->get_regions())
 				regions[i->name] = std::make_pair(i->base, i->size);
 			disasms = disassembler::list();
@@ -321,7 +324,7 @@ namespace
 			std::string _vma = tostdstring(vma->GetStringSelection());
 			if(_endian <= 0 || _endian > 3) {
 				_endian = 1;
-				lsnes_instance.iqueue->run([&_endian, _vma]() {
+				inst.iqueue->run([&_endian, _vma]() {
 					for(auto i : CORE().memory->get_regions()) {
 						if(i->name == _vma) {
 							_endian = i->endian + 2;
@@ -351,7 +354,7 @@ namespace
 		uint64_t base = 0;
 		if(vma->GetSelection() && vma->GetSelection() != wxNOT_FOUND) {
 			std::string _vma = tostdstring(vma->GetStringSelection());
-			lsnes_instance.iqueue->run([&base, _vma]() {
+			inst.iqueue->run([&base, _vma]() {
 				for(auto i : CORE().memory->get_regions()) {
 					if(i->name == _vma) {
 						base = i->base;
@@ -488,7 +491,7 @@ namespace
 	class dialog_breakpoints : public wxDialog
 	{
 	public:
-		dialog_breakpoints(wxwin_tracelog* parent);
+		dialog_breakpoints(wxwin_tracelog* parent, emulator_instance& _inst);
 		void on_ok(wxCommandEvent& e) { EndModal(wxID_OK); }
 		void on_add(wxCommandEvent& e);
 		void on_delete(wxCommandEvent& e);
@@ -498,6 +501,7 @@ namespace
 		size_t get_insert_pos(std::pair<uint64_t, debug_context::etype> entry);
 		void populate_breakpoints();
 		std::list<memory_region*> regions;
+		emulator_instance& inst;
 		wxButton* ok;
 		wxButton* addb;
 		wxButton* delb;
@@ -509,7 +513,7 @@ namespace
 	class wxwin_tracelog : public wxFrame, public debug_context::callback_base
 	{
 	public:
-		wxwin_tracelog(wxWindow* parent, int _cpuid, const std::string& cpuname);
+		wxwin_tracelog(wxWindow* parent, emulator_instance& _inst, int _cpuid, const std::string& cpuname);
 		~wxwin_tracelog();
 		bool ShouldPreventAppExit() const { return false; }
 		scroll_bar* get_scroll() { return scroll; }
@@ -525,7 +529,7 @@ namespace
 		class _panel : public text_framebuffer_panel
 		{
 		public:
-			_panel(wxwin_tracelog* parent);
+			_panel(wxwin_tracelog* parent, emulator_instance& _inst);
 			void on_size(wxSizeEvent& e);
 			void on_mouse(wxMouseEvent& e);
 			wxSize DoGetBestSize() const;
@@ -536,11 +540,13 @@ namespace
 		protected:
 			void prepare_paint();
 		private:
+			emulator_instance& inst;
 			uint64_t pressed_row;
 			uint64_t current_row;
 			bool holding;
 			wxwin_tracelog* p;
 		};
+		emulator_instance& inst;
 		bool do_exit_save();
 		void scroll_pane(uint64_t line);
 		int cpuid;
@@ -579,7 +585,7 @@ namespace
 				return;
 		}
 		if(trace_active)
-			lsnes_instance.iqueue->run([this]() { kill_debug_hooks(); });
+			inst.iqueue->run([this]() { kill_debug_hooks(); });
 		trace_active = false;
 		if(!closing)
 			Destroy();
@@ -601,8 +607,8 @@ namespace
 		convert_break_to_pause();
 	}
 
-	wxwin_tracelog::_panel::_panel(wxwin_tracelog* parent)
-		: text_framebuffer_panel(parent, 20, 5, wxID_ANY, NULL)
+	wxwin_tracelog::_panel::_panel(wxwin_tracelog* parent, emulator_instance& _inst)
+		: text_framebuffer_panel(parent, 20, 5, wxID_ANY, NULL), inst(_inst)
 	{
 		p = parent;
 		pos = 0;
@@ -708,7 +714,7 @@ namespace
 
 	void wxwin_tracelog::do_rwx_break(uint64_t addr, uint64_t value, debug_context::etype type)
 	{
-		lsnes_instance.dbg->request_break();
+		inst.dbg->request_break();
 	}
 
 	void wxwin_tracelog::callback(const debug_context::params& p)
@@ -730,7 +736,7 @@ namespace
 				runuifun([this]() { this->process_lines(); });
 			}
 			if(singlestepping && p.trace.true_insn) {
-				lsnes_instance.dbg->request_break();
+				inst.dbg->request_break();
 				singlestepping = false;
 			}
 			break;
@@ -763,7 +769,7 @@ namespace
 			auto i2 = std::make_pair(addr, type);
 			auto& h = rwx_breakpoints[i2];
 			if(h)
-				lsnes_instance.dbg->remove_callback(addr, type, *this);
+				inst.dbg->remove_callback(addr, type, *this);
 			h = false;
 			break;
 		}
@@ -787,7 +793,7 @@ namespace
 	void wxwin_tracelog::on_enabled(wxCommandEvent& e)
 	{
 		bool enable = enabled->GetValue();
-		lsnes_instance.iqueue->run([this, enable]() {
+		inst.iqueue->run([this, enable]() {
 			if(enable) {
 				threads::alock h(buffer_mutex);
 				broken = broken2;
@@ -868,7 +874,7 @@ namespace
 					return;
 			}
 			if(trace_active) {
-				lsnes_instance.iqueue->run([this]() { this->kill_debug_hooks(); });
+				inst.iqueue->run([this]() { this->kill_debug_hooks(); });
 			}
 			trace_active = false;
 			Destroy();
@@ -876,7 +882,7 @@ namespace
 		} else if(e.GetId() == wxID_SAVE) {
 			try {
 				std::string filename = choose_file_save(this, "Save tracelog to",
-					lsnes_instance.project->otherpath(), filetype_trace);
+					inst.project->otherpath(), filetype_trace);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				for(auto& i : panel->rows)
@@ -943,21 +949,21 @@ namespace
 			}
 			scroll_pane(find_line);
 		} else if(e.GetId() == wxID_SINGLESTEP) {
-			lsnes_instance.iqueue->run_async([this]() {
+			inst.iqueue->run_async([this]() {
 				this->singlestepping = true;
 				CORE().command->invoke("unpause-emulator");
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_FRAMEADVANCE) {
-			lsnes_instance.iqueue->run_async([this]() { 
+			inst.iqueue->run_async([this]() { 
 				CORE().command->invoke("+advance-frame"); 
 				CORE().command->invoke("-advance-frame"); 
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_CONTINUE) {
-			lsnes_instance.iqueue->run_async([this]() {
+			inst.iqueue->run_async([this]() {
 				CORE().command->invoke("unpause-emulator");
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_BREAKPOINTS) {
-			dialog_breakpoints* d = new dialog_breakpoints(this);
+			dialog_breakpoints* d = new dialog_breakpoints(this, inst);
 			d->ShowModal();
 			d->Destroy();
 		} else if(e.GetId() == wxID_CLEAR) {
@@ -1000,7 +1006,7 @@ namespace
 		case wxID_SAVE:
 			try {
 				std::string filename = choose_file_save(this, "Save tracelog fragment to",
-					lsnes_instance.project->otherpath(), filetype_trace);
+					inst.project->otherpath(), filetype_trace);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				if(lines == 1) str += "\n";
@@ -1039,7 +1045,7 @@ namespace
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save tracelog to",
-				lsnes_instance.project->otherpath(), filetype_trace);
+				inst.project->otherpath(), filetype_trace);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			for(auto& i : panel->rows)
@@ -1059,7 +1065,7 @@ back:
 	std::set<std::pair<uint64_t, debug_context::etype>> wxwin_tracelog::get_breakpoints()
 	{
 		std::set<std::pair<uint64_t, debug_context::etype>> ret;
-		lsnes_instance.iqueue->run([this, &ret]() {
+		inst.iqueue->run([this, &ret]() {
 			for(auto i : rwx_breakpoints)
 				ret.insert(i.first);
 		});
@@ -1074,7 +1080,7 @@ back:
 			rwx_breakpoints[i2] = false;
 			return;
 		}
-		lsnes_instance.dbg->add_callback(i2.first, i2.second, *this);
+		inst.dbg->add_callback(i2.first, i2.second, *this);
 		rwx_breakpoints[i2] = true;
 	}
 
@@ -1083,14 +1089,15 @@ back:
 		std::pair<uint64_t, debug_context::etype> i2 = std::make_pair(addr, dtype);
 		auto& h = rwx_breakpoints[i2];
 		if(h)
-			lsnes_instance.dbg->remove_callback(i2.first, i2.second, *this);
+			inst.dbg->remove_callback(i2.first, i2.second, *this);
 		rwx_breakpoints.erase(i2);
 	}
 
-	wxwin_tracelog::wxwin_tracelog(wxWindow* parent, int _cpuid, const std::string& cpuname)
+	wxwin_tracelog::wxwin_tracelog(wxWindow* parent, emulator_instance& _inst, int _cpuid,
+		const std::string& cpuname)
 		: wxFrame(parent, wxID_ANY, towxstring("lsnes: Tracelog for " + cpuname), wxDefaultPosition,
 			wxDefaultSize, wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX |
-			wxCLIP_CHILDREN)
+			wxCLIP_CHILDREN), inst(_inst)
 	{
 		cpuid = _cpuid;
 		singlestepping = false;
@@ -1106,7 +1113,7 @@ back:
 		SetSizer(top_s);
 		wxBoxSizer* bottom_s = new wxBoxSizer(wxHORIZONTAL);
 		top_s->Add(enabled = new wxCheckBox(this, wxID_ANY, wxT("Enabled")), 0, wxGROW);
-		bottom_s->Add(panel = new _panel(this), 1, wxGROW);
+		bottom_s->Add(panel = new _panel(this, inst), 1, wxGROW);
 		bottom_s->Add(scroll = new scroll_bar(this, wxID_ANY, true), 0, wxGROW);
 		top_s->Add(bottom_s, 1, wxGROW);
 		enabled->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(wxwin_tracelog::on_enabled),
@@ -1163,7 +1170,7 @@ back:
 	class wxwin_disassembler : public wxFrame
 	{
 	public:
-		wxwin_disassembler(wxWindow* parent);
+		wxwin_disassembler(wxWindow* parent, emulator_instance& _inst);
 		bool ShouldPreventAppExit() const { return false; }
 		scroll_bar* get_scroll() { return scroll; }
 		void on_menu(wxCommandEvent& e);
@@ -1172,7 +1179,7 @@ back:
 		class _panel : public text_framebuffer_panel
 		{
 		public:
-			_panel(wxwin_disassembler* parent);
+			_panel(wxwin_disassembler* parent, emulator_instance& _inst);
 			void on_size(wxSizeEvent& e);
 			void on_mouse(wxMouseEvent& e);
 			wxSize DoGetBestSize() const;
@@ -1183,6 +1190,7 @@ back:
 		protected:
 			void prepare_paint();
 		private:
+			emulator_instance& inst;
 			uint64_t pressed_row;
 			uint64_t current_row;
 			bool holding;
@@ -1194,14 +1202,15 @@ back:
 		void add_rows_main(const std::map<uint64_t, disasm_row>& rowdata);
 		void run_disassembler(const std::string& disasm, uint64_t addrbase, uint64_t count);
 		void scroll_pane(uint64_t line);
+		emulator_instance& inst;
 		scroll_bar* scroll;
 		_panel* panel;
 		bool dirty;
 		bool closing;
 	};
 
-	wxwin_disassembler::_panel::_panel(wxwin_disassembler* parent)
-		: text_framebuffer_panel(parent, 20, 5, wxID_ANY, NULL)
+	wxwin_disassembler::_panel::_panel(wxwin_disassembler* parent, emulator_instance& _inst)
+		: text_framebuffer_panel(parent, 20, 5, wxID_ANY, NULL), inst(_inst)
 	{
 		p = parent;
 		pos = 0;
@@ -1297,7 +1306,7 @@ back:
 		} else if(e.GetId() == wxID_SAVE) {
 			try {
 				std::string filename = choose_file_save(this, "Save disassembly to",
-					lsnes_instance.project->otherpath(), filetype_disassembly);
+					inst.project->otherpath(), filetype_disassembly);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				for(auto& i : panel->rows)
@@ -1311,7 +1320,7 @@ back:
 			}
 		} else if(e.GetId() == wxID_DISASM) {
 			std::string tmp;
-			dialog_disassemble* d = new dialog_disassemble(this);
+			dialog_disassemble* d = new dialog_disassemble(this, inst);
 			if(d->ShowModal() != wxID_OK) {
 				d->Destroy();
 				return;
@@ -1320,13 +1329,13 @@ back:
 			uint64_t addr = d->get_address();
 			uint64_t count = d->get_count();
 			d->Destroy();
-			lsnes_instance.iqueue->run_async([this, disasm, addr, count]() {
+			inst.iqueue->run_async([this, disasm, addr, count]() {
 				this->run_disassembler(disasm, addr, count);
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_GOTO) {
 			try {
 				std::string to = pick_text(this, "Goto", "Enter address to go to:", "");
-				lsnes_instance.iqueue->run_async([this, to]() {
+				inst.iqueue->run_async([this, to]() {
 					uint64_t addr;
 					uint64_t base = 0;
 					std::string vma;
@@ -1414,7 +1423,7 @@ back:
 			auto& r = row_map[base];
 			base = base + r.cover;
 			std::string disasm = r.language;
-			dialog_disassemble* d = new dialog_disassemble(this, base, disasm);
+			dialog_disassemble* d = new dialog_disassemble(this, inst, base, disasm);
 			if(d->ShowModal() != wxID_OK) {
 				d->Destroy();
 				return;
@@ -1424,7 +1433,7 @@ back:
 			uint64_t count = d->get_count();
 			d->Destroy();
 			auto pp = p;
-			lsnes_instance.iqueue->run_async([pp, disasm, addr, count]() {
+			inst.iqueue->run_async([pp, disasm, addr, count]() {
 				pp->run_disassembler(disasm, addr, count);
 			}, [](std::exception& e) {});
 			//Delete entries in (rbase, addr) if addr = base.
@@ -1463,7 +1472,7 @@ back:
 		case wxID_SAVE:
 			try {
 				std::string filename = choose_file_save(this, "Save disassembly fragment to",
-					lsnes_instance.project->otherpath(), filetype_disassembly);
+					inst.project->otherpath(), filetype_disassembly);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				if(lines == 1) str += "\n";
@@ -1500,9 +1509,9 @@ back:
 		return y.str();
 	}
 
-	std::string lookup_address(uint64_t raw)
+	std::string lookup_address(emulator_instance& inst, uint64_t raw)
 	{
-		auto g = lsnes_instance.memory->lookup(raw);
+		auto g = inst.memory->lookup(raw);
 		if(!g.first)
 			return hex::to<uint64_t>(raw);
 		else
@@ -1577,17 +1586,17 @@ back:
 		std::map<uint64_t, disasm_row> _rowdata;
 		for(auto& i : rowdata) {
 			_rowdata[i.first] = i.second;
-			_rowdata[i.first].row = lookup_address(i.first) + " " + i.second.row;
+			_rowdata[i.first].row = lookup_address(inst, i.first) + " " + i.second.row;
 		}
 		runuifun([this, _rowdata]() { this->add_rows(_rowdata); });
 	}
 
-	template<typename T, bool hex> disasm_row _disassemble_data_item(uint64_t& addrbase, int endian,
-		const std::string& disasm)
+	template<typename T, bool hex> disasm_row _disassemble_data_item(emulator_instance& inst, uint64_t& addrbase,
+		int endian, const std::string& disasm)
 	{
 		char buf[sizeof(T)];
 		for(size_t i = 0; i < sizeof(T); i++)
-			buf[i] = lsnes_instance.memory->read<uint8_t>(addrbase + i);
+			buf[i] = inst.memory->read<uint8_t>(addrbase + i);
 		disasm_row r;
 		if(hex)
 			r.row = (stringfmt() << "DATA 0x" << hex::to<T>(serialization::read_endian<T>(buf, endian))).
@@ -1602,30 +1611,30 @@ back:
 		return r;
 	}
 
-	disasm_row disassemble_data_item(uint64_t& addrbase, const std::string& disasm)
+	disasm_row disassemble_data_item(emulator_instance& inst, uint64_t& addrbase, const std::string& disasm)
 	{
 		int endian;
 		if(disasm[7] == 'l') endian = -1;
 		if(disasm[7] == 'h') endian = 0;
 		if(disasm[7] == 'b') endian = 1;
 		switch(disasm[6]) {
-		case 'b':	return _disassemble_data_item<int8_t, false>(addrbase, endian, disasm);
-		case 'B':	return _disassemble_data_item<uint8_t, false>(addrbase, endian, disasm);
-		case 'c':	return _disassemble_data_item<uint8_t, true>(addrbase, endian, disasm);
-		case 'C':	return _disassemble_data_item<uint16_t, true>(addrbase, endian, disasm);
-		case 'd':	return _disassemble_data_item<int32_t, false>(addrbase, endian, disasm);
-		case 'D':	return _disassemble_data_item<uint32_t, false>(addrbase, endian, disasm);
-		case 'f':	return _disassemble_data_item<float, false>(addrbase, endian, disasm);
-		case 'F':	return _disassemble_data_item<double, false>(addrbase, endian, disasm);
-		case 'h':	return _disassemble_data_item<ss_int24_t, false>(addrbase, endian, disasm);
-		case 'H':	return _disassemble_data_item<ss_uint24_t, false>(addrbase, endian, disasm);
-		case 'i':	return _disassemble_data_item<ss_uint24_t, true>(addrbase, endian, disasm);
-		case 'I':	return _disassemble_data_item<uint32_t, true>(addrbase, endian, disasm);
-		case 'q':	return _disassemble_data_item<int64_t, false>(addrbase, endian, disasm);
-		case 'Q':	return _disassemble_data_item<uint64_t, false>(addrbase, endian, disasm);
-		case 'r':	return _disassemble_data_item<uint64_t, true>(addrbase, endian, disasm);
-		case 'w':	return _disassemble_data_item<int16_t, false>(addrbase, endian, disasm);
-		case 'W':	return _disassemble_data_item<uint16_t, false>(addrbase, endian, disasm);
+		case 'b':	return _disassemble_data_item<int8_t, false>(inst, addrbase, endian, disasm);
+		case 'B':	return _disassemble_data_item<uint8_t, false>(inst, addrbase, endian, disasm);
+		case 'c':	return _disassemble_data_item<uint8_t, true>(inst, addrbase, endian, disasm);
+		case 'C':	return _disassemble_data_item<uint16_t, true>(inst, addrbase, endian, disasm);
+		case 'd':	return _disassemble_data_item<int32_t, false>(inst, addrbase, endian, disasm);
+		case 'D':	return _disassemble_data_item<uint32_t, false>(inst, addrbase, endian, disasm);
+		case 'f':	return _disassemble_data_item<float, false>(inst, addrbase, endian, disasm);
+		case 'F':	return _disassemble_data_item<double, false>(inst, addrbase, endian, disasm);
+		case 'h':	return _disassemble_data_item<ss_int24_t, false>(inst, addrbase, endian, disasm);
+		case 'H':	return _disassemble_data_item<ss_uint24_t, false>(inst, addrbase, endian, disasm);
+		case 'i':	return _disassemble_data_item<ss_uint24_t, true>(inst, addrbase, endian, disasm);
+		case 'I':	return _disassemble_data_item<uint32_t, true>(inst, addrbase, endian, disasm);
+		case 'q':	return _disassemble_data_item<int64_t, false>(inst, addrbase, endian, disasm);
+		case 'Q':	return _disassemble_data_item<uint64_t, false>(inst, addrbase, endian, disasm);
+		case 'r':	return _disassemble_data_item<uint64_t, true>(inst, addrbase, endian, disasm);
+		case 'w':	return _disassemble_data_item<int16_t, false>(inst, addrbase, endian, disasm);
+		case 'W':	return _disassemble_data_item<uint16_t, false>(inst, addrbase, endian, disasm);
 		};
 		throw std::runtime_error("Invalid kind of data");
 	}
@@ -1660,10 +1669,10 @@ back:
 		std::map<uint64_t, disasm_row> rowdata;
 		if(regex_match("\\$data:.*", disasm)) {
 			if(run_show_error(this, "Error in disassember", "Error in disassember",
-				[disasm, &rowdata, &addrbase, count]() {
+				[this, disasm, &rowdata, &addrbase, count]() {
 				for(uint64_t i = 0; i < count; i++) {
 					uint64_t base = addrbase;
-					disasm_row r = disassemble_data_item(addrbase, disasm);
+					disasm_row r = disassemble_data_item(this->inst, addrbase, disasm);
 					rowdata[base] = r;
 				}
 				}))
@@ -1680,8 +1689,8 @@ back:
 		for(uint64_t i = 0; i < count; i++) {
 			uint64_t base = addrbase;
 			disasm_row r;
-			r.row = d->disassemble(addrbase, [&addrbase]() -> unsigned char {
-				return lsnes_instance.memory->read<uint8_t>(addrbase++);
+			r.row = d->disassemble(addrbase, [this, &addrbase]() -> unsigned char {
+				return this->inst.memory->read<uint8_t>(addrbase++);
 			});
 			r.cover = addrbase - base;
 			r.language = disasm;
@@ -1695,7 +1704,7 @@ back:
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save disassembly to",
-				lsnes_instance.project->otherpath(), filetype_disassembly);
+				inst.project->otherpath(), filetype_disassembly);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			for(auto& i : panel->rows)
@@ -1712,16 +1721,16 @@ back:
 		return true;
 	}
 
-	wxwin_disassembler::wxwin_disassembler(wxWindow* parent)
+	wxwin_disassembler::wxwin_disassembler(wxWindow* parent, emulator_instance& _inst)
 		: wxFrame(parent, wxID_ANY, towxstring("lsnes: Disassembler"), wxDefaultPosition,
 			wxDefaultSize, wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX |
-			wxCLIP_CHILDREN)
+			wxCLIP_CHILDREN), inst(_inst)
 	{
 		closing = false;
 		dirty = false;
 		wxBoxSizer* top_s = new wxBoxSizer(wxHORIZONTAL);
 		SetSizer(top_s);
-		top_s->Add(panel = new _panel(this), 1, wxGROW);
+		top_s->Add(panel = new _panel(this, inst), 1, wxGROW);
 		top_s->Add(scroll = new scroll_bar(this, wxID_ANY, true), 0, wxGROW);
 		scroll->set_page_size(panel->get_characters().second);
 		scroll->set_handler([this](scroll_bar& s) {
@@ -1757,11 +1766,11 @@ back:
 		SetClientSize(tmp2);
 	}
 
-	dialog_breakpoints::dialog_breakpoints(wxwin_tracelog* parent)
-		: wxDialog(parent, wxID_ANY, wxT("Breakpoints"))
+	dialog_breakpoints::dialog_breakpoints(wxwin_tracelog* parent, emulator_instance& _inst)
+		: wxDialog(parent, wxID_ANY, wxT("Breakpoints")), inst(_inst)
 	{
 		pwin = parent;
-		regions = lsnes_instance.memory->get_regions();
+		regions = inst.memory->get_regions();
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 		top_s->Add(brklist = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(300, 400)), 1, wxGROW);
@@ -1807,7 +1816,7 @@ back:
 		}
 		rpair(addr, dtype) = d->get_result();
 		d->Destroy();
-		lsnes_instance.iqueue->run_async([this, addr, dtype]() {
+		inst.iqueue->run_async([this, addr, dtype]() {
 			pwin->add_breakpoint(addr, dtype);
 		}, [](std::exception& e) {});
 		auto ent = std::make_pair(addr, dtype);
@@ -1826,7 +1835,7 @@ back:
 		debug_context::etype dtype;
 		addr = listsyms[idx].first;
 		dtype = listsyms[idx].second;
-		lsnes_instance.iqueue->run_async([this, addr, dtype]() {
+		inst.iqueue->run_async([this, addr, dtype]() {
 			pwin->remove_breakpoint(addr, dtype);
 		}, [](std::exception& e) {});
 		brklist->Delete(idx);
@@ -1868,18 +1877,18 @@ back:
 	}
 }
 
-void wxeditor_tracelog_display(wxWindow* parent, int cpuid, const std::string& cpuname)
+void wxeditor_tracelog_display(wxWindow* parent, emulator_instance& inst, int cpuid, const std::string& cpuname)
 {
 	try {
-		wxwin_tracelog* d = new wxwin_tracelog(parent, cpuid, cpuname);
+		wxwin_tracelog* d = new wxwin_tracelog(parent, inst, cpuid, cpuname);
 		d->Show();
 	} catch(std::exception& e) {
 		show_message_ok(parent, "Error opening trace logger", e.what(), wxICON_EXCLAMATION);
 	}
 }
 
-void wxeditor_disassembler_display(wxWindow* parent)
+void wxeditor_disassembler_display(wxWindow* parent, emulator_instance& inst)
 {
-	wxwin_disassembler* d = new wxwin_disassembler(parent);
+	wxwin_disassembler* d = new wxwin_disassembler(parent, inst);
 	d->Show();
 }

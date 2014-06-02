@@ -14,7 +14,7 @@ namespace
 
 
 settings_tab_factory::settings_tab_factory(const std::string& tabname,
-	std::function<settings_tab*(wxWindow* parent)> create_fn)
+	std::function<settings_tab*(wxWindow* parent, emulator_instance& inst)> create_fn)
 	: _tabname(tabname), _create_fn(create_fn)
 {
 	_factories()[_tabname] = this;
@@ -33,7 +33,8 @@ std::list<settings_tab_factory*> settings_tab_factory::factories()
 	return f;
 }
 
-settings_menu::settings_menu(wxWindow* win, int id)
+settings_menu::settings_menu(wxWindow* win, emulator_instance& _inst, int id)
+	: inst(_inst)
 {
 	parent = win;
 	items[id] = NULL;
@@ -92,12 +93,13 @@ namespace
 	class wxeditor_esettings2 : public wxDialog
 	{
 	public:
-		wxeditor_esettings2(wxWindow* parent, settings_tab_factory* singletab);
+		wxeditor_esettings2(wxWindow* parent, emulator_instance& _inst, settings_tab_factory* singletab);
 		~wxeditor_esettings2();
 		bool ShouldPreventAppExit() const;
 		void on_close(wxCommandEvent& e);
 		void on_notify();
 	private:
+		emulator_instance& inst;
 		wxNotebook* tabset;
 		wxButton* closebutton;
 		std::list<settings_tab*> tabs;
@@ -112,12 +114,13 @@ namespace
 			return "lsnes: Configuration: " + singletab->get_name();
 	}
 
-	wxeditor_esettings2::wxeditor_esettings2(wxWindow* parent, settings_tab_factory* singletab)
+	wxeditor_esettings2::wxeditor_esettings2(wxWindow* parent, emulator_instance& _inst,
+		settings_tab_factory* singletab)
 		: wxDialog(parent, wxID_ANY, towxstring(get_title(singletab)), wxDefaultPosition, wxSize(-1, -1),
-			wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER)
+			wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER), inst(_inst)
 	{
 		//Grab keys to prevent the joystick driver from running who knows what commands.
-		lsnes_instance.keyboard->set_exclusive(&keygrabber);
+		inst.keyboard->set_exclusive(&keygrabber);
 
 		Centre();
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -125,7 +128,7 @@ namespace
 
 		if(singletab) {
 			//If this throws, let it throw through.
-			settings_tab* t = singletab->create(this);
+			settings_tab* t = singletab->create(this, inst);
 			top_s->Add(t, 1, wxGROW);
 			t->set_notify([this]() { this->on_notify(); });
 			tabs.push_back(t);
@@ -135,7 +138,7 @@ namespace
 			for(auto i : settings_tab_factory::factories()) {
 				settings_tab* t;
 				try {
-					t = i->create(tabset);
+					t = i->create(tabset, inst);
 				} catch(...) {
 					continue;
 				}
@@ -164,7 +167,7 @@ namespace
 	{
 		for(auto i : tabs)
 			i->notify_close();
-		lsnes_instance.keyboard->set_exclusive(NULL);
+		inst.keyboard->set_exclusive(NULL);
 	}
 
 	bool wxeditor_esettings2::ShouldPreventAppExit() const
@@ -200,7 +203,7 @@ void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
 	wxDialog* editor;
 	try {
 		try {
-			editor = dlg = new wxeditor_esettings2(parent, singletab);
+			editor = dlg = new wxeditor_esettings2(parent, lsnes_instance, singletab);
 		} catch(std::exception& e) {
 			std::string title = "Configure";
 			if(singletab)
