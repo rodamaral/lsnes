@@ -1,4 +1,5 @@
 #include "core/instance.hpp"
+#include "core/instance-map.hpp"
 #include "core/moviedata.hpp"
 #include "library/keyboard.hpp"
 
@@ -30,15 +31,14 @@ namespace
 		keyboard::key_key mouse_i;
 	};
 
-	std::map<emulator_instance*, mouse_keys*> mkeys;
+	instance_map<mouse_keys> mkeys;
 }
 
 
 void handle_wx_mouse(emulator_instance& inst, wxMouseEvent& e)
 {
-	if(!mkeys.count(&inst))
-		return;
-	auto s = mkeys[&inst];
+	auto s = mkeys.lookup(inst);
+	if(!s) return;
 	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled,
 		(our_rom.rtype) ? our_rom.rtype->get_PAR() : 1.0);
 	inst.iqueue->queue(keypress_info(keyboard::modifier_set(), s->mouse_x, e.GetX() /
@@ -65,15 +65,12 @@ void handle_wx_mouse(emulator_instance& inst, wxMouseEvent& e)
 
 void initialize_wx_mouse(emulator_instance& inst)
 {
-	if(mkeys.count(&inst))
+	if(mkeys.exists(inst))
 		return;
-	mkeys[&inst] = new mouse_keys(inst);
+	mkeys.create(inst);
 }
 
 void deinitialize_wx_mouse(emulator_instance& inst)
 {
-	if(!mkeys.count(&inst))
-		return;
-	delete mkeys[&inst];
-	mkeys.erase(&inst);
+	mkeys.destroy(inst);
 }

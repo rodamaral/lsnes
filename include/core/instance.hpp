@@ -114,6 +114,9 @@ struct emulator_instance
 	master_dumper* mdumper;
 	threads::id emu_thread;
 	dtor_list D;
+private:
+	emulator_instance(const emulator_instance&);
+	emulator_instance& operator=(const emulator_instance&);
 };
 
 extern emulator_instance lsnes_instance;

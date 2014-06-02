@@ -1,6 +1,7 @@
 #include "library/keyboard.hpp"
 #include "library/keyboard-mapper.hpp"
 #include "core/instance.hpp"
+#include "core/instance-map.hpp"
 #include "core/queue.hpp"
 #include "core/window.hpp"
 #include "core/ui-services.hpp"
@@ -262,6 +263,22 @@ namespace
 
 	struct keyboard_state
 	{
+		keyboard_state(emulator_instance& inst)
+		{
+		}
+		~keyboard_state()
+		{
+			modifier_map.clear();
+			key_map.clear();
+			keys_allocated.clear();
+			keys_held.clear();
+			for(auto& m : mallocated)
+				delete m.second;
+			for(auto& k : kallocated)
+				delete k.second;
+			mallocated.clear();
+			kallocated.clear();
+		}
 		std::map<int, keyboard::modifier*> modifier_map;
 		std::map<int, keyboard::key_key*> key_map;
 		std::map<std::string, int> keys_allocated;
@@ -269,7 +286,7 @@ namespace
 		std::map<modifier_entry*, keyboard::modifier*> mallocated;
 		std::map<key_entry*, keyboard::key_key*> kallocated;
 	};
-	std::map<emulator_instance*, keyboard_state*> keyboard_states; 
+	instance_map<keyboard_state> keyboard_states; 
 }
 
 std::string map_keycode_to_key(int kcode)
@@ -285,9 +302,8 @@ std::string map_keycode_to_key(int kcode)
 
 void handle_wx_keyboard(emulator_instance& inst, wxKeyEvent& e, bool polarity)
 {
-	if(!keyboard_states.count(&inst))
-		return;
-	auto s = keyboard_states[&inst];
+	auto s = keyboard_states.lookup(inst);
+	if(!s) return;
 	int mods = e.GetModifiers();
 	int keyc = e.GetKeyCode();
 	if(polarity) {
@@ -324,9 +340,9 @@ void handle_wx_keyboard(emulator_instance& inst, wxKeyEvent& e, bool polarity)
 
 void initialize_wx_keyboard(emulator_instance& inst)
 {
-	if(keyboard_states.count(&inst))
+	if(keyboard_states.exists(inst))
 		return;
-	auto s = keyboard_states[&inst] = new keyboard_state;
+	auto s = keyboard_states.create(inst);
 	modifier_entry* m = modifiers;
 	while(m->name) {
 		if(m->lname)
@@ -350,17 +366,5 @@ void initialize_wx_keyboard(emulator_instance& inst)
 
 void deinitialize_wx_keyboard(emulator_instance& inst)
 {
-	if(!keyboard_states.count(&inst))
-		return;
-	auto s = keyboard_states[&inst];
-	s->modifier_map.clear();
-	s->key_map.clear();
-	s->keys_allocated.clear();
-	s->keys_held.clear();
-	for(auto& m : s->mallocated)
-		delete m.second;
-	for(auto& k : s->kallocated)
-		delete k.second;
-	delete s;
-	keyboard_states.erase(&inst);
+	keyboard_states.destroy(inst);
 }

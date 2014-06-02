@@ -2,6 +2,7 @@
 #include "core/memorywatch.hpp"
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
+#include "core/instance-map.hpp"
 #include "core/project.hpp"
 #include "core/memorymanip.hpp"
 #include "library/memorysearch.hpp"
@@ -30,7 +31,7 @@ class wxeditor_hexedit;
 namespace
 {
 	const size_t maxvaluelen = 8;	//The length of longest value type.
-	std::map<emulator_instance*, wxeditor_hexedit*> editor;
+	instance_map<wxeditor_hexedit> editor;
 
 	struct val_type
 	{
@@ -187,7 +188,7 @@ namespace
 class wxeditor_hexedit : public wxFrame
 {
 public:
-	wxeditor_hexedit(wxWindow* parent, emulator_instance& _inst)
+	wxeditor_hexedit(emulator_instance& _inst, wxWindow* parent)
 		: wxFrame(parent, wxID_ANY, wxT("lsnes: Memory editor"), wxDefaultPosition, wxSize(-1, -1),
 			wxCAPTION | wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU), inst(_inst)
 	{
@@ -280,7 +281,7 @@ public:
 	~wxeditor_hexedit()
 	{
 		destructing = true;
-		editor.erase(&inst);
+		editor.remove(inst);
 	}
 	bool ShouldPreventAppExit() const
 	{
@@ -906,30 +907,33 @@ private:
 
 void wxeditor_hexedit_display(wxWindow* parent, emulator_instance& inst)
 {
-	if(editor.count(&inst))
+	auto e = editor.lookup(inst);
+	if(e) {
+		e->Raise();
 		return;
+	}
 	try {
-		editor[&inst] = new wxeditor_hexedit(parent, inst);
-		editor[&inst]->Show();
+		editor.create(inst, parent)->Show();
 	} catch(...) {
 	}
 }
 
 void wxeditor_hexeditor_update(emulator_instance& inst)
 {
-	if(editor.count(&inst))
-		editor[&inst]->updated();
+	auto e = editor.lookup(inst);
+	if(e) e->updated();
 }
 
 bool wxeditor_hexeditor_available(emulator_instance& inst)
 {
-	return editor.count(&inst);
+	return editor.exists(inst);
 }
 
 bool wxeditor_hexeditor_jumpto(emulator_instance& inst, uint64_t addr)
 {
-	if(editor.count(&inst)) {
-		editor[&inst]->jumpto(addr);
+	auto e = editor.lookup(inst);
+	if(e) {
+		e->jumpto(addr);
 		return true;
 	} else
 		return false;

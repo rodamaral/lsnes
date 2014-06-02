@@ -1,5 +1,6 @@
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
+#include "core/instance-map.hpp"
 #include "core/moviedata.hpp"
 #include "core/dispatch.hpp"
 #include "core/window.hpp"
@@ -744,7 +745,7 @@ namespace
 class wxeditor_movie : public wxDialog
 {
 public:
-	wxeditor_movie(wxWindow* parent, emulator_instance& _inst);
+	wxeditor_movie(emulator_instance& _inst, wxWindow* parent);
 	~wxeditor_movie() throw();
 	bool ShouldPreventAppExit() const;
 	void on_close(wxCommandEvent& e);
@@ -833,7 +834,7 @@ private:
 
 namespace
 {
-	std::map<emulator_instance*, wxeditor_movie*> movieeditor_open;
+	instance_map<wxeditor_movie> movieeditors;
 
 	//Find the first real editable subframe.
 	//Call only in emulator thread.
@@ -872,7 +873,10 @@ namespace
 }
 
 wxeditor_movie::_moviepanel::~_moviepanel() throw() {}
-wxeditor_movie::~wxeditor_movie() throw() {}
+wxeditor_movie::~wxeditor_movie() throw()
+{
+	movieeditors.remove(inst);
+}
 
 wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v, emulator_instance& _inst)
 	: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(100, 100), wxWANTS_CHARS), inst(_inst)
@@ -2307,7 +2311,7 @@ void wxeditor_movie::_moviepanel::do_delete_controller(uint64_t row1, uint64_t r
 }
 
 
-wxeditor_movie::wxeditor_movie(wxWindow* parent, emulator_instance& _inst)
+wxeditor_movie::wxeditor_movie(emulator_instance& _inst, wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit movie"), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
 	closing = false;
@@ -2354,7 +2358,6 @@ bool wxeditor_movie::ShouldPreventAppExit() const { return false; }
 
 void wxeditor_movie::on_close(wxCommandEvent& e)
 {
-	movieeditor_open.erase(&inst);
 	Destroy();
 	closing = true;
 }
@@ -2363,7 +2366,6 @@ void wxeditor_movie::on_wclose(wxCloseEvent& e)
 {
 	bool wasc = closing;
 	closing = true;
-	movieeditor_open.erase(&inst);
 	if(!wasc)
 		Destroy();
 }
@@ -2385,11 +2387,12 @@ void wxeditor_movie::on_focus_wrong(wxFocusEvent& e)
 
 void wxeditor_movie_display(wxWindow* parent, emulator_instance& inst)
 {
-	if(movieeditor_open.count(&inst))
+	auto e = movieeditors.lookup(inst);
+	if(e) {
+		e->Raise();
 		return;
-	wxeditor_movie* v = new wxeditor_movie(parent, inst);
-	v->Show();
-	movieeditor_open[&inst] = v;
+	}
+	movieeditors.create(inst, parent)->Show();
 }
 
 void wxeditor_movie::on_keyboard_down(wxKeyEvent& e)
@@ -2404,6 +2407,6 @@ void wxeditor_movie::on_keyboard_up(wxKeyEvent& e)
 
 void wxeditor_movie_update(emulator_instance& inst)
 {
-	if(movieeditor_open.count(&inst))
-		movieeditor_open[&inst]->update();
+	auto e = movieeditors.lookup(inst);
+	if(e) e->update();
 }

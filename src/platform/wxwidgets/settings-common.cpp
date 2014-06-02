@@ -1,5 +1,6 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "core/instance.hpp"
+#include "core/instance-map.hpp"
 #include "core/keymapper.hpp"
 
 namespace
@@ -11,7 +12,7 @@ namespace
 	}
 
 	class wxeditor_esettings2;
-	std::map<emulator_instance*, wxeditor_esettings2*> sdialogs;
+	instance_map<wxeditor_esettings2> sdialogs;
 }
 
 
@@ -101,7 +102,7 @@ namespace
 	class wxeditor_esettings2 : public wxDialog
 	{
 	public:
-		wxeditor_esettings2(wxWindow* parent, emulator_instance& _inst, settings_tab_factory* singletab);
+		wxeditor_esettings2(emulator_instance& _inst, wxWindow* parent, settings_tab_factory* singletab);
 		~wxeditor_esettings2();
 		bool ShouldPreventAppExit() const;
 		void on_close(wxCommandEvent& e);
@@ -124,7 +125,7 @@ namespace
 			return "lsnes: Configuration: " + singletab->get_name();
 	}
 
-	wxeditor_esettings2::wxeditor_esettings2(wxWindow* parent, emulator_instance& _inst,
+	wxeditor_esettings2::wxeditor_esettings2(emulator_instance& _inst, wxWindow* parent,
 		settings_tab_factory* singletab)
 		: wxDialog(parent, wxID_ANY, towxstring(get_title(singletab)), wxDefaultPosition, wxSize(-1, -1),
 			wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER), inst(_inst)
@@ -178,6 +179,7 @@ namespace
 		for(auto i : tabs)
 			i->notify_close();
 		inst.keyboard->set_exclusive(NULL);
+		sdialogs.remove(inst);
 	}
 
 	bool wxeditor_esettings2::ShouldPreventAppExit() const
@@ -205,7 +207,7 @@ void display_settings_dialog(wxWindow* parent, emulator_instance& inst, settings
 	wxDialog* editor;
 	try {
 		try {
-			editor = sdialogs[&inst] = new wxeditor_esettings2(parent, inst, singletab);
+			editor = sdialogs.create(inst, parent, singletab);
 		} catch(std::exception& e) {
 			std::string title = "Configure";
 			if(singletab)
@@ -218,23 +220,20 @@ void display_settings_dialog(wxWindow* parent, emulator_instance& inst, settings
 		return;
 	}
 	editor->Destroy();
-	sdialogs.erase(&inst);
 	do_save_configuration();
 }
 
 void settings_activate_keygrab(emulator_instance& inst, std::function<void(std::string key)> callback)
 {
-	if(!sdialogs.count(&inst))
-		return;
-	wxeditor_esettings2* s = sdialogs[&inst];
+	auto s = sdialogs.lookup(inst);
+	if(!s) return;
 	s->keygrab.keygrab_callback = callback;
 	s->keygrab.keygrab_active = true;
 }
 
 void settings_deactivate_keygrab(emulator_instance& inst)
 {
-	if(!sdialogs.count(&inst))
-		return;
-	wxeditor_esettings2* s = sdialogs[&inst];
+	auto s = sdialogs.lookup(inst);
+	if(!s) return;
 	s->keygrab.keygrab_active = false;
 }

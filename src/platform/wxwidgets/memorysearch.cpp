@@ -1,5 +1,6 @@
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
+#include "core/instance-map.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/project.hpp"
@@ -70,7 +71,7 @@ namespace
 		{8, 2, ""},
 	};
 
-	std::map<emulator_instance*, wxwindow_memorysearch*> mwatch;
+	instance_map<wxwindow_memorysearch> mwatch;
 
 	const char* datatypes[] = {
 		"signed byte",
@@ -811,7 +812,7 @@ void wxwindow_memorysearch::panel::get_selection(uint64_t& first, uint64_t& last
 wxwindow_memorysearch::~wxwindow_memorysearch()
 {
 	delete msearch;
-	mwatch.erase(&inst);
+	mwatch.remove(inst);
 }
 
 bool wxwindow_memorysearch::ShouldPreventAppExit() const
@@ -996,7 +997,6 @@ void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 void wxwindow_memorysearch::on_close(wxCloseEvent& e)
 {
 	Destroy();
-	mwatch.erase(&inst);
 }
 
 void wxwindow_memorysearch::auto_update()
@@ -1214,24 +1214,22 @@ template<typename T> T wxwindow_memorysearch::promptvalue(bool& bad)
 
 void wxwindow_memorysearch_display(emulator_instance& inst)
 {
-	if(mwatch.count(&inst)) {
-		mwatch[&inst]->Raise();
+	auto e = mwatch.lookup(inst);
+	if(e) {
+		e->Raise();
 		return;
 	}
-	mwatch[&inst] = new wxwindow_memorysearch(inst);
-	mwatch[&inst]->Show();
+	mwatch.create(inst)->Show();
 }
 
 void wxwindow_memorysearch_update(emulator_instance& inst)
 {
-	if(mwatch.count(&inst))
-		mwatch[&inst]->auto_update();
+	auto e = mwatch.lookup(inst);
+	if(e) e->auto_update();
 }
 
 memory_search* wxwindow_memorysearch_active(emulator_instance& inst)
 {
-	if(mwatch.count(&inst))
-		return mwatch[&inst]->msearch;
-	else
-		return NULL;
+	auto e = mwatch.lookup(inst);
+	return e ? e->msearch : NULL;
 }
