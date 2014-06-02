@@ -9,7 +9,6 @@ namespace
 		static std::map<std::string, settings_tab_factory*> x;
 		return x;
 	}
-	class wxeditor_esettings2* dlg;
 }
 
 
@@ -189,21 +188,13 @@ namespace
 	}
 }
 
-void settings_tab::call_window_fit()
-{
-	if(dlg) {
-		std::cerr << "Call_window_fit()" << std::endl;
-		dlg->Fit();
-	}
-}
-
 void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
 {
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
 		try {
-			editor = dlg = new wxeditor_esettings2(parent, lsnes_instance, singletab);
+			editor = new wxeditor_esettings2(parent, lsnes_instance, singletab);
 		} catch(std::exception& e) {
 			std::string title = "Configure";
 			if(singletab)
@@ -215,7 +206,6 @@ void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
 	} catch(...) {
 		return;
 	}
-	dlg = NULL;
 	editor->Destroy();
 	do_save_configuration();
 }
