@@ -147,14 +147,15 @@ namespace
 
 	std::string get_slotinfo(const std::string& _filename)
 	{
+		auto& core = CORE();
 		std::string filename = resolve_relative_path(_filename);
 		if(!slotinfo_cache.count(filename)) {
 			std::ostringstream out;
 			try {
 				moviefile::brief_info info(filename);
-				if(!*CORE().mlogic)
+				if(!*core.mlogic)
 					out << "No movie";
-				else if(CORE().mlogic->get_mfile().projectid == info.projectid)
+				else if(core.mlogic->get_mfile().projectid == info.projectid)
 					out << info.rerecords << "R/" << info.current_frame << "F";
 				else
 					out << "Wrong movie";
@@ -189,16 +190,17 @@ void mainloop_signal_need_rewind(void* ptr)
 
 controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
+	auto& core = CORE();
 	if(lua_requests_subframe_paint)
-		CORE().fbuf->redraw_framebuffer();
+		core.fbuf->redraw_framebuffer();
 
 	if(subframe) {
 		if(amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance) {
 				if(!advanced_once)
-					platform::wait(advance_timeout_first(*CORE().settings) * 1000);
+					platform::wait(advance_timeout_first(*core.settings) * 1000);
 				else
-					platform::wait(advance_timeout_subframe(*CORE().settings) * 1000);
+					platform::wait(advance_timeout_subframe(*core.settings) * 1000);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
@@ -226,11 +228,11 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 			if(!cancel_advance) {
 				uint64_t wait = 0;
 				if(!advanced_once)
-					wait = advance_timeout_first(*CORE().settings) * 1000;
+					wait = advance_timeout_first(*core.settings) * 1000;
 				else if(amode == ADVANCE_SUBFRAME)
-					wait = advance_timeout_subframe(*CORE().settings) * 1000;
+					wait = advance_timeout_subframe(*core.settings) * 1000;
 				else
-					wait = CORE().framerate->to_wait_frame(framerate_regulator::get_utime());
+					wait = core.framerate->to_wait_frame(framerate_regulator::get_utime());
 				platform::wait(wait);
 				advanced_once = true;
 			}
@@ -240,16 +242,16 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 				cancel_advance = false;
 			}
 			platform::set_paused(amode == ADVANCE_PAUSE);
-		} else if(amode == ADVANCE_AUTO && CORE().mlogic->get_movie().readonly_mode() &&
-			pause_on_end(*CORE().settings) && !stop_at_frame_active) {
-			if(CORE().mlogic->get_movie().get_current_frame() ==
-				CORE().mlogic->get_movie().get_frame_count()) {
+		} else if(amode == ADVANCE_AUTO && core.mlogic->get_movie().readonly_mode() &&
+			pause_on_end(*core.settings) && !stop_at_frame_active) {
+			if(core.mlogic->get_movie().get_current_frame() ==
+				core.mlogic->get_movie().get_frame_count()) {
 				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 				platform::set_paused(true);
 			}
 		} else if(amode == ADVANCE_AUTO && stop_at_frame_active) {
-			if(CORE().mlogic->get_movie().get_current_frame() >= stop_at_frame) {
+			if(core.mlogic->get_movie().get_current_frame() >= stop_at_frame) {
 				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 				platform::set_paused(true);
@@ -262,11 +264,11 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		update_movie_state();
 	}
 	platform::flush_command_queue();
-	controller_frame tmp = CORE().controls->get(CORE().mlogic->get_movie().get_current_frame());
+	controller_frame tmp = core.controls->get(core.mlogic->get_movie().get_current_frame());
 	our_rom.rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	lua_callback_do_input(tmp, subframe);
-	CORE().mteditor->process_frame(tmp);
-	CORE().controls->commit(tmp);
+	core.mteditor->process_frame(tmp);
+	core.controls->commit(tmp);
 	return tmp;
 }
 
@@ -325,24 +327,25 @@ namespace
 
 void update_movie_state()
 {
-	auto p = CORE().project->get();
+	auto& core = CORE();
+	auto p = core.project->get();
 	bool readonly = false;
 	{
 		uint64_t magic[4];
 		our_rom.region->fill_framerate_magic(magic);
-		if(*CORE().mlogic)
-			CORE().commentary->frame_number(CORE().mlogic->get_movie().get_current_frame(),
+		if(*core.mlogic)
+			core.commentary->frame_number(core.mlogic->get_movie().get_current_frame(),
 				1.0 * magic[1] / magic[0]);
 		else
-			CORE().commentary->frame_number(0, 60.0);	//Default.
+			core.commentary->frame_number(0, 60.0);	//Default.
 	}
-	auto& _status = CORE().status->get_write();
+	auto& _status = core.status->get_write();
 	try {
-		if(*CORE().mlogic && !system_corrupt) {
+		if(*core.mlogic && !system_corrupt) {
 			_status.movie_valid = true;
-			_status.curframe = CORE().mlogic->get_movie().get_current_frame();
-			_status.length = CORE().mlogic->get_movie().get_frame_count();
-			_status.lag = CORE().mlogic->get_movie().get_lag_frames();
+			_status.curframe = core.mlogic->get_movie().get_current_frame();
+			_status.length = core.mlogic->get_movie().get_frame_count();
+			_status.lag = core.mlogic->get_movie().get_lag_frames();
 			if(location_special == SPECIAL_FRAME_START)
 				_status.subframe = 0;
 			else if(location_special == SPECIAL_SAVEPOINT)
@@ -350,7 +353,7 @@ void update_movie_state()
 			else if(location_special == SPECIAL_FRAME_VIDEO)
 				_status.subframe = _lsnes_status::subframe_video;
 			else
-				_status.subframe = CORE().mlogic->get_movie().next_poll_number();
+				_status.subframe = core.mlogic->get_movie().next_poll_number();
 		} else {
 			_status.movie_valid = false;
 			_status.curframe = 0;
@@ -358,15 +361,15 @@ void update_movie_state()
 			_status.lag = 0;
 			_status.subframe = 0;
 		}
-		_status.dumping = (CORE().mdumper->get_dumper_count() > 0);
+		_status.dumping = (core.mdumper->get_dumper_count() > 0);
 		if(amode == ADVANCE_BREAK_PAUSE)
 			_status.pause = _lsnes_status::pause_break;
 		else if(amode == ADVANCE_PAUSE)
 			_status.pause = _lsnes_status::pause_normal;
 		else
 			_status.pause = _lsnes_status::pause_none;
-		if(*CORE().mlogic) {
-			auto& mo = CORE().mlogic->get_movie();
+		if(*core.mlogic) {
+			auto& mo = core.mlogic->get_movie();
 			readonly = mo.readonly_mode();
 			if(system_corrupt)
 				_status.mode = 'C';
@@ -377,7 +380,7 @@ void update_movie_state()
 			else
 				_status.mode = 'F';
 		}
-		if(jukebox_size(*CORE().settings) > 0) {
+		if(jukebox_size(*core.settings) > 0) {
 			_status.saveslot_valid = true;
 			int tmp = -1;
 			std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, -1);
@@ -389,15 +392,15 @@ void update_movie_state()
 		_status.branch_valid = (p != NULL);
 		if(p) _status.branch = utf8::to32(p->get_branch_string());
 
-		std::string cur_branch = *CORE().mlogic ? CORE().mlogic->get_mfile().current_branch() :
+		std::string cur_branch = *core.mlogic ? core.mlogic->get_mfile().current_branch() :
 			"";
 		_status.mbranch_valid = (cur_branch != "");
 		_status.mbranch = utf8::to32(cur_branch);
 
-		_status.speed = (unsigned)(100 * CORE().framerate->get_realized_multiplier() + 0.5);
+		_status.speed = (unsigned)(100 * core.framerate->get_realized_multiplier() + 0.5);
 
-		if(*CORE().mlogic && !system_corrupt) {
-			time_t timevalue = static_cast<time_t>(CORE().mlogic->get_mfile().rtc_second);
+		if(*core.mlogic && !system_corrupt) {
+			time_t timevalue = static_cast<time_t>(core.mlogic->get_mfile().rtc_second);
 			struct tm* time_decompose = gmtime(&timevalue);
 			char datebuffer[512];
 			strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
@@ -407,7 +410,7 @@ void update_movie_state()
 			_status.rtc_valid = false;
 		}
 
-		auto mset = CORE().controls->active_macro_set();
+		auto mset = core.controls->active_macro_set();
 		bool mfirst = true;
 		std::ostringstream mss;
 		for(auto i: mset) {
@@ -418,20 +421,20 @@ void update_movie_state()
 		_status.macros = utf8::to32(mss.str());
 
 		controller_frame c;
-		if(!CORE().mteditor->any_records())
-			c = CORE().mlogic->get_movie().get_controls();
+		if(!core.mteditor->any_records())
+			c = core.mlogic->get_movie().get_controls();
 		else
-			c = CORE().controls->get_committed();
+			c = core.controls->get_committed();
 		_status.inputs.clear();
 		for(unsigned i = 0;; i++) {
-			auto pindex = CORE().controls->lcid_to_pcid(i);
-			if(pindex.first < 0 || !CORE().controls->is_present(pindex.first, pindex.second))
+			auto pindex = core.controls->lcid_to_pcid(i);
+			if(pindex.first < 0 || !core.controls->is_present(pindex.first, pindex.second))
 				break;
 			char32_t buffer[MAX_DISPLAY_LENGTH];
 			c.display(pindex.first, pindex.second, buffer);
 			std::u32string _buffer = buffer;
-			if(readonly && CORE().mteditor->is_enabled()) {
-				multitrack_edit::state st = CORE().mteditor->get(pindex.first, pindex.second);
+			if(readonly && core.mteditor->is_enabled()) {
+				multitrack_edit::state st = core.mteditor->get(pindex.first, pindex.second);
 				if(st == multitrack_edit::MT_PRESERVE)
 					_buffer += U" (keep)";
 				else if(st == multitrack_edit::MT_OVERWRITE)
@@ -448,13 +451,13 @@ void update_movie_state()
 		//Lua variables.
 		_status.lvars = get_lua_watch_vars();
 		//Memory watches.
-		_status.mvars = CORE().mwatch->get_window_vars();
+		_status.mvars = core.mwatch->get_window_vars();
 
 		_status.valid = true;
 	} catch(...) {
 	}
-	CORE().status->put_write();
-	CORE().dispatch->status_update();
+	core.status->put_write();
+	core.dispatch->status_update();
 }
 
 uint64_t audio_irq_time;
@@ -479,12 +482,13 @@ public:
 
 	int16_t set_input(unsigned port, unsigned index, unsigned control, int16_t value)
 	{
-		if(!CORE().mlogic->get_movie().readonly_mode()) {
-			controller_frame f = CORE().mlogic->get_movie().get_controls();
+		auto& core = CORE();
+		if(!core.mlogic->get_movie().readonly_mode()) {
+			controller_frame f = core.mlogic->get_movie().get_controls();
 			f.axis3(port, index, control, value);
-			CORE().mlogic->get_movie().set_controls(f);
+			core.mlogic->get_movie().set_controls(f);
 		}
-		return CORE().mlogic->get_movie().next_input(port, index, control);
+		return core.mlogic->get_movie().next_input(port, index, control);
 	}
 
 	void notify_latch(std::list<std::string>& args)
@@ -494,9 +498,10 @@ public:
 
 	void timer_tick(uint32_t increment, uint32_t per_second)
 	{
-		if(!*CORE().mlogic)
+		auto& core = CORE();
+		if(!*core.mlogic)
 			return;
-		auto& m = CORE().mlogic->get_mfile();
+		auto& m = core.mlogic->get_mfile();
 		m.rtc_subsecond += increment;
 		while(m.rtc_subsecond >= per_second) {
 			m.rtc_second++;
@@ -516,7 +521,8 @@ public:
 
 	time_t get_time()
 	{
-		return *CORE().mlogic ? CORE().mlogic->get_mfile().rtc_second : 0;
+		auto& core = CORE();
+		return *core.mlogic ? core.mlogic->get_mfile().rtc_second : 0;
 	}
 
 	time_t get_randomseed()
@@ -526,14 +532,15 @@ public:
 
 	void output_frame(framebuffer::raw& screen, uint32_t fps_n, uint32_t fps_d)
 	{
+		auto& core = CORE();
 		lua_callback_do_frame_emulated();
 		location_special = SPECIAL_FRAME_VIDEO;
-		CORE().fbuf->redraw_framebuffer(screen, false, true);
+		core.fbuf->redraw_framebuffer(screen, false, true);
 		auto rate = our_rom.rtype->get_audio_rate();
 		uint32_t gv = gcd(fps_n, fps_d);
 		uint32_t ga = gcd(rate.first, rate.second);
-		CORE().mdumper->on_rate_change(rate.first / ga, rate.second / ga);
-		CORE().mdumper->on_frame(screen, fps_n / gv, fps_d / gv);
+		core.mdumper->on_rate_change(rate.first / ga, rate.second / ga);
+		core.mdumper->on_frame(screen, fps_n / gv, fps_d / gv);
 	}
 
 	void action_state_updated()
@@ -869,9 +876,10 @@ namespace
 	command::fnptr<> set_rwmode(lsnes_cmds, "set-rwmode", "Switch to recording mode",
 		"Syntax: set-rwmode\nSwitches to recording mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			auto& core = CORE();
 			lua_callback_movie_lost("readwrite");
-			CORE().mlogic->get_movie().readonly_mode(false);
-			CORE().dispatch->mode_change(false);
+			core.mlogic->get_movie().readonly_mode(false);
+			core.dispatch->mode_change(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
 		});
@@ -879,19 +887,21 @@ namespace
 	command::fnptr<> set_romode(lsnes_cmds, "set-romode", "Switch to playback mode",
 		"Syntax: set-romode\nSwitches to playback mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().mlogic->get_movie().readonly_mode(true);
-			CORE().dispatch->mode_change(true);
+			auto& core = CORE();
+			core.mlogic->get_movie().readonly_mode(true);
+			core.dispatch->mode_change(true);
 			update_movie_state();
 		});
 
 	command::fnptr<> toggle_rwmode(lsnes_cmds, "toggle-rwmode", "Toggle recording mode",
 		"Syntax: toggle-rwmode\nToggles recording mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			bool c = CORE().mlogic->get_movie().readonly_mode();
+			auto& core = CORE();
+			bool c = core.mlogic->get_movie().readonly_mode();
 			if(c)
 				lua_callback_movie_lost("readwrite");
-			CORE().mlogic->get_movie().readonly_mode(!c);
-			CORE().dispatch->mode_change(!c);
+			core.mlogic->get_movie().readonly_mode(!c);
+			core.dispatch->mode_change(!c);
 			if(c)
 				lua_callback_do_readwrite();
 			update_movie_state();
@@ -905,8 +915,9 @@ namespace
 
 	command::fnptr<> tpon(lsnes_cmds, "toggle-pause-on-end", "Toggle pause on end", "Toggle pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			bool tmp = pause_on_end(*CORE().settings);
-			pause_on_end(*CORE().settings, !tmp);
+			auto& core = CORE();
+			bool tmp = pause_on_end(*core.settings);
+			pause_on_end(*core.settings, !tmp);
 			messages << "Pause-on-end is now " << (tmp ? "OFF" : "ON") << std::endl;
 		});
 
@@ -1110,17 +1121,18 @@ namespace
 	//failing.
 	int handle_load()
 	{
-		std::string old_project = *CORE().mlogic ? CORE().mlogic->get_mfile().projectid : "";
+		auto& core = CORE();
+		std::string old_project = *core.mlogic ? core.mlogic->get_mfile().projectid : "";
 jumpback:
 		if(do_unsafe_rewind && unsafe_rewind_obj) {
-			if(!*CORE().mlogic)
+			if(!*core.mlogic)
 				return 0;
 			uint64_t t = framerate_regulator::get_utime();
 			std::vector<char> s;
-			lua_callback_do_unsafe_rewind(s, 0, 0, CORE().mlogic->get_movie(), unsafe_rewind_obj);
-			CORE().dispatch->mode_change(false);
+			lua_callback_do_unsafe_rewind(s, 0, 0, core.mlogic->get_movie(), unsafe_rewind_obj);
+			core.dispatch->mode_change(false);
 			do_unsafe_rewind = false;
-			CORE().mlogic->get_mfile().is_savestate = true;
+			core.mlogic->get_mfile().is_savestate = true;
 			location_special = SPECIAL_SAVEPOINT;
 			update_movie_state();
 			messages << "Rewind done in " << (framerate_regulator::get_utime() - t) << " usec."
@@ -1130,13 +1142,13 @@ jumpback:
 		if(pending_new_project != "") {
 			std::string id = pending_new_project;
 			pending_new_project = "";
-			project_info* old = CORE().project->get();
+			project_info* old = core.project->get();
 			if(old && old->id == id)
 				goto nothing_to_do;
 			try {
-				auto& p = CORE().project->load(id);
-				CORE().project->set(&p);
-				if(CORE().project->get() != old)
+				auto& p = core.project->load(id);
+				core.project->set(&p);
+				if(core.project->get() != old)
 					delete old;
 				flush_slotinfo();	//Wrong movie may be stale.
 				return 1;
@@ -1187,7 +1199,7 @@ nothing_to_do:
 				if(amode == ADVANCE_LOAD)
 					goto jumpback;
 			}
-			if(old_project != (*CORE().mlogic ? CORE().mlogic->get_mfile().projectid : ""))
+			if(old_project != (*core.mlogic ? core.mlogic->get_mfile().projectid : ""))
 				flush_slotinfo();	//Wrong movie may be stale.
 			return 1;
 		}
@@ -1197,7 +1209,8 @@ nothing_to_do:
 	//If there are pending saves, perform them.
 	void handle_saves()
 	{
-		if(!*CORE().mlogic)
+		auto& core = CORE();
+		if(!*core.mlogic)
 			return;
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
 			our_rom.rtype->runtosave();
@@ -1209,9 +1222,9 @@ nothing_to_do:
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = framerate_regulator::get_utime();
 				std::vector<char> s = our_rom.save_core_state(true);
-				uint64_t secs = CORE().mlogic->get_mfile().rtc_second;
-				uint64_t ssecs = CORE().mlogic->get_mfile().rtc_subsecond;
-				lua_callback_do_unsafe_rewind(s, secs, ssecs, CORE().mlogic->get_movie(),
+				uint64_t secs = core.mlogic->get_mfile().rtc_second;
+				uint64_t ssecs = core.mlogic->get_mfile().rtc_subsecond;
+				lua_callback_do_unsafe_rewind(s, secs, ssecs, core.mlogic->get_movie(),
 					NULL);
 				do_unsafe_rewind = false;
 				messages << "Rewind point set in " << (framerate_regulator::get_utime() - t)
@@ -1245,13 +1258,14 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	std::runtime_error)
 {
 	lsnes_instance.emu_thread = threads::id();
-	mywindowcallbacks mywcb(*CORE().dispatch);
-	CORE().iqueue->system_thread_available = true;
+	auto& core = CORE();
+	mywindowcallbacks mywcb(*core.dispatch);
+	core.iqueue->system_thread_available = true;
 	//Basic initialization.
 	emulation_thread = threads::this_id();
-	jukebox_size_listener jlistener(*CORE().settings);
-	CORE().commentary->init();
-	CORE().fbuf->init_special_screens();
+	jukebox_size_listener jlistener(*core.settings);
+	core.commentary->init();
+	core.fbuf->init_special_screens();
 	our_rom = rom;
 	init_main_callbacks();
 	initialize_all_builtin_c_cores();
@@ -1265,7 +1279,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		do_load_state(initial, LOAD_STATE_INITIAL, used);
 		location_special = SPECIAL_SAVEPOINT;
 		update_movie_state();
-		first_round = CORE().mlogic->get_mfile().is_savestate;
+		first_round = core.mlogic->get_mfile().is_savestate;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -1279,7 +1293,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			throw;
 		}
 		system_corrupt = true;
-		CORE().fbuf->redraw_framebuffer(emu_framebuffer::screen_corrupt);
+		core.fbuf->redraw_framebuffer(emu_framebuffer::screen_corrupt);
 	}
 
 	platform::set_paused(initial.start_paused);
@@ -1291,23 +1305,23 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	uint64_t time_x = framerate_regulator::get_utime();
 	while(!is_quitting() || !queued_saves.empty()) {
 		if(handle_corrupt()) {
-			first_round = *CORE().mlogic && CORE().mlogic->get_mfile().is_savestate;
+			first_round = *core.mlogic && core.mlogic->get_mfile().is_savestate;
 			just_did_loadstate = first_round;
 			continue;
 		}
-		CORE().framerate->ack_frame_tick(framerate_regulator::get_utime());
+		core.framerate->ack_frame_tick(framerate_regulator::get_utime());
 		if(amode == ADVANCE_SKIPLAG_PENDING)
 			amode = ADVANCE_SKIPLAG;
 
 		if(!first_round) {
-			CORE().controls->reset_framehold();
+			core.controls->reset_framehold();
 			if(!macro_hold_1 && !macro_hold_2) {
-				CORE().controls->advance_macros();
+				core.controls->advance_macros();
 			}
 			macro_hold_2 = false;
-			CORE().mlogic->get_movie().get_pollcounters().set_framepflag(false);
-			CORE().mlogic->new_frame_starting(amode == ADVANCE_SKIPLAG);
-			CORE().mlogic->get_movie().get_pollcounters().set_framepflag(true);
+			core.mlogic->get_movie().get_pollcounters().set_framepflag(false);
+			core.mlogic->new_frame_starting(amode == ADVANCE_SKIPLAG);
+			core.mlogic->get_movie().get_pollcounters().set_framepflag(true);
 			if(is_quitting() && queued_saves.empty())
 				break;
 			handle_saves();
@@ -1315,17 +1329,17 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			if(queued_saves.empty())
 				r = handle_load();
 			if(r > 0 || system_corrupt) {
-				CORE().mlogic->get_movie().get_pollcounters().set_framepflag(
-					CORE().mlogic->get_mfile().is_savestate);
-				first_round = CORE().mlogic->get_mfile().is_savestate;
+				core.mlogic->get_movie().get_pollcounters().set_framepflag(
+					core.mlogic->get_mfile().is_savestate);
+				first_round = core.mlogic->get_mfile().is_savestate;
 				if(system_corrupt)
 					amode = ADVANCE_PAUSE;
 				else
 					amode = old_mode;
 				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
-				CORE().controls->reset_framehold();
-				CORE().dbg->do_callback_frame(CORE().mlogic->get_movie().get_current_frame(), true);
+				core.controls->reset_framehold();
+				core.dbg->do_callback_frame(core.mlogic->get_movie().get_current_frame(), true);
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
@@ -1342,29 +1356,29 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			platform::set_paused(amode == ADVANCE_PAUSE);
 			platform::flush_command_queue();
 			//We already have done the reset this frame if we are going to do one at all.
-			CORE().mlogic->get_movie().set_controls(CORE().mlogic->update_controls(true));
-			CORE().mlogic->get_movie().set_all_DRDY();
+			core.mlogic->get_movie().set_controls(core.mlogic->update_controls(true));
+			core.mlogic->get_movie().set_all_DRDY();
 			just_did_loadstate = false;
 		}
 		frame_irq_time = framerate_regulator::get_utime() - time_x;
-		CORE().dbg->do_callback_frame(CORE().mlogic->get_movie().get_current_frame(), false);
+		core.dbg->do_callback_frame(core.mlogic->get_movie().get_current_frame(), false);
 		our_rom.rtype->emulate();
 		random_mix_timing_entropy();
 		time_x = framerate_regulator::get_utime();
 		if(amode == ADVANCE_AUTO)
-			platform::wait(CORE().framerate->to_wait_frame(framerate_regulator::get_utime()));
+			platform::wait(core.framerate->to_wait_frame(framerate_regulator::get_utime()));
 		first_round = false;
 		lua_callback_do_frame();
 	}
 out:
-	CORE().mdumper->end_dumps();
+	core.mdumper->end_dumps();
 	core_core::uninstall_all_handlers();
-	CORE().commentary->kill();
-	CORE().iqueue->system_thread_available = false;
+	core.commentary->kill();
+	core.iqueue->system_thread_available = false;
 	//Kill some things to avoid crashes.
-	CORE().dbg->core_change();
-	CORE().project->set(NULL, true);
-	CORE().mwatch->clear_multi(CORE().mwatch->enumerate());
+	core.dbg->core_change();
+	core.project->set(NULL, true);
+	core.mwatch->clear_multi(core.mwatch->enumerate());
 }
 
 void set_stop_at_frame(uint64_t frame)

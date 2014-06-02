@@ -149,9 +149,10 @@ namespace
 	std::string try_guess_rom_core(const std::string& hint, const std::string& hash, const std::string& xhash,
 		const std::set<std::string>& extensions, uint64_t headersize, bool bios)
 	{
+		auto& core = CORE();
 		std::string x;
-		std::string romdir = CORE().setcache->get("rompath");
-		std::string biosdir = CORE().setcache->get("firmwarepath");
+		std::string romdir = core.setcache->get("rompath");
+		std::string biosdir = core.setcache->get("firmwarepath");
 		if((x = try_scan_hint_dir(hint, hash, xhash, romdir, extensions, headersize)) != "") return x;
 		if(bios && (x = try_scan_hint_dir(hint, hash, xhash, biosdir, extensions, headersize)) != "")
 			return x;

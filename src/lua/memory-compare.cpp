@@ -79,8 +79,9 @@ namespace
 
 	int compare_obj::call(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		bool equals = true;
-		char* pbuffer = try_map ? CORE().memory->get_physical_mapping(minaddr, maxaddr - minaddr + 1) :
+		char* pbuffer = try_map ? core.memory->get_physical_mapping(minaddr, maxaddr - minaddr + 1) :
 			NULL;
 		if(pbuffer) {
 			//Mapable.
@@ -98,7 +99,7 @@ namespace
 				uint64_t addr1 = addr + i * stride;
 				uint64_t addr2 = i * size;
 				for(uint64_t j = 0; j < size; j++) {
-					uint8_t byte = CORE().memory->read<uint8_t>(addr1 + j);
+					uint8_t byte = core.memory->read<uint8_t>(addr1 + j);
 					bool eq = prev[addr2 + j] == (char)byte;
 					if(!eq)
 						prev[addr2 + j] = byte;

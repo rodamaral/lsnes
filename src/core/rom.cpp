@@ -568,6 +568,7 @@ loaded_rom::loaded_rom(const std::string file[ROM_SLOT_COUNT], const std::string
 void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
 	throw(std::bad_alloc, std::runtime_error)
 {
+	auto& core = CORE();
 	core_type* old_type = current_rom_type;
 	core_core* old_core = current_rom_type->get_core();
 	current_rom_type = &core_null;
@@ -593,8 +594,8 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	rtype->power();
 	auto nominal_fps = rtype->get_video_rate();
 	auto nominal_hz = rtype->get_audio_rate();
-	CORE().framerate->set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
-	CORE().mdumper->on_rate_change(nominal_hz.first, nominal_hz.second);
+	core.framerate->set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
+	core.mdumper->on_rate_change(nominal_hz.first, nominal_hz.second);
 
 	current_rom_type = rtype;
 	current_region = region;
@@ -604,8 +605,8 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 			old_core->debug_reset();
 			old_core->unload_cartridge();
 		} catch(...) {}
-	(*CORE().cmapper)();
-	CORE().dispatch->core_changed(old_type != current_rom_type);
+	(*core.cmapper)();
+	core.dispatch->core_changed(old_type != current_rom_type);
 }
 
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)

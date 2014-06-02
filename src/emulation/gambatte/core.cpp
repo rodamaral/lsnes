@@ -637,8 +637,9 @@ namespace
 		void c_emulate() {
 			if(!internal_rom)
 				return;
-			bool timings_fucked_up = gbchawk_timings(*CORE().settings);
-			bool native_rate = output_native(*CORE().settings);
+			auto& core = CORE();
+			bool timings_fucked_up = gbchawk_timings(*core.settings);
+			bool native_rate = output_native(*core.settings);
 			int16_t reset = ecore_callbacks->get_input(0, 0, 1);
 			if(reset) {
 				instance->reset();

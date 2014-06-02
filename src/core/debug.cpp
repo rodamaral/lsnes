@@ -288,19 +288,20 @@ namespace
 {
 	command::fnptr<> callbacks_show(lsnes_cmds, "show-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-		for(auto& i : CORE().dbg->read_cb)
+		auto& core = CORE();
+		for(auto& i : core.dbg->read_cb)
 			for(auto& j : i.second)
 				messages << "READ addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : CORE().dbg->write_cb)
+		for(auto& i : core.dbg->write_cb)
 			for(auto& j : i.second)
 				messages << "WRITE addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : CORE().dbg->exec_cb)
+		for(auto& i : core.dbg->exec_cb)
 			for(auto& j : i.second)
 				messages << "EXEC addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : CORE().dbg->trace_cb)
+		for(auto& i : core.dbg->trace_cb)
 			for(auto& j : i.second)
 				messages << "TRACE proc=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : CORE().dbg->frame_cb)
+		for(auto& i : core.dbg->frame_cb)
 			for(auto& j : i.second)
 				messages << "FRAME handle=" << &j << std::endl;
 	});

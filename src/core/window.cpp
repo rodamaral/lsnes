@@ -252,28 +252,31 @@ namespace
 
 void platform::dummy_event_loop() throw()
 {
+	auto& core = CORE();
 	while(!do_exit_dummy_event_loop) {
-		threads::alock h(CORE().iqueue->queue_lock);
-		CORE().iqueue->run_queue(true);
-		threads::cv_timed_wait(CORE().iqueue->queue_condition, h, threads::ustime(MAXWAIT));
+		threads::alock h(core.iqueue->queue_lock);
+		core.iqueue->run_queue(true);
+		threads::cv_timed_wait(core.iqueue->queue_condition, h, threads::ustime(MAXWAIT));
 		random_mix_timing_entropy();
 	}
 }
 
 void platform::exit_dummy_event_loop() throw()
 {
+	auto& core = CORE();
 	do_exit_dummy_event_loop = true;
-	threads::alock h(CORE().iqueue->queue_lock);
-	CORE().iqueue->queue_condition.notify_all();
+	threads::alock h(core.iqueue->queue_lock);
+	core.iqueue->queue_condition.notify_all();
 	usleep(200000);
 }
 
 void platform::flush_command_queue() throw()
 {
+	auto& core = CORE();
 	reload_lua_timers();
-	CORE().iqueue->queue_function_run = false;
+	core.iqueue->queue_function_run = false;
 	if(modal_pause || normal_pause)
-		CORE().framerate->freeze_time(framerate_regulator::get_utime());
+		core.framerate->freeze_time(framerate_regulator::get_utime());
 	bool run_idle = false;
 	while(true) {
 		uint64_t now = framerate_regulator::get_utime();
@@ -286,11 +289,11 @@ void platform::flush_command_queue() throw()
 			reload_lua_timers();
 			run_idle = false;
 		}
-		threads::alock h(CORE().iqueue->queue_lock);
-		CORE().iqueue->run_queue(true);
+		threads::alock h(core.iqueue->queue_lock);
+		core.iqueue->run_queue(true);
 		if(!pausing_allowed)
 			break;
-		if(CORE().iqueue->queue_function_run)
+		if(core.iqueue->queue_function_run)
 			reload_lua_timers();
 		now = framerate_regulator::get_utime();
 		uint64_t waitleft = 0;
@@ -307,7 +310,7 @@ void platform::flush_command_queue() throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				threads::cv_timed_wait(CORE().iqueue->queue_condition, h, threads::ustime(waitleft));
+				threads::cv_timed_wait(core.iqueue->queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -315,7 +318,7 @@ void platform::flush_command_queue() throw()
 		//If we had to wait, check queues at least once more.
 	}
 	if(!modal_pause && !normal_pause)
-		CORE().framerate->unfreeze_time(framerate_regulator::get_utime());
+		core.framerate->unfreeze_time(framerate_regulator::get_utime());
 }
 
 void platform::set_paused(bool enable) throw()
@@ -325,6 +328,7 @@ void platform::set_paused(bool enable) throw()
 
 void platform::wait(uint64_t usec) throw()
 {
+	auto& core = CORE();
 	reload_lua_timers();
 	continue_time = framerate_regulator::get_utime() + usec;
 	bool run_idle = false;
@@ -339,9 +343,9 @@ void platform::wait(uint64_t usec) throw()
 			run_idle = false;
 			reload_lua_timers();
 		}
-		threads::alock h(CORE().iqueue->queue_lock);
-		CORE().iqueue->run_queue(true);
-		if(CORE().iqueue->queue_function_run)
+		threads::alock h(core.iqueue->queue_lock);
+		core.iqueue->run_queue(true);
+		if(core.iqueue->queue_function_run)
 			reload_lua_timers();
 		//If usec is 0, never wait (waitleft can be nonzero if time counting screws up).
 		if(!usec)
@@ -360,7 +364,7 @@ void platform::wait(uint64_t usec) throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0) {
-				threads::cv_timed_wait(CORE().iqueue->queue_condition, h, threads::ustime(waitleft));
+				threads::cv_timed_wait(core.iqueue->queue_condition, h, threads::ustime(waitleft));
 				random_mix_timing_entropy();
 			}
 		} else
@@ -370,9 +374,10 @@ void platform::wait(uint64_t usec) throw()
 
 void platform::cancel_wait() throw()
 {
+	auto& core = CORE();
 	continue_time = 0;
-	threads::alock h(CORE().iqueue->queue_lock);
-	CORE().iqueue->queue_condition.notify_all();
+	threads::alock h(core.iqueue->queue_lock);
+	core.iqueue->queue_condition.notify_all();
 }
 
 void platform::set_modal_pause(bool enable) throw()

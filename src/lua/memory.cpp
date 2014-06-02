@@ -46,11 +46,12 @@ namespace
 		bool (memory_space::*wfun)(uint64_t addr, T value)>
 	void do_rw(lua::state& L, uint64_t addr, bool wrflag)
 	{
+		auto& core = CORE();
 		if(wrflag) {
 			T value = L.get_numeric_argument<T>(3, "aperture(write)");
-			(CORE().memory->*wfun)(addr, value);
+			(core.memory->*wfun)(addr, value);
 		} else
-			L.pushnumber(static_cast<T>((CORE().memory->*rfun)(addr)));
+			L.pushnumber(static_cast<T>((core.memory->*rfun)(addr)));
 	}
 
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
@@ -562,6 +563,7 @@ namespace
 
 	template<bool write, bool sign> int memory_scattergather(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		static char deprecation;
 		uint64_t val = 0;
 		unsigned shift = 0;
@@ -585,9 +587,9 @@ namespace
 			if(!have_vmabase && L.do_once(&deprecation))
 				messages << P.get_fname() << ": Global memory form is deprecated." << std::endl;
 			if(write)
-				CORE().memory->write<uint8_t>(addr + vmabase, val >> shift);
+				core.memory->write<uint8_t>(addr + vmabase, val >> shift);
 			else
-				val = val + ((uint64_t)CORE().memory->read<uint8_t>(addr + vmabase) << shift);
+				val = val + ((uint64_t)core.memory->read<uint8_t>(addr + vmabase) << shift);
 			shift += 8;
 		}
 		if(!write) {
@@ -608,15 +610,16 @@ namespace
 
 	int cheat(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr, value;
 
 		addr = lua_get_read_address(P);
 
 		if(P.is_novalue()) {
-			CORE().dbg->clear_cheat(addr);
+			core.dbg->clear_cheat(addr);
 		} else {
 			P(value);
-			CORE().dbg->set_cheat(addr, value);
+			core.dbg->set_cheat(addr, value);
 		}
 		return 0;
 	}
@@ -668,6 +671,7 @@ namespace
 		std::string(*read)(H& state), bool extra>
 	int hash_core(H& state, lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		std::string hash;
 		uint64_t addr, size, low, high;
 		uint64_t stride = 0, rows = 1;
@@ -686,7 +690,7 @@ namespace
 		if(low > high || high - low + 1 == 0)
 			mappable = false;
 
-		char* pbuffer = mappable ? CORE().memory->get_physical_mapping(low, high - low + 1) : NULL;
+		char* pbuffer = mappable ? core.memory->get_physical_mapping(low, high - low + 1) : NULL;
 		if(low > high) {
 		} else if(pbuffer) {
 			uint64_t offset = addr - low;
@@ -701,7 +705,7 @@ namespace
 				while(sz > 0) {
 					size_t ssz = min(sz, static_cast<size_t>(BLOCKSIZE));
 					for(size_t i = 0; i < ssz; i++)
-						buffer[i] = CORE().memory->read<uint8_t>(offset + i);
+						buffer[i] = core.memory->read<uint8_t>(offset + i);
 					offset += ssz;
 					sz -= ssz;
 					update(state, buffer, ssz);
@@ -752,6 +756,7 @@ namespace
 	template<bool cmp>
 	int copy_to_host(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr, daddr, size, low, high;
 		uint64_t stride = 0, rows = 1;
 		bool equals = true, mappable = true;
@@ -769,13 +774,13 @@ namespace
 		if((size_t)(daddr + rows * size) < daddr)
 			throw std::runtime_error("Size to copy too large");
 
-		auto& h = CORE().mlogic->get_mfile().host_memory;
+		auto& h = core.mlogic->get_mfile().host_memory;
 		if(daddr + rows * size > h.size()) {
 			equals = false;
 			h.resize(daddr + rows * size);
 		}
 
-		char* pbuffer = mappable ? CORE().memory->get_physical_mapping(low, high - low + 1) : NULL;
+		char* pbuffer = mappable ? core.memory->get_physical_mapping(low, high - low + 1) : NULL;
 		if(!size && !rows) {
 		} else if(pbuffer) {
 			//Mapable.
@@ -793,7 +798,7 @@ namespace
 				uint64_t addr1 = addr + i * stride;
 				uint64_t addr2 = daddr + i * size;
 				for(uint64_t j = 0; j < size; j++) {
-					uint8_t byte = CORE().memory->read<uint8_t>(addr1 + j);
+					uint8_t byte = core.memory->read<uint8_t>(addr1 + j);
 					bool eq = (cmp && h[addr2 + j] == (char)byte);
 					if(!eq)
 						h[addr2 + j] = byte;
@@ -808,6 +813,7 @@ namespace
 
 	int readregion(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr, size;
 
 		addr = lua_get_read_address(P);
@@ -818,7 +824,7 @@ namespace
 		uint64_t ctr = 0;
 		while(size > 0) {
 			size_t rsize = min(size, static_cast<uint64_t>(BLOCKSIZE));
-			CORE().memory->read_range(addr, buffer, rsize);
+			core.memory->read_range(addr, buffer, rsize);
 			for(size_t i = 0; i < rsize; i++) {
 				L.pushnumber(ctr++);
 				L.pushnumber(static_cast<unsigned char>(buffer[i]));
@@ -832,6 +838,7 @@ namespace
 
 	int writeregion(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr, size;
 		int ltbl;
 
@@ -848,7 +855,7 @@ namespace
 				buffer[i] = L.tointeger(-1);
 				L.pop(1);
 			}
-			CORE().memory->write_range(addr, buffer, rsize);
+			core.memory->write_range(addr, buffer, rsize);
 			addr += rsize;
 			size -= rsize;
 		}

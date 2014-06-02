@@ -114,17 +114,18 @@ namespace
 	void check_can_edit(unsigned port, unsigned controller, unsigned button, uint64_t frame,
 		bool allow_past_end)
 	{
-		movie& m = CORE().mlogic->get_movie();
+		auto& core = CORE();
+		movie& m = core.mlogic->get_movie();
 		if(!m.readonly_mode())
 			throw std::runtime_error("Not in playback mode");
-		if(!allow_past_end && frame >= CORE().mlogic->get_mfile().input->size())
+		if(!allow_past_end && frame >= core.mlogic->get_mfile().input->size())
 			throw std::runtime_error("Index out of movie");
 		int32_t pc = get_pc_for(port, controller, button, true);
 		if(pc < 0)
 			throw std::runtime_error("Invalid control to edit");
 		uint64_t firstframe = m.get_current_frame_first_subframe();
 		uint64_t minframe = firstframe + pc;
-		uint64_t msize = CORE().mlogic->get_mfile().input->size();
+		uint64_t msize = core.mlogic->get_mfile().input->size();
 		if(minframe > msize || firstframe >= msize)
 			throw std::runtime_error("Can not edit finished movie");
 		if(frame < minframe)
@@ -176,6 +177,7 @@ namespace
 
 	int _set_frame(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t n;
 		lua_inputframe* f;
 		controller_frame_vector& v = framevector(L, P);
@@ -185,15 +187,15 @@ namespace
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
 		//Checks if requested frame is from movie.
-		if(&v == CORE().mlogic->get_mfile().input)
+		if(&v == core.mlogic->get_mfile().input)
 			check_can_edit(0, 0, 0, n);
 
 		v[n] = f->get_frame();
 
-		if(&v == CORE().mlogic->get_mfile().input) {
+		if(&v == core.mlogic->get_mfile().input) {
 			//This can't add frames, so no need to adjust the movie.
 			update_movie_state();
-			CORE().dispatch->status_update();
+			core.dispatch->status_update();
 		}
 		return 0;
 	}
@@ -236,6 +238,7 @@ namespace
 
 	int _append_frames(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t count;
 		controller_frame_vector& v = framevector(L, P);
 
@@ -246,38 +249,40 @@ namespace
 			for(uint64_t i = 0; i < count; i++)
 				v.append(v.blank_frame(true));
 		}
-		if(&v == CORE().mlogic->get_mfile().input) {
+		if(&v == core.mlogic->get_mfile().input) {
 			update_movie_state();
-			CORE().dispatch->status_update();
+			core.dispatch->status_update();
 		}
 		return 0;
 	}
 
 	int _append_frame(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		lua_inputframe* f;
 		controller_frame_vector& v = framevector(L, P);
 
 		P(f);
 
 		v.append(v.blank_frame(true));
-		if(&v == CORE().mlogic->get_mfile().input) {
+		if(&v == core.mlogic->get_mfile().input) {
 			update_movie_state();
-			CORE().dispatch->status_update();
+			core.dispatch->status_update();
 			check_can_edit(0, 0, 0, v.size() - 1);
 		}
 		v[v.size() - 1] = f->get_frame();
-		if(&v == CORE().mlogic->get_mfile().input) {
+		if(&v == core.mlogic->get_mfile().input) {
 			if(!v[v.size() - 1].sync()) {
 				update_movie_state();
 			}
-			CORE().dispatch->status_update();
+			core.dispatch->status_update();
 		}
 		return 0;
 	}
 
 	int _truncate(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t n;
 		controller_frame_vector& v = framevector(L, P);
 
@@ -285,18 +290,19 @@ namespace
 
 		if(n > v.size())
 			throw std::runtime_error("Requested truncate length longer than existing");
-		if(&v == CORE().mlogic->get_mfile().input)
+		if(&v == core.mlogic->get_mfile().input)
 			check_can_edit(0, 0, 0, n);
 		v.resize(n);
-		if(&v == CORE().mlogic->get_mfile().input) {
+		if(&v == core.mlogic->get_mfile().input) {
 			update_movie_state();
-			CORE().dispatch->status_update();
+			core.dispatch->status_update();
 		}
 		return 0;
 	}
 
 	int _edit(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t frame;
 		unsigned port, controller, button;
 		short value;
@@ -308,13 +314,13 @@ namespace
 		else
 			P.expected("number or boolean");
 
-		if(&v == CORE().mlogic->get_mfile().input)
+		if(&v == core.mlogic->get_mfile().input)
 			check_can_edit(port, controller, button, frame);
 		v[frame].axis3(port, controller, button, value);
 
-		if(&v == CORE().mlogic->get_mfile().input) {
+		if(&v == core.mlogic->get_mfile().input) {
 			update_movie_state();
-			CORE().dispatch->status_update();
+			core.dispatch->status_update();
 		}
 		return 0;
 	}
@@ -322,6 +328,7 @@ namespace
 	template<bool same>
 	int _copy_frames(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t dst, src, count;
 		bool backwards = same;
 
@@ -336,7 +343,7 @@ namespace
 		if(dst > dstv.size() || dst + count < dst)
 			throw std::runtime_error("Destination index out of movie");
 
-		if(&dstv == CORE().mlogic->get_mfile().input)
+		if(&dstv == core.mlogic->get_mfile().input)
 			check_can_edit(0, 0, 0, dst, true);
 
 		{
@@ -348,9 +355,9 @@ namespace
 			for(uint64_t i = backwards ? (count - 1) : 0; i < count; i = backwards ? (i - 1) : (i + 1))
 				dstv[dst + i] = srcv[src + i];
 		}
-		if(&dstv == CORE().mlogic->get_mfile().input) {
+		if(&dstv == core.mlogic->get_mfile().input) {
 			update_movie_state();
-			CORE().dispatch->status_update();
+			core.dispatch->status_update();
 		}
 		return 0;
 	}
@@ -591,26 +598,28 @@ namespace
 
 	int get_branches(lua::state& L, lua::parameters& P)
 	{
-		for(auto& i : CORE().mlogic->get_mfile().branches)
+		auto& core = CORE();
+		for(auto& i : core.mlogic->get_mfile().branches)
 			L.pushlstring(i.first);
-		return CORE().mlogic->get_mfile().branches.size();
+		return core.mlogic->get_mfile().branches.size();
 	}
 
 	controller_frame_vector& framevector(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		if(P.is_nil()) {
 			P.skip();
-			return *CORE().mlogic->get_mfile().input;
+			return *core.mlogic->get_mfile().input;
 		} else if(P.is_string()) {
 			std::string x;
 			P(x);
-			if(!CORE().mlogic->get_mfile().branches.count(x))
+			if(!core.mlogic->get_mfile().branches.count(x))
 				throw std::runtime_error("No such branch");
-			return CORE().mlogic->get_mfile().branches[x];
+			return core.mlogic->get_mfile().branches[x];
 		} else if(P.is<lua_inputmovie>())
 			return *(P.arg<lua_inputmovie*>()->get_frame_vector());
 		else
-			return *CORE().mlogic->get_mfile().input;
+			return *core.mlogic->get_mfile().input;
 	}
 
 	lua::_class<lua_inputmovie> class_inputmovie(lua_class_movie, "INPUTMOVIE", {}, {

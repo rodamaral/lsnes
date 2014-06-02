@@ -17,7 +17,8 @@ namespace
 
 	int screenshot_bitmap(lua::state& L, lua::parameters& P)
 	{
-		framebuffer::raw& _fb = CORE().fbuf->render_get_latest_screen();
+		auto& core = CORE();
+		framebuffer::raw& _fb = core.fbuf->render_get_latest_screen();
 		try {
 			auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
 			std::vector<uint32_t> tmp(_fb.get_width());
@@ -29,10 +30,10 @@ namespace
 					b->pixels[y * b->width + x] = framebuffer::color(tmp[x]);
 			}
 		} catch(...) {
-			CORE().fbuf->render_get_latest_screen_end();
+			core.fbuf->render_get_latest_screen_end();
 			throw;
 		}
-		CORE().fbuf->render_get_latest_screen_end();
+		core.fbuf->render_get_latest_screen_end();
 		return 1;
 	}
 

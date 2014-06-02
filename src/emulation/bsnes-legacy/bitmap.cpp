@@ -10,6 +10,7 @@ namespace
 	template<bool create>
 	int dump_sprite(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		lua_bitmap* b;
 		uint64_t addr;
 		uint32_t width, height;
@@ -40,7 +41,7 @@ namespace
 			rangesize = (width - 1) * stride1 + (height - 1) * stride2 + 32;
 		}
 
-		char* mem = map ? CORE().memory->get_physical_mapping(rangebase, rangesize) : NULL;
+		char* mem = map ? core.memory->get_physical_mapping(rangebase, rangesize) : NULL;
 		if(mem) {
 			for(unsigned j = 0; j < height; j++)
 				for(unsigned i = 0; i < width; i++) {
@@ -66,13 +67,10 @@ namespace
 				for(unsigned i = 0; i < width; i++) {
 					uint64_t sbase = addr + stride2 * j + stride1 * i;
 					for(unsigned k = 0; k < 8; k++) {
-						uint8_t byte1 = CORE().memory->read<uint8_t>(sbase + 2 * k);
-						uint8_t byte2 = CORE().memory->read<uint8_t>(sbase + 2 * k +
-							1);
-						uint8_t byte3 = CORE().memory->read<uint8_t>(sbase + 2 * k +
-							16);
-						uint8_t byte4 = CORE().memory->read<uint8_t>(sbase + 2 * k +
-							17);
+						uint8_t byte1 = core.memory->read<uint8_t>(sbase + 2 * k);
+						uint8_t byte2 = core.memory->read<uint8_t>(sbase + 2 * k + 1);
+						uint8_t byte3 = core.memory->read<uint8_t>(sbase + 2 * k + 16);
+						uint8_t byte4 = core.memory->read<uint8_t>(sbase + 2 * k + 17);
 						uint32_t soff = (j * 8 + k) * (8 * width) + i * 8;
 						for(unsigned l = 0; l < 8; l++) {
 							uint32_t v = 0;
@@ -91,6 +89,7 @@ namespace
 	template<bool create>
 	int dump_palette(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr;
 		bool full, ftrans;
 		lua_palette* p;
@@ -112,7 +111,7 @@ namespace
 			p = lua::_class<lua_palette>::create(L);
 			p->adjust_palette_size(ps);
 		}
-		uint8_t* mem = reinterpret_cast<uint8_t*>(CORE().memory->get_physical_mapping(addr, 2 * ps));
+		uint8_t* mem = reinterpret_cast<uint8_t*>(core.memory->get_physical_mapping(addr, 2 * ps));
 		if(mem) {
 			for(unsigned j = 0; j < ps; j++) {
 				if(j == 0 && ftrans)
@@ -134,7 +133,7 @@ namespace
 					p->colors[j] = framebuffer::color(-1);
 				else {
 					uint64_t val = 0;
-					uint16_t c = CORE().memory->read<uint16_t>(addr + j * 2);
+					uint16_t c = core.memory->read<uint16_t>(addr + j * 2);
 					uint64_t r = (c >> 0) & 0x1F;
 					uint64_t g = (c >> 5) & 0x1F;
 					uint64_t b = (c >> 10) & 0x1F;

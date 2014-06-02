@@ -423,11 +423,12 @@ namespace
 		"Syntax: reset-lua\nReset the Lua VM.\n",
 		[]() throw(std::bad_alloc, std::runtime_error)
 		{
-			CORE().lua->reset();
-			luaL_openlibs(CORE().lua->handle());
+			auto& core = CORE();
+			core.lua->reset();
+			luaL_openlibs(core.lua->handle());
 
-			run_sysrc_lua(*CORE().lua);
-			copy_system_tables(*CORE().lua);
+			run_sysrc_lua(*core.lua);
+			copy_system_tables(*core.lua);
 			messages << "Lua VM reset" << std::endl;
 		});
 
@@ -447,27 +448,28 @@ void lua_callback_keyhook(const std::string& key, keyboard::key& p) throw()
 
 void init_lua() throw()
 {
-	CORE().lua->set_oom_handler(OOM_panic);
+	auto& core = CORE();
+	core.lua->set_oom_handler(OOM_panic);
 	try {
-		CORE().lua->reset();
-		CORE().lua->add_function_group(lua_func_bit);
-		CORE().lua->add_function_group(lua_func_load);
-		CORE().lua->add_function_group(lua_func_misc);
-		CORE().lua->add_function_group(lua_func_zip);
-		CORE().lua->add_class_group(lua_class_callback);
-		CORE().lua->add_class_group(lua_class_gui);
-		CORE().lua->add_class_group(lua_class_bind);
-		CORE().lua->add_class_group(lua_class_pure);
-		CORE().lua->add_class_group(lua_class_movie);
-		CORE().lua->add_class_group(lua_class_memory);
-		CORE().lua->add_class_group(lua_class_fileio);
+		core.lua->reset();
+		core.lua->add_function_group(lua_func_bit);
+		core.lua->add_function_group(lua_func_load);
+		core.lua->add_function_group(lua_func_misc);
+		core.lua->add_function_group(lua_func_zip);
+		core.lua->add_class_group(lua_class_callback);
+		core.lua->add_class_group(lua_class_gui);
+		core.lua->add_class_group(lua_class_bind);
+		core.lua->add_class_group(lua_class_pure);
+		core.lua->add_class_group(lua_class_movie);
+		core.lua->add_class_group(lua_class_memory);
+		core.lua->add_class_group(lua_class_fileio);
 	} catch(std::exception& e) {
 		messages << "Can't initialize Lua." << std::endl;
 		fatal_error();
 	}
-	luaL_openlibs(CORE().lua->handle());
-	run_sysrc_lua(*CORE().lua);
-	copy_system_tables(*CORE().lua);
+	luaL_openlibs(core.lua->handle());
+	run_sysrc_lua(*core.lua);
+	copy_system_tables(*core.lua);
 }
 
 void quit_lua() throw()
@@ -492,6 +494,7 @@ uint64_t lua_timed_hook(int timer) throw()
 
 void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs, uint64_t ssecs, movie& mov, void* u)
 {
+	auto& core = CORE();
 	if(u) {
 		lua_unsaferewind* u2 = reinterpret_cast<lua::objpin<lua_unsaferewind>*>(u)->object();
 		//Load.
@@ -500,7 +503,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 			run_callback(on_movie_lost, "unsaferewind");
 			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
 			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
-			try { CORE().mlogic->get_mfile().host_memory = u2->hostmemory; } catch(...) {}
+			try { core.mlogic->get_mfile().host_memory = u2->hostmemory; } catch(...) {}
 			run_callback(on_post_rewind);
 			delete reinterpret_cast<lua::objpin<lua_unsaferewind>*>(u);
 		} catch(...) {
@@ -508,12 +511,13 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 		}
 	} else {
 		//Save
-		run_callback(on_set_rewind, lua::state::fn_tag([save, secs, ssecs, &mov](lua::state& L) -> int {
-			lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(*CORE().lua);
+		run_callback(on_set_rewind, lua::state::fn_tag([&core, save, secs, ssecs, &mov](lua::state& L) ->
+			int {
+			lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(*core.lua);
 			u2->state = save;
 			u2->secs = secs,
 			u2->ssecs = ssecs;
-			u2->hostmemory = CORE().mlogic->get_mfile().host_memory;
+			u2->hostmemory = core.mlogic->get_mfile().host_memory;
 			mov.fast_save(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			return 1;
 		}));

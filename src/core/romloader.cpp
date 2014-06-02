@@ -10,19 +10,20 @@
 
 bool load_null_rom()
 {
-	if(CORE().project->get()) {
+	auto& core = CORE();
+	if(core.project->get()) {
 		std::cerr << "Can't switch ROM with project active." << std::endl;
 		return false;
 	}
 	loaded_rom newrom;
 	our_rom = newrom;
-	if(*CORE().mlogic)
+	if(*core.mlogic)
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			CORE().mlogic->get_mfile().romimg_sha256[i] = "";
-			CORE().mlogic->get_mfile().romxml_sha256[i] = "";
-			CORE().mlogic->get_mfile().namehint[i] = "";
+			core.mlogic->get_mfile().romimg_sha256[i] = "";
+			core.mlogic->get_mfile().romxml_sha256[i] = "";
+			core.mlogic->get_mfile().namehint[i] = "";
 		}
-	CORE().dispatch->core_change();
+	core.dispatch->core_change();
 	return true;
 }
 
@@ -89,17 +90,18 @@ namespace
 
 bool _load_new_rom(const romload_request& req)
 {
-	if(CORE().project->get()) {
+	auto& core = CORE();
+	if(core.project->get()) {
 		std::cerr << "Can't switch ROM with project active." << std::endl;
 		return false;
 	}
 	try {
 		load_new_rom_inner(req);
-		if(*CORE().mlogic)
+		if(*core.mlogic)
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				CORE().mlogic->get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-				CORE().mlogic->get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
-				CORE().mlogic->get_mfile().namehint[i] = our_rom.romimg[i].namehint;
+				core.mlogic->get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
+				core.mlogic->get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
+				core.mlogic->get_mfile().namehint[i] = our_rom.romimg[i].namehint;
 			}
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Can't load ROM: ") + e.what());
@@ -107,7 +109,7 @@ bool _load_new_rom(const romload_request& req)
 		return false;
 	}
 	messages << "Using core: " << our_rom.rtype->get_core_identifier() << std::endl;
-	CORE().dispatch->core_change();
+	core.dispatch->core_change();
 	return true;
 }
 
@@ -154,6 +156,7 @@ std::string get_requested_core(const std::vector<std::string>& cmdline)
 loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info& info,
 	const std::vector<std::string>& cmdline, bool have_movie)
 {
+	auto& core = CORE();
 	std::string roms[ROM_SLOT_COUNT];
 	std::string realcore = ctype->get_core_identifier();
 	std::string realtype = ctype->get_iname();
@@ -200,7 +203,7 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 			//Try to use hint.
 			std::set<std::string> exts = img.extensions;
 			for(auto j : exts) {
-				std::string candidate = CORE().setcache->get(psetting) + "/" + info.hint[i] +
+				std::string candidate = core.setcache->get(psetting) + "/" + info.hint[i] +
 					"." + j;
 				if(zip::file_exists(candidate)) {
 					roms[i] = candidate;
@@ -210,7 +213,7 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 		}
 		if(isbios && roms[i] == "" && i == 0) {
 			//Fallback default.
-			roms[0] = CORE().setcache->get("firmwarepath") + "/" + bios;
+			roms[0] = core.setcache->get("firmwarepath") + "/" + bios;
 		}
 		if(roms[i] == "" && info.hash[i] != "")
 			roms[i] = try_to_guess_rom(info.hint[i], info.hash[i], info.hashxml[i], *ctype, i);

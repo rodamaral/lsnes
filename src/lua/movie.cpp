@@ -78,8 +78,9 @@ namespace
 
 	int read_rtc(lua::state& L, lua::parameters& P)
 	{
-		L.pushnumber(CORE().mlogic->get_mfile().rtc_second);
-		L.pushnumber(CORE().mlogic->get_mfile().rtc_subsecond);
+		auto& core = CORE();
+		L.pushnumber(core.mlogic->get_mfile().rtc_second);
+		L.pushnumber(core.mlogic->get_mfile().rtc_subsecond);
 		return 2;
 	}
 

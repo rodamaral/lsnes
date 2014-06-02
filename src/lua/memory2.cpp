@@ -195,6 +195,7 @@ namespace
 
 	template<class T, bool _bswap> int lua_vma::rw(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr;
 		T val;
 
@@ -204,7 +205,7 @@ namespace
 			throw std::runtime_error("VMA::rw<T>: Address outside VMA bounds");
 		if(P.is_novalue()) {
 			//Read.
-			T val = CORE().memory->read<T>(addr + vmabase);
+			T val = core.memory->read<T>(addr + vmabase);
 			if(_bswap) val = bswap(val);
 			L.pushnumber(val);
 			return 1;
@@ -214,7 +215,7 @@ namespace
 				(stringfmt() << P.get_fname() << ": VMA is read-only").throwex();
 			P(val);
 			if(_bswap) val = bswap(val);
-			CORE().memory->write<T>(addr + vmabase, val);
+			core.memory->write<T>(addr + vmabase, val);
 			return 0;
 		} else
 			P.expected("number or nil");
@@ -223,6 +224,7 @@ namespace
 
 	template<bool write, bool sign> int lua_vma::scattergather(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t val = 0;
 		unsigned shift = 0;
 		uint64_t addr = 0;
@@ -240,9 +242,9 @@ namespace
 			} else
 				addr = P.arg<uint64_t>();
 			if(write)
-				CORE().memory->write<uint8_t>(addr + vmabase, val >> shift);
+				core.memory->write<uint8_t>(addr + vmabase, val >> shift);
 			else
-				val = val + ((uint64_t)CORE().memory->read<uint8_t>(addr + vmabase) << shift);
+				val = val + ((uint64_t)core.memory->read<uint8_t>(addr + vmabase) << shift);
 			shift += 8;
 		}
 		if(!write) {
@@ -255,6 +257,7 @@ namespace
 
 	template<class T> int lua_vma::hash(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr, size, rows, stride = 0;
 
 		P(P.skipped(), addr, size, P.optional(rows, 1));
@@ -266,7 +269,7 @@ namespace
 
 		auto hstate = T::create();
 		//Try to map the VMA.
-		char* vmabuf = CORE().memory->get_physical_mapping(vmabase, vmasize);
+		char* vmabuf = core.memory->get_physical_mapping(vmabase, vmasize);
 		if(vmabuf) {
 			for(uint64_t i = 0; i < rows; i++) {
 				T::write(hstate, vmabuf + addr, size);
@@ -277,7 +280,7 @@ namespace
 			unsigned bf = 0;
 			for(uint64_t i = 0; i < rows; i++) {
 				for(uint64_t j = 0; j < size; j++) {
-					buf[bf] = CORE().memory->read<uint8_t>(vmabase + addr + j);
+					buf[bf] = core.memory->read<uint8_t>(vmabase + addr + j);
 					bf = (bf + 1) & (sizeof(buf) - 1);
 					if(!bf)
 						T::write(hstate, buf, sizeof(buf));
@@ -293,6 +296,7 @@ namespace
 
 	int lua_vma::readregion(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr, size;
 
 		P(P.skipped(), addr, size);
@@ -301,7 +305,7 @@ namespace
 			throw std::runtime_error("Read out of range");
 
 		L.newtable();
-		char* vmabuf = CORE().memory->get_physical_mapping(vmabase, vmasize);
+		char* vmabuf = core.memory->get_physical_mapping(vmabase, vmasize);
 		if(vmabuf) {
 			uint64_t ctr = 1;
 			for(size_t i = 0; i < size; i++) {
@@ -313,7 +317,7 @@ namespace
 			uint64_t ctr = 1;
 			for(size_t i = 0; i < size; i++) {
 				L.pushnumber(ctr++);
-				L.pushnumber(CORE().memory->read<uint8_t>(addr + i));
+				L.pushnumber(core.memory->read<uint8_t>(addr + i));
 				L.settable(-3);
 			}
 		}
@@ -322,19 +326,20 @@ namespace
 
 	int lua_vma::writeregion(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr;
 		int ltbl;
 
 		P(P.skipped(), addr, P.table(ltbl));
 
-		auto g = CORE().memory->lookup(vmabase);
+		auto g = core.memory->lookup(vmabase);
 		if(!g.first || g.first->readonly)
 			throw std::runtime_error("Memory address is read-only");
 		if(addr >= vmasize)
 			throw std::runtime_error("Write out of range");
 
 		uint64_t ctr = 1;
-		char* vmabuf = CORE().memory->get_physical_mapping(vmabase, vmasize);
+		char* vmabuf = core.memory->get_physical_mapping(vmabase, vmasize);
 		if(vmabuf) {
 			for(size_t i = 0;; i++) {
 				L.pushnumber(ctr++);
@@ -354,7 +359,7 @@ namespace
 					break;
 				if(addr + i >= vmasize)
 					throw std::runtime_error("Write out of range");
-				CORE().memory->write<uint8_t>(vmabase + addr + i, L.tointeger(-1));
+				core.memory->write<uint8_t>(vmabase + addr + i, L.tointeger(-1));
 				L.pop(1);
 			}
 		}
@@ -363,6 +368,7 @@ namespace
 
 	template<bool cmp> int lua_vma::storecmp(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr, daddr, size, rows, stride = 0;
 		bool equals = true;
 
@@ -374,7 +380,7 @@ namespace
 			throw std::runtime_error("Source out of range");
 
 		//Calculate new size of target.
-		auto& h = CORE().mlogic->get_mfile().host_memory;
+		auto& h = core.mlogic->get_mfile().host_memory;
 		size_t rsize = size * rows;
 		if(size && rsize / size != rows)
 			throw std::runtime_error("Copy size out of range");
@@ -386,7 +392,7 @@ namespace
 		}
 
 		//Try to map the VMA.
-		char* vmabuf = CORE().memory->get_physical_mapping(vmabase, vmasize);
+		char* vmabuf = core.memory->get_physical_mapping(vmabase, vmasize);
 		if(vmabuf) {
 			for(uint64_t i = 0; i < rows; i++) {
 				bool eq = (cmp && !memcmp(&h[daddr], vmabuf + addr, size));
@@ -399,7 +405,7 @@ namespace
 		} else {
 			for(uint64_t i = 0; i < rows; i++) {
 				for(uint64_t j = 0; j < size; j++) {
-					uint8_t byte = CORE().memory->read<uint8_t>(vmabase + addr + j);
+					uint8_t byte = core.memory->read<uint8_t>(vmabase + addr + j);
 					bool eq = (cmp && ((uint8_t)h[daddr + j] == byte));
 					h[daddr + j] = byte;
 					equals &= eq;
@@ -430,16 +436,17 @@ namespace
 
 	int lua_vma::cheat(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr, value;
 
 		P(P.skipped(), addr);
 		if(addr >= vmasize)
 			throw std::runtime_error("Address out of range");
 		if(P.is_novalue()) {
-			CORE().dbg->clear_cheat(vmabase + addr);
+			core.dbg->clear_cheat(vmabase + addr);
 		} else {
 			P(value);
-			CORE().dbg->set_cheat(vmabase + addr, value);
+			core.dbg->set_cheat(vmabase + addr, value);
 		}
 		return 0;
 	}

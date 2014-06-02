@@ -36,10 +36,11 @@ namespace
 			const std::string& prefix)
 			: dumper_base(_mdumper, _fbase), mdumper(_mdumper)
 		{
+			auto& core = CORE();
 			if(prefix == "")
 				throw std::runtime_error("Expected target");
 			try {
-			complevel = clevel(*CORE().settings);
+			complevel = clevel(*core.settings);
 				if(mode == "tcp") {
 					jmd = &(socket_address(prefix).connect());
 					deleter = socket_address::deleter();
@@ -88,7 +89,7 @@ namespace
 				x << "Error starting JMD dump: " << e.what();
 				throw std::runtime_error(x.str());
 			}
-			messages << "Dumping to " << prefix << " at level " << clevel(*CORE().settings) << std::endl;
+			messages << "Dumping to " << prefix << " at level " << clevel(*core.settings) << std::endl;
 		}
 		~jmd_dump_obj() throw()
 		{

@@ -28,12 +28,13 @@ namespace
 
 	int kbd_alias(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		std::string alias, cmds;
 
 		P(alias, cmds);
 
-		CORE().command->set_alias_for(alias, cmds);
-		(*CORE().abindmanager)();
+		core.command->set_alias_for(alias, cmds);
+		(*core.abindmanager)();
 		return 0;
 	}
 

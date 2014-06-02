@@ -97,21 +97,22 @@ namespace
 {
 	int list_bindings(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		std::string target;
 
 		P(P.optional(target, ""));
 
 		L.newtable();
-		for(auto key : CORE().mapper->get_bindings()) {
+		for(auto key : core.mapper->get_bindings()) {
 			std::string _key = key;
-			std::string cmd = CORE().mapper->get(key);
+			std::string cmd = core.mapper->get(key);
 			if(target != "" && cmd != target)
 				continue;
 			L.pushlstring(_key.c_str(), _key.length());
 			L.pushlstring(cmd.c_str(), cmd.length());
 			L.rawset(-3);
 		}
-		for(auto key : CORE().mapper->get_controller_keys()) {
+		for(auto key : core.mapper->get_controller_keys()) {
 			for(unsigned i = 0;; i++) {
 				std::string _key = key->get_string(i);
 				if(_key == "")
@@ -144,12 +145,13 @@ namespace
 
 	int set_alias(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		std::string name, value;
 
 		P(name, P.optional(value, ""));
 
-		CORE().command->set_alias_for(name, value);
-		(*CORE().abindmanager)();
+		core.command->set_alias_for(name, value);
+		(*core.abindmanager)();
 		return 0;
 	}
 

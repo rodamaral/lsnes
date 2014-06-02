@@ -326,17 +326,18 @@ namespace
 
 	int lcid_to_pcid(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned lcid;
 
 		P(lcid);
 
-		auto pcid = CORE().controls->lcid_to_pcid(lcid - 1);
+		auto pcid = core.controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			return 0;
 		int legacy_pcid = -1;
 		for(unsigned i = 0;; i++)
 			try {
-				auto p = CORE().controls->legacy_pcid_to_pair(i);
+				auto p = core.controls->legacy_pcid_to_pair(i);
 				if(p.first == pcid.first && p.second == pcid.second) {
 					legacy_pcid = i;
 					break;
@@ -392,6 +393,7 @@ namespace
 
 	int controller_info(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned port, controller;
 
 		P(port, controller);
@@ -403,7 +405,7 @@ namespace
 		if(!ps || ps->controllers.size() <= controller)
 			return 0;
 		for(unsigned i = 0; i < 8; i++) {
-			auto pcid = CORE().controls->lcid_to_pcid(i);
+			auto pcid = core.controls->lcid_to_pcid(i);
 			if(pcid.first < 0)
 				continue;
 			if(pcid.first == (int)port && pcid.second == (int)controller) {

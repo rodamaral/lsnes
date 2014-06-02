@@ -191,20 +191,21 @@ namespace
 	command::fnptr<const std::string&> set_mt(lsnes_cmds, "set-multitrack", "Set multitrack mode",
 		"Syntax: set-multitrack <controller> <mode>\nSet multitrack mode\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			auto& core = CORE();
 			regex_results r = regex("(.*)[ \t]+(.*)", args);
 			if(!r)
 				throw std::runtime_error("Bad arguments");
-			auto c = CORE().buttons->byname(r[1]);
+			auto c = core.buttons->byname(r[1]);
 			if(c.first < 0)
 				throw std::runtime_error("No such controller");
 			if(r[2] == "keep")
-				CORE().mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_PRESERVE);
+				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_PRESERVE);
 			else if(r[2] == "rewrite")
-				CORE().mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_OVERWRITE);
+				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_OVERWRITE);
 			else if(r[2] == "or")
-				CORE().mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_OR);
+				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_OR);
 			else if(r[2] == "xor")
-				CORE().mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_XOR);
+				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_XOR);
 			else
 				throw std::runtime_error("Invalid mode (keep, rewrite, or, xor)");
 			update_movie_state();
