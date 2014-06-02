@@ -66,6 +66,7 @@ emulator_instance::emulator_instance()
 	D.prealloc(fbuf);
 	D.prealloc(project);
 	D.prealloc(buttons);
+	D.prealloc(dispatch);
 
 	D.init(dispatch);
 	D.init(command);

@@ -7,6 +7,8 @@
 input_queue::input_queue(command::group& _command)
 	: command(_command)
 {
+	functions_executed = 0;
+	next_function = 0;
 	system_thread_available = false;
 	queue_function_run = false;
 }

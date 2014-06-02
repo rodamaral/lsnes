@@ -198,6 +198,7 @@ public:
 
 		destructing = false;
 		hex_input_state = -1;
+		current_vma = 0;
 
 		Connect(wxEVT_CHAR, wxKeyEventHandler(wxeditor_hexedit::on_keyboard), NULL, this);
 

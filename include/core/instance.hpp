@@ -48,6 +48,7 @@ public:
 	{
 		entry e;
 		e.ptr = ptr = reinterpret_cast<T*>(new char[sizeof(T) + 32]);
+		memset(ptr, 0, sizeof(T) + 32);
 		e.free1 = null;
 		e.free2 = free2;
 		e.prev = list;
