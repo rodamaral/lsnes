@@ -57,8 +57,8 @@ private:
 	std::map<int, settings_tab_factory*> items;
 };
 
-void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab = NULL);
-void settings_activate_keygrab(std::function<void(std::string key)> callback);
-void settings_deactivate_keygrab();
+void display_settings_dialog(wxWindow* parent, emulator_instance& inst, settings_tab_factory* singletab = NULL);
+void settings_activate_keygrab(emulator_instance& inst, std::function<void(std::string key)> callback);
+void settings_deactivate_keygrab(emulator_instance& inst);
 
 #endif

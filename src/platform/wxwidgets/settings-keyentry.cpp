@@ -51,7 +51,7 @@ press_button_dialog::press_button_dialog(wxWindow* parent, emulator_instance& _i
 	t->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(press_button_dialog::on_mouse), NULL, this);
 	t->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(press_button_dialog::on_mouse), NULL, this);
 	t->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(press_button_dialog::on_mouse), NULL, this);
-	settings_activate_keygrab([this](std::string key) { this->dismiss_with(key); });
+	settings_activate_keygrab(inst, [this](std::string key) { this->dismiss_with(key); });
 	s->SetSizeHints(this);
 	Fit();
 }
@@ -117,7 +117,7 @@ void press_button_dialog::dismiss_with(const std::string& _k)
 		}
 	}
 	if(key == "") {
-		settings_deactivate_keygrab();
+		settings_deactivate_keygrab(inst);
 		key = k;
 		EndModal(wxID_OK);
 	}

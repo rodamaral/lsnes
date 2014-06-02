@@ -9,6 +9,9 @@ namespace
 		static std::map<std::string, settings_tab_factory*> x;
 		return x;
 	}
+
+	class wxeditor_esettings2;
+	std::map<emulator_instance*, wxeditor_esettings2*> sdialogs;
 }
 
 
@@ -54,7 +57,7 @@ void settings_menu::on_selected(wxCommandEvent& e)
 	int id = e.GetId();
 	if(!items.count(id))
 		return;
-	display_settings_dialog(parent, items[id]);
+	display_settings_dialog(parent, inst, items[id]);
 }
 
 namespace
@@ -66,7 +69,10 @@ namespace
 	class keygrabber : public keyboard::event_listener
 	{
 	public:
-		keygrabber() { keygrab_active = false; }
+		keygrabber()
+		{
+			keygrab_active = false;
+		}
 		void on_key_event(keyboard::modifier_set& mods, keyboard::key& key, keyboard::event& event)
 		{
 			if(!keygrab_active)
@@ -81,13 +87,16 @@ namespace
 					if(pkey == pname) {
 						keygrab_active = false;
 						std::string tmp = pkey;
-						runuifun([tmp]() { keygrab_callback(tmp); });
+						runuifun([this, tmp]() { this->keygrab_callback(tmp); });
 					} else
 						pkey = "";
 				}
 			}
 		}
-	} keygrabber;
+		volatile bool keygrab_active;
+		std::string pkey;
+		std::function<void(std::string key)> keygrab_callback;
+	};
 
 	class wxeditor_esettings2 : public wxDialog
 	{
@@ -103,6 +112,8 @@ namespace
 		wxButton* closebutton;
 		std::list<settings_tab*> tabs;
 		std::string get_title(settings_tab_factory* singletab);
+	public:
+		keygrabber keygrab;
 	};
 
 	std::string wxeditor_esettings2::get_title(settings_tab_factory* singletab)
@@ -119,7 +130,7 @@ namespace
 			wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER), inst(_inst)
 	{
 		//Grab keys to prevent the joystick driver from running who knows what commands.
-		inst.keyboard->set_exclusive(&keygrabber);
+		inst.keyboard->set_exclusive(&keygrab);
 
 		Centre();
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -188,13 +199,13 @@ namespace
 	}
 }
 
-void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
+void display_settings_dialog(wxWindow* parent, emulator_instance& inst, settings_tab_factory* singletab)
 {
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
 		try {
-			editor = new wxeditor_esettings2(parent, lsnes_instance, singletab);
+			editor = sdialogs[&inst] = new wxeditor_esettings2(parent, inst, singletab);
 		} catch(std::exception& e) {
 			std::string title = "Configure";
 			if(singletab)
@@ -207,16 +218,23 @@ void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
 		return;
 	}
 	editor->Destroy();
+	sdialogs.erase(&inst);
 	do_save_configuration();
 }
 
-void settings_activate_keygrab(std::function<void(std::string key)> callback)
+void settings_activate_keygrab(emulator_instance& inst, std::function<void(std::string key)> callback)
 {
-	keygrab_callback = callback;
-	keygrab_active = true;
+	if(!sdialogs.count(&inst))
+		return;
+	wxeditor_esettings2* s = sdialogs[&inst];
+	s->keygrab.keygrab_callback = callback;
+	s->keygrab.keygrab_active = true;
 }
 
-void settings_deactivate_keygrab()
+void settings_deactivate_keygrab(emulator_instance& inst)
 {
-	keygrab_active = false;
+	if(!sdialogs.count(&inst))
+		return;
+	wxeditor_esettings2* s = sdialogs[&inst];
+	s->keygrab.keygrab_active = false;
 }

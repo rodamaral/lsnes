@@ -495,7 +495,7 @@ bool lsnes_app::OnInit()
 		//In practicular, we need joystick thread and emulator thread in pause.
 		joystick_thread_handle = new threads::thread(joystick_thread, 6);
 		threads::thread* dummy_loop = new threads::thread(eloop_helper, 8);
-		display_settings_dialog(NULL, NULL);
+		display_settings_dialog(NULL, lsnes_instance, NULL);
 		platform::exit_dummy_event_loop();
 		joystick_driver_signal();
 		joystick_thread_handle->join();
