@@ -30,7 +30,7 @@ class wxeditor_hexedit;
 namespace
 {
 	const size_t maxvaluelen = 8;	//The length of longest value type.
-	wxeditor_hexedit* editor;
+	std::map<emulator_instance*, wxeditor_hexedit*> editor;
 
 	struct val_type
 	{
@@ -280,7 +280,7 @@ public:
 	~wxeditor_hexedit()
 	{
 		destructing = true;
-		editor = NULL;
+		editor.erase(&inst);
 	}
 	bool ShouldPreventAppExit() const
 	{
@@ -288,7 +288,7 @@ public:
 	}
 	void set_search_status()
 	{
-		bool e = wxwindow_memorysearch_active();
+		bool e = wxwindow_memorysearch_active(inst);
 		searchmenu->FindItem(wxID_SEARCH_DISQUALIFY)->Enable(e);
 		searchmenu->FindItem(wxID_SEARCH_PREV)->Enable(e);
 		searchmenu->FindItem(wxID_SEARCH_NEXT)->Enable(e);
@@ -481,12 +481,12 @@ public:
 	}
 	void on_search_discard(wxCommandEvent& e)
 	{
-		auto p = wxwindow_memorysearch_active();
+		auto p = wxwindow_memorysearch_active(inst);
 		if(!p)
 			return;
 		if(hpanel->seloff < hpanel->vmasize) {
 			p->dq_range(hpanel->vmabase + hpanel->seloff, hpanel->vmabase + hpanel->seloff);
-			wxwindow_memorysearch_update();
+			wxwindow_memorysearch_update(inst);
 			hpanel->seloff = p->cycle_candidate_vma(hpanel->vmabase + hpanel->seloff, true) -
 				hpanel->vmabase;
 			rescroll_panel();
@@ -524,7 +524,7 @@ public:
 	}
 	void on_search_prevnext(wxCommandEvent& e)
 	{
-		auto p = wxwindow_memorysearch_active();
+		auto p = wxwindow_memorysearch_active(inst);
 		if(!p)
 			return;
 		if(hpanel->seloff < hpanel->vmasize) {
@@ -791,7 +791,7 @@ invalid_bookmark:
 			uint8_t* _value = value;
 			inst.iqueue->run([_vmabase, _vmasize, paint_offset, _seloff, _value, _lines,
 				this]() {
-				memory_search* memsearch = wxwindow_memorysearch_active();
+				memory_search* memsearch = wxwindow_memorysearch_active(inst);
 				//Paint the stuff
 				for(ssize_t j = 0; j < _lines; j++) {
 					uint64_t addr = paint_offset + j * 16;
@@ -904,31 +904,33 @@ private:
 	int hex_input_state;
 };
 
-void wxeditor_hexedit_display(wxWindow* parent)
+void wxeditor_hexedit_display(wxWindow* parent, emulator_instance& inst)
 {
-	if(editor)
+	if(editor.count(&inst))
 		return;
 	try {
-		editor = new wxeditor_hexedit(parent, lsnes_instance);
-		editor->Show();
+		editor[&inst] = new wxeditor_hexedit(parent, inst);
+		editor[&inst]->Show();
 	} catch(...) {
 	}
 }
 
-void wxeditor_hexeditor_update()
+void wxeditor_hexeditor_update(emulator_instance& inst)
 {
-	if(editor)
-		editor->updated();
+	if(editor.count(&inst))
+		editor[&inst]->updated();
 }
 
-bool wxeditor_hexeditor_available()
+bool wxeditor_hexeditor_available(emulator_instance& inst)
 {
-	return editor;
+	return editor.count(&inst);
 }
 
-bool wxeditor_hexeditor_jumpto(uint64_t addr)
+bool wxeditor_hexeditor_jumpto(emulator_instance& inst, uint64_t addr)
 {
-	if(editor)
-		editor->jumpto(addr);
-	return editor;
+	if(editor.count(&inst)) {
+		editor[&inst]->jumpto(addr);
+		return true;
+	} else
+		return false;
 }

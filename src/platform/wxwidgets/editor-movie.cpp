@@ -833,7 +833,7 @@ private:
 
 namespace
 {
-	wxeditor_movie* movieeditor_open;
+	std::map<emulator_instance*, wxeditor_movie*> movieeditor_open;
 
 	//Find the first real editable subframe.
 	//Call only in emulator thread.
@@ -2354,7 +2354,7 @@ bool wxeditor_movie::ShouldPreventAppExit() const { return false; }
 
 void wxeditor_movie::on_close(wxCommandEvent& e)
 {
-	movieeditor_open = NULL;
+	movieeditor_open.erase(&inst);
 	Destroy();
 	closing = true;
 }
@@ -2363,7 +2363,7 @@ void wxeditor_movie::on_wclose(wxCloseEvent& e)
 {
 	bool wasc = closing;
 	closing = true;
-	movieeditor_open = NULL;
+	movieeditor_open.erase(&inst);
 	if(!wasc)
 		Destroy();
 }
@@ -2383,13 +2383,13 @@ void wxeditor_movie::on_focus_wrong(wxFocusEvent& e)
 	moviepanel->SetFocus();
 }
 
-void wxeditor_movie_display(wxWindow* parent)
+void wxeditor_movie_display(wxWindow* parent, emulator_instance& inst)
 {
-	if(movieeditor_open)
+	if(movieeditor_open.count(&inst))
 		return;
-	wxeditor_movie* v = new wxeditor_movie(parent, lsnes_instance);
+	wxeditor_movie* v = new wxeditor_movie(parent, inst);
 	v->Show();
-	movieeditor_open = v;
+	movieeditor_open[&inst] = v;
 }
 
 void wxeditor_movie::on_keyboard_down(wxKeyEvent& e)
@@ -2402,8 +2402,8 @@ void wxeditor_movie::on_keyboard_up(wxKeyEvent& e)
 	handle_wx_keyboard(inst, e, false);
 }
 
-void wxeditor_movie_update()
+void wxeditor_movie_update(emulator_instance& inst)
 {
-	if(movieeditor_open)
-		movieeditor_open->update();
+	if(movieeditor_open.count(&inst))
+		movieeditor_open[&inst]->update();
 }

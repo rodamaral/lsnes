@@ -430,8 +430,8 @@ bool lsnes_app::OnInit()
 			{ threads::alock h(if_mutex); if_update_screen = false; }
 			if(main_window)
 				main_window->notify_update();
-			wxwindow_memorysearch_update();
-			wxwindow_tasinput_update();
+			wxwindow_memorysearch_update(lsnes_instance);
+			wxwindow_tasinput_update(lsnes_instance);
 		});
 	});
 	statusupdate.set(lsnes_instance.dispatch->status_update, []() {
@@ -442,8 +442,8 @@ bool lsnes_app::OnInit()
 			{ threads::alock h(if_mutex); if_update_status = false; }
 			if(main_window)
 				main_window->notify_update_status();
-			wxeditor_movie_update();
-			wxeditor_hexeditor_update();
+			wxeditor_movie_update(lsnes_instance);
+			wxeditor_hexeditor_update(lsnes_instance);
 		});
 	});
 	actionupdate.set(lsnes_instance.dispatch->action_update, []() { main_window->action_updated(); });

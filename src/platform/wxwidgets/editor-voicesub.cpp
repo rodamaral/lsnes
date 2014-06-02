@@ -19,7 +19,7 @@
 
 namespace
 {
-	bool voicesub_open = false;
+	std::set<emulator_instance*> voicesub_open;
 }
 
 class wxeditor_voicesub : public wxDialog
@@ -319,8 +319,8 @@ void wxeditor_voicesub::on_refresh(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_close(wxCommandEvent& e)
 {
+	voicesub_open.erase(&inst);
 	Destroy();
-	voicesub_open = false;
 }
 
 void wxeditor_voicesub::refresh()
@@ -368,16 +368,16 @@ void wxeditor_voicesub::on_wclose(wxCloseEvent& e)
 	closing = true;
 	if(!wasc)
 		Destroy();
-	voicesub_open = false;
+	voicesub_open.erase(&inst);
 }
 
 bool wxeditor_voicesub::ShouldPreventAppExit() const { return false; }
 
-void show_wxeditor_voicesub(wxWindow* parent)
+void show_wxeditor_voicesub(wxWindow* parent, emulator_instance& inst)
 {
-	if(voicesub_open)
+	if(voicesub_open.count(&inst))
 		return;
-	wxeditor_voicesub* v = new wxeditor_voicesub(parent, lsnes_instance);
+	wxeditor_voicesub* v = new wxeditor_voicesub(parent, inst);
 	v->Show();
-	voicesub_open = true;
+	voicesub_open.insert(&inst);
 }

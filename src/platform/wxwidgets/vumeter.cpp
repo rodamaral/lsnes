@@ -13,7 +13,7 @@
 
 namespace
 {
-	bool vumeter_open = false;
+	std::set<emulator_instance*> vumeter_open;
 
 	unsigned vu_to_pixels(float vu)
 	{
@@ -396,7 +396,7 @@ void wxwin_vumeter::on_close(wxCommandEvent& e)
 {
 	closing = true;
 	Destroy();
-	vumeter_open = false;
+	vumeter_open.erase(&inst);
 }
 
 void wxwin_vumeter::on_wclose(wxCloseEvent& e)
@@ -405,16 +405,16 @@ void wxwin_vumeter::on_wclose(wxCloseEvent& e)
 	closing = true;
 	if(!wasc)
 		Destroy();
-	vumeter_open = false;
+	vumeter_open.erase(&inst);
 }
 
 bool wxwin_vumeter::ShouldPreventAppExit() const { return false; }
 
-void open_vumeter_window(wxWindow* parent)
+void open_vumeter_window(wxWindow* parent, emulator_instance& inst)
 {
-	if(vumeter_open)
+	if(vumeter_open.count(&inst))
 		return;
-	wxwin_vumeter* v = new wxwin_vumeter(parent, lsnes_instance);
+	wxwin_vumeter* v = new wxwin_vumeter(parent, inst);
 	v->Show();
-	vumeter_open = true;
+	vumeter_open.insert(&inst);
 }

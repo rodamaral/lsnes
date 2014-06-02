@@ -1585,7 +1585,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		wxeditor_subtitles_display(this, inst);
 		return;
 	case wxID_EDIT_VSUBTITLES:
-		show_wxeditor_voicesub(this);
+		show_wxeditor_voicesub(this, inst);
 		return;
 	case wxID_EDIT_MEMORYWATCH:
 		wxeditor_memorywatches_display(this, inst);
@@ -1641,10 +1641,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	}
 	case wxID_MEMORY_SEARCH:
-		wxwindow_memorysearch_display();
+		wxwindow_memorysearch_display(inst);
 		return;
 	case wxID_TASINPUT:
-		wxeditor_tasinput_display(this);
+		wxeditor_tasinput_display(this, inst);
 		return;
 	case wxID_ABOUT: {
 		std::ostringstream str;
@@ -1775,13 +1775,13 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		show_conflictwindow(this);
 		return;
 	case wxID_VUDISPLAY:
-		open_vumeter_window(this);
+		open_vumeter_window(this, inst);
 		return;
 	case wxID_DISASSEMBLER:
 		wxeditor_disassembler_display(this, inst);
 		return;
 	case wxID_MOVIE_EDIT:
-		wxeditor_movie_display(this);
+		wxeditor_movie_display(this, inst);
 		return;
 	case wxID_NEW_PROJECT:
 		open_new_project_window(this, inst);
@@ -1800,7 +1800,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		do_load_rom_image(NULL);
 		return;
 	case wxID_HEXEDITOR:
-		wxeditor_hexedit_display(this);
+		wxeditor_hexedit_display(this, inst);
 		return;
 	case wxID_MULTITRACK:
 		wxeditor_multitrack_display(this, inst);

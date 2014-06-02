@@ -55,17 +55,17 @@ void wxeditor_hotkeys_display(wxWindow* parent);
 void wxeditor_memorywatches_display(wxWindow* parent, emulator_instance& inst);
 void wxeditor_subtitles_display(wxWindow* parent, emulator_instance& inst);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
-void show_wxeditor_voicesub(wxWindow* parent);
+void show_wxeditor_voicesub(wxWindow* parent, emulator_instance& inst);
 void open_rom_select_window();
 void open_new_project_window(wxWindow* parent, emulator_instance& inst);
 void show_conflictwindow(wxWindow* parent);
-void open_vumeter_window(wxWindow* parent);
-void wxeditor_movie_display(wxWindow* parent);
-void wxeditor_movie_update();
+void open_vumeter_window(wxWindow* parent, emulator_instance& inst);
+void wxeditor_movie_display(wxWindow* parent, emulator_instance& inst);
+void wxeditor_movie_update(emulator_instance& inst);
 void wxeditor_autohold_display(wxWindow* parent, emulator_instance& inst);
-void wxeditor_tasinput_display(wxWindow* parent);
+void wxeditor_tasinput_display(wxWindow* parent, emulator_instance& inst);
 void wxeditor_macro_display(wxWindow* parent, emulator_instance& inst);
-void wxeditor_hexedit_display(wxWindow* parent);
+void wxeditor_hexedit_display(wxWindow* parent, emulator_instance& inst);
 void wxeditor_multitrack_display(wxWindow* parent, emulator_instance& inst);
 bool wxeditor_plugin_manager_display(wxWindow* parent);
 void wxeditor_tracelog_display(wxWindow* parent, emulator_instance& inst, int cpuid, const std::string& cpuname);
@@ -73,14 +73,14 @@ void wxeditor_disassembler_display(wxWindow* parent, emulator_instance& inst);
 void wxeditor_plugin_manager_notify_fail(const std::string& libname);
 
 //Auxillary windows.
-void wxwindow_memorysearch_display();
-void wxwindow_memorysearch_update();
-void wxeditor_hexeditor_update();
+void wxwindow_memorysearch_display(emulator_instance& inst);
+void wxwindow_memorysearch_update(emulator_instance& inst);
+void wxeditor_hexeditor_update(emulator_instance& inst);
 class memory_search;
-memory_search* wxwindow_memorysearch_active();
-bool wxeditor_hexeditor_available();
-bool wxeditor_hexeditor_jumpto(uint64_t addr);
-void wxwindow_tasinput_update();
+memory_search* wxwindow_memorysearch_active(emulator_instance& inst);
+bool wxeditor_hexeditor_available(emulator_instance& inst);
+bool wxeditor_hexeditor_jumpto(emulator_instance& inst, uint64_t addr);
+void wxwindow_tasinput_update(emulator_instance& inst);
 
 template<typename T>
 void runuifun(T fn)

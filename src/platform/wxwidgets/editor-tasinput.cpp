@@ -175,7 +175,7 @@ private:
 
 namespace
 {
-	wxeditor_tasinput* tasinput_open;
+	std::map<emulator_instance*, wxeditor_tasinput*> tasinput_open;
 }
 
 wxeditor_tasinput::xypanel::xypanel(wxWindow* win, emulator_instance& _inst, wxSizer* s, control_triple _t,
@@ -350,7 +350,7 @@ wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent, emulator_instance& _inst)
 				//Close the window.
 				bool wasc = closing;
 				closing = true;
-				tasinput_open = NULL;
+				tasinput_open.erase(&this->inst);
 				inst.controls->tasinput_enable(false);
 				if(!wasc)
 					Destroy();
@@ -545,7 +545,7 @@ void wxeditor_tasinput::on_wclose(wxCloseEvent& e)
 {
 	bool wasc = closing;
 	closing = true;
-	tasinput_open = NULL;
+	tasinput_open.erase(&inst);
 	inst.controls->tasinput_enable(false);
 	if(!wasc)
 		Destroy();
@@ -720,24 +720,24 @@ wxeditor_tasinput::control_triple* wxeditor_tasinput::find_triple(unsigned contr
 	return NULL;
 }
 
-void wxeditor_tasinput_display(wxWindow* parent)
+void wxeditor_tasinput_display(wxWindow* parent, emulator_instance& inst)
 {
-	if(tasinput_open)
+	if(tasinput_open.count(&inst) || tasinput_open[&inst])
 		return;
 	wxeditor_tasinput* v;
 	try {
-		v = new wxeditor_tasinput(parent, lsnes_instance);
+		v = new wxeditor_tasinput(parent, inst);
 	} catch(std::runtime_error& e) {
 		wxMessageBox(_T("No controllers present"), _T("Error"), wxICON_EXCLAMATION | wxOK, parent);
 		return;
 	}
 	v->Show();
-	tasinput_open = v;
-	lsnes_instance.controls->tasinput_enable(true);
+	tasinput_open[&inst] = v;
+	inst.controls->tasinput_enable(true);
 }
 
-void wxwindow_tasinput_update()
+void wxwindow_tasinput_update(emulator_instance& inst)
 {
-	if(tasinput_open)
-		tasinput_open->call_screen_update();
+	if(tasinput_open.count(&inst))
+		tasinput_open[&inst]->call_screen_update();
 }

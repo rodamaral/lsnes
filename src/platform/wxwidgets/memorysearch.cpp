@@ -70,7 +70,7 @@ namespace
 		{8, 2, ""},
 	};
 
-	wxwindow_memorysearch* mwatch;
+	std::map<emulator_instance*, wxwindow_memorysearch*> mwatch;
 
 	const char* datatypes[] = {
 		"signed byte",
@@ -307,7 +307,7 @@ public:
 	}
 	void dump_candidates_text();
 private:
-	friend memory_search* wxwindow_memorysearch_active();
+	friend memory_search* wxwindow_memorysearch_active(emulator_instance& inst);
 	friend class panel;
 	template<typename T> T promptvalue(bool& bad);
 	void update();
@@ -811,7 +811,7 @@ void wxwindow_memorysearch::panel::get_selection(uint64_t& first, uint64_t& last
 wxwindow_memorysearch::~wxwindow_memorysearch()
 {
 	delete msearch;
-	mwatch = NULL;
+	mwatch.erase(&inst);
 }
 
 bool wxwindow_memorysearch::ShouldPreventAppExit() const
@@ -981,7 +981,7 @@ void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 	}
 	menu.Append(wxID_ADD, wxT("Add watch..."))->Enable(some_selected);
 	menu.Append(wxID_SHOW_HEXEDITOR, wxT("Select in hex editor"))->Enable(selcount == 1 &&
-		wxeditor_hexeditor_available());
+		wxeditor_hexeditor_available(inst));
 	menu.Append(wxID_POKE, wxT("Poke..."))->Enable(selcount == 1);
 	menu.AppendSeparator();
 	menu.Append(wxID_DISQUALIFY, wxT("Disqualify"))->Enable(some_selected);
@@ -996,7 +996,7 @@ void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 void wxwindow_memorysearch::on_close(wxCloseEvent& e)
 {
 	Destroy();
-	mwatch = NULL;
+	mwatch.erase(&inst);
 }
 
 void wxwindow_memorysearch::auto_update()
@@ -1022,7 +1022,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 				msearch->dq_range(i->base, i->last_address());
 			vma_info[i->name] = std::make_pair(i->base, i->size);
 		}
-		wxeditor_hexeditor_update();
+		wxeditor_hexeditor_update(inst);
 	} else if(id == wxID_UPDATE) {
 		update();
 	} else if(id == wxID_TYPESELECT) {
@@ -1084,7 +1084,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			inst.iqueue->run([addr, ms]() { ms->dq_range(addr, addr); });
 		}
 		matches->set_selection(0, 0);
-		wxeditor_hexeditor_update();
+		wxeditor_hexeditor_update(inst);
 	} else if(id == wxID_SET_REGIONS) {
 		wxwindow_memorysearch_vmasel* d = new wxwindow_memorysearch_vmasel(this, inst, vmas_enabled);
 		if(d->ShowModal() == wxID_OK)
@@ -1098,7 +1098,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		for(auto i : inst.memory->get_regions())
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
-		wxeditor_hexeditor_update();
+		wxeditor_hexeditor_update(inst);
 	} else if(id == wxID_POKE) {
 		uint64_t start, end;
 		matches->get_selection(start, end);
@@ -1126,7 +1126,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		for(uint64_t r = start; r < end; r++) {
 			if(!addresses.count(r))
 				continue;
-			wxeditor_hexeditor_jumpto(addresses[r]);
+			wxeditor_hexeditor_jumpto(inst, addresses[r]);
 			return;
 		}
 	} else if(id >= wxID_BUTTONS_BASE && id < wxID_BUTTONS_BASE +
@@ -1140,7 +1140,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			undohistory.pop_back();  //Shouldn't be undoable.
 			undoitem->Enable(undohistory.size());
 		}
-		wxeditor_hexeditor_update();
+		wxeditor_hexeditor_update(inst);
 	} else if(id == wxID_MENU_DUMP_CANDIDATES) {
 		dump_candidates_text();
 	} else if(id == wxID_MENU_SAVE_PREVMEM) {
@@ -1212,26 +1212,26 @@ template<typename T> T wxwindow_memorysearch::promptvalue(bool& bad)
 	return val2;
 }
 
-void wxwindow_memorysearch_display()
+void wxwindow_memorysearch_display(emulator_instance& inst)
 {
-	if(mwatch) {
-		mwatch->Raise();
+	if(mwatch.count(&inst)) {
+		mwatch[&inst]->Raise();
 		return;
 	}
-	mwatch = new wxwindow_memorysearch(lsnes_instance);
-	mwatch->Show();
+	mwatch[&inst] = new wxwindow_memorysearch(inst);
+	mwatch[&inst]->Show();
 }
 
-void wxwindow_memorysearch_update()
+void wxwindow_memorysearch_update(emulator_instance& inst)
 {
-	if(mwatch)
-		mwatch->auto_update();
+	if(mwatch.count(&inst))
+		mwatch[&inst]->auto_update();
 }
 
-memory_search* wxwindow_memorysearch_active()
+memory_search* wxwindow_memorysearch_active(emulator_instance& inst)
 {
-	if(mwatch)
-		return mwatch->msearch;
+	if(mwatch.count(&inst))
+		return mwatch[&inst]->msearch;
 	else
 		return NULL;
 }
