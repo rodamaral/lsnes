@@ -430,8 +430,8 @@ bool lsnes_app::OnInit()
 			{ threads::alock h(if_mutex); if_update_screen = false; }
 			if(main_window)
 				main_window->notify_update();
-			wxwindow_memorysearch_update(lsnes_instance);
-			wxwindow_tasinput_update(lsnes_instance);
+			wxwindow_memorysearch_update(CORE());
+			wxwindow_tasinput_update(CORE());
 		});
 	});
 	statusupdate.set(lsnes_instance.dispatch->status_update, []() {
@@ -442,8 +442,8 @@ bool lsnes_app::OnInit()
 			{ threads::alock h(if_mutex); if_update_status = false; }
 			if(main_window)
 				main_window->notify_update_status();
-			wxeditor_movie_update(lsnes_instance);
-			wxeditor_hexeditor_update(lsnes_instance);
+			wxeditor_movie_update(CORE());
+			wxeditor_hexeditor_update(CORE());
 		});
 	});
 	actionupdate.set(lsnes_instance.dispatch->action_update, []() { main_window->action_updated(); });
@@ -567,7 +567,8 @@ int lsnes_app::OnExit()
 	platform::quit();
 	lsnes_instance.buttons->cleanup();
 	cleanup_keymapper();
-	deinitialize_wx_keyboard();
+	deinitialize_wx_mouse(lsnes_instance);
+	deinitialize_wx_keyboard(lsnes_instance);
 	return 0;
 }
 
@@ -580,7 +581,8 @@ namespace
 {
 	struct _graphics_driver drv = {
 		.init = []() -> void {
-			initialize_wx_keyboard();
+			initialize_wx_keyboard(lsnes_instance);
+			initialize_wx_mouse(lsnes_instance);
 		},
 		.quit = []() -> void {},
 		.notify_message = []() -> void

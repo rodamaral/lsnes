@@ -10,6 +10,7 @@
 #include <cstddef>
 
 #include <wx/string.h>
+#include <wx/event.h>
 
 class wxwin_mainwindow;
 class wxwin_messages;
@@ -35,9 +36,12 @@ void bring_app_foreground();
 std::string pick_archive_member(wxWindow* parent, const std::string& filename) throw(std::bad_alloc);
 void boot_emulator(emulator_instance& inst, loaded_rom& rom, moviefile& movie, bool fscreen);
 void handle_wx_keyboard(emulator_instance& inst, wxKeyEvent& e, bool polarity);
+void handle_wx_mouse(emulator_instance& inst, wxMouseEvent& e);
 std::string map_keycode_to_key(int kcode);
-void initialize_wx_keyboard();
-void deinitialize_wx_keyboard();
+void initialize_wx_keyboard(emulator_instance& inst);
+void deinitialize_wx_keyboard(emulator_instance& inst);
+void initialize_wx_mouse(emulator_instance& inst);
+void deinitialize_wx_mouse(emulator_instance& inst);
 void signal_program_exit();
 void signal_resize_needed();
 void _runuifun_async(void (*fn)(void*), void* arg);

@@ -626,54 +626,6 @@ namespace
 		emulation_thread->join();
 	}
 
-	keyboard::mouse_calibration mouse_cal = {0};
-	keyboard::key_mouse mouse_x(*lsnes_instance.keyboard, "mouse_x", "mouse", mouse_cal);
-	keyboard::key_mouse mouse_y(*lsnes_instance.keyboard, "mouse_y", "mouse", mouse_cal);
-	keyboard::key_key mouse_l(*lsnes_instance.keyboard, "mouse_left", "mouse");
-	keyboard::key_key mouse_m(*lsnes_instance.keyboard, "mouse_center", "mouse");
-	keyboard::key_key mouse_r(*lsnes_instance.keyboard, "mouse_right", "mouse");
-	keyboard::key_key mouse_i(*lsnes_instance.keyboard, "mouse_inwindow", "mouse");
-
-	std::pair<double, double> calc_scale_factors(double factor, bool ar,
-		double par)
-	{
-		if(!ar)
-			return std::make_pair(factor, factor);
-		else if(par < 1) {
-			//Too wide, make taller.
-			return std::make_pair(factor, factor / par);
-		} else {
-			//Too narrow, make wider.
-			return std::make_pair(factor * par, factor);
-		}
-	}
-
-	void handle_wx_mouse(emulator_instance& inst, wxMouseEvent& e)
-	{
-		auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled,
-			(our_rom.rtype) ? our_rom.rtype->get_PAR() : 1.0);
-		inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_x, e.GetX() /
-			sfactors.first));
-		inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_y, e.GetY() /
-			sfactors.second));
-		if(e.Entering())
-			inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_i, 1));
-		if(e.Leaving())
-			inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_i, 0));
-		if(e.LeftDown())
-			inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_l, 1));
-		if(e.LeftUp())
-			inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_l, 0));
-		if(e.MiddleDown())
-			inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_m, 1));
-		if(e.MiddleUp())
-			inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_m, 0));
-		if(e.RightDown())
-			inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_r, 1));
-		if(e.RightUp())
-			inst.iqueue->queue(keypress_info(keyboard::modifier_set(), mouse_r, 0));
-	}
-
 	bool is_readonly_mode(emulator_instance& inst)
 	{
 		bool ret;
@@ -913,6 +865,19 @@ void wxwin_mainwindow::menu_separator()
 void wxwin_mainwindow::panel::request_paint()
 {
 	Refresh();
+}
+
+std::pair<double, double> calc_scale_factors(double factor, bool ar, double par)
+{
+	if(!ar)
+		return std::make_pair(factor, factor);
+	else if(par < 1) {
+		//Too wide, make taller.
+		return std::make_pair(factor, factor / par);
+	} else {
+		//Too narrow, make wider.
+		return std::make_pair(factor * par, factor);
+	}
 }
 
 void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
