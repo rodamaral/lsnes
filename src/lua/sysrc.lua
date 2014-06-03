@@ -57,6 +57,7 @@ local register_in = function(table, class)
 end
 
 -- Classes
+memory.address = classes.ADDRESS;
 memory.mmap = classes.MMAP_STRUCT;
 zip.writer = classes.ZIPWRITER;
 gui.tiled_bitmap = classes.TILEMAP;
@@ -72,6 +73,7 @@ filereader = classes.FILEREADER;
 -- Some ctors
 memory2=classes.VMALIST.new();
 callback=classes.CALLBACKS_LIST.new();
+memory.mkaddr = classes.ADDRESS.new;
 memory.map_structure=classes.MMAP_STRUCT.new;
 memory.compare_new=classes.COMPARE_OBJ.new;
 zip.create=classes.ZIPWRITER.new;

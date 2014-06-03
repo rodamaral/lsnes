@@ -1,5 +1,4 @@
 #include "core/command.hpp"
-#include "lua/internal.hpp"
 #include "core/debug.hpp"
 #include "core/instance.hpp"
 #include "core/memorymanip.hpp"
@@ -8,6 +7,8 @@
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/rom.hpp"
+#include "lua/address.hpp"
+#include "lua/internal.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/skein.hpp"
@@ -15,30 +16,6 @@
 #include "library/minmax.hpp"
 #include "library/hex.hpp"
 #include "library/int24.hpp"
-
-uint64_t lua_get_vmabase(const std::string& vma)
-{
-	for(auto i : CORE().memory->get_regions())
-		if(i->name == vma)
-			return i->base;
-	throw std::runtime_error("No such VMA");
-}
-
-uint64_t lua_get_read_address(lua::parameters& P)
-{
-	static std::map<std::string, char> deprecation_keys;
-	char* deprecation = &deprecation_keys[P.get_fname()];
-	uint64_t vmabase = 0;
-	if(P.is_string())
-		vmabase = lua_get_vmabase(P.arg<std::string>());
-	else {
-		//Deprecated.
-		if(P.get_state().do_once(deprecation))
-			messages << P.get_fname() << ": Global memory form is deprecated." << std::endl; 
-	}
-	auto addr = P.arg<uint64_t>();
-	return addr + vmabase;
-}
 
 namespace
 {
@@ -578,6 +555,12 @@ namespace
 					addr++;
 				else
 					addr--;
+			} else if(P.is<lua_address>()) {
+				auto laddr = P.arg<lua_address*>();
+				vmabase = lua_get_vmabase(laddr->get_vma());
+				have_vmabase = true;
+				addr = laddr->get_offset();
+				//No continue, fall through.
 			} else if(P.is_string()) {
 				vmabase = lua_get_vmabase(P.arg<std::string>());
 				have_vmabase = true;

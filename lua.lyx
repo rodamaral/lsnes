@@ -416,7 +416,7 @@ operator(): Bind key in mmap structure
 \end_layout
 
 \begin_layout Itemize
-Syntax: obj(key, marea, address, type)
+Syntax: obj(key, {marea, address|addrobj}, type)
 \end_layout
 
 \begin_layout Standard
@@ -439,6 +439,10 @@ marea: String: The memory area the mapped address is in (default: global
 \begin_layout Itemize
 address: Number: The offset of memory addreess, relative to specified memory
  area or global memory space.
+\end_layout
+
+\begin_layout Itemize
+addrobj: ADDRESS: The memory address.
 \end_layout
 
 \begin_layout Itemize
@@ -3607,11 +3611,12 @@ Static function new: Create a checker
 \end_layout
 
 \begin_layout Itemize
-Syntax: handle classes.COMPARE_OBJ.new(marea, offset, size, [rows, stride])
+Syntax: handle classes.COMPARE_OBJ.new({marea, offset|addrobj}, size, [rows,
+ stride])
 \end_layout
 
 \begin_layout Itemize
-Syntax: handle memory.compare_new(marea, offset, size, rows, stride)
+Syntax: handle memory.compare_new({marea, offset|addrobj}, size, rows, stride)
 \end_layout
 
 \begin_layout Standard
@@ -3624,6 +3629,10 @@ marea: string: The memory area to interpret <offset> against.
 
 \begin_layout Itemize
 offset: number: The initial offset in memory area.
+\end_layout
+
+\begin_layout Itemize
+addrobj: ADDRESS: The memory address.
 \end_layout
 
 \begin_layout Itemize
@@ -3675,6 +3684,262 @@ True if memory block has been modified since last call (or object creation
 
 \begin_layout Standard
 Check if the block has been modified.
+\end_layout
+
+\begin_layout Subsection
+ADDRESS: Memory address
+\end_layout
+
+\begin_layout Standard
+Objects of this class contain a memory address.
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Create new memory address
+\end_layout
+
+\begin_layout Itemize
+Syntax: ADDRESS classes.ADDRESS.new(string marea, number offset)
+\end_layout
+
+\begin_layout Itemize
+Syntax: ADDRESS memory.address.new(string marea, number offset)
+\end_layout
+
+\begin_layout Itemize
+Syntax: ADDRESS memory.mkaddr(string marea, number offset)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+marea: The memory area
+\end_layout
+
+\begin_layout Itemize
+offset: The offset in memory area.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+The memory area.
+\end_layout
+
+\begin_layout Standard
+Construct a new memory address object.
+\end_layout
+
+\begin_layout Subsubsection
+Method: addr: Get global address
+\end_layout
+
+\begin_layout Itemize
+Syntax: number addr:addr()
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+addr: ADRESS: The original address.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+The global address corresponding to this address.
+\end_layout
+
+\begin_layout Subsubsection
+Method: vma: Get memory area
+\end_layout
+
+\begin_layout Itemize
+Syntax: string addr:vma()
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+addr: ADRESS: The original address.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+The memory area corresponding to this address.
+\end_layout
+
+\begin_layout Subsubsection
+Method: offset: Get memory area offset
+\end_layout
+
+\begin_layout Itemize
+Syntax: string addr:offset()
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+addr: ADRESS: The original address.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+The offset in memory area corresponding to this address.
+\end_layout
+
+\begin_layout Subsubsection
+Method: replace: Replace address part
+\end_layout
+
+\begin_layout Itemize
+Syntax: ADDRESS addr:replace(offset[, bits])
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+addr: ADRESS: The original address.
+\end_layout
+
+\begin_layout Itemize
+offset: number: The new offset
+\end_layout
+
+\begin_layout Itemize
+bits: number: The number of LSB to replace.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+The modified address
+\end_layout
+
+\begin_layout Standard
+Returns a new address, with <bits> (all if missing) least significant bits
+ of <addr> replaced by LSB of <offset>.
+\end_layout
+
+\begin_layout Subsubsection
+Method: add: Add to address
+\end_layout
+
+\begin_layout Itemize
+Syntax: ADDRESS addr:add(offset)
+\end_layout
+
+\begin_layout Itemize
+Syntax: ADDRESS addr:add(number, stride)
+\end_layout
+
+\begin_layout Itemize
+Syntax: ADDRESS addr:add(number, stride, offset)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+addr: ADRESS: The original address.
+\end_layout
+
+\begin_layout Itemize
+offset: number: Offset to add.
+\end_layout
+
+\begin_layout Itemize
+number: number: Number of table strides to add.
+\end_layout
+
+\begin_layout Itemize
+stride: number: The table stride.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+The modified address
+\end_layout
+
+\begin_layout Standard
+Adds <offset>, <number>*<stride> or <number>*<stride>+<offset> into specified
+ address <addr>.
+\end_layout
+
+\begin_layout Subsection
+ADDRESS:<op>: Read/Write memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none addr:<op>(value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number addr:<op>()
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+addr: ADDRESS: The address to read/write.
+\end_layout
+
+\begin_layout Itemize
+value: number: The number to write.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+The value read.
+\end_layout
+
+\begin_layout Standard
+Read/Write value from/to given address <addr>.
+ The value written is <value>.
+ <Op> is of form: [i][s]<type>, where:
+\end_layout
+
+\begin_layout Itemize
+<type> is one of 'byte', 'word', 'hword', 'dword', 'qword', 'float', 'double'.
+\end_layout
+
+\begin_layout Itemize
+'i' signifies that the value is treated as opposite-to-normal endianess,
+\end_layout
+
+\begin_layout Itemize
+'s' signifies that value is treated as signed (not available for floating-point).
 \end_layout
 
 \begin_layout Standard
@@ -6671,43 +6936,43 @@ memory.read{,s}{byte,{,h,d,q}word}: Read memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readbyte(string marea, number address)
+Syntax: none memory.readbyte({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readword(string marea, number address)
+Syntax: none memory.readword({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readhword(string marea, number address)
+Syntax: none memory.readhword({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readdword(string marea, number address)
+Syntax: none memory.readdword({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readqword(string marea, number address)
+Syntax: none memory.readqword({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsbyte(string marea, number address)
+Syntax: none memory.readsbyte({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsword(string marea, number address)
+Syntax: none memory.readsword({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readshword(string marea, number address)
+Syntax: none memory.readshword({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsdword(string marea, number address)
+Syntax: none memory.readsdword({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsqword(string marea, number address)
+Syntax: none memory.readsqword({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Standard
@@ -6783,11 +7048,11 @@ memory.read{float,double}: Read memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readfloat(string marea, number address)
+Syntax: none memory.readfloat({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readdouble(string marea, number address)
+Syntax: none memory.readdouble({string marea, number address|ADDRESS addrobj})
 \end_layout
 
 \begin_layout Standard
@@ -6799,31 +7064,38 @@ memory.write{byte,{,h,d,q}word,float,double}: Write memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writebyte(string marea, number address, number value)
+Syntax: none memory.writebyte({string marea, number address|ADDRESS addrobj},
+ number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeword(string marea, number address, number value)
+Syntax: none memory.writeword({string marea, number address|ADDRESS addrobj},
+ number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writehword(string marea, number address, number value)
+Syntax: none memory.writehword({string marea, number address|ADDRESS addrobj},
+ number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writedword(string marea, number address, number value)
+Syntax: none memory.writedword({string marea, number address|ADDRESS addrobj},
+ number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeqword(string marea, number address, number value)
+Syntax: none memory.writeqword({string marea, number address|ADDRESS addrobj},
+ number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writefloat(string marea, number address, number value)
+Syntax: none memory.writefloat({string marea, number address|ADDRESS addrobj},
+ number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writedouble(string marea, number address, number value)
+Syntax: none memory.writedouble({string marea, number address|ADDRESS addrobj},
+ number value)
 \end_layout
 
 \begin_layout Standard
@@ -6836,7 +7108,8 @@ memory.map{{,s}{byte,{,h,d,q}word},float,double}: Map an array
 \end_layout
 
 \begin_layout Itemize
-Syntax: userdata memory.map<type>(string marea, number base, number size)
+Syntax: userdata memory.map<type>({string marea, number base|ADDRESS addrobj},
+ number size)
 \end_layout
 
 \begin_layout Standard
@@ -6853,7 +7126,8 @@ memory.hash_region: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region(string marea, number base, number size)
+Syntax: string memory.hash_region({string marea, number base|ADDRESS addrobj},
+ number size)
 \end_layout
 
 \begin_layout Standard
@@ -6866,8 +7140,8 @@ memory.hash_region2: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region2(string marea, number base, number size[,
- number rows, number stride])
+Syntax: string memory.hash_region2({string marea, number base|ADDRESS addrobj},
+ number size[, number rows, number stride])
 \end_layout
 
 \begin_layout Standard
@@ -6881,8 +7155,8 @@ memory.hash_region_skein: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region_skein(string marea, number base, number
- size[, number rows, number stride])
+Syntax: string memory.hash_region_skein({string marea, number base|ADDRESS
+ addrobj}, number size[, number rows, number stride])
 \end_layout
 
 \begin_layout Standard
@@ -6895,8 +7169,8 @@ memory.store: Store region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.store(string marea, number addr, number daddr[, number
- rows, number stride]
+Syntax: none memory.store({string marea, number addr|ADDRESS addrobj}, number
+ daddr[, number rows, number stride]
 \end_layout
 
 \begin_layout Standard
@@ -6911,8 +7185,8 @@ memory.storecmp: Compare and store region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: bool memory.storecmp(string marea, number addr, number daddr[, number
- rows, number stride]
+Syntax: bool memory.storecmp({string marea, number addr|ADDRESS addrobj},
+ number daddr[, number rows, number stride]
 \end_layout
 
 \begin_layout Standard
@@ -6939,7 +7213,8 @@ memory.readregion: Read region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: table memory.readregion(string marea, number base, number size)
+Syntax: table memory.readregion({string marea, number base|ADDRESS addrobj},
+ number size)
 \end_layout
 
 \begin_layout Standard
@@ -6955,8 +7230,8 @@ memory.writeregion: Write region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeregion(string marea, number base, number size, table
- data)
+Syntax: none memory.writeregion({string marea, number base|ADDRESS addrobj},
+ number size, table data)
 \end_layout
 
 \begin_layout Standard
@@ -7041,30 +7316,33 @@ memory.{,un}register{read,write,exec}: (Un)Register read / write / execute
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerread(string marea, number addr, function
- fn);
+Syntax: function memory.registerread({string marea, number addr|ADDRESS addrobj},
+ function fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerwrite(string marea, number addr, function
- fn);
+Syntax: function memory.registerwrite({string marea, number addr|ADDRESS
+ addrobj}, function fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerexec(string marea, number addr, function
- fn);
+Syntax: function memory.registerexec({string marea, number addr|ADDRESS addrobj},
+ function fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.unregisterread(string marea, number addr, function fn);
+Syntax: none memory.unregisterread({string marea, number addr|ADDRESS addrobj},
+ function fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.unregisterwrite(string marea, number addr, function fn);
+Syntax: none memory.unregisterwrite({string marea, number addr|ADDRESS addrobj},
+ function fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.unregisterexec(string marea, number addr, function fn);
+Syntax: none memory.unregisterexec({string marea, number addr|ADDRESS addrobj},
+ function fn);
 \end_layout
 
 \begin_layout Standard
@@ -7111,11 +7389,12 @@ memory.cheat: Set cheat
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.cheat(string marea, number addr, number value);
+Syntax: none memory.cheat({string marea, number addr|ADDRESS addrobj}, number
+ value);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.cheat(string marea, number addr);
+Syntax: none memory.cheat({string marea, number addr|ADDRESS addrobj});
 \end_layout
 
 \begin_layout Standard

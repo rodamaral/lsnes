@@ -10,6 +10,7 @@
 class memory_space;
 class project_state;
 class emu_framebuffer;
+namespace framebuffer { class queue; }
 
 /**
  * lsnes memory watch printer variables.
