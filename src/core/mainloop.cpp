@@ -134,48 +134,6 @@ namespace
 	{
 		return (stringfmt() << "$SLOT:" << (i + 1)).str();
 	}
-
-	std::map<std::string, std::string> slotinfo_cache;
-
-	std::string vector_to_string(const std::vector<char>& x)
-	{
-		std::string y(x.begin(), x.end());
-		while(y.length() > 0 && y[y.length() - 1] < 32)
-			y = y.substr(0, y.length() - 1);
-		return y;
-	}
-
-	std::string get_slotinfo(const std::string& _filename)
-	{
-		auto& core = CORE();
-		std::string filename = resolve_relative_path(_filename);
-		if(!slotinfo_cache.count(filename)) {
-			std::ostringstream out;
-			try {
-				moviefile::brief_info info(filename);
-				if(!*core.mlogic)
-					out << "No movie";
-				else if(core.mlogic->get_mfile().projectid == info.projectid)
-					out << info.rerecords << "R/" << info.current_frame << "F";
-				else
-					out << "Wrong movie";
-			} catch(...) {
-				out << "Nonexistent";
-			}
-			slotinfo_cache[filename] = out.str();
-		}
-		return slotinfo_cache[filename];
-	}
-
-	void flush_slotinfo(const std::string& filename)
-	{
-		slotinfo_cache.erase(resolve_relative_path(filename));
-	}
-
-	void flush_slotinfo()
-	{
-		slotinfo_cache.clear();
-	}
 }
 
 void mainloop_signal_need_rewind(void* ptr)
@@ -291,17 +249,18 @@ namespace
 
 	void mark_pending_save(std::string filename, int smode, int binary)
 	{
+		auto& core = CORE();
 		int tmp = -1;
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
 			do_save_movie(filename, binary);
-			flush_slotinfo(translate_name_mprefix(filename, tmp, -1));
+			core.slotcache->flush(translate_name_mprefix(filename, tmp, -1));
 			return;
 		}
 		if(location_special == SPECIAL_SAVEPOINT) {
 			//We can save immediately here.
 			do_save_state(filename, binary);
-			flush_slotinfo(translate_name_mprefix(filename, tmp, -1));
+			core.slotcache->flush(translate_name_mprefix(filename, tmp, -1));
 			return;
 		}
 		queued_saves.insert(std::make_pair(filename, binary));
@@ -385,7 +344,7 @@ void update_movie_state()
 			int tmp = -1;
 			std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, -1);
 			_status.saveslot = save_jukebox_pointer + 1;
-			_status.slotinfo = utf8::to32(get_slotinfo(sfilen));
+			_status.slotinfo = utf8::to32(core.slotcache->get(sfilen));
 		} else {
 			_status.saveslot_valid = false;
 		}
@@ -949,7 +908,7 @@ namespace
 	command::fnptr<> flushslots(lsnes_cmds, "flush-slotinfo", "Flush slotinfo cache",
 		"Flush slotinfo cache\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			flush_slotinfo();
+			CORE().slotcache->flush();
 		});
 
 	command::fnptr<> mhold1(lsnes_cmds, "+hold-macro", "Hold macro (hold)",
@@ -1150,7 +1109,7 @@ jumpback:
 				core.project->set(&p);
 				if(core.project->get() != old)
 					delete old;
-				flush_slotinfo();	//Wrong movie may be stale.
+				core.slotcache->flush();		//Wrong movie may be stale.
 				return 1;
 			} catch(std::exception& e) {
 				platform::error_message(std::string("Can't switch projects: ") + e.what());
@@ -1200,7 +1159,7 @@ nothing_to_do:
 					goto jumpback;
 			}
 			if(old_project != (*core.mlogic ? core.mlogic->get_mfile().projectid : ""))
-				flush_slotinfo();	//Wrong movie may be stale.
+				core.slotcache->flush();	//Wrong movie may be stale.
 			return 1;
 		}
 		return 0;
@@ -1217,7 +1176,7 @@ nothing_to_do:
 			for(auto i : queued_saves) {
 				do_save_state(i.first, i.second);
 				int tmp = -1;
-				flush_slotinfo(translate_name_mprefix(i.first, tmp, -1));
+				core.slotcache->flush(translate_name_mprefix(i.first, tmp, -1));
 			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = framerate_regulator::get_utime();
@@ -1391,7 +1350,7 @@ void set_stop_at_frame(uint64_t frame)
 
 void do_flush_slotinfo()
 {
-	flush_slotinfo();
+	CORE().slotcache->flush();
 }
 
 void switch_projects(const std::string& newproj)

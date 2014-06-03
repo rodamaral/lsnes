@@ -11,8 +11,6 @@
 #include <wx/control.h>
 #include <wx/combobox.h>
 
-void do_flush_slotinfo();
-
 class wxeditor_authors : public wxDialog
 {
 public:

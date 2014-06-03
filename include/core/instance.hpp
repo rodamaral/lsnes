@@ -23,6 +23,7 @@ class input_queue;
 class master_dumper;
 class button_mapping;
 class emulator_dispatch;
+class slotinfo_cache;
 namespace command { class group; }
 namespace lua { class state; }
 namespace settingvar { class group; }
@@ -113,6 +114,7 @@ struct emulator_instance
 	emu_framebuffer* fbuf;
 	input_queue* iqueue;
 	master_dumper* mdumper;
+	slotinfo_cache* slotcache;
 	threads::id emu_thread;
 	dtor_list D;
 private:

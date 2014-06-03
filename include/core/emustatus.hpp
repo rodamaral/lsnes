@@ -7,6 +7,8 @@
 #include <map>
 #include "library/triplebuffer.hpp"
 
+class movie_logic;
+
 struct _lsnes_status
 {
 	const static int pause_none;			//pause: No pause.
@@ -38,6 +40,17 @@ struct _lsnes_status
 	std::vector<std::u32string> inputs;		//Input display.
 	std::map<std::string, std::u32string> mvars;	//Memory watches.
 	std::map<std::string, std::u32string> lvars;	//Lua variables.
+};
+
+struct slotinfo_cache
+{
+	slotinfo_cache(movie_logic& _mlogic);
+	std::string get(const std::string& _filename);
+	void flush(const std::string& _filename);
+	void flush();
+private:
+	std::map<std::string, std::string> cache;
+	movie_logic& mlogic;
 };
 
 #endif
