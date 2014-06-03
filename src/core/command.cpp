@@ -10,17 +10,6 @@
 
 command::set lsnes_cmds;
 
-namespace
-{
-	threads::rlock* global_lock;
-	threads::rlock& get_invbind_lock()
-	{
-		if(!global_lock) global_lock = new threads::rlock;
-		return *global_lock;
-	}
-	std::map<std::string, keyboard::invbind*> alias_binds;
-}
-
 alias_binds_manager::alias_binds_manager(keyboard::mapper& _mapper, command::group& _command)
 	: mapper(_mapper), command(_command)
 {
@@ -34,7 +23,7 @@ alias_binds_manager::~alias_binds_manager()
 
 void alias_binds_manager::operator()()
 {
-	threads::arlock h(get_invbind_lock());
+	threads::alock h(mut);
 	auto a = command.get_aliases();
 	for(auto i : alias_binds) {
 		if(!a.count(i.first)) {

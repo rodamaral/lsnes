@@ -29,10 +29,10 @@ public:
 /**
  * Detail flags.
  */
-	static unsigned target_type_mask;
-	static unsigned target_type_file;
-	static unsigned target_type_prefix;
-	static unsigned target_type_special;
+	static const unsigned target_type_mask;
+	static const unsigned target_type_file;
+	static const unsigned target_type_prefix;
+	static const unsigned target_type_special;
 /**
  * Register a dumper.
  *

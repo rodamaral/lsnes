@@ -152,10 +152,10 @@ void dumper_factory_base::run_notify()
 		i->dumpers_updated();
 }
 
-unsigned dumper_factory_base::target_type_mask = 3;
-unsigned dumper_factory_base::target_type_file = 0;
-unsigned dumper_factory_base::target_type_prefix = 1;
-unsigned dumper_factory_base::target_type_special = 2;
+const unsigned dumper_factory_base::target_type_mask = 3;
+const unsigned dumper_factory_base::target_type_file = 0;
+const unsigned dumper_factory_base::target_type_prefix = 1;
+const unsigned dumper_factory_base::target_type_special = 2;
 
 dumper_base::dumper_base()
 {
