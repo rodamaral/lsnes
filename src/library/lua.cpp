@@ -378,8 +378,7 @@ void state::reset() throw(std::bad_alloc, std::runtime_error)
 	if(master)
 		return master->reset();
 	threads::arlock h(get_lua_lock());
-	auto state = state_internal_t::get_soft(this);
-	if(!state) return;
+	auto state = &state_internal_t::get(this);
 	if(lua_handle) {
 		lua_State* tmp = lua_newstate(state::builtin_alloc, this);
 		if(!tmp)
