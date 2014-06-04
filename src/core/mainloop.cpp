@@ -83,8 +83,6 @@ namespace
 		ADVANCE_BREAK_PAUSE,		//Break pause.
 	};
 
-	//Our thread.
-	threads::id emulation_thread;
 	//Flags related to repeating advance.
 	bool advanced_once;
 	bool cancel_advance;
@@ -1221,7 +1219,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	mywindowcallbacks mywcb(*core.dispatch);
 	core.iqueue->system_thread_available = true;
 	//Basic initialization.
-	emulation_thread = threads::this_id();
 	jukebox_size_listener jlistener(*core.settings);
 	core.commentary->init();
 	core.fbuf->init_special_screens();
