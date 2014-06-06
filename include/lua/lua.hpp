@@ -85,7 +85,7 @@ struct lua_state
 
 	void do_eval_lua(const std::string& c) throw(std::bad_alloc);
 	void do_run_lua(const std::string& c) throw(std::bad_alloc);
-	void run_sysrc_lua();
+	void run_sysrc_lua(bool rerun);
 
 	bool requests_repaint;
 	bool requests_subframe_paint;
@@ -103,7 +103,7 @@ struct lua_state
 	std::list<std::string> startup_scripts;
 	std::map<std::string, std::u32string> watch_vars;
 private:
-	void run_lua_fragment() throw(std::bad_alloc);
+	bool run_lua_fragment() throw(std::bad_alloc);
 	template<typename... T> bool run_callback(lua::state::callback_list& list, T... args);
 	void run_synchronous_paint(struct lua::render_context* ctx);
 	lua::state& L;

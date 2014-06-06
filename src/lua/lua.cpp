@@ -371,7 +371,7 @@ namespace
 			core.lua->reset();
 			luaL_openlibs(core.lua->handle());
 
-			core.lua2->run_sysrc_lua();
+			core.lua2->run_sysrc_lua(true);
 			copy_system_tables(*core.lua);
 			messages << "Lua VM reset" << std::endl;
 		});
@@ -412,7 +412,7 @@ void init_lua() throw()
 		fatal_error();
 	}
 	luaL_openlibs(core.lua->handle());
-	core.lua2->run_sysrc_lua();
+	core.lua2->run_sysrc_lua(false);
 	copy_system_tables(*core.lua);
 }
 
@@ -501,10 +501,11 @@ const std::map<std::string, std::u32string>& lua_state::get_watch_vars()
 	return watch_vars;
 }
 
-void lua_state::run_lua_fragment() throw(std::bad_alloc)
+bool lua_state::run_lua_fragment() throw(std::bad_alloc)
 {
+	bool result = true;
 	if(recursive_flag)
-		return;
+		return false;
 #if LUA_VERSION_NUM == 501
 	int t = L.load(read_lua_fragment, &luareader_fragment, "run_lua_fragment");
 #endif
@@ -515,12 +516,12 @@ void lua_state::run_lua_fragment() throw(std::bad_alloc)
 		messages << "Can't run Lua: Internal syntax error: " << L.tostring(-1)
 			<< std::endl;
 		L.pop(1);
-		return;
+		return false;
 	}
 	if(t == LUA_ERRMEM) {
 		messages << "Can't run Lua: Out of memory" << std::endl;
 		L.pop(1);
-		return;
+		return false;
 	}
 	recursive_flag = true;
 	int r = L.pcall(0, 0, 0);
@@ -528,20 +529,24 @@ void lua_state::run_lua_fragment() throw(std::bad_alloc)
 	if(r == LUA_ERRRUN) {
 		messages << "Error running Lua hunk: " << L.tostring(-1)  << std::endl;
 		L.pop(1);
+		result = false;
 	}
 	if(r == LUA_ERRMEM) {
 		messages << "Error running Lua hunk: Out of memory" << std::endl;
 		L.pop(1);
+		result = false;
 	}
 	if(r == LUA_ERRERR) {
 		messages << "Error running Lua hunk: Double Fault???" << std::endl;
 		L.pop(1);
+		result = false;
 	}
 	render_ctx = NULL;
 	if(requests_repaint) {
 		requests_repaint = false;
 		command.invoke("repaint");
 	}
+	return result;
 }
 
 void lua_state::do_eval_lua(const std::string& c) throw(std::bad_alloc)
@@ -582,12 +587,16 @@ template<typename... T> bool lua_state::run_callback(lua::state::callback_list& 
 	return true;
 }
 
-void lua_state::run_sysrc_lua()
+void lua_state::run_sysrc_lua(bool rerun)
 {
 	L.pushstring(lua_sysrc_script);
 	L.setglobal(TEMPORARY);
 	luareader_fragment = eval_sysrc_lua;
-	run_lua_fragment();
+	if(!run_lua_fragment() && !rerun) {
+		//run_lua_fragment shows error.
+		//messages << "Failed to run sysrc lua script" << std::endl;
+		fatal_error();
+	}
 }
 
 void lua_state::run_synchronous_paint(struct lua::render_context* ctx)
