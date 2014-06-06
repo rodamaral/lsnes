@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 #include "library/range.hpp"
@@ -48,16 +49,17 @@ namespace
 
 	int box(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t x, y;
 		uint32_t width, height, thickness;
 		framebuffer::color poutline1, poutline2, pfill;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(x, y, width, height, P.optional(thickness, 1), P.optional(poutline1, 0xFFFFFFU),
 			P.optional(poutline2, 0x808080U), P.optional(pfill, 0xC0C0C0U));
 
-		lua_render_ctx->queue->create_add<render_object_box>(x, y, width, height, poutline1, poutline2,
+		core.lua2->render_ctx->queue->create_add<render_object_box>(x, y, width, height, poutline1, poutline2,
 			pfill, thickness);
 		return 0;
 	}

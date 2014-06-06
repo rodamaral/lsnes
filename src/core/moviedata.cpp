@@ -219,7 +219,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 	}
 	auto& target = core.mlogic->get_mfile();
 	std::string filename2 = translate_name_mprefix(filename, binary, 1);
-	lua_callback_pre_save(filename2, true);
+	core.lua2->callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = framerate_regulator::get_utime();
 		target.is_savestate = true;
@@ -246,13 +246,13 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved state " << kind << " '" << filename2 << "' in " << took << " microseconds."
 			<< std::endl;
-		lua_callback_post_save(filename2, true);
+		core.lua2->callback_post_save(filename2, true);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Save failed: ") + e.what());
 		messages << "Save failed: " << e.what() << std::endl;
-		lua_callback_err_save(filename2);
+		core.lua2->callback_err_save(filename2);
 	}
 	last_save = resolve_relative_path(filename2);
 	auto p = core.project->get();
@@ -273,7 +273,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 	}
 	auto& target = core.mlogic->get_mfile();
 	std::string filename2 = translate_name_mprefix(filename, binary, 0);
-	lua_callback_pre_save(filename2, false);
+	core.lua2->callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = framerate_regulator::get_utime();
 		target.is_savestate = false;
@@ -289,13 +289,13 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved movie " << kind << " '" << filename2 << "' in " << took << " microseconds."
 			<< std::endl;
-		lua_callback_post_save(filename2, false);
+		core.lua2->callback_post_save(filename2, false);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Save failed: ") + e.what());
 		messages << "Save failed: " << e.what() << std::endl;
-		lua_callback_err_save(filename2);
+		core.lua2->callback_err_save(filename2);
 	}
 	last_save = resolve_relative_path(filename2);
 	auto p = core.project->get();
@@ -473,7 +473,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 			core.mlogic->get_mfile().host_memory.clear();
 			core.mlogic->get_movie().reset_state();
 			core.fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
-			lua_callback_do_rewind();
+			core.lua2->callback_do_rewind();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
@@ -520,12 +520,12 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		rrd.get()->read_base(rrdata::filename(_movie.get()->projectid), true);
 		rrd.get()->add((*core.nrrdata)());
 		//Movie data is lost.
-		lua_callback_movie_lost("reload");
+		core.lua2->callback_movie_lost("reload");
 		try {
 			handle_load_core(*_movie.get(), portset2, false);
 			_movie.get()->gametype = &our_rom.rtype->combine_region(*our_rom.region);
 			core.fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
-			lua_callback_do_rewind();
+			core.lua2->callback_do_rewind();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
@@ -569,7 +569,7 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 		core.mlogic->get_mfile().host_memory.clear();
 		core.mlogic->get_movie().reset_state();
 		core.fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
-		lua_callback_do_rewind();
+		core.lua2->callback_do_rewind();
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -753,7 +753,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 		_movie.host_memory.clear();
 	}
 
-	lua_callback_movie_lost("load");
+	core.lua2->callback_movie_lost("load");
 
 	//Copy the data.
 	if(new_rrdata) core.mlogic->set_rrdata(*(rrd()), true);
@@ -841,7 +841,7 @@ bool do_load_state(const std::string& filename, int lmode)
 	int tmp = -1;
 	std::string filename2 = translate_name_mprefix(filename, tmp, -1);
 	uint64_t origtime = framerate_regulator::get_utime();
-	lua_callback_pre_load(filename2);
+	core.lua2->callback_pre_load(filename2);
 	struct moviefile* mfile = NULL;
 	bool used = false;
 	try {
@@ -853,14 +853,14 @@ bool do_load_state(const std::string& filename, int lmode)
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Can't read movie/savestate: ") + e.what());
 		messages << "Can't read movie/savestate '" << filename2 << "': " << e.what() << std::endl;
-		lua_callback_err_load(filename2);
+		core.lua2->callback_err_load(filename2);
 		return false;
 	}
 	try {
 		do_load_state(*mfile, lmode, used);
 		uint64_t took = framerate_regulator::get_utime() - origtime;
 		messages << "Loaded '" << filename2 << "' in " << took << " microseconds." << std::endl;
-		lua_callback_post_load(filename2, core.mlogic->get_mfile().is_savestate);
+		core.lua2->callback_post_load(filename2, core.mlogic->get_mfile().is_savestate);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -868,7 +868,7 @@ bool do_load_state(const std::string& filename, int lmode)
 			delete mfile;
 		platform::error_message(std::string("Can't load movie/savestate: ") + e.what());
 		messages << "Can't load movie/savestate '" << filename2 << "': " << e.what() << std::endl;
-		lua_callback_err_load(filename2);
+		core.lua2->callback_err_load(filename2);
 		return false;
 	}
 	return true;

@@ -1,7 +1,11 @@
 #ifndef _subtitles__hpp__included__
 #define _subtitles__hpp__included__
 
-#include "lua/lua.hpp"
+#include <cstdint>
+#include <set>
+#include <string>
+
+namespace lua { class render_context; }
 
 class moviefile_subtiming
 {

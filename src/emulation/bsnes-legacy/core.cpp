@@ -1868,6 +1868,7 @@ again2:
 
 	void snesdbg_execute_callback(lua::state*& cb, signed r)
 	{
+		auto& core = CORE();
 		if(!cb)
 			return;
 		cb->pushlightuserdata(&cb);
@@ -1881,9 +1882,9 @@ again2:
 			messages << "Can't execute debug callback" << std::endl;
 			cb->pop(2);
 		}
-		if(lua_requests_repaint) {
-			lua_requests_repaint = false;
-			CORE().command->invoke("repaint");
+		if(core.lua2->requests_repaint) {
+			core.lua2->requests_repaint = false;
+			core.command->invoke("repaint");
 		}
 	}
 

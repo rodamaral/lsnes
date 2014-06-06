@@ -183,7 +183,8 @@ master_dumper::notifier::~notifier()
 {
 }
 
-master_dumper::master_dumper()
+master_dumper::master_dumper(lua_state& _lua2)
+	: lua2(_lua2)
 {
 	current_rate_n = 48000;
 	current_rate_d = 1;
@@ -355,7 +356,7 @@ template<bool X> bool master_dumper::render_video_hud(struct framebuffer::fb<X>&
 	lrc.queue = &rq;
 	lrc.width = source.get_width();
 	lrc.height = source.get_height();
-	lua_callback_do_video(&lrc, lua_kill_video, hscl, vscl);
+	lua2.callback_do_video(&lrc, lua_kill_video, hscl, vscl);
 	if(fn)
 		fn();
 	target.reallocate(lrc.left_gap + source.get_width() * hscl + lrc.right_gap, lrc.top_gap +

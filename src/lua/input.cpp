@@ -6,29 +6,30 @@
 #include "interface/romtype.hpp"
 #include <iostream>
 
-extern bool* lua_veto_flag;
-
 namespace
 {
 	int input_set(lua::state& L, unsigned port, unsigned controller, unsigned index, short value)
 	{
-		if(!lua_input_controllerdata)
+		auto& core = CORE();
+		if(!core.lua2->input_controllerdata)
 			return 0;
-		lua_input_controllerdata->axis3(port, controller, index, value);
+		core.lua2->input_controllerdata->axis3(port, controller, index, value);
 		return 0;
 	}
 
 	int input_get(lua::state& L, unsigned port, unsigned controller, unsigned index)
 	{
-		if(!lua_input_controllerdata)
+		auto& core = CORE();
+		if(!core.lua2->input_controllerdata)
 			return 0;
-		L.pushnumber(lua_input_controllerdata->axis3(port, controller, index));
+		L.pushnumber(core.lua2->input_controllerdata->axis3(port, controller, index));
 		return 1;
 	}
 
 	int input_controllertype(lua::state& L, unsigned port, unsigned controller)
 	{
-		auto& m = CORE().mlogic->get_movie();
+		auto& core = CORE();
+		auto& m = core.mlogic->get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
 		if(port >= f.get_port_count()) {
 			L.pushnil();
@@ -44,38 +45,40 @@ namespace
 
 	int input_seta(lua::state& L, unsigned port, unsigned controller, uint64_t base, lua::parameters& P)
 	{
-		if(!lua_input_controllerdata)
+		auto& core = CORE();
+		if(!core.lua2->input_controllerdata)
 			return 0;
 		short val;
-		if(port >= lua_input_controllerdata->get_port_count())
+		if(port >= core.lua2->input_controllerdata->get_port_count())
 			return 0;
-		const port_type& pt = lua_input_controllerdata->get_port_type(port);
+		const port_type& pt = core.lua2->input_controllerdata->get_port_type(port);
 		if(controller >= pt.controller_info->controllers.size())
 			return 0;
 		for(unsigned i = 0; i < pt.controller_info->controllers[controller].buttons.size(); i++) {
 			val = (base >> i) & 1;
 			P(P.optional(val, val));
-			lua_input_controllerdata->axis3(port, controller, i, val);
+			core.lua2->input_controllerdata->axis3(port, controller, i, val);
 		}
 		return 0;
 	}
 
 	int input_geta(lua::state& L, unsigned port, unsigned controller)
 	{
-		if(!lua_input_controllerdata)
+		auto& core = CORE();
+		if(!core.lua2->input_controllerdata)
 			return 0;
-		if(port >= lua_input_controllerdata->get_port_count())
+		if(port >= core.lua2->input_controllerdata->get_port_count())
 			return 0;
-		const port_type& pt = lua_input_controllerdata->get_port_type(port);
+		const port_type& pt = core.lua2->input_controllerdata->get_port_type(port);
 		if(controller >= pt.controller_info->controllers.size())
 			return 0;
 		uint64_t fret = 0;
 		for(unsigned i = 0; i < pt.controller_info->controllers[controller].buttons.size(); i++)
-			if(lua_input_controllerdata->axis3(port, controller, i))
+			if(core.lua2->input_controllerdata->axis3(port, controller, i))
 				fret |= (1ULL << i);
 		L.pushnumber(fret);
 		for(unsigned i = 0; i < pt.controller_info->controllers[controller].buttons.size(); i++)
-			L.pushnumber(lua_input_controllerdata->axis3(port, controller, i));
+			L.pushnumber(core.lua2->input_controllerdata->axis3(port, controller, i));
 		return pt.controller_info->controllers[controller].buttons.size() + 1;
 	}
 
@@ -83,14 +86,15 @@ namespace
 	{
 		void on_key_event(keyboard::modifier_set& modifiers, keyboard::key& key, keyboard::event& event)
 		{
-			lua_callback_keyhook(key.get_name(), key);
+			auto& core = CORE();
+			core.lua2->callback_keyhook(key.get_name(), key);
 		}
 	} keyhook_listener;
-	std::set<std::string> hooked;
 
 	const port_controller_set* lookup_ps(unsigned port)
 	{
-		auto& m = CORE().mlogic->get_movie();
+		auto& core = CORE();
+		auto& m = core.mlogic->get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
 		const port_type& p = f.get_port_type(port);
 		return p.controller_info;
@@ -98,13 +102,14 @@ namespace
 
 	int set(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned controller, index, value;
 
-		if(!lua_input_controllerdata) return 0;
+		if(!core.lua2->input_controllerdata) return 0;
 
 		P(controller, index, value);
 
-		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		auto _controller = core.lua2->input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
 		return input_set(L, _controller.first, _controller.second, index, value);
 	}
 
@@ -120,13 +125,14 @@ namespace
 
 	int get(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned controller, index;
 
-		if(!lua_input_controllerdata) return 0;
+		if(!core.lua2->input_controllerdata) return 0;
 
 		P(controller, index);
 
-		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		auto _controller = core.lua2->input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
 		return input_get(L, _controller.first, _controller.second, index);
 	}
 
@@ -141,14 +147,15 @@ namespace
 
 	int seta(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned controller;
 		uint64_t base;
 
-		if(!lua_input_controllerdata) return 0;
+		if(!core.lua2->input_controllerdata) return 0;
 
 		P(controller, base);
 
-		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		auto _controller = core.lua2->input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
 		return input_seta(L, _controller.first, _controller.second, base, P);
 	}
 
@@ -164,13 +171,14 @@ namespace
 
 	int geta(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned controller;
 
-		if(!lua_input_controllerdata) return 0;
+		if(!core.lua2->input_controllerdata) return 0;
 
 		P(controller);
 
-		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		auto _controller = core.lua2->input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
 		return input_geta(L, _controller.first, _controller.second);
 	}
 
@@ -185,11 +193,12 @@ namespace
 
 	int controllertype(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned controller;
 
 		P(controller);
 
-		auto& m = CORE().mlogic->get_movie();
+		auto& m = core.mlogic->get_movie();
 		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		auto _controller = s.legacy_pcid_to_pair(controller);
 		return input_controllertype(L, _controller.first, _controller.second);
@@ -206,9 +215,10 @@ namespace
 
 	int reset(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		long cycles;
 
-		if(!lua_input_controllerdata) return 0;
+		if(!core.lua2->input_controllerdata) return 0;
 
 		P(P.optional(cycles, 0));
 
@@ -216,16 +226,17 @@ namespace
 			return 0;
 		short lo = cycles % 10000;
 		short hi = cycles / 10000;
-		lua_input_controllerdata->axis3(0, 0, 1, 1);
-		lua_input_controllerdata->axis3(0, 0, 2, hi);
-		lua_input_controllerdata->axis3(0, 0, 3, lo);
+		core.lua2->input_controllerdata->axis3(0, 0, 1, 1);
+		core.lua2->input_controllerdata->axis3(0, 0, 2, hi);
+		core.lua2->input_controllerdata->axis3(0, 0, 3, lo);
 		return 0;
 	}
 
 	int raw(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		L.newtable();
-		for(auto i : CORE().keyboard->all_keys()) {
+		for(auto i : core.keyboard->all_keys()) {
 			L.pushlstring(i->get_name());
 			push_keygroup_parameters(L, *i);
 			L.settable(-3);
@@ -235,22 +246,23 @@ namespace
 
 	int keyhook(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		std::string x;
 		bool state;
 
 		P(x, state);
 
-		keyboard::key* key = CORE().keyboard->try_lookup_key(x);
+		keyboard::key* key = core.keyboard->try_lookup_key(x);
 		if(!key)
 			throw std::runtime_error("Invalid key name");
-		bool ostate = hooked.count(x) > 0;
+		bool ostate = core.lua2->hooked_keys.count(x) > 0;
 		if(ostate == state)
 			return 0;
 		if(state) {
-			hooked.insert(x);
+			core.lua2->hooked_keys.insert(x);
 			key->add_listener(keyhook_listener, true);
 		} else {
-			hooked.erase(x);
+			core.lua2->hooked_keys.erase(x);
 			key->remove_listener(keyhook_listener);
 		}
 		return 0;
@@ -258,17 +270,18 @@ namespace
 
 	int joyget(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned lcid;
 
 		P(lcid);
 
-		if(!lua_input_controllerdata)
+		if(!core.lua2->input_controllerdata)
 			return 0;
-		auto pcid = CORE().controls->lcid_to_pcid(lcid - 1);
+		auto pcid = core.controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			throw std::runtime_error("Invalid controller for input.joyget");
 		L.newtable();
-		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
+		const port_type& pt = core.lua2->input_controllerdata->get_port_type(pcid.first);
 		const port_controller& ctrl = pt.controller_info->controllers[pcid.second];
 		unsigned lcnt = ctrl.buttons.size();
 		for(unsigned i = 0; i < lcnt; i++) {
@@ -276,9 +289,10 @@ namespace
 				continue;
 			L.pushlstring(ctrl.buttons[i].name);
 			if(ctrl.buttons[i].is_analog())
-				L.pushnumber(lua_input_controllerdata->axis3(pcid.first, pcid.second, i));
+				L.pushnumber(core.lua2->input_controllerdata->axis3(pcid.first, pcid.second, i));
 			else if(ctrl.buttons[i].type == port_controller_button::TYPE_BUTTON)
-				L.pushboolean(lua_input_controllerdata->axis3(pcid.first, pcid.second, i) != 0);
+				L.pushboolean(core.lua2->input_controllerdata->axis3(pcid.first, pcid.second, i) !=
+					0);
 			L.settable(-3);
 		}
 		return 1;
@@ -286,17 +300,18 @@ namespace
 
 	int joyset(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned lcid;
 		int ltbl;
 
 		P(lcid, P.table(ltbl));
 
-		if(!lua_input_controllerdata)
+		if(!core.lua2->input_controllerdata)
 			return 0;
-		auto pcid = CORE().controls->lcid_to_pcid(lcid - 1);
+		auto pcid = core.controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			throw std::runtime_error("Invalid controller for input.joyset");
-		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
+		const port_type& pt = core.lua2->input_controllerdata->get_port_type(pcid.first);
 		const port_controller& ctrl = pt.controller_info->controllers[pcid.second];
 		unsigned lcnt = ctrl.buttons.size();
 		for(unsigned i = 0; i < lcnt; i++) {
@@ -307,18 +322,18 @@ namespace
 			int s;
 			if(ctrl.buttons[i].is_analog()) {
 				if(L.type(-1) == LUA_TNIL)
-					s = lua_input_controllerdata->axis3(pcid.first, pcid.second, i);
+					s = core.lua2->input_controllerdata->axis3(pcid.first, pcid.second, i);
 				else
 					s = L.tonumber(-1);
 			} else {
 				if(L.type(-1) == LUA_TNIL)
-					s = lua_input_controllerdata->axis3(pcid.first, pcid.second, i);
+					s = core.lua2->input_controllerdata->axis3(pcid.first, pcid.second, i);
 				else if(L.type(-1) == LUA_TSTRING)
-					s = lua_input_controllerdata->axis3(pcid.first, pcid.second, i) ^ 1;
+					s = core.lua2->input_controllerdata->axis3(pcid.first, pcid.second, i) ^ 1;
 				else
 					s = L.toboolean(-1) ? 1 : 0;
 			}
-			lua_input_controllerdata->axis3(pcid.first, pcid.second, i, s);
+			core.lua2->input_controllerdata->axis3(pcid.first, pcid.second, i, s);
 			L.pop(1);
 		}
 		return 0;
@@ -356,11 +371,12 @@ namespace
 
 	int lcid_to_pcid2(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned lcid;
 
 		P(lcid);
 
-		auto pcid = CORE().controls->lcid_to_pcid(lcid - 1);
+		auto pcid = core.controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			return 0;
 		L.pushnumber(pcid.first);
@@ -370,11 +386,12 @@ namespace
 
 	int _port_type(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		unsigned port;
 
 		P(port);
 
-		auto& m = CORE().mlogic->get_movie();
+		auto& m = core.mlogic->get_movie();
 		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		try {
 			const port_type& p = s.port_type(port);
@@ -387,7 +404,8 @@ namespace
 
 	int veto_button(lua::state& L, lua::parameters& P)
 	{
-		if(lua_veto_flag) *lua_veto_flag = true;
+		auto& core = CORE();
+		if(core.lua2->veto_flag) *core.lua2->veto_flag = true;
 		return 0;
 	}
 

@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-framebuffer.hpp"
@@ -35,15 +36,16 @@ namespace
 
 	int crosshair(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t x, y;
 		uint32_t length;
 		framebuffer::color pcolor;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(x, y, P.optional(length, 10), P.optional(pcolor, 0xFFFFFFU));
 
-		lua_render_ctx->queue->create_add<render_object_crosshair>(x, y, pcolor, length);
+		core.lua2->render_ctx->queue->create_add<render_object_crosshair>(x, y, pcolor, length);
 		return 0;
 	}
 

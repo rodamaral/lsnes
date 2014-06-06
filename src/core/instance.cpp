@@ -27,6 +27,7 @@
 #include "library/lua-base.hpp"
 #include "library/memoryspace.hpp"
 #include "library/settingvar.hpp"
+#include "lua/lua.hpp"
 
 #include <deque>
 #ifdef __linux__
@@ -75,6 +76,7 @@ emulator_instance::emulator_instance()
 	D.init(slotcache, *mlogic);
 	D.init(memory);
 	D.init(lua);
+	D.init(lua2, *lua, *command);
 	D.init(mwatch, *memory, *project, *fbuf);
 	D.init(settings);
 	D.init(setcache, *settings);
@@ -84,8 +86,8 @@ emulator_instance::emulator_instance()
 	D.init(controls, *project, *mlogic, *buttons, *dispatch);
 	D.init(keyboard);
 	D.init(mapper, *keyboard, *command);
-	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch);
-	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch);
+	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2);
+	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch, *lua2);
 	D.init(mteditor, *mlogic, *controls, *dispatch);
 	D.init(status_A);
 	D.init(status_B);
@@ -97,7 +99,7 @@ emulator_instance::emulator_instance()
 	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue);
 	D.init(dbg, *dispatch);
 	D.init(framerate);
-	D.init(mdumper);
+	D.init(mdumper, *lua2);
 
 	status_A->valid = false;
 	status_B->valid = false;

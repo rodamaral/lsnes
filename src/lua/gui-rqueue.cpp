@@ -24,29 +24,31 @@ namespace
 		static int setnull(lua::state& L, lua::parameters& P);
 		int run(lua::state& L, lua::parameters& P)
 		{
-			if(!lua_render_ctx) return 0;
+			auto& core = CORE();
+			if(!core.lua2->render_ctx) return 0;
 
 			lua::render_context* ptr = get();
 			if(ptr->top_gap != std::numeric_limits<uint32_t>::max())
-				lua_render_ctx->top_gap = ptr->top_gap;
+				core.lua2->render_ctx->top_gap = ptr->top_gap;
 			if(ptr->right_gap != std::numeric_limits<uint32_t>::max())
-				lua_render_ctx->right_gap = ptr->right_gap;
+				core.lua2->render_ctx->right_gap = ptr->right_gap;
 			if(ptr->bottom_gap != std::numeric_limits<uint32_t>::max())
-				lua_render_ctx->bottom_gap = ptr->bottom_gap;
+				core.lua2->render_ctx->bottom_gap = ptr->bottom_gap;
 			if(ptr->left_gap != std::numeric_limits<uint32_t>::max())
-				lua_render_ctx->left_gap = ptr->left_gap;
-			lua_render_ctx->queue->copy_from(*ptr->queue);
+				core.lua2->render_ctx->left_gap = ptr->left_gap;
+			core.lua2->render_ctx->queue->copy_from(*ptr->queue);
 			return 0;
 		}
 		int synchronous_repaint(lua::state& L, lua::parameters& P)
 		{
+			auto& core = CORE();
 			lua::objpin<lua_renderqueue> q;
 
 			P(q);
 
-			synchronous_paint_ctx = &*q;
-			CORE().fbuf->redraw_framebuffer();
-			synchronous_paint_ctx = NULL;
+			core.lua2->synchronous_paint_ctx = &*q;
+			core.fbuf->redraw_framebuffer();
+			core.lua2->synchronous_paint_ctx = NULL;
 			return 0;
 		}
 		int clear(lua::state& L, lua::parameters& P)
@@ -61,14 +63,15 @@ namespace
 		}
 		int set(lua::state& L, lua::parameters& P)
 		{
+			auto& core = CORE();
 			lua::objpin<lua_renderqueue> q;
 
 			P(q);
 
 			lua::render_context* ptr = q->get();
-			if(!redirect || last != lua_render_ctx)
-				saved = lua_render_ctx;
-			lua_render_ctx = last = ptr;
+			if(!redirect || last != core.lua2->render_ctx)
+				saved = core.lua2->render_ctx;
+			core.lua2->render_ctx = last = ptr;
 			redirect = true;
 			return 0;
 		}
@@ -128,9 +131,10 @@ namespace
 
 	int lua_renderqueue::setnull(lua::state& L, lua::parameters& P)
 	{
-		if(redirect && last == lua_render_ctx)
+		auto& core = CORE();
+		if(redirect && last == core.lua2->render_ctx)
 			//If there is valid redirect, undo it.
-			lua_render_ctx = saved;
+			core.lua2->render_ctx = saved;
 		redirect = false;
 		last = NULL;
 		saved = NULL;

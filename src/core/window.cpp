@@ -242,9 +242,10 @@ namespace
 	uint64_t on_timer_time;
 	void reload_lua_timers()
 	{
-		on_idle_time = lua_timed_hook(LUA_TIMED_HOOK_IDLE);
-		on_timer_time = lua_timed_hook(LUA_TIMED_HOOK_TIMER);
-		CORE().iqueue->queue_function_run = false;
+		auto& core = CORE();
+		on_idle_time = core.lua2->timed_hook(LUA_TIMED_HOOK_IDLE);
+		on_timer_time = core.lua2->timed_hook(LUA_TIMED_HOOK_TIMER);
+		core.iqueue->queue_function_run = false;
 	}
 }
 
@@ -281,11 +282,11 @@ void platform::flush_command_queue() throw()
 	while(true) {
 		uint64_t now = framerate_regulator::get_utime();
 		if(now >= on_timer_time) {
-			lua_callback_do_timer();
+			core.lua2->callback_do_timer();
 			reload_lua_timers();
 		}
 		if(run_idle) {
-			lua_callback_do_idle();
+			core.lua2->callback_do_idle();
 			reload_lua_timers();
 			run_idle = false;
 		}
@@ -335,11 +336,11 @@ void platform::wait(uint64_t usec) throw()
 	while(true) {
 		uint64_t now = framerate_regulator::get_utime();
 		if(now >= on_timer_time) {
-			lua_callback_do_timer();
+			core.lua2->callback_do_timer();
 			reload_lua_timers();
 		}
 		if(run_idle) {
-			lua_callback_do_idle();
+			core.lua2->callback_do_idle();
 			run_idle = false;
 			reload_lua_timers();
 		}

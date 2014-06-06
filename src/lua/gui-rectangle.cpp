@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 #include "library/range.hpp"
@@ -44,31 +45,34 @@ namespace
 
 	int rectangle(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t x, y;
 		uint32_t width, height, thickness;
 		framebuffer::color poutline, pfill;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(x, y, width, height, P.optional(thickness, 1), P.optional(poutline, 0xFFFFFFU),
 			P.optional(pfill, -1));
 
-		lua_render_ctx->queue->create_add<render_object_rectangle>(x, y, width, height, poutline, pfill,
-			thickness);
+		core.lua2->render_ctx->queue->create_add<render_object_rectangle>(x, y, width, height, poutline,
+			pfill, thickness);
 		return 0;
 	}
 
 	int srectangle(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t x, y;
 		uint32_t width, height;
 		framebuffer::color pcolor;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(x, y, width, height, P.optional(pcolor, 0xFFFFFFU));
 
-		lua_render_ctx->queue->create_add<render_object_rectangle>(x, y, width, height, pcolor, pcolor, 0);
+		core.lua2->render_ctx->queue->create_add<render_object_rectangle>(x, y, width, height, pcolor, pcolor,
+			0);
 		return 0;
 	}
 

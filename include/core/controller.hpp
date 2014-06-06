@@ -11,6 +11,7 @@ struct port_controller;
 struct port_type;
 struct emu_framebuffer;
 struct emulator_dispatch;
+struct lua_state;
 namespace keyboard { class invbind; }
 namespace keyboard { class ctrlrkey; }
 namespace keyboard { class mapper; }
@@ -63,7 +64,7 @@ public:
  * Ctor.
  */
 	button_mapping(controller_state& _controls, keyboard::mapper& mapper, keyboard::keyboard& keyboard,
-		emu_framebuffer& fbuf, emulator_dispatch& _dispatch);
+		emu_framebuffer& fbuf, emulator_dispatch& _dispatch, lua_state& _lua2);
 /**
  * Dtor.
  */
@@ -125,6 +126,7 @@ private:
 	keyboard::keyboard& keyboard;
 	emu_framebuffer& fbuf;
 	emulator_dispatch& edispatch;
+	lua_state& lua2;
 	struct dispatch::target<> ncore;
 };
 

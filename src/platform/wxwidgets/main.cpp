@@ -544,7 +544,7 @@ bool lsnes_app::OnInit()
 	our_rom = rom;
 	mov->start_paused = start_unpaused ? !(rom.rtype && !rom.rtype->isnull()) : true;
 	for(auto i : c_lua)
-		lua_add_startup_script(i);
+		lsnes_instance.lua2->add_startup_script(i);
 	boot_emulator(lsnes_instance, rom, *mov, fullscreen_mode);
 	return true;
 }

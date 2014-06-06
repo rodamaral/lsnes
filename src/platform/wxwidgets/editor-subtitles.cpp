@@ -1,6 +1,8 @@
 #include "core/subtitles.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
+#include "core/dispatch.hpp"
+#include "library/string.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 
@@ -9,10 +11,8 @@
 #include <wx/control.h>
 #include <wx/combobox.h>
 #include <wx/radiobut.h>
+#include <cstdint>
 
-#include "library/string.hpp"
-#include "core/dispatch.hpp"
-#include "core/subtitles.hpp"
 
 namespace
 {

@@ -148,21 +148,23 @@ namespace
 
 	int set_idle_timeout(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t dt;
 
 		P(dt);
 
-		lua_idle_hook_time = framerate_regulator::get_utime() + dt;
+		core.lua2->idle_hook_time = framerate_regulator::get_utime() + dt;
 		return 0;
 	}
 
 	int set_timer_timeout(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t dt;
 
 		P(dt);
 
-		lua_timer_hook_time = framerate_regulator::get_utime() + dt;
+		core.lua2->timer_hook_time = framerate_regulator::get_utime() + dt;
 		return 0;
 	}
 

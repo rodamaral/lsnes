@@ -8,6 +8,7 @@
 #include "core/subtitles.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/string.hpp"
+#include "lua/lua.hpp"
 
 #include <fstream>
 

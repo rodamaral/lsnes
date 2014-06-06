@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/framebuffer.hpp"
@@ -31,15 +32,16 @@ namespace
 	template<bool hdbl, bool vdbl>
 	int internal_gui_text(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t x, y;
 		std::string text;
 		framebuffer::color fg, bg;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(x, y, text, P.optional(fg, 0xFFFFFFU), P.optional(bg, -1));
 
-		lua_render_ctx->queue->create_add<render_object_text>(x, y, text, fg, bg, hdbl, vdbl);
+		core.lua2->render_ctx->queue->create_add<render_object_text>(x, y, text, fg, bg, hdbl, vdbl);
 		return 0;
 	}
 

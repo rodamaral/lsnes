@@ -12,6 +12,7 @@
 #include "core/project.hpp"
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
+#include "lua/lua.hpp"
 
 #include <map>
 #include <sstream>
@@ -101,8 +102,9 @@ namespace
 }
 
 button_mapping::button_mapping(controller_state& _controls, keyboard::mapper& _mapper, keyboard::keyboard& _keyboard,
-	emu_framebuffer& _fbuf, emulator_dispatch& _dispatch)
-	: controls(_controls), mapper(_mapper), keyboard(_keyboard), fbuf(_fbuf), edispatch(_dispatch)
+	emu_framebuffer& _fbuf, emulator_dispatch& _dispatch, lua_state& _lua2)
+	: controls(_controls), mapper(_mapper), keyboard(_keyboard), fbuf(_fbuf), edispatch(_dispatch),
+	lua2(_lua2)
 {
 	ncore.set(notify_new_core, [this]() { this->init(); });
 }
@@ -451,14 +453,14 @@ void button_mapping::do_button_action(const std::string& name, short newstate, i
 	if(mode == 1) {
 		//Autohold.
 		int16_t nstate = controls.autohold2(x.port, x.controller, x.bind.control1) ^ newstate;
-		if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "hold" : "unhold"))
+		if(lua2.callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "hold" : "unhold"))
 			return;
 		controls.autohold2(x.port, x.controller, x.bind.control1, nstate);
 		edispatch.autohold_update(x.port, x.controller, x.bind.control1, nstate);
 	} else if(mode == 2) {
 		//Framehold.
 		bool nstate = controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
-		if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "type" : "untype"))
+		if(lua2.callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "type" : "untype"))
 			return;
 		controls.framehold2(x.port, x.controller, x.bind.control1, nstate);
 		if(nstate)
@@ -466,7 +468,7 @@ void button_mapping::do_button_action(const std::string& name, short newstate, i
 		else
 			messages << "Not holding " << name << " for the next frame" << std::endl;
 	} else {
-		if(lua_callback_do_button(x.port, x.controller, x.bind.control1, newstate ? "press" :
+		if(lua2.callback_do_button(x.port, x.controller, x.bind.control1, newstate ? "press" :
 			"release"))
 			return;
 		controls.button2(x.port, x.controller, x.bind.control1, newstate);
@@ -486,9 +488,9 @@ void button_mapping::send_analog(const std::string& name, int32_t x, int32_t y)
 		std::cerr << name << " is not a axis." << std::endl;
 		return;
 	}
-	if(lua_callback_do_button(z.port, z.controller, z.bind.control1, "analog"))
+	if(lua2.callback_do_button(z.port, z.controller, z.bind.control1, "analog"))
 		return;
-	if(lua_callback_do_button(z.port, z.controller, z.bind.control2, "analog"))
+	if(lua2.callback_do_button(z.port, z.controller, z.bind.control2, "analog"))
 		return;
 	auto g2 = fbuf.get_framebuffer_size();
 	x = z.bind.xrel ? (x - g2.first / 2) : (x / 2);
@@ -529,7 +531,7 @@ void button_mapping::do_analog_action(const std::string& a)
 	auto x = active_buttons[name];
 	if(x.bind.mode != 2)
 		return;
-	if(lua_callback_do_button(x.port, x.controller, x.bind.control1, "analog"))
+	if(lua2.callback_do_button(x.port, x.controller, x.bind.control1, "analog"))
 		return;
 	int rmin = x.bind.rmin;
 	int rmax = x.bind.rmax;
@@ -567,14 +569,14 @@ void button_mapping::do_autofire_action(const std::string& a, int mode)
 	auto afire = controls.autofire2(z.port, z.controller, z.bind.control1);
 	if(mode == 1 || (mode == -1 && afire.first == 0)) {
 		//Turn on.
-		if(lua_callback_do_button(z.port, z.controller, z.bind.control1, (stringfmt() << "autofire "
+		if(lua2.callback_do_button(z.port, z.controller, z.bind.control1, (stringfmt() << "autofire "
 			<< duty << " " << cyclelen).str().c_str()))
 			return;
 		controls.autofire2(z.port, z.controller, z.bind.control1, duty, cyclelen);
 		edispatch.autofire_update(z.port, z.controller, z.bind.control1, duty, cyclelen);
 	} else if(mode == 0 || (mode == -1 && afire.first != 0)) {
 		//Turn off.
-		if(lua_callback_do_button(z.port, z.controller, z.bind.control1, "autofire"))
+		if(lua2.callback_do_button(z.port, z.controller, z.bind.control1, "autofire"))
 			return;
 		controls.autofire2(z.port, z.controller, z.bind.control1, 0, 1);
 		edispatch.autofire_update(z.port, z.controller, z.bind.control1, 0, 1);

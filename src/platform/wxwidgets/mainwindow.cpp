@@ -1527,14 +1527,15 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_READONLY_MODE:
 		s = menu_ischecked(wxID_READONLY_MODE);
 		inst.iqueue->run([s]() {
+			auto& core = CORE();
 			if(!s)
-				lua_callback_movie_lost("readwrite");
-			if(*CORE().mlogic) CORE().mlogic->get_movie().readonly_mode(s);
-			CORE().dispatch->mode_change(s);
+				core.lua2->callback_movie_lost("readwrite");
+			if(*core.mlogic) core.mlogic->get_movie().readonly_mode(s);
+			core.dispatch->mode_change(s);
 			if(!s)
-				lua_callback_do_readwrite();
+				core.lua2->callback_do_readwrite();
 			update_movie_state();
-			CORE().dispatch->status_update();
+			core.dispatch->status_update();
 		});
 		return;
 	case wxID_AUTOHOLD:

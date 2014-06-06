@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "lua/bitmap.hpp"
 #include "fonts/wrapper.hpp"
@@ -120,17 +121,18 @@ namespace
 
 	int lua_customfont::draw(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t _x, _y;
 		framebuffer::color fg, bg, hl;
 		std::string text;
 		lua::objpin<lua_customfont> f;
 
-		if(!lua_render_ctx)
+		if(!core.lua2->render_ctx)
 			return 0;
 
 		P(f, _x, _y, text, P.optional(fg, 0xFFFFFFU), P.optional(bg, -1), P.optional(hl, -1));
 
-		lua_render_ctx->queue->create_add<render_object_text_cf>(_x, _y, text, fg, bg, hl, f);
+		core.lua2->render_ctx->queue->create_add<render_object_text_cf>(_x, _y, text, fg, bg, hl, f);
 		return 0;
 	}
 

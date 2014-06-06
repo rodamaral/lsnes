@@ -13,6 +13,7 @@
 class master_dumper;
 class dumper_factory_base;
 class dumper_base;
+class lua_state;
 
 class dumper_factory_base
 {
@@ -203,7 +204,7 @@ public:
 /**
  * Ctor.
  */
-	master_dumper();
+	master_dumper(lua_state& _lua2);
 /**
  * Get instance for specified dumper.
  */
@@ -308,6 +309,7 @@ private:
 	gameinfo current_gi;
 	std::ostream* output;
 	threads::rlock lock;
+	lua_state& lua2;
 };
 
 class dumper_base

@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-framebuffer.hpp"
@@ -90,19 +91,20 @@ namespace
 
 	int arrow(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t x, y;
 		uint32_t length, headwidth, width, headthickness;
 		int direction;
 		bool fill;
 		framebuffer::color color;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(x, y, length, headwidth, direction, P.optional(fill, false), P.optional(color, 0xFFFFFF),
 			P.optional(width, 1), P.optional2(headthickness, width));
 
-		lua_render_ctx->queue->create_add<render_object_arrow>(x, y, length, width, headwidth, headthickness,
-			direction, fill, color);
+		core.lua2->render_ctx->queue->create_add<render_object_arrow>(x, y, length, width, headwidth,
+			headthickness, direction, fill, color);
 		return 0;
 	}
 

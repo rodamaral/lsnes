@@ -24,6 +24,7 @@ class master_dumper;
 class button_mapping;
 class emulator_dispatch;
 class slotinfo_cache;
+class lua_state;
 namespace command { class group; }
 namespace lua { class state; }
 namespace settingvar { class group; }
@@ -89,6 +90,7 @@ struct emulator_instance
 	movie_logic* mlogic;
 	memory_space* memory;
 	lua::state* lua;
+	lua_state* lua2;
 	memwatch_set* mwatch;
 	settingvar::group* settings;
 	settingvar::cache* setcache;

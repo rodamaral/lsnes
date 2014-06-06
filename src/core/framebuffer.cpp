@@ -98,9 +98,9 @@ namespace
 framebuffer::raw emu_framebuffer::screen_corrupt;
 
 emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
-	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch)
+	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2)
 	: buffering(buffer1, buffer2, buffer3), subtitles(_subtitles), settings(_settings), mwatch(_mwatch),
-	keyboard(_keyboard), edispatch(_dispatch)
+	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2)
 {
 	last_redraw_no_lua = false;
 }
@@ -151,7 +151,7 @@ void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, 
 	lrc.width = todraw.get_width() * hscl;
 	lrc.height = todraw.get_height() * vscl;
 	if(!no_lua) {
-		lua_callback_do_paint(&lrc, spontaneous);
+		lua2.callback_do_paint(&lrc, spontaneous);
 		subtitles.render(lrc);
 	}
 	ri.fbuf = todraw;

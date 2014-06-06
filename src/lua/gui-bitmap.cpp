@@ -962,18 +962,19 @@ int lua_bitmap::create(lua::state& L, lua::parameters& P)
 template<bool outside, bool clip>
 int lua_bitmap::draw(lua::state& L, lua::parameters& P)
 {
+	auto& core = CORE();
 	int32_t x, y;
 	lua::objpin<lua_bitmap> b;
 	lua::objpin<lua_palette> p;
 
-	if(!lua_render_ctx) return 0;
+	if(!core.lua2->render_ctx) return 0;
 
 	P(b, x, y, p);
 
 	int32_t x0 = 0, y0 = 0, dw = b->width, dh = b->height;
 	if(clip) P(x0, y0, dw, dh);
 
-	lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b, p, x0, y0, dw, dh, outside);
+	core.lua2->render_ctx->queue->create_add<render_object_bitmap>(x, y, b, p, x0, y0, dw, dh, outside);
 	return 0;
 }
 
@@ -1134,17 +1135,18 @@ int lua_dbitmap::create(lua::state& L, lua::parameters& P)
 template<bool outside, bool clip>
 int lua_dbitmap::draw(lua::state& L, lua::parameters& P)
 {
+	auto& core = CORE();
 	int32_t x, y;
 	lua::objpin<lua_dbitmap> b;
 
-	if(!lua_render_ctx) return 0;
+	if(!core.lua2->render_ctx) return 0;
 
 	P(b, x, y);
 
 	int32_t x0 = 0, y0 = 0, dw = b->width, dh = b->height;
 	if(clip) P(x0, y0, dw, dh);
 
-	lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b, x0, y0, dw, dh, outside);
+	core.lua2->render_ctx->queue->create_add<render_object_bitmap>(x, y, b, x0, y0, dw, dh, outside);
 	return 0;
 }
 

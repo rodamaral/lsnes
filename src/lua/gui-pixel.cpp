@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-framebuffer.hpp"
@@ -30,14 +31,15 @@ namespace
 
 	int pixel(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t x, y;
 		framebuffer::color pcolor;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(x, y, P.optional(pcolor, 0xFFFFFFU));
 
-		lua_render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
+		core.lua2->render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
 		return 0;
 	}
 

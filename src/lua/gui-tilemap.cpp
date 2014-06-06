@@ -292,16 +292,17 @@ namespace
 
 	template<bool outside> int tilemap::draw(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint32_t x, y, w, h;
 		int32_t x0, y0;
 		lua::objpin<tilemap> t;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(t, x, y, P.optional(x0, 0), P.optional(y0, 0), P.optional(w, width * cwidth),
 			P.optional(h, height * cheight));
 
-		lua_render_ctx->queue->create_add<render_object_tilemap>(x, y, x0, y0, w, h, outside, t);
+		core.lua2->render_ctx->queue->create_add<render_object_tilemap>(x, y, x0, y0, w, h, outside, t);
 		return 0;
 	}
 

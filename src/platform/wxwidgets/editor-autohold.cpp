@@ -12,6 +12,7 @@
 #include "library/minmax.hpp"
 #include "library/string.hpp"
 #include "library/utf8.hpp"
+#include "lua/lua.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -134,19 +135,20 @@ void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
 	bool newstate = isaf ? t.afcheck->IsChecked() : t.check->IsChecked();
 	bool state = false;
 	inst.iqueue->run([t, newstate, &state, isaf]() {
+		auto& core = CORE();
 		if(isaf) {
-			auto _state = CORE().controls->autofire2(t.port, t.controller, t.index);
+			auto _state = core.controls->autofire2(t.port, t.controller, t.index);
 			state = (_state.first != 0);
-			if(lua_callback_do_button(t.port, t.controller, t.index, newstate ? "autofire 1 2" :
+			if(core.lua2->callback_do_button(t.port, t.controller, t.index, newstate ? "autofire 1 2" :
 				"autofire"))
 				return;
-			CORE().controls->autofire2(t.port, t.controller, t.index, newstate ? 1 : 0, newstate ? 2 : 1);
+			core.controls->autofire2(t.port, t.controller, t.index, newstate ? 1 : 0, newstate ? 2 : 1);
 			state = newstate;
 		} else {
-			state = CORE().controls->autohold2(t.port, t.controller, t.index);
-			if(lua_callback_do_button(t.port, t.controller, t.index, newstate ? "hold" : "unhold"))
+			state = core.controls->autohold2(t.port, t.controller, t.index);
+			if(core.lua2->callback_do_button(t.port, t.controller, t.index, newstate ? "hold" : "unhold"))
 				return;
-			CORE().controls->autohold2(t.port, t.controller, t.index, newstate);
+			core.controls->autohold2(t.port, t.controller, t.index, newstate);
 			state = newstate;
 		}
 	});
@@ -175,12 +177,13 @@ void wxeditor_autohold::update_controls()
 	std::vector<control_triple> _autoholds;
 	std::vector<std::string> _controller_labels;
 	inst.iqueue->run([&_autoholds, &_controller_labels](){
+		auto& core = CORE();
 		std::map<std::string, unsigned> next_in_class;
-		controller_frame model = CORE().controls->get_blank();
+		controller_frame model = core.controls->get_blank();
 		const port_type_set& pts = model.porttypes();
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
-			auto pcid = CORE().controls->lcid_to_pcid(i);
+			auto pcid = core.controls->lcid_to_pcid(i);
 			if(pcid.first < 0)
 				break;
 			const port_type& pt = pts.port_type(pcid.first);
@@ -210,8 +213,8 @@ void wxeditor_autohold::update_controls()
 				t.port = pcid.first;
 				t.controller = pcid.second;
 				t.index = k;
-				t.status = CORE().controls->autohold2(pcid.first, pcid.second, k);
-				auto h = CORE().controls->autofire2(pcid.first, pcid.second, k);
+				t.status = core.controls->autohold2(pcid.first, pcid.second, k);
+				auto h = core.controls->autofire2(pcid.first, pcid.second, k);
 				t.afstatus = (h.first > 0);
 				t.logical = cnum_g;
 				t.name = pcb.name;

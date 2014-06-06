@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-framebuffer.hpp"
@@ -91,14 +92,15 @@ nodraw2:
 
 	int line(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		int32_t x1, y1, x2, y2;
 		framebuffer::color pcolor;
 
-		if(!lua_render_ctx) return 0;
+		if(!core.lua2->render_ctx) return 0;
 
 		P(x1, y1, x2, y2, P.optional(pcolor, 0xFFFFFFU));
 
-		lua_render_ctx->queue->create_add<render_object_line>(x1, x2, y1, y2, pcolor);
+		core.lua2->render_ctx->queue->create_add<render_object_line>(x1, x2, y1, y2, pcolor);
 		return 0;
 	}
 

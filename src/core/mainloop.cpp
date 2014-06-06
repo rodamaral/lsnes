@@ -147,7 +147,7 @@ void mainloop_signal_need_rewind(void* ptr)
 controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
 	auto& core = CORE();
-	if(lua_requests_subframe_paint)
+	if(core.lua2->requests_subframe_paint)
 		core.fbuf->redraw_framebuffer();
 
 	if(subframe) {
@@ -222,7 +222,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 	platform::flush_command_queue();
 	controller_frame tmp = core.controls->get(core.mlogic->get_movie().get_current_frame());
 	our_rom.rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
-	lua_callback_do_input(tmp, subframe);
+	core.lua2->callback_do_input(tmp, subframe);
 	core.mteditor->process_frame(tmp);
 	core.controls->commit(tmp);
 	return tmp;
@@ -406,7 +406,7 @@ void update_movie_state()
 			_status.inputs.push_back(_buffer);
 		}
 		//Lua variables.
-		_status.lvars = get_lua_watch_vars();
+		_status.lvars = core.lua2->get_watch_vars();
 		//Memory watches.
 		_status.mvars = core.mwatch->get_window_vars();
 
@@ -431,9 +431,10 @@ public:
 
 	int16_t get_input(unsigned port, unsigned index, unsigned control)
 	{
+		auto& core = CORE();
 		int16_t x;
-		x = CORE().mlogic->input_poll(port, index, control);
-		lua_callback_snoop_input(port, index, control, x);
+		x = core.mlogic->input_poll(port, index, control);
+		core.lua2->callback_snoop_input(port, index, control, x);
 		return x;
 	}
 
@@ -450,7 +451,7 @@ public:
 
 	void notify_latch(std::list<std::string>& args)
 	{
-		lua_callback_do_latch(args);
+		CORE().lua2->callback_do_latch(args);
 	}
 
 	void timer_tick(uint32_t increment, uint32_t per_second)
@@ -490,7 +491,7 @@ public:
 	void output_frame(framebuffer::raw& screen, uint32_t fps_n, uint32_t fps_d)
 	{
 		auto& core = CORE();
-		lua_callback_do_frame_emulated();
+		core.lua2->callback_do_frame_emulated();
 		location_special = SPECIAL_FRAME_VIDEO;
 		core.fbuf->redraw_framebuffer(screen, false, true);
 		auto rate = our_rom.rtype->get_audio_rate();
@@ -544,11 +545,12 @@ namespace
 
 	command::fnptr<const std::string&> test4(lsnes_cmds, "test4", "test", "test",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			auto& core = CORE();
 			std::list<std::string> _args;
 			std::string args2 = args;
 			for(auto& sym : token_iterator_foreach(args, {" ", "\t"}))
 				_args.push_back(sym);
-			lua_callback_do_latch(_args);
+			core.lua2->callback_do_latch(_args);
 		});
 	command::fnptr<> count_rerecords(lsnes_cmds, "count-rerecords", "Count rerecords",
 		"Syntax: count-rerecords\nCounts rerecords.\n",
@@ -834,10 +836,10 @@ namespace
 		"Syntax: set-rwmode\nSwitches to recording mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
-			lua_callback_movie_lost("readwrite");
+			core.lua2->callback_movie_lost("readwrite");
 			core.mlogic->get_movie().readonly_mode(false);
 			core.dispatch->mode_change(false);
-			lua_callback_do_readwrite();
+			core.lua2->callback_do_readwrite();
 			update_movie_state();
 		});
 
@@ -856,11 +858,11 @@ namespace
 			auto& core = CORE();
 			bool c = core.mlogic->get_movie().readonly_mode();
 			if(c)
-				lua_callback_movie_lost("readwrite");
+				core.lua2->callback_movie_lost("readwrite");
 			core.mlogic->get_movie().readonly_mode(!c);
 			core.dispatch->mode_change(!c);
 			if(c)
-				lua_callback_do_readwrite();
+				core.lua2->callback_do_readwrite();
 			update_movie_state();
 		});
 
@@ -1086,7 +1088,7 @@ jumpback:
 				return 0;
 			uint64_t t = framerate_regulator::get_utime();
 			std::vector<char> s;
-			lua_callback_do_unsafe_rewind(s, 0, 0, core.mlogic->get_movie(), unsafe_rewind_obj);
+			core.lua2->callback_do_unsafe_rewind(s, 0, 0, core.mlogic->get_movie(), unsafe_rewind_obj);
 			core.dispatch->mode_change(false);
 			do_unsafe_rewind = false;
 			core.mlogic->get_mfile().is_savestate = true;
@@ -1181,7 +1183,7 @@ nothing_to_do:
 				std::vector<char> s = our_rom.save_core_state(true);
 				uint64_t secs = core.mlogic->get_mfile().rtc_second;
 				uint64_t ssecs = core.mlogic->get_mfile().rtc_subsecond;
-				lua_callback_do_unsafe_rewind(s, secs, ssecs, core.mlogic->get_movie(),
+				core.lua2->callback_do_unsafe_rewind(s, secs, ssecs, core.mlogic->get_movie(),
 					NULL);
 				do_unsafe_rewind = false;
 				messages << "Rewind point set in " << (framerate_regulator::get_utime() - t)
@@ -1256,7 +1258,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	amode = initial.start_paused ? ADVANCE_PAUSE : ADVANCE_AUTO;
 	stop_at_frame_active = false;
 
-	lua_run_startup_scripts();
+	core.lua2->run_startup_scripts();
 
 	uint64_t time_x = framerate_regulator::get_utime();
 	while(!is_quitting() || !queued_saves.empty()) {
@@ -1324,7 +1326,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		if(amode == ADVANCE_AUTO)
 			platform::wait(core.framerate->to_wait_frame(framerate_regulator::get_utime()));
 		first_round = false;
-		lua_callback_do_frame();
+		core.lua2->callback_do_frame();
 	}
 out:
 	core.mdumper->end_dumps();
