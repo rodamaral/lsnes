@@ -267,11 +267,7 @@ namespace
 		else
 			chunkname = file1;
 		reader rc(file, absfilename);
-		int r = lua_load(L.handle(), reader::rfn, &rc, chunkname.c_str()
-#if LUA_VERSION_NUM == 502
-			, "t"
-#endif
-		);
+		int r = lua_load(L.handle(), reader::rfn, &rc, chunkname.c_str(), "t");
 		delete &file;
 		if(rc.get_err() != "")
 			throw std::runtime_error(rc.get_err());

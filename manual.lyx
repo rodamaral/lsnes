@@ -144,11 +144,11 @@ libao (libao sound only)
 \end_layout
 
 \begin_layout Enumerate
-Lua version 5.1.X or 5.2.X
+Lua version 5.2.X
 \end_layout
 
 \begin_layout Enumerate
-G++ 4.6 or 4.7
+G++ 4.7 or 4.8
 \end_layout
 
 \begin_layout Enumerate
