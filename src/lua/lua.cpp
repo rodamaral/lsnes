@@ -99,7 +99,7 @@ namespace
 
 	const char* read_lua_fragment(lua_State* L, void* fragment, size_t* size)
 	{
-		const char* luareader_fragment = reinterpret_cast<const char*>(fragment);
+		const char*& luareader_fragment = *reinterpret_cast<const char**>(fragment);
 		if(luareader_fragment) {
 			const char* ret = luareader_fragment;
 			*size = strlen(luareader_fragment);
@@ -506,10 +506,10 @@ void lua_state::run_lua_fragment() throw(std::bad_alloc)
 	if(recursive_flag)
 		return;
 #if LUA_VERSION_NUM == 501
-	int t = L.load(read_lua_fragment, luareader_fragment, "run_lua_fragment");
+	int t = L.load(read_lua_fragment, &luareader_fragment, "run_lua_fragment");
 #endif
 #if LUA_VERSION_NUM == 502
-	int t = L.load(read_lua_fragment, luareader_fragment, "run_lua_fragment", "t");
+	int t = L.load(read_lua_fragment, &luareader_fragment, "run_lua_fragment", "t");
 #endif
 	if(t == LUA_ERRSYNTAX) {
 		messages << "Can't run Lua: Internal syntax error: " << L.tostring(-1)
@@ -548,7 +548,7 @@ void lua_state::do_eval_lua(const std::string& c) throw(std::bad_alloc)
 {
 	L.pushlstring(c.c_str(), c.length());
 	L.setglobal(TEMPORARY);
-	luareader_fragment = const_cast<char*>(eval_lua_lua);
+	luareader_fragment = eval_lua_lua;
 	run_lua_fragment();
 }
 
@@ -556,7 +556,7 @@ void lua_state::do_run_lua(const std::string& c) throw(std::bad_alloc)
 {
 	L.pushlstring(c.c_str(), c.length());
 	L.setglobal(TEMPORARY);
-	luareader_fragment = const_cast<char*>(run_lua_lua);
+	luareader_fragment = run_lua_lua;
 	run_lua_fragment();
 }
 
@@ -586,7 +586,7 @@ void lua_state::run_sysrc_lua()
 {
 	L.pushstring(lua_sysrc_script);
 	L.setglobal(TEMPORARY);
-	luareader_fragment = const_cast<char*>(eval_sysrc_lua);
+	luareader_fragment = eval_sysrc_lua;
 	run_lua_fragment();
 }
 

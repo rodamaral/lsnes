@@ -109,7 +109,7 @@ private:
 	lua::state& L;
 	command::group& command;
 	bool recursive_flag;
-	char* luareader_fragment;
+	const char* luareader_fragment;
 };
 
 #endif
