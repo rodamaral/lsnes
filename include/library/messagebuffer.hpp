@@ -188,6 +188,10 @@ public:
  * Read the window size.
  */
 	size_t get_max_window_size() throw();
+/**
+ * Read the last message.
+ */
+	std::string get_last_message();
 private:
 	void send_notifications();
 	std::map<uint64_t, std::string> messages_buf;

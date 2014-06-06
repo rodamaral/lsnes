@@ -105,13 +105,21 @@ namespace
 
 	std::list<ui_queue_entry> ui_queue;
 
+	void do_panic()
+	{
+		std::string msg = "Panic: Unrecoverable error, can't continue";
+		std::string msg2 = platform::msgbuf.get_last_message();
+		if(msg2 != "")
+			msg += "\n\n" + msg2;
+		wxMessageBox(towxstring(msg), _T("Error"), wxICON_ERROR | wxOK);
+	}
+
 	bool ui_services_type::ProcessEvent(wxEvent& event)
 	{
 		int c = event.GetId();
 		if(c == UISERV_PANIC) {
 			//We need to panic.
-			wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"), wxICON_ERROR |
-				wxOK);
+			do_panic();
 			panic_ack = true;
 		} else if(c == UISERV_REFRESH_TITLE) {
 			if(main_window)
@@ -605,8 +613,7 @@ namespace
 			if(ui_thread == threads::this_id()) {
 				//UI thread.
 				platform::set_modal_pause(true);
-				wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"),
-					wxICON_ERROR | wxOK);
+				do_panic();
 			} else {
 				//Emulation thread panic. Signal the UI thread.
 				post_ui_event(UISERV_PANIC);

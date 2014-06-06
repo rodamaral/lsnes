@@ -210,3 +210,10 @@ void messagebuffer::send_notifications()
 	for(auto i : handlers)
 		i->messagebuffer_update();
 }
+
+std::string messagebuffer::get_last_message()
+{
+	if(messages_buf.empty())
+		return "";
+	return messages_buf.rbegin()->second;
+}
