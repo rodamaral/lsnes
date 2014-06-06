@@ -18,6 +18,7 @@
 
 namespace
 {
+	bool paniced = false;
 	const unsigned voicep_bufsize = 65536;
 	const unsigned voicer_bufsize = 65536;
 	const unsigned music_bufsize = 8192;
@@ -506,6 +507,8 @@ void audioapi_vumeter::operator()(float* asamples, size_t count, bool stereo, do
 
 void audioapi_vumeter::update_vu()
 {
+	if(paniced)
+		return;
 	if(!samples) {
 		vu = -999.0;
 		accumulator = 0;
@@ -520,6 +523,11 @@ void audioapi_vumeter::update_vu()
 		samples = 0;
 	}
 	CORE().dispatch->vu_change();
+}
+
+void audioapi_panicing() throw()
+{
+	paniced = true;
 }
 
 //VU values.

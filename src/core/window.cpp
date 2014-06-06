@@ -228,6 +228,7 @@ void platform::fatal_error() throw()
 	system_log << "-----------------------------------------------------------------------" << std::endl;
 	system_log.close();
 	graphics_driver_fatal_error();
+	audioapi_panicing();	//Don't call update VU, as that crashes.
 	exit(1);
 }
 

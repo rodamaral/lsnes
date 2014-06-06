@@ -284,6 +284,11 @@ void audioapi_driver_init() throw();
 void audioapi_driver_quit() throw();
 
 /**
+ * Panic notification.
+ */
+void audioapi_panicing() throw();
+
+/**
  * Enable or disable sound.
  *
  * parameter enable: Enable sounds if true, otherwise disable sounds.
