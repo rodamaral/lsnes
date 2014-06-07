@@ -1754,7 +1754,7 @@ again2:
 		ecore_callbacks->output_frame(ls, fps_n, fps_d);
 		if(soundbuf_fill > 0) {
 			auto freq = SNES::system.apu_frequency();
-			audioapi_submit_buffer(soundbuf, soundbuf_fill / 2, true, freq / 768.0);
+			CORE().audio->submit_buffer(soundbuf, soundbuf_fill / 2, true, freq / 768.0);
 			soundbuf_fill = 0;
 		}
 	}

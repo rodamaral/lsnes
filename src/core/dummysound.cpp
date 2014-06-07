@@ -1,4 +1,5 @@
 #include "core/audioapi.hpp"
+#include "core/instance.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -7,7 +8,7 @@ namespace
 {
 	void dummy_init() throw()
 	{
-		audioapi_voice_rate(0, 0);
+		lsnes_instance.audio->voice_rate(0, 0);
 	}
 
 	void dummy_quit() throw()

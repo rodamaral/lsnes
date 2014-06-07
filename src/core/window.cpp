@@ -173,7 +173,7 @@ void platform::init()
 	system_log << "-----------------------------------------------------------------------" << std::endl;
 	do_init_font();
 	graphics_driver_init();
-	audioapi_init();
+	lsnes_instance.audio->init();
 	audioapi_driver_init();
 	joystick_driver_init();
 }
@@ -182,7 +182,7 @@ void platform::quit()
 {
 	joystick_driver_quit();
 	audioapi_driver_quit();
-	audioapi_quit();
+	lsnes_instance.audio->quit();
 	graphics_driver_quit();
 	msgbuf.unregister_handler(msg_callback_obj);
 	time_t curtime = time(NULL);

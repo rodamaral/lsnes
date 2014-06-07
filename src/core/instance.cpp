@@ -1,4 +1,5 @@
 #include "core/advdumper.hpp"
+#include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/controllerframe.hpp"
 #include "core/controller.hpp"
@@ -80,7 +81,8 @@ emulator_instance::emulator_instance()
 	D.init(mwatch, *memory, *project, *fbuf);
 	D.init(settings);
 	D.init(setcache, *settings);
-	D.init(commentary, *settings, *dispatch);
+	D.init(audio);
+	D.init(commentary, *settings, *dispatch, *audio);
 	D.init(subtitles, *mlogic, *fbuf, *dispatch);
 	D.init(mbranch, *mlogic, *dispatch);
 	D.init(controls, *project, *mlogic, *buttons, *dispatch);

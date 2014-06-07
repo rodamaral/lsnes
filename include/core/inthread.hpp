@@ -28,7 +28,7 @@ public:
 		uint64_t length;
 	};
 
-	voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch);
+	voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch, audioapi_instance& _audio);
 	~voice_commentary();
 	void init();
 	void kill();
@@ -52,6 +52,7 @@ private:
 	void* internal;
 	settingvar::group& settings;
 	emulator_dispatch& edispatch;
+	audioapi_instance& audio;
 };
 
 #endif

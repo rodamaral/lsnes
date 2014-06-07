@@ -27,6 +27,7 @@
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
+#include "core/instance.hpp"
 #include "core/messages.hpp"
 #include "interface/callbacks.hpp"
 #include "interface/cover.hpp"
@@ -163,7 +164,7 @@ namespace
 			inf.offset_y = 0;
 			framebuffer::raw ls(inf);
 			ecore_callbacks->output_frame(ls, 60,1);
-			audioapi_submit_buffer(audio, 800, false, 48000);
+			CORE().audio->submit_buffer(audio, 800, false, 48000);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }

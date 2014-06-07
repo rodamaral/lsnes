@@ -700,7 +700,7 @@ namespace
 
 			framebuffer::raw ls(inf);
 			ecore_callbacks->output_frame(ls, 262144, 4389);
-			audioapi_submit_buffer(soundbuf, emitted / 2, true, native_rate ? 2097152 : 32768);
+			CORE().audio->submit_buffer(soundbuf, emitted / 2, true, native_rate ? 2097152 : 32768);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }

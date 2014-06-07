@@ -21,6 +21,7 @@
 #include <fstream>
 #include <cassert>
 #include "core/audioapi.hpp"
+#include "core/instance.hpp"
 #include "library/minmax.hpp"
 #include "library/workthread.hpp"
 #include <string>
@@ -45,7 +46,7 @@ namespace
 		{
 			int16_t buffer[1024];
 			while(true) {
-				audioapi_get_mixed(buffer, 512, true);
+				lsnes_instance.audio->get_mixed(buffer, 512, true);
 				if(!was_enabled)
 					memset(buffer, 0, sizeof(buffer));
 				ao_device* d = cdev;
@@ -67,7 +68,7 @@ namespace
 			usleep(50000);
 			ao_close(d);
 			current_device = "";
-			audioapi_voice_rate(0, 0);
+			lsnes_instance.audio->voice_rate(0, 0);
 		}
 		//Open new audio.
 		if(newdevice != -1) {
@@ -101,7 +102,7 @@ namespace
 					(stringfmt() << "Error code " << err).throwex();
 				}
 			}
-			audioapi_voice_rate(0, 48000);
+			lsnes_instance.audio->voice_rate(0, 48000);
 		}
 		if(cdev) {
 			current_device = name;

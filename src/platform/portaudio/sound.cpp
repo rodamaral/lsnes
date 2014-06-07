@@ -3,6 +3,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/instance.hpp"
 #include "core/messages.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
@@ -53,7 +54,7 @@ namespace
 			size_t ptr = 0;
 			while(pframe_count > 0) {
 				unsigned bsize = min(voice_blocksize / 2, static_cast<unsigned>(pframe_count));
-				audioapi_get_mixed(voicebuf, bsize, flag_pstereo);
+				lsnes_instance.audio->get_mixed(voicebuf, bsize, flag_pstereo);
 				unsigned limit = bsize * (flag_pstereo ? 2 : 1);
 				if(was_enabled)
 					for(size_t i = 0; i < limit; i++)
@@ -80,7 +81,7 @@ namespace
 				else
 					for(size_t i = 0; i < bsize; i++)
 						voicebuf2[i] = _input[iptr++];
-				audioapi_put_voice(voicebuf2, bsize);
+				lsnes_instance.audio->put_voice(voicebuf2, bsize);
 				rframe_count -= bsize;
 			}
 		}
@@ -175,7 +176,7 @@ namespace
 		stream_p = NULL;
 		current_pdev = paNoDevice;
 		current_pfreq = 0;
-		audioapi_voice_rate(current_rfreq, current_pfreq);
+		lsnes_instance.audio->voice_rate(current_rfreq, current_pfreq);
 	}
 
 	void close_input()
@@ -184,7 +185,7 @@ namespace
 		stream_r = NULL;
 		current_rdev = paNoDevice;
 		current_rfreq = 0;
-		audioapi_voice_rate(current_rfreq, current_pfreq);
+		lsnes_instance.audio->voice_rate(current_rfreq, current_pfreq);
 	}
 
 	void close_all()
@@ -228,20 +229,20 @@ namespace
 		PaError err = Pa_OpenStream(&stream_p, NULL, output, inf->defaultSampleRate, 0, 0, audiocb, NULL);
 		if(err != paNoError) {
 			messages << "Portaudio: error (open): " << Pa_GetErrorText(err) << std::endl;
-			audioapi_voice_rate(current_rfreq, current_pfreq);
+			lsnes_instance.audio->voice_rate(current_rfreq, current_pfreq);
 			return 1;
 		}
 		flag_pstereo = (output && output->channelCount == 2);
 		err = Pa_StartStream(stream_p);
 		if(err != paNoError) {
 			messages << "Portaudio error (start): " << Pa_GetErrorText(err) << std::endl;
-			audioapi_voice_rate(current_rfreq, current_pfreq);
+			lsnes_instance.audio->voice_rate(current_rfreq, current_pfreq);
 			return 1;
 		}
 		const PaStreamInfo* si = Pa_GetStreamInfo(stream_p);
 		current_pfreq = output ? si->sampleRate : 0;
 		current_pdev = dev;
-		audioapi_voice_rate(current_rfreq, current_pfreq);
+		lsnes_instance.audio->voice_rate(current_rfreq, current_pfreq);
 		print_status(2);
 		return 3;
 	}
@@ -261,20 +262,20 @@ namespace
 		PaError err = Pa_OpenStream(&stream_r, input, NULL, inf->defaultSampleRate, 0, 0, audiocb, NULL);
 		if(err != paNoError) {
 			messages << "Portaudio: error (open): " << Pa_GetErrorText(err) << std::endl;
-			audioapi_voice_rate(current_rfreq, current_pfreq);
+			lsnes_instance.audio->voice_rate(current_rfreq, current_pfreq);
 			return 2;
 		}
 		flag_rstereo = (input && input->channelCount == 2);
 		err = Pa_StartStream(stream_r);
 		if(err != paNoError) {
 			messages << "Portaudio error (start): " << Pa_GetErrorText(err) << std::endl;
-			audioapi_voice_rate(current_rfreq, current_pfreq);
+			lsnes_instance.audio->voice_rate(current_rfreq, current_pfreq);
 			return 2;
 		}
 		const PaStreamInfo* si = Pa_GetStreamInfo(stream_r);
 		current_rfreq = input ? si->sampleRate : 0;
 		current_rdev = dev;
-		audioapi_voice_rate(current_rfreq, current_pfreq);
+		lsnes_instance.audio->voice_rate(current_rfreq, current_pfreq);
 		print_status(1);
 		return 3;
 	}

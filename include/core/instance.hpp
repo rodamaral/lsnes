@@ -25,6 +25,7 @@ class button_mapping;
 class emulator_dispatch;
 class slotinfo_cache;
 class lua_state;
+class audioapi_instance;
 namespace command { class group; }
 namespace lua { class state; }
 namespace settingvar { class group; }
@@ -117,6 +118,7 @@ struct emulator_instance
 	input_queue* iqueue;
 	master_dumper* mdumper;
 	slotinfo_cache* slotcache;
+	audioapi_instance* audio;
 	threads::id emu_thread;
 	time_t random_seed_value;
 	dtor_list D;

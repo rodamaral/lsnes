@@ -12,65 +12,37 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-//3 music buffers is not enough due to huge blocksizes used by SDL.
 #define MUSIC_BUFFERS 8
 #define MAX_VOICE_ADJUST 200
+
+audioapi_instance::dummy_cb_proc::dummy_cb_proc(audioapi_instance& _parent)
+	: parent(_parent)
+{
+}
+
+int audioapi_instance::dummy_cb_proc::operator()()
+{
+	int16_t buf[16384];
+	uint64_t last_ts = framerate_regulator::get_utime();
+	while(!parent.dummy_cb_quit) {
+		uint64_t cur_ts = framerate_regulator::get_utime();
+		uint64_t dt = cur_ts - last_ts;
+		last_ts = cur_ts;
+		unsigned samples = dt / 25;
+		if(samples > 16384)
+			samples = 16384;	//Don't get crazy.
+		if(parent.dummy_cb_active_play)
+			parent.get_mixed(buf, samples, false);
+		if(parent.dummy_cb_active_record)
+			parent.put_voice(NULL, samples);
+		usleep(10000);
+	}
+	return 0;
+}
 
 namespace
 {
 	bool paniced = false;
-	const unsigned voicep_bufsize = 65536;
-	const unsigned voicer_bufsize = 65536;
-	const unsigned music_bufsize = 8192;
-	float voicep_buffer[voicep_bufsize];
-	float voicer_buffer[voicer_bufsize];
-	int16_t music_buffer[MUSIC_BUFFERS * music_bufsize];
-	volatile bool music_stereo[MUSIC_BUFFERS];
-	volatile double music_rate[MUSIC_BUFFERS];
-	volatile size_t music_size[MUSIC_BUFFERS];
-	unsigned music_ptr;
-	unsigned last_complete_music_seen = MUSIC_BUFFERS + 1;
-	volatile unsigned last_complete_music = MUSIC_BUFFERS;
-	volatile unsigned voicep_get = 0;
-	volatile unsigned voicep_put = 0;
-	volatile unsigned voicer_get = 0;
-	volatile unsigned voicer_put = 0;
-	volatile unsigned voice_rate_play = 40000;
-	volatile unsigned orig_voice_rate_play = 40000;
-	volatile unsigned voice_rate_rec = 40000;
-	volatile bool dummy_cb_active_record = false;
-	volatile bool dummy_cb_active_play = false;
-	volatile bool dummy_cb_quit = false;
-	volatile float music_volume = 1;
-	volatile float voicep_volume = 32767.0;
-	volatile float voicer_volume = 1.0/32768;
-
-	struct dummy_cb_proc
-	{
-		int operator()()
-		{
-			int16_t buf[16384];
-			uint64_t last_ts = framerate_regulator::get_utime();
-			while(!dummy_cb_quit) {
-				uint64_t cur_ts = framerate_regulator::get_utime();
-				uint64_t dt = cur_ts - last_ts;
-				last_ts = cur_ts;
-				unsigned samples = dt / 25;
-				if(samples > 16384)
-					samples = 16384;	//Don't get crazy.
-				if(dummy_cb_active_play)
-					audioapi_get_mixed(buf, samples, false);
-				if(dummy_cb_active_record)
-					audioapi_put_voice(NULL, samples);
-				usleep(10000);
-			}
-			return 0;
-		}
-	};
-
-	dummy_cb_proc* dummy_cb_proc_obj;
-	threads::thread* dummy_cb_thread;
-
 
 //  | -1  1 -1  1 | 1  0  0  0 |
 //  |  0  0  0  1 | 0  1  0  0 |
@@ -100,14 +72,15 @@ namespace
 	}
 }
 
-audioapi_resampler::audioapi_resampler()
+audioapi_instance::resampler::resampler()
 {
 	position = 0;
 	vAl = vBl = vCl = vDl = 0;
 	vAr = vBr = vCr = vDr = 0;
 }
 
-void audioapi_resampler::resample(float*& in, size_t& insize, float*& out, size_t& outsize, double ratio, bool stereo)
+void audioapi_instance::resampler::resample(float*& in, size_t& insize, float*& out, size_t& outsize, double ratio,
+	bool stereo)
 {
 	double iratio = 1 / ratio;
 	while(outsize) {
@@ -136,18 +109,43 @@ exit:
 	;
 }
 
+audioapi_instance::audioapi_instance()
+	: dummyproc(*this)
+{
+	music_ptr = 0;
+	last_complete_music_seen = MUSIC_BUFFERS + 1;
+	last_complete_music = MUSIC_BUFFERS;
+	voicep_get = 0;
+	voicep_put = 0;
+	voicer_get = 0;
+	voicer_put = 0;
+	voice_rate_play = 40000;
+	orig_voice_rate_play = 40000;
+	voice_rate_rec = 40000;
+	dummy_cb_active_record = false;
+	dummy_cb_active_play = false;
+	dummy_cb_quit = false;
+	_music_volume = 1;
+	_voicep_volume = 32767.0;
+	_voicer_volume = 1.0/32768;
+}
 
-std::pair<unsigned, unsigned> audioapi_voice_rate()
+audioapi_instance::~audioapi_instance()
+{
+	quit();
+}
+
+std::pair<unsigned, unsigned> audioapi_instance::voice_rate()
 {
 	return std::make_pair(voice_rate_rec, voice_rate_play);
 }
 
-unsigned audioapi_orig_voice_rate()
+unsigned audioapi_instance::orig_voice_rate()
 {
 	return orig_voice_rate_play;
 }
 
-void audioapi_voice_rate(unsigned rate_rec, unsigned rate_play)
+void audioapi_instance::voice_rate(unsigned rate_rec, unsigned rate_play)
 {
 	if(rate_rec)
 		voice_rate_rec = rate_rec;
@@ -161,7 +159,7 @@ void audioapi_voice_rate(unsigned rate_rec, unsigned rate_play)
 	dummy_cb_active_play = !rate_play;
 }
 
-unsigned audioapi_voice_p_status()
+unsigned audioapi_instance::voice_p_status()
 {
 	unsigned p = voicep_put;
 	unsigned g = voicep_get;
@@ -171,7 +169,7 @@ unsigned audioapi_voice_p_status()
 		return voicep_bufsize - (p - g) - 1;
 }
 
-unsigned audioapi_voice_p_status2()
+unsigned audioapi_instance::voice_p_status2()
 {
 	unsigned p = voicep_put;
 	unsigned g = voicep_get;
@@ -181,7 +179,7 @@ unsigned audioapi_voice_p_status2()
 		return (p - g);
 }
 
-unsigned audioapi_voice_r_status()
+unsigned audioapi_instance::voice_r_status()
 {
 	unsigned p = voicer_put;
 	unsigned g = voicer_get;
@@ -191,7 +189,7 @@ unsigned audioapi_voice_r_status()
 		return (p - g);
 }
 
-void audioapi_play_voice(float* samples, size_t count)
+void audioapi_instance::play_voice(float* samples, size_t count)
 {
 	unsigned ptr = voicep_put;
 	for(size_t i = 0; i < count; i++) {
@@ -202,7 +200,7 @@ void audioapi_play_voice(float* samples, size_t count)
 	voicep_put = ptr;
 }
 
-void audioapi_record_voice(float* samples, size_t count)
+void audioapi_instance::record_voice(float* samples, size_t count)
 {
 	unsigned ptr = voicer_get;
 	for(size_t i = 0; i < count; i++) {
@@ -213,7 +211,7 @@ void audioapi_record_voice(float* samples, size_t count)
 	voicer_get = ptr;
 }
 
-void audioapi_submit_buffer(int16_t* samples, size_t count, bool stereo, double rate)
+void audioapi_instance::submit_buffer(int16_t* samples, size_t count, bool stereo, double rate)
 {
 	if(stereo)
 		for(unsigned i = 0; i < count; i++)
@@ -233,14 +231,14 @@ void audioapi_submit_buffer(int16_t* samples, size_t count, bool stereo, double 
 	last_complete_music = bidx;
 }
 
-struct audioapi_buffer audioapi_get_music(size_t played)
+struct audioapi_instance::buffer audioapi_instance::get_music(size_t played)
 {
 	static bool last_adjust = false;	//Adjusting consequtively is too hard.
 	unsigned midx = last_complete_music_seen;
 	unsigned midx2 = last_complete_music;
 	if(midx2 >= MUSIC_BUFFERS) {
 		//Special case: No buffer.
-		struct audioapi_buffer out;
+		struct buffer out;
 		out.samples = NULL;
 		out.pointer = 0;
 		//The rest are arbitrary.
@@ -281,7 +279,7 @@ struct audioapi_buffer audioapi_get_music(size_t played)
 		}
 	}
 	//Fill the structure.
-	struct audioapi_buffer out;
+	struct buffer out;
 	if(music_ptr < music_size[midx]) {
 		out.samples = music_buffer + midx * music_bufsize;
 		out.pointer = music_ptr;
@@ -301,14 +299,14 @@ struct audioapi_buffer audioapi_get_music(size_t played)
 	return out;
 }
 
-void audioapi_get_voice(float* samples, size_t count)
+void audioapi_instance::get_voice(float* samples, size_t count)
 {
 	unsigned g = voicep_get;
 	unsigned p = voicep_put;
 	if(samples) {
 		for(size_t i = 0; i < count; i++) {
 			if(g != p)
-				samples[i] = voicep_volume * voicep_buffer[g++];
+				samples[i] = _voicep_volume * voicep_buffer[g++];
 			else
 				samples[i] = 0.0;
 			if(g == voicep_bufsize)
@@ -325,19 +323,19 @@ void audioapi_get_voice(float* samples, size_t count)
 	voicep_get = g;
 }
 
-void audioapi_put_voice(float* samples, size_t count)
+void audioapi_instance::put_voice(float* samples, size_t count)
 {
 	unsigned ptr = voicer_put;
-	audioapi_vu_vin(samples, count, false, voice_rate_rec, voicer_volume);
+	vu_vin(samples, count, false, voice_rate_rec, _voicer_volume);
 	for(size_t i = 0; i < count; i++) {
-		voicer_buffer[ptr++] = samples ? voicer_volume * samples[i] : 0.0;
+		voicer_buffer[ptr++] = samples ? _voicer_volume * samples[i] : 0.0;
 		if(ptr == voicer_bufsize)
 			ptr = 0;
 	}
 	voicer_put = ptr;
 }
 
-void audioapi_init()
+void audioapi_instance::init()
 {
 	voicep_get = 0;
 	voicep_put = 0;
@@ -348,55 +346,56 @@ void audioapi_init()
 	dummy_cb_active_play = true;
 	dummy_cb_active_record = true;
 	dummy_cb_quit = false;
-	dummy_cb_proc_obj = new dummy_cb_proc;
-	dummy_cb_thread = new threads::thread(*dummy_cb_proc_obj);
+	dummythread = new threads::thread(dummyproc);
 }
 
-void audioapi_quit()
+void audioapi_instance::quit()
 {
 	dummy_cb_quit = true;
-	dummy_cb_thread->join();
-	delete dummy_cb_proc_obj;
+	if(dummythread) {
+		dummythread->join();
+		dummythread = NULL;
+	}
 }
 
-void audioapi_music_volume(float volume)
+void audioapi_instance::music_volume(float volume)
 {
-	music_volume = volume;
+	_music_volume = volume;
 }
 
-float audioapi_music_volume()
+float audioapi_instance::music_volume()
 {
-	return music_volume;
+	return _music_volume;
 }
 
-void audioapi_voicep_volume(float volume)
+void audioapi_instance::voicep_volume(float volume)
 {
-	voicep_volume = volume * 32767;
+	_voicep_volume = volume * 32767;
 }
 
-float audioapi_voicep_volume()
+float audioapi_instance::voicep_volume()
 {
-	return voicep_volume / 32767;
+	return _voicep_volume / 32767;
 }
 
-void audioapi_voicer_volume(float volume)
+void audioapi_instance::voicer_volume(float volume)
 {
-	voicer_volume = volume / 32768;
+	_voicer_volume = volume / 32768;
 }
 
-float audioapi_voicer_volume()
+float audioapi_instance::voicer_volume()
 {
-	return voicer_volume * 32768;
+	return _voicer_volume * 32768;
 }
 
-void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
+void audioapi_instance::get_mixed(int16_t* samples, size_t count, bool stereo)
 {
-	static audioapi_resampler music_resampler;
+	static resampler music_resampler;
 	const size_t intbuf_size = 256;
 	float intbuf[intbuf_size];
 	float intbuf2[intbuf_size];
 	while(count > 0) {
-		audioapi_buffer b = audioapi_get_music(0);
+		buffer b = get_music(0);
 		float* in = intbuf;
 		float* out = intbuf2;
 		size_t outdata_used;
@@ -407,19 +406,19 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 			outdata_used = outdata;
 			if(b.samples)
 				for(size_t i = 0; i < 2 * indata; i++)
-					intbuf[i] = music_volume * b.samples[i + 2 * b.pointer];
+					intbuf[i] = _music_volume * b.samples[i + 2 * b.pointer];
 			else
 				for(size_t i = 0; i < 2 * indata; i++)
 					intbuf[i] = 0;
 			music_resampler.resample(in, indata, out, outdata, (double)voice_rate_play / b.rate, true);
 			indata_used -= indata;
 			outdata_used -= outdata;
-			audioapi_get_music(indata_used);
-			audioapi_get_voice(intbuf, outdata_used);
+			get_music(indata_used);
+			get_voice(intbuf, outdata_used);
 
-			audioapi_vu_mleft(intbuf2, outdata_used, true, voice_rate_play, 1 / 32768.0);
-			audioapi_vu_mright(intbuf2 + 1, outdata_used, true, voice_rate_play, 1 / 32768.0);
-			audioapi_vu_vout(intbuf, outdata_used, false, voice_rate_play, 1 / 32768.0);
+			vu_mleft(intbuf2, outdata_used, true, voice_rate_play, 1 / 32768.0);
+			vu_mright(intbuf2 + 1, outdata_used, true, voice_rate_play, 1 / 32768.0);
+			vu_vout(intbuf, outdata_used, false, voice_rate_play, 1 / 32768.0);
 
 			for(size_t i = 0; i < outdata_used * (stereo ? 2 : 1); i++)
 				intbuf2[i] = max(min(intbuf2[i] + intbuf[i / 2], 32766.0f), -32767.0f);
@@ -436,19 +435,19 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 			outdata_used = outdata;
 			if(b.samples)
 				for(size_t i = 0; i < indata; i++)
-					intbuf[i] = music_volume * b.samples[i + b.pointer];
+					intbuf[i] = _music_volume * b.samples[i + b.pointer];
 			else
 				for(size_t i = 0; i < indata; i++)
 					intbuf[i] = 0;
 			music_resampler.resample(in, indata, out, outdata, (double)voice_rate_play / b.rate, false);
 			indata_used -= indata;
 			outdata_used -= outdata;
-			audioapi_get_music(indata_used);
-			audioapi_get_voice(intbuf, outdata_used);
+			get_music(indata_used);
+			get_voice(intbuf, outdata_used);
 
-			audioapi_vu_mleft(intbuf2, outdata_used, false, voice_rate_play, 1 / 32768.0);
-			audioapi_vu_mright(intbuf2, outdata_used, false, voice_rate_play, 1 / 32768.0);
-			audioapi_vu_vout(intbuf, outdata_used, false, voice_rate_play, 1 / 32768.0);
+			vu_mleft(intbuf2, outdata_used, false, voice_rate_play, 1 / 32768.0);
+			vu_mright(intbuf2, outdata_used, false, voice_rate_play, 1 / 32768.0);
+			vu_vout(intbuf, outdata_used, false, voice_rate_play, 1 / 32768.0);
 
 			for(size_t i = 0; i < outdata_used; i++)
 				intbuf2[i] = max(min(intbuf2[i] + intbuf[i], 32766.0f), -32767.0f);
@@ -466,14 +465,14 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 	}
 }
 
-audioapi_vumeter::audioapi_vumeter()
+audioapi_instance::vumeter::vumeter()
 {
 	accumulator = 0;
 	samples = 0;
 	vu = -999.0;
 }
 
-void audioapi_vumeter::operator()(float* asamples, size_t count, bool stereo, double rate, double scale)
+void audioapi_instance::vumeter::operator()(float* asamples, size_t count, bool stereo, double rate, double scale)
 {
 	size_t limit = rate / 25;
 	//If we already at or exceed limit, cut immediately.
@@ -505,7 +504,7 @@ void audioapi_vumeter::operator()(float* asamples, size_t count, bool stereo, do
 		}
 }
 
-void audioapi_vumeter::update_vu()
+void audioapi_instance::vumeter::update_vu()
 {
 	if(paniced)
 		return;
@@ -529,9 +528,3 @@ void audioapi_panicing() throw()
 {
 	paniced = true;
 }
-
-//VU values.
-audioapi_vumeter audioapi_vu_mleft;
-audioapi_vumeter audioapi_vu_mright;
-audioapi_vumeter audioapi_vu_vout;
-audioapi_vumeter audioapi_vu_vin;

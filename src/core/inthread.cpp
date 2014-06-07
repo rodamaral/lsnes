@@ -74,8 +74,8 @@ namespace
 
 	struct voicesub_state
 	{
-		voicesub_state(settingvar::group& _settings, emulator_dispatch& _dispatch)
-			: settings(_settings), edispatch(_dispatch)
+		voicesub_state(settingvar::group& _settings, emulator_dispatch& _dispatch, audioapi_instance& _audio)
+			: settings(_settings), edispatch(_dispatch), audio(_audio)
 		{
 			current_time = 0;
 			time_jump = false;
@@ -114,7 +114,7 @@ namespace
 		void start_management_stream(opus_stream& s);
 		void advance_time(uint64_t newtime);
 		void jump_time(uint64_t newtime);
-		void do_resample(audioapi_resampler& r, float* srcbuf, size_t& srcuse, float* dstbuf,
+		void do_resample(audioapi_instance::resampler& r, float* srcbuf, size_t& srcuse, float* dstbuf,
 			size_t& dstuse, size_t dstmax, double ratio);
 		void drain_input();
 		void read_input(float* buf, size_t& use, size_t maxuse);
@@ -127,6 +127,7 @@ namespace
 		void handle_tangent_negative_edge(opus_stream*& active_stream, bitrate_tracker& brtrack);
 		settingvar::group& settings;
 		emulator_dispatch& edispatch;
+		audioapi_instance& audio;
 	};
 
 	voicesub_state* get_state(void* ptr)
@@ -1397,8 +1398,8 @@ out:
 	}
 
 	//Resample.
-	void voicesub_state::do_resample(audioapi_resampler& r, float* srcbuf, size_t& srcuse, float* dstbuf,
-		size_t& dstuse, size_t dstmax, double ratio)
+	void voicesub_state::do_resample(audioapi_instance::resampler& r, float* srcbuf, size_t& srcuse,
+		float* dstbuf, size_t& dstuse, size_t dstmax, double ratio)
 	{
 		if(srcuse == 0 || dstuse >= dstmax)
 			return;
@@ -1417,20 +1418,20 @@ out:
 	//Drain the input buffer.
 	void voicesub_state::drain_input()
 	{
-		while(audioapi_voice_r_status() > 0) {
+		while(audio.voice_r_status() > 0) {
 			float buf[256];
-			unsigned size = min(audioapi_voice_r_status(), 256u);
-			audioapi_record_voice(buf, size);
+			unsigned size = min(audio.voice_r_status(), 256u);
+			audio.record_voice(buf, size);
 		}
 	}
 
 	//Read the input buffer.
 	void voicesub_state::read_input(float* buf, size_t& use, size_t maxuse)
 	{
-		size_t rleft = audioapi_voice_r_status();
+		size_t rleft = audio.voice_r_status();
 		unsigned toread = min(rleft, max(maxuse, use) - use);
 		if(toread > 0) {
-			audioapi_record_voice(buf + use, toread);
+			audio.record_voice(buf + use, toread);
 			use += toread;
 		}
 	}
@@ -1578,8 +1579,8 @@ out:
 	class inthread_th : public workthread::worker
 	{
 	public:
-		inthread_th(voicesub_state* _internal)
-			: internal(*_internal)
+		inthread_th(voicesub_state* _internal, audioapi_instance& _audio)
+			: internal(*_internal), audio(_audio)
 		{
 			quit = false;
 			quit_ack = false;
@@ -1628,8 +1629,8 @@ out:
 
 			opus::encoder oenc(opus::samplerate::r48k, false, opus::application::voice);
 			oenc.ctl(opus::bitrate(SET_opus_bitrate(internal.settings)));
-			audioapi_resampler rin;
-			audioapi_resampler rout;
+			audioapi_instance::resampler rin;
+			audioapi_instance::resampler rout;
 			const unsigned buf_max = 6144;	//These buffers better be large.
 			size_t buf_in_use = 0;
 			size_t buf_inr_use = 0;
@@ -1663,8 +1664,8 @@ out:
 					break;
 
 				//Read input, up to 25ms.
-				unsigned rate_in = audioapi_voice_rate().first;
-				unsigned rate_out = audioapi_voice_rate().second;
+				unsigned rate_in = audio.voice_rate().first;
+				unsigned rate_out = audio.voice_rate().second;
 				size_t dbuf_max = min(buf_max, rate_in / REC_THRESHOLD_DIV);
 				internal.read_input(buf_in, buf_in_use, dbuf_max);
 
@@ -1689,8 +1690,8 @@ out:
 					1.0 * rate_out / OPUS_SAMPLERATE);
 
 				//Output stuff.
-				if(buf_out_use > 0 && audioapi_voice_p_status2() < rate_out / PLAY_THRESHOLD_DIV) {
-					audioapi_play_voice(buf_out, buf_out_use);
+				if(buf_out_use > 0 && audio.voice_p_status2() < rate_out / PLAY_THRESHOLD_DIV) {
+					audio.play_voice(buf_out, buf_out_use);
 					buf_out_use = 0;
 				}
 
@@ -1711,6 +1712,7 @@ out:
 		threads::lock lmut;
 		threads::cv lcond;
 		voicesub_state& internal;
+		audioapi_instance& audio;
 	};
 
 	//The tangent function.
@@ -1727,8 +1729,9 @@ out:
 	keyboard::invbind_info IBIND_itangent(lsnes_invbinds, "+tangent", "Movie‣Voice tangent");
 }
 
-voice_commentary::voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch)
-	: settings(_settings), edispatch(_dispatch)
+voice_commentary::voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch,
+	audioapi_instance& _audio)
+	: settings(_settings), edispatch(_dispatch), audio(_audio)
 {
 	internal = NULL;
 }
@@ -1757,10 +1760,10 @@ void voice_commentary::frame_number(uint64_t newframe, double rate)
 
 void voice_commentary::init()
 {
-	internal = new voicesub_state(settings, edispatch);
+	internal = new voicesub_state(settings, edispatch, audio);
 	auto _internal = get_state(internal);
 	try {
-		_internal->int_task = new inthread_th(_internal);
+		_internal->int_task = new inthread_th(_internal, audio);
 	} catch(...) {
 		delete _internal;
 		throw;

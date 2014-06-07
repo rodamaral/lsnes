@@ -12,6 +12,7 @@
 #include "library/framebuffer-pixfmt-rgb32.hpp"
 #include "library/framebuffer-pixfmt-lrgb.hpp"
 #include "core/audioapi.hpp"
+#include "core/instance.hpp"
 #include "core/messages.hpp"
 
 template<> int ccore_call_param_map<lsnes_core_enumerate_cores>::id = LSNES_CORE_ENUMERATE_CORES;
@@ -855,7 +856,7 @@ failed:
 
 	void callback_submit_sound(const int16_t* samples, size_t count, int stereo, double rate)
 	{
-		audioapi_submit_buffer((int16_t*)samples, count, stereo, rate);
+		CORE().audio->submit_buffer((int16_t*)samples, count, stereo, rate);
 	}
 
 	void callback_notify_latch(const char** params)

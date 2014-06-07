@@ -6,6 +6,7 @@
 #include "demo.hpp"
 #include "core/dispatch.hpp"
 #include "core/audioapi.hpp"
+#include "core/instance.hpp"
 #include "core/messages.hpp"
 #include "interface/romtype.hpp"
 #include "interface/callbacks.hpp"
@@ -326,7 +327,7 @@ namespace sky
 			samples += corei.extrasamples();
 			int16_t sbuf[2668];
 			fetch_sfx(corei, sbuf, samples);
-			audioapi_submit_buffer(sbuf, samples, true, 48000);
+			CORE().audio->submit_buffer(sbuf, samples, true, 48000);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }

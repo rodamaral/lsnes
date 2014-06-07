@@ -105,8 +105,8 @@ public:
 private:
 	struct _vupanel : public wxPanel
 	{
-		_vupanel(wxwin_vumeter* v)
-			: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(320, 64))
+		_vupanel(wxwin_vumeter* v, audioapi_instance& _audio)
+			: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(320, 64)), audio(_audio)
 		{
 			obj = v;
 			buffer.resize(61440);
@@ -127,10 +127,10 @@ private:
 
 		void signal_repaint()
 		{
-			mleft = vu_to_pixels(audioapi_vu_mleft);
-			mright = vu_to_pixels(audioapi_vu_mright);
-			vout = vu_to_pixels(audioapi_vu_vout);
-			vin = vu_to_pixels(audioapi_vu_vin);
+			mleft = vu_to_pixels(audio.vu_mleft);
+			mright = vu_to_pixels(audio.vu_mright);
+			vout = vu_to_pixels(audio.vu_vout);
+			vin = vu_to_pixels(audio.vu_vin);
 			Refresh();
 			obj->update_sent = false;
 		}
@@ -162,6 +162,7 @@ private:
 		std::vector<unsigned char> buffer;
 		unsigned char colorstrip[960];
 		size_t bufferstride;
+		audioapi_instance& audio;
 		void draw_text(unsigned x, unsigned y, unsigned w, unsigned h, const uint32_t* buf)
 		{
 			unsigned spos = 0;
@@ -229,20 +230,20 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent, emulator_instance& _inst)
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(5, 1, 0, 0);
 	SetSizer(top_s);
 
-	top_s->Add(vupanel = new _vupanel(this));
+	top_s->Add(vupanel = new _vupanel(this, *inst.audio));
 	top_s->Add(rate = new wxStaticText(this, wxID_ANY, wxT("")), 0, wxGROW);
 
 	wxFlexGridSizer* slier_s = new wxFlexGridSizer(3, 3, 0, 0);
 	slier_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game:")), 0, wxGROW);
-	slier_s->Add(gamevol = new wxSlider(this, wxID_ANY, to_db(audioapi_music_volume()), -100, 50,
+	slier_s->Add(gamevol = new wxSlider(this, wxID_ANY, to_db(inst.audio->music_volume()), -100, 50,
 		wxDefaultPosition, wxSize(320, -1)), 1, wxGROW);
 	slier_s->Add(dgamevol = new wxButton(this, wxID_ANY, wxT("Reset")));
 	slier_s->Add(new wxStaticText(this, wxID_ANY, wxT("Voice out:")), 1, wxGROW);
-	slier_s->Add(voutvol = new wxSlider(this, wxID_ANY, to_db(audioapi_voicep_volume()), -100, 50,
+	slier_s->Add(voutvol = new wxSlider(this, wxID_ANY, to_db(inst.audio->voicep_volume()), -100, 50,
 		wxDefaultPosition, wxSize(320, -1)), 1, wxGROW);
 	slier_s->Add(dvoutvol = new wxButton(this, wxID_ANY, wxT("Reset")));
 	slier_s->Add(new wxStaticText(this, wxID_ANY, wxT("Voice in:")), 1, wxGROW);
-	slier_s->Add(vinvol = new wxSlider(this, wxID_ANY, to_db(audioapi_voicer_volume()), -100, 50,
+	slier_s->Add(vinvol = new wxSlider(this, wxID_ANY, to_db(inst.audio->voicer_volume()), -100, 50,
 		wxDefaultPosition, wxSize(320, -1)), 1, wxGROW);
 	slier_s->Add(dvinvol = new wxButton(this, wxID_ANY, wxT("Reset")));
 	top_s->Add(slier_s, 1, wxGROW);
@@ -347,34 +348,34 @@ void wxwin_vumeter::on_devsel(wxCommandEvent& e)
 
 void wxwin_vumeter::on_game_change(wxScrollEvent& e)
 {
-	audioapi_music_volume(pow(10, gamevol->GetValue() / 20.0));
+	inst.audio->music_volume(pow(10, gamevol->GetValue() / 20.0));
 }
 
 void wxwin_vumeter::on_vout_change(wxScrollEvent& e)
 {
-	audioapi_voicep_volume(pow(10, voutvol->GetValue() / 20.0));
+	inst.audio->voicep_volume(pow(10, voutvol->GetValue() / 20.0));
 }
 
 void wxwin_vumeter::on_vin_change(wxScrollEvent& e)
 {
-	audioapi_voicer_volume(pow(10, vinvol->GetValue() / 20.0));
+	inst.audio->voicer_volume(pow(10, vinvol->GetValue() / 20.0));
 }
 
 void wxwin_vumeter::on_game_reset(wxCommandEvent& e)
 {
-	audioapi_music_volume(1);
+	inst.audio->music_volume(1);
 	gamevol->SetValue(0);
 }
 
 void wxwin_vumeter::on_vout_reset(wxCommandEvent& e)
 {
-	audioapi_voicep_volume(1);
+	inst.audio->voicep_volume(1);
 	voutvol->SetValue(0);
 }
 
 void wxwin_vumeter::on_vin_reset(wxCommandEvent& e)
 {
-	audioapi_voicer_volume(1);
+	inst.audio->voicer_volume(1);
 	vinvol->SetValue(0);
 }
 
@@ -385,8 +386,8 @@ void wxwin_vumeter::on_mute(wxCommandEvent& e)
 
 void wxwin_vumeter::refresh()
 {
-	auto rate_cur = audioapi_voice_rate();
-	unsigned rate_nom = audioapi_orig_voice_rate();
+	auto rate_cur = inst.audio->voice_rate();
+	unsigned rate_nom = inst.audio->orig_voice_rate();
 	rate->SetLabel(towxstring((stringfmt() << "Current: " << rate_cur.second << "Hz (nominal " << rate_nom
 		<< "Hz), record: " << rate_cur.first << "Hz").str()));
 	vupanel->signal_repaint();
