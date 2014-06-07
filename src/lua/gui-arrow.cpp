@@ -6,12 +6,12 @@
 
 namespace
 {
-	int _dx[8] =  {-1,-1, 0, 1, 1, 1, 0,-1};
-	int _dy[8] =  { 0, 1, 1, 1, 0,-1,-1,-1};
-	int _dxn[8] = { 0, 0, 1, 1, 0, 0,-1,-1};
-	int _dyn[8] = { 1, 1, 0, 0,-1,-1, 0, 0};
-	int _dxp[8] = { 0, 1, 1, 0, 0,-1,-1, 0};
-	int _dyp[8] = { 1, 0, 0,-1,-1, 0, 0, 1};
+	const int _dx[8] =  {-1,-1, 0, 1, 1, 1, 0,-1};
+	const int _dy[8] =  { 0, 1, 1, 1, 0,-1,-1,-1};
+	const int _dxn[8] = { 0, 0, 1, 1, 0, 0,-1,-1};
+	const int _dyn[8] = { 1, 1, 0, 0,-1,-1, 0, 0};
+	const int _dxp[8] = { 0, 1, 1, 0, 0,-1,-1, 0};
+	const int _dyp[8] = { 1, 0, 0,-1,-1, 0, 0, 1};
 	struct render_object_arrow : public framebuffer::object
 	{
 		render_object_arrow(int32_t _x, int32_t _y, uint32_t _length, uint32_t _width,
