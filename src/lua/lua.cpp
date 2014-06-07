@@ -167,6 +167,10 @@ lua_state::lua_state(lua::state& _L, command::group& _command)
 	recursive_flag = false;
 	luareader_fragment = NULL;
 
+	renderq_saved = NULL;
+	renderq_last = NULL;
+	renderq_redirect = false;
+
 	on_paint = new lua::state::callback_list(L, "paint", "on_paint");
 	on_video = new lua::state::callback_list(L, "video", "on_video");
 	on_reset = new lua::state::callback_list(L, "reset", "on_reset");

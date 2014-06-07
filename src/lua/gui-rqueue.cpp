@@ -5,10 +5,6 @@
 
 namespace
 {
-	lua::render_context* saved = NULL;
-	lua::render_context* last = NULL;
-	bool redirect = false;
-
 	struct lua_renderqueue
 	{
 		lua_renderqueue(lua::state& L, uint32_t width, uint32_t height) throw();
@@ -69,10 +65,10 @@ namespace
 			P(q);
 
 			lua::render_context* ptr = q->get();
-			if(!redirect || last != core.lua2->render_ctx)
-				saved = core.lua2->render_ctx;
-			core.lua2->render_ctx = last = ptr;
-			redirect = true;
+			if(!core.lua2->renderq_redirect || core.lua2->renderq_last != core.lua2->render_ctx)
+				core.lua2->renderq_saved = core.lua2->render_ctx;
+			core.lua2->render_ctx = core.lua2->renderq_last = ptr;
+			core.lua2->renderq_redirect = true;
 			return 0;
 		}
 		int render(lua::state& L, lua::parameters& P)
@@ -132,12 +128,12 @@ namespace
 	int lua_renderqueue::setnull(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		if(redirect && last == core.lua2->render_ctx)
+		if(core.lua2->renderq_redirect && core.lua2->renderq_last == core.lua2->render_ctx)
 			//If there is valid redirect, undo it.
-			core.lua2->render_ctx = saved;
-		redirect = false;
-		last = NULL;
-		saved = NULL;
+			core.lua2->render_ctx = core.lua2->renderq_saved;
+		core.lua2->renderq_redirect = false;
+		core.lua2->renderq_last = NULL;
+		core.lua2->renderq_saved = NULL;
 		return 0;
 	}
 

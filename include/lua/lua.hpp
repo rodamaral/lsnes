@@ -99,6 +99,9 @@ struct lua_state
 	std::set<std::string> hooked_keys;
 	uint64_t idle_hook_time;
 	uint64_t timer_hook_time;
+	lua::render_context* renderq_saved;
+	lua::render_context* renderq_last;
+	bool renderq_redirect;
 
 	std::list<std::string> startup_scripts;
 	std::map<std::string, std::u32string> watch_vars;
