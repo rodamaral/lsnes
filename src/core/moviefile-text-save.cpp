@@ -12,8 +12,6 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
-#include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/device/back_inserter.hpp>
 #if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
 #include <windows.h>
 #endif
