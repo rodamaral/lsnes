@@ -273,6 +273,8 @@ private:
 	volatile float _music_volume;
 	volatile float _voicep_volume;
 	volatile float _voicer_volume;
+	resampler music_resampler;
+	bool last_adjust;	//Adjusting consequtively is too hard.
 };
 
 

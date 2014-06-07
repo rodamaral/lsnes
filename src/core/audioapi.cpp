@@ -128,6 +128,7 @@ audioapi_instance::audioapi_instance()
 	_music_volume = 1;
 	_voicep_volume = 32767.0;
 	_voicer_volume = 1.0/32768;
+	last_adjust = false;
 }
 
 audioapi_instance::~audioapi_instance()
@@ -233,7 +234,6 @@ void audioapi_instance::submit_buffer(int16_t* samples, size_t count, bool stere
 
 struct audioapi_instance::buffer audioapi_instance::get_music(size_t played)
 {
-	static bool last_adjust = false;	//Adjusting consequtively is too hard.
 	unsigned midx = last_complete_music_seen;
 	unsigned midx2 = last_complete_music;
 	if(midx2 >= MUSIC_BUFFERS) {
@@ -390,7 +390,6 @@ float audioapi_instance::voicer_volume()
 
 void audioapi_instance::get_mixed(int16_t* samples, size_t count, bool stereo)
 {
-	static resampler music_resampler;
 	const size_t intbuf_size = 256;
 	float intbuf[intbuf_size];
 	float intbuf2[intbuf_size];
