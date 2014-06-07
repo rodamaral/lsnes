@@ -198,7 +198,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions misc_fns(lua_func_misc, "", {
+	lua::functions LUA_misc_fns(lua_func_misc, "", {
 		{"print2", print2},
 		{"exec", exec},
 		{"emulator_ready", emulator_ready},
@@ -210,7 +210,7 @@ namespace
 		{"memory.set_lag_flag", set_lag_flag},
 	});
 
-	lua::functions pure_fns(lua_func_bit, "", {
+	lua::functions LUA_pure_fns(lua_func_bit, "", {
 		{"identify_class", identify_class},
 		{"tostringx", tostringx},
 		{"lookup_class", lookup_class},

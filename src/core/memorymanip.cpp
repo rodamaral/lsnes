@@ -309,49 +309,51 @@ namespace
 		}
 	};
 
-	command::byname_factory<read_command<uint8_t, &memory_space::read<uint8_t>, false>> ru1(lsnes_cmds,
+	command::byname_factory<read_command<uint8_t, &memory_space::read<uint8_t>, false>> CMD_ru1(lsnes_cmds,
 		"read-byte");
-	command::byname_factory<read_command<uint16_t, &memory_space::read<uint16_t>, false>> ru2(lsnes_cmds,
+	command::byname_factory<read_command<uint16_t, &memory_space::read<uint16_t>, false>> CMD_ru2(lsnes_cmds,
 		"read-word");
-	command::byname_factory<read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, false>> ru3(lsnes_cmds, 
-		"read-hword");
-	command::byname_factory<read_command<uint32_t, &memory_space::read<uint32_t>, false>> ru4(lsnes_cmds,
+	command::byname_factory<read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, false>> CMD_ru3(
+		lsnes_cmds,  "read-hword");
+	command::byname_factory<read_command<uint32_t, &memory_space::read<uint32_t>, false>> CMD_ru4(lsnes_cmds,
 		"read-dword");
-	command::byname_factory<read_command<uint64_t, &memory_space::read<uint64_t>, false>> ru8(lsnes_cmds,
+	command::byname_factory<read_command<uint64_t, &memory_space::read<uint64_t>, false>> CMD_ru8(lsnes_cmds,
 		"read-qword");
-	command::byname_factory<read_command<uint8_t, &memory_space::read<uint8_t>, true>> rh1(lsnes_cmds,
+	command::byname_factory<read_command<uint8_t, &memory_space::read<uint8_t>, true>> CMD_rh1(lsnes_cmds,
 		"read-byte-hex");
-	command::byname_factory<read_command<uint16_t, &memory_space::read<uint16_t>, true>> rh2(lsnes_cmds,
+	command::byname_factory<read_command<uint16_t, &memory_space::read<uint16_t>, true>> CMD_rh2(lsnes_cmds,
 		"read-word-hex");
 	command::byname_factory<read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, true>>
-		rh3(lsnes_cmds, "read-hword-hex");
-	command::byname_factory<read_command<uint32_t, &memory_space::read<uint32_t>, true>> rh4(lsnes_cmds,
+		CMD_rh3(lsnes_cmds, "read-hword-hex");
+	command::byname_factory<read_command<uint32_t, &memory_space::read<uint32_t>, true>> CMD_rh4(lsnes_cmds,
 		"read-dword-hex");
-	command::byname_factory<read_command<uint64_t, &memory_space::read<uint64_t>, true>> rh8(lsnes_cmds,
+	command::byname_factory<read_command<uint64_t, &memory_space::read<uint64_t>, true>> CMD_rh8(lsnes_cmds,
 		"read-qword-hex");
-	command::byname_factory<read_command<int8_t, &memory_space::read<int8_t>, false>> rs1(lsnes_cmds,
+	command::byname_factory<read_command<int8_t, &memory_space::read<int8_t>, false>> CMD_rs1(lsnes_cmds,
 		"read-sbyte");
-	command::byname_factory<read_command<int16_t, &memory_space::read<int16_t>, false>> rs2(lsnes_cmds,
+	command::byname_factory<read_command<int16_t, &memory_space::read<int16_t>, false>> CMD_rs2(lsnes_cmds,
 		"read-sword");
-	command::byname_factory<read_command<ss_int24_t, &memory_space::read<ss_int24_t>, false>> rs3(lsnes_cmds,
+	command::byname_factory<read_command<ss_int24_t, &memory_space::read<ss_int24_t>, false>> CMD_rs3(lsnes_cmds,
 		"read-shword");
-	command::byname_factory<read_command<int32_t, &memory_space::read<int32_t>, false>> rs4(lsnes_cmds,
+	command::byname_factory<read_command<int32_t, &memory_space::read<int32_t>, false>> CMD_rs4(lsnes_cmds,
 		"read-sdword");
-	command::byname_factory<read_command<float, &memory_space::read<float>, false>> rf4(lsnes_cmds,
+	command::byname_factory<read_command<float, &memory_space::read<float>, false>> CMD_rf4(lsnes_cmds,
 		"read-float");
-	command::byname_factory<read_command<double, &memory_space::read<double>, false>> rf8(lsnes_cmds,
+	command::byname_factory<read_command<double, &memory_space::read<double>, false>> CMD_rf8(lsnes_cmds,
 		"read-double");
-	command::byname_factory<write_command<uint8_t, -128, 0xFF, &memory_space::write<uint8_t>>> w1(lsnes_cmds,
+	command::byname_factory<write_command<uint8_t, -128, 0xFF, &memory_space::write<uint8_t>>> CMD_w1(lsnes_cmds,
 		"write-byte");
 	command::byname_factory<write_command<uint16_t, -32768, 0xFFFF, &memory_space::write<uint16_t>>>
-		w2(lsnes_cmds, "write-word");
+		CMD_w2(lsnes_cmds, "write-word");
 	command::byname_factory<write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>>> 
-		w3(lsnes_cmds, "write-hword");
+		CMD_w3(lsnes_cmds, "write-hword");
 	command::byname_factory<write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL, &memory_space::write<uint32_t>>>
-		w4(lsnes_cmds, "write-dword");
+		CMD_w4(lsnes_cmds, "write-dword");
 	//Just straight writing the constant would cause a warning.
 	command::byname_factory<write_command<uint64_t, -9223372036854775807LL-1, 0xFFFFFFFFFFFFFFFFULL,
-		&memory_space::write<uint64_t>>> w8(lsnes_cmds, "write-qword");
-	command::byname_factory<writef_command<float, &memory_space::write<float>>> wf4(lsnes_cmds, "write-float");
-	command::byname_factory<writef_command<double, &memory_space::write<double>>> wf8(lsnes_cmds, "write-double");
+		&memory_space::write<uint64_t>>> CMD_w8(lsnes_cmds, "write-qword");
+	command::byname_factory<writef_command<float, &memory_space::write<float>>> CMD_wf4(lsnes_cmds,
+		"write-float");
+	command::byname_factory<writef_command<double, &memory_space::write<double>>> CMD_wf8(lsnes_cmds,
+		"write-double");
 }

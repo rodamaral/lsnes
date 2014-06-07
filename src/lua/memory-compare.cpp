@@ -111,7 +111,7 @@ namespace
 		return 1;
 	}
 
-	lua::_class<compare_obj> class_vmalist(lua_class_memory, "COMPARE_OBJ", {
+	lua::_class<compare_obj> LUA_class_vmalist(lua_class_memory, "COMPARE_OBJ", {
 		{"new", compare_obj::create},
 	}, {
 		{"__call", &compare_obj::call},

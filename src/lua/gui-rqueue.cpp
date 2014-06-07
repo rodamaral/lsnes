@@ -137,7 +137,7 @@ namespace
 		return 0;
 	}
 
-	lua::_class<lua_renderqueue> class_lua_renderqueue(lua_class_gui, "RENDERCTX", {
+	lua::_class<lua_renderqueue> LUA_class_lua_renderqueue(lua_class_gui, "RENDERCTX", {
 		{"new", lua_renderqueue::create},
 		{"setnull", lua_renderqueue::setnull},
 	}, {

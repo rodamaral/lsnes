@@ -78,20 +78,20 @@ namespace
 		draw_special_screen(target, rl_corrupt);
 	}
 
-	command::fnptr<command::arg_filename> take_screenshot_cmd(lsnes_cmds, "take-screenshot", "Takes a screenshot",
+	command::fnptr<command::arg_filename> CMD_take_screenshot(lsnes_cmds, "take-screenshot", "Takes a screenshot",
 		"Syntax: take-screenshot <file>\nSaves screenshot to PNG file <file>\n",
 		[](command::arg_filename file) throw(std::bad_alloc, std::runtime_error) {
 			CORE().fbuf->take_screenshot(file);
 			messages << "Saved PNG screenshot" << std::endl;
 		});
 
-	settingvar::supervariable<settingvar::model_int<0, 8191>> dtb(lsnes_setgrp, "top-border",
+	settingvar::supervariable<settingvar::model_int<0, 8191>> SET_dtb(lsnes_setgrp, "top-border",
 		"UI‣Top padding", 0);
-	settingvar::supervariable<settingvar::model_int<0, 8191>> dbb(lsnes_setgrp, "bottom-border",
+	settingvar::supervariable<settingvar::model_int<0, 8191>> SET_dbb(lsnes_setgrp, "bottom-border",
 		"UI‣Bottom padding", 0);
-	settingvar::supervariable<settingvar::model_int<0, 8191>> dlb(lsnes_setgrp, "left-border",
+	settingvar::supervariable<settingvar::model_int<0, 8191>> SET_dlb(lsnes_setgrp, "left-border",
 		"UI‣Left padding", 0);
-	settingvar::supervariable<settingvar::model_int<0, 8191>> drb(lsnes_setgrp, "right-border",
+	settingvar::supervariable<settingvar::model_int<0, 8191>> SET_drb(lsnes_setgrp, "right-border",
 		"UI‣Right padding", 0);
 }
 
@@ -157,10 +157,10 @@ void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, 
 	ri.fbuf = todraw;
 	ri.hscl = hscl;
 	ri.vscl = vscl;
-	ri.lgap = max(lrc.left_gap, (unsigned)dlb(settings));
-	ri.rgap = max(lrc.right_gap, (unsigned)drb(settings));
-	ri.tgap = max(lrc.top_gap, (unsigned)dtb(settings));
-	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb(settings));
+	ri.lgap = max(lrc.left_gap, (unsigned)SET_dlb(settings));
+	ri.rgap = max(lrc.right_gap, (unsigned)SET_drb(settings));
+	ri.tgap = max(lrc.top_gap, (unsigned)SET_dtb(settings));
+	ri.bgap = max(lrc.bottom_gap, (unsigned)SET_dbb(settings));
 	mwatch.watch(ri.rq);
 	buffering.put_write();
 	edispatch.screen_update();

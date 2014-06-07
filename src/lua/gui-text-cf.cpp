@@ -38,7 +38,7 @@ namespace
 		framebuffer::font2 font;
 	};
 
-	lua::_class<lua_customfont> class_customfont(lua_class_gui, "CUSTOMFONT", {
+	lua::_class<lua_customfont> LUA_class_customfont(lua_class_gui, "CUSTOMFONT", {
 		{"new", lua_customfont::create},
 		{"load", lua_customfont::load},
 	}, {

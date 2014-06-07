@@ -67,9 +67,9 @@ namespace
 	class bitrate_tracker;
 	class inthread_th;
 
-	settingvar::supervariable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_bitrate(lsnes_setgrp,
-		"opus-bitrate", "commentary‣Bitrate", OPUS_BITRATE);
-	settingvar::supervariable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_max_bitrate(
+	settingvar::supervariable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> SET_opus_bitrate(
+		lsnes_setgrp, "opus-bitrate", "commentary‣Bitrate", OPUS_BITRATE);
+	settingvar::supervariable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> SET_opus_max_bitrate(
 		lsnes_setgrp, "opus-max-bitrate", "commentary‣Max bitrate", OPUS_MAX_BITRATE);
 
 	struct voicesub_state
@@ -593,7 +593,7 @@ out:
 			throw std::runtime_error("Only mono streams are supported");
 		uint64_t samples = serialization::u64l(header + 8);
 		opus::encoder enc(opus::samplerate::r48k, false, opus::application::voice);
-		enc.ctl(opus::bitrate(opus_bitrate(settings)));
+		enc.ctl(opus::bitrate(SET_opus_bitrate(settings)));
 		int32_t pregap = enc.ctl(opus::lookahead);
 		pregap_length = pregap;
 		for(uint64_t i = 0; i < samples + pregap; i += OPUS_BLOCK_SIZE) {
@@ -620,7 +620,7 @@ out:
 			for(size_t j = bs; j < OPUS_BLOCK_SIZE; j++)
 				tmp[j] = 0;
 			try {
-				const size_t opus_out_max2 = opus_max_bitrate(settings) *
+				const size_t opus_out_max2 = SET_opus_max_bitrate(settings) *
 					OPUS_BLOCK_SIZE / 384000;
 				size_t r = enc.encode(tmp, OPUS_BLOCK_SIZE, tmpi, opus_out_max2);
 				write(OPUS_BLOCK_SIZE / 120, tmpi, r);
@@ -1452,7 +1452,7 @@ out:
 			cblock = 120;
 		else
 			return;		//No valid data to compress.
-		const size_t opus_out_max2 = opus_max_bitrate(settings) * cblock / 384000;
+		const size_t opus_out_max2 = SET_opus_max_bitrate(settings) * cblock / 384000;
 		try {
 			size_t c = e.encode(buf, cblock, opus_output, opus_out_max2);
 			//Successfully compressed a block.
@@ -1535,7 +1535,7 @@ out:
 			return;
 		try {
 			e.ctl(opus::reset);
-			e.ctl(opus::bitrate(opus_bitrate(settings)));
+			e.ctl(opus::bitrate(SET_opus_bitrate(settings)));
 			brtrack.reset();
 			uint64_t ctime;
 			{
@@ -1627,7 +1627,7 @@ out:
 				return;
 
 			opus::encoder oenc(opus::samplerate::r48k, false, opus::application::voice);
-			oenc.ctl(opus::bitrate(opus_bitrate(internal.settings)));
+			oenc.ctl(opus::bitrate(SET_opus_bitrate(internal.settings)));
 			audioapi_resampler rin;
 			audioapi_resampler rout;
 			const unsigned buf_max = 6144;	//These buffers better be large.
@@ -1714,17 +1714,17 @@ out:
 	};
 
 	//The tangent function.
-	command::fnptr<> ptangent(lsnes_cmds, "+tangent", "Voice tangent",
+	command::fnptr<> CMD_ptangent(lsnes_cmds, "+tangent", "Voice tangent",
 		"Syntax: +tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().commentary->set_active_flag(true);
 		});
-	command::fnptr<> ntangent(lsnes_cmds, "-tangent", "Voice tangent",
+	command::fnptr<> CMD_ntangent(lsnes_cmds, "-tangent", "Voice tangent",
 		"Syntax: -tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().commentary->set_active_flag(false);
 		});
-	keyboard::invbind_info itangent(lsnes_invbinds, "+tangent", "Movie‣Voice tangent");
+	keyboard::invbind_info IBIND_itangent(lsnes_invbinds, "+tangent", "Movie‣Voice tangent");
 }
 
 voice_commentary::voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch)

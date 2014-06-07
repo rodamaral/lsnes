@@ -37,7 +37,7 @@ namespace
 		return 1;
 	}
 
-	lua::functions screenshot_fns(lua_func_misc, "gui", {
+	lua::functions LUA_screenshot_fns(lua_func_misc, "gui", {
 		{"screenshot", screenshot},
 		{"screenshot_bitmap", screenshot_bitmap},
 	});

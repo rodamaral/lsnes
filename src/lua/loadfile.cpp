@@ -47,7 +47,7 @@ namespace
 		bool first_chunk;
 	};
 
-	std::string pattern = "@@LUA_SCRIPT_FILENAME@@";
+	std::string CONST_pattern = "@@LUA_SCRIPT_FILENAME@@";
 
 	std::pair<const char*, size_t> replace::run(std::function<std::pair<const char*, size_t>()> fn)
 	{
@@ -61,7 +61,7 @@ namespace
 				if(!upper_buf && !upper_size)
 					upper_eof = true;
 				if(first_chunk) {
-					static char binary_lua_id[] = {0x1B, 0x4C, 0x75, 0x61};
+					const static char binary_lua_id[] = {0x1B, 0x4C, 0x75, 0x61};
 					if(upper_size >= 4 && !memcmp(upper_buf, binary_lua_id, 4))
 						throw std::runtime_error("Binary Lua chunks are not allowed");
 					first_chunk = false;
@@ -75,10 +75,10 @@ namespace
 			}
 			switch(source) {
 			case 0:		//Upper_buf.
-				if(upper_buf[upper_ptr] == pattern[matched]) {
+				if(upper_buf[upper_ptr] == CONST_pattern[matched]) {
 					matched++;
 					upper_ptr++;
-					if(matched == pattern.length()) {
+					if(matched == CONST_pattern.length()) {
 						source = 2;
 						copied = 0;
 					}
@@ -102,7 +102,7 @@ namespace
 					matched = 0;
 					source = 0;
 				} else {
-					buffer[emitted++] = pattern[copied++];
+					buffer[emitted++] = CONST_pattern[copied++];
 				}
 				break;
 			case 2:		//Target.
@@ -144,6 +144,7 @@ namespace
 		std::istream& s;
 		replace rpl;
 		std::string err;
+		char buffer[4096];
 	};
 
 	class lua_file_reader
@@ -236,15 +237,14 @@ namespace
 		try {
 			auto g = rpl.run([this]() -> std::pair<const char*, size_t> {
 				size_t size;
-				static char buffer[4096];
 				if(!this->s)
 					return std::make_pair(reinterpret_cast<const char*>(NULL), 0);
-				this->s.read(buffer, sizeof(buffer));
+				this->s.read(this->buffer, sizeof(this->buffer));
 				size = this->s.gcount();
 				if(!size) {
 					return std::make_pair(reinterpret_cast<const char*>(NULL), 0);
 				}
-				return std::make_pair(buffer, size);
+				return std::make_pair(this->buffer, size);
 			});
 			*size = g.second;
 			return g.first;
@@ -311,13 +311,13 @@ namespace
 		return 1;
 	}
 
-	lua::functions load_fns(lua_func_load, "", {
+	lua::functions LUA_load_fns(lua_func_load, "", {
 		{"loadfile2", loadfile2},
 		{"dofile2", dofile2},
 		{"resolve_filename", resolve_filename},
 	});
 
-	lua::_class<lua_file_reader> class_filreader(lua_class_fileio, "FILEREADER", {
+	lua::_class<lua_file_reader> LUA_class_filreader(lua_class_fileio, "FILEREADER", {
 		{"open", lua_file_reader::create},
 	}, {
 		{"__call", &lua_file_reader::read},

@@ -64,7 +64,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions box_fns(lua_func_misc, "gui", {
+	lua::functions LUA_box_fns(lua_func_misc, "gui", {
 		{"box", box},
 	});
 }

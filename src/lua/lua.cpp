@@ -113,11 +113,11 @@ namespace
 
 #define TEMPORARY "LUAINTERP_INTERNAL_COMMAND_TEMPORARY"
 
-	const char* eval_sysrc_lua = "local fn = loadstring(" TEMPORARY ", \"<built-in>\"); if fn then fn(); else "
-		"print2(\"Parse error in sysrc.lua script\"); end;";
-	const char* eval_lua_lua = "local fn = loadstring(" TEMPORARY "); if fn then fn(); else print("
+	const char* CONST_eval_sysrc_lua = "local fn = loadstring(" TEMPORARY ", \"<built-in>\"); "
+		"if fn then fn(); else print2(\"Parse error in sysrc.lua script\"); end;";
+	const char* CONST_eval_lua_lua = "local fn = loadstring(" TEMPORARY "); if fn then fn(); else print("
 		"\"Parse error in Lua statement\"); end;";
-	const char* run_lua_lua = "dofile(" TEMPORARY ");";
+	const char* CONST_run_lua_lua = "dofile(" TEMPORARY ");";
 
 	int system_write_error(lua_State* L)
 	{
@@ -336,7 +336,7 @@ bool lua_state::callback_do_button(uint32_t port, uint32_t controller, uint32_t 
 
 namespace
 {
-	command::fnptr<const std::string&> evaluate_lua(lsnes_cmds, "evaluate-lua", "Evaluate expression in "
+	command::fnptr<const std::string&> CMD_evaluate_lua(lsnes_cmds, "evaluate-lua", "Evaluate expression in "
 		"Lua VM", "Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
@@ -345,7 +345,7 @@ namespace
 			core.lua2->do_eval_lua(args);
 		});
 
-	command::fnptr<const std::string&> evaluate_lua2(lsnes_cmds, "L", "Evaluate expression in "
+	command::fnptr<const std::string&> CMD_evaluate_lua2(lsnes_cmds, "L", "Evaluate expression in "
 		"Lua VM", "Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
@@ -354,7 +354,7 @@ namespace
 			core.lua2->do_eval_lua(args);
 		});
 
-	command::fnptr<command::arg_filename> run_lua(lsnes_cmds, "run-lua", "Run Lua script in Lua VM",
+	command::fnptr<command::arg_filename> CMD_run_lua(lsnes_cmds, "run-lua", "Run Lua script in Lua VM",
 		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error)
 		{
@@ -362,7 +362,7 @@ namespace
 			core.lua2->do_run_lua(args);
 		});
 
-	command::fnptr<> reset_lua(lsnes_cmds, "reset-lua", "Reset the Lua VM",
+	command::fnptr<> CMD_reset_lua(lsnes_cmds, "reset-lua", "Reset the Lua VM",
 		"Syntax: reset-lua\nReset the Lua VM.\n",
 		[]() throw(std::bad_alloc, std::runtime_error)
 		{
@@ -375,7 +375,7 @@ namespace
 			messages << "Lua VM reset" << std::endl;
 		});
 
-	lua::_class<lua_unsaferewind> class_unsaferewind(lua_class_movie, "UNSAFEREWIND", {}, {
+	lua::_class<lua_unsaferewind> LUA_class_unsaferewind(lua_class_movie, "UNSAFEREWIND", {}, {
 	}, &lua_unsaferewind::print);
 }
 
@@ -547,7 +547,7 @@ void lua_state::do_eval_lua(const std::string& c) throw(std::bad_alloc)
 {
 	L.pushlstring(c.c_str(), c.length());
 	L.setglobal(TEMPORARY);
-	luareader_fragment = eval_lua_lua;
+	luareader_fragment = CONST_eval_lua_lua;
 	run_lua_fragment();
 }
 
@@ -555,7 +555,7 @@ void lua_state::do_run_lua(const std::string& c) throw(std::bad_alloc)
 {
 	L.pushlstring(c.c_str(), c.length());
 	L.setglobal(TEMPORARY);
-	luareader_fragment = run_lua_lua;
+	luareader_fragment = CONST_run_lua_lua;
 	run_lua_fragment();
 }
 
@@ -585,7 +585,7 @@ void lua_state::run_sysrc_lua(bool rerun)
 {
 	L.pushstring(lua_sysrc_script);
 	L.setglobal(TEMPORARY);
-	luareader_fragment = eval_sysrc_lua;
+	luareader_fragment = CONST_eval_sysrc_lua;
 	if(!run_lua_fragment() && !rerun) {
 		//run_lua_fragment shows error.
 		//messages << "Failed to run sysrc lua script" << std::endl;

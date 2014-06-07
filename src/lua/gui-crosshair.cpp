@@ -49,7 +49,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions crosshair_fns(lua_func_misc, "gui", {
+	lua::functions LUA_crosshair_fns(lua_func_misc, "gui", {
 		{"crosshair", crosshair},
 	});
 }

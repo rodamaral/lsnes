@@ -37,7 +37,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions hostops(lua_func_misc, "hostmemory", {
+	lua::functions LUA_hostops_fns(lua_func_misc, "hostmemory", {
 		{"read", do_read<uint8_t>},
 		{"write", do_write<uint8_t>},
 		{"readbyte", do_read<uint8_t>},

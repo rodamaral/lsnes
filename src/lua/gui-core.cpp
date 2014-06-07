@@ -121,7 +121,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions guicore_fns(lua_func_misc, "gui", {
+	lua::functions LUA_guicore_fns(lua_func_misc, "gui", {
 		{"left_gap", lua_gui_set_gap<&lua::render_context::left_gap, false>},
 		{"right_gap", lua_gui_set_gap<&lua::render_context::right_gap, false>},
 		{"top_gap", lua_gui_set_gap<&lua::render_context::top_gap, false>},

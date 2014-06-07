@@ -108,6 +108,7 @@ emulator_instance::emulator_instance()
 	mapper->add_invbind_set(lsnes_invbinds);
 	settings->add_set(lsnes_setgrp);
 	dispatch->set_error_streams(&messages.getstream());
+	random_seed_value = 0;
 }
 
 emulator_instance::~emulator_instance()

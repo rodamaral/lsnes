@@ -316,7 +316,7 @@ namespace
 		return 1;
 	}
 
-	lua::_class<tilemap> class_tilemap(lua_class_gui, "TILEMAP", {
+	lua::_class<tilemap> LUA_class_tilemap(lua_class_gui, "TILEMAP", {
 		{"new", tilemap::create},
 	}, {
 		{"draw", &tilemap::draw<false>},

@@ -101,7 +101,7 @@ namespace
 	};
 
 
-	command::fnptr<const std::string&> edit_subtitle(lsnes_cmds, "edit-subtitle", "Edit a subtitle",
+	command::fnptr<const std::string&> CMD_edit_subtitle(lsnes_cmds, "edit-subtitle", "Edit a subtitle",
 		"Syntax: edit-subtitle <first> <length> <text>\nAdd/Edit subtitle\n"
 		"Syntax: edit-subtitle <first> <length>\nADelete subtitle\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
@@ -120,7 +120,7 @@ namespace
 			core.fbuf->redraw_framebuffer();
 		});
 
-	command::fnptr<> list_subtitle(lsnes_cmds, "list-subtitle", "List the subtitles",
+	command::fnptr<> CMD_list_subtitle(lsnes_cmds, "list-subtitle", "List the subtitles",
 		"Syntax: list-subtitle\nList the subtitles.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
@@ -132,7 +132,7 @@ namespace
 			}
 		});
 
-	command::fnptr<command::arg_filename> save_s(lsnes_cmds, "save-subtitle", "Save subtitles in .sub format",
+	command::fnptr<command::arg_filename> CMD_save_s(lsnes_cmds, "save-subtitle", "Save subtitles in .sub format",
 		"Syntax: save-subtitle <file>\nSaves subtitles in .sub format to <file>\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();

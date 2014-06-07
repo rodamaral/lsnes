@@ -155,16 +155,16 @@ namespace
 		return 0;
 	}
 
-	lua::functions alias_fns(lua_func_misc, "", {
+	lua::functions LUA_alias_fns(lua_func_misc, "", {
 		{"list_bindings", list_bindings},
 		{"get_alias", get_alias},
 		{"set_alias", set_alias},
 	});
 
-	lua::_class<lua_inverse_bind> class_inverse_bind(lua_class_bind, "INVERSEBIND", {
+	lua::_class<lua_inverse_bind> LUA_class_inverse_bind(lua_class_bind, "INVERSEBIND", {
 		{"new", lua_inverse_bind::create},
 	}, {}, &lua_inverse_bind::print);
-	lua::_class<lua_command_bind> class_command_bind(lua_class_bind, "COMMANDBIND", {
+	lua::_class<lua_command_bind> LUA_class_command_bind(lua_class_bind, "COMMANDBIND", {
 		{"new", lua_command_bind::create},
 	}, {}, &lua_command_bind::print);
 }

@@ -71,7 +71,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions circle_fns(lua_func_misc, "gui", {
+	lua::functions LUA_circle_fns(lua_func_misc, "gui", {
 		{"circle", circle},
 	});
 }

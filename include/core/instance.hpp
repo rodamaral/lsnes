@@ -118,6 +118,7 @@ struct emulator_instance
 	master_dumper* mdumper;
 	slotinfo_cache* slotcache;
 	threads::id emu_thread;
+	time_t random_seed_value;
 	dtor_list D;
 private:
 	emulator_instance(const emulator_instance&);

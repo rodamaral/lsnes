@@ -174,21 +174,21 @@ bool multitrack_edit::any_records()
 
 namespace
 {
-	command::fnptr<> rotate_forward(lsnes_cmds, "rotate-multitrack", "Rotate multitrack",
+	command::fnptr<> CMD_rotate_forward(lsnes_cmds, "rotate-multitrack", "Rotate multitrack",
 		"Syntax: rotate-multitrack\nRotate multitrack\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().mteditor->rotate(true);
 			update_movie_state();
 		});
 
-	command::fnptr<> rotate_backward(lsnes_cmds, "rotate-multitrack-backwards", "Rotate multitrack backwards",
+	command::fnptr<> CMD_rotate_backward(lsnes_cmds, "rotate-multitrack-backwards", "Rotate multitrack backwards",
 		"Syntax: rotate-multitrack-backwards\nRotate multitrack backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().mteditor->rotate(false);
 			update_movie_state();
 		});
 
-	command::fnptr<const std::string&> set_mt(lsnes_cmds, "set-multitrack", "Set multitrack mode",
+	command::fnptr<const std::string&> CMD_set_mt(lsnes_cmds, "set-multitrack", "Set multitrack mode",
 		"Syntax: set-multitrack <controller> <mode>\nSet multitrack mode\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
@@ -211,9 +211,9 @@ namespace
 			update_movie_state();
 		});
 
-	keyboard::invbind_info _mtback(lsnes_invbinds, "rotate-multitrack-backwards",
+	keyboard::invbind_info IBIND_mtback(lsnes_invbinds, "rotate-multitrack-backwards",
 		"Multitrack‣Rotate backwards");
-	keyboard::invbind_info _mtfwd(lsnes_invbinds, "rotate-multitrack", "Multitrack‣Rotate forward");
+	keyboard::invbind_info IBIND_mtfwd(lsnes_invbinds, "rotate-multitrack", "Multitrack‣Rotate forward");
 
 	int multitrack_state(lua::state& L, lua::parameters& P)
 	{
@@ -240,7 +240,7 @@ namespace
 		}
 	}
 
-	lua::functions mtfn(lua_func_misc, "input", {
+	lua::functions LUA_mtfn(lua_func_misc, "input", {
 		{"multitrack_state", multitrack_state},
 	});
 }

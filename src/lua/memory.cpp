@@ -200,7 +200,7 @@ namespace
 		}
 	}
 
-	char lua_cb_list_key = 0;
+	char CONST_lua_cb_list_key = 0;
 
 	struct lua_debug_callback2 : public debug_context::callback_base
 	{
@@ -230,7 +230,7 @@ namespace
 	lua_debug_callback2::~lua_debug_callback2()
 	{
 		if(!prev) {
-			L->pushlightuserdata(&lua_cb_list_key);
+			L->pushlightuserdata(&CONST_lua_cb_list_key);
 			L->rawget(LUA_REGISTRYINDEX);
 			if(!L->isnil(-1)) {
 				lua_debug_callback_dict* dc = (lua_debug_callback_dict*)L->touserdata(-1);
@@ -252,12 +252,12 @@ namespace
 	void lua_debug_callback2::link_to_list()
 	{
 		prev = NULL;
-		L->pushlightuserdata(&lua_cb_list_key);
+		L->pushlightuserdata(&CONST_lua_cb_list_key);
 		L->rawget(LUA_REGISTRYINDEX);
 		if(L->isnil(-1)) {
 			//No existing dict, create one.
 			L->pop(1);
-			L->pushlightuserdata(&lua_cb_list_key);
+			L->pushlightuserdata(&CONST_lua_cb_list_key);
 			lua_debug_callback_dict* D = (lua_debug_callback_dict*)
 				L->newuserdata(sizeof(lua_debug_callback_dict));
 			new(D) lua_debug_callback_dict;
@@ -268,7 +268,7 @@ namespace
 			L->setmetatable(-2);
 			L->rawset(LUA_REGISTRYINDEX);
 		}
-		L->pushlightuserdata(&lua_cb_list_key);
+		L->pushlightuserdata(&CONST_lua_cb_list_key);
 		L->rawget(LUA_REGISTRYINDEX);
 		lua_debug_callback2* was = NULL;
 		lua_debug_callback_dict* dc = (lua_debug_callback_dict*)L->touserdata(-1);
@@ -369,7 +369,7 @@ namespace
 
 	int lua_debug_callback_dict::on_lua_gc(lua_State* _L)
 	{
-		lua_pushlightuserdata(_L, &lua_cb_list_key);
+		lua_pushlightuserdata(_L, &CONST_lua_cb_list_key);
 		lua_pushnil(_L);
 		lua_rawset(_L, LUA_REGISTRYINDEX);
 		lua_debug_callback_dict* D = (lua_debug_callback_dict*)lua_touserdata(_L, 1);
@@ -409,7 +409,7 @@ void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
 {
 	lua_debug_callback_dict* Dx;
 	lua_debug_callback2* D = NULL;
-	L.pushlightuserdata(&lua_cb_list_key);
+	L.pushlightuserdata(&CONST_lua_cb_list_key);
 	L.rawget(LUA_REGISTRYINDEX);
 	if(!L.isnil(-1)) {
 		Dx = (lua_debug_callback_dict*)L.touserdata(-1);
@@ -467,12 +467,12 @@ namespace
 		}
 	}
 
-	command::fnptr<> callbacks_show_lua(lsnes_cmds, "show-lua-callbacks", "", "",
+	command::fnptr<> CMD_callbacks_show_lua(lsnes_cmds, "show-lua-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 		lua::state& L = *CORE().lua;
 		lua_debug_callback2* D;
 		lua_debug_callback_dict* Dx;
-		L.pushlightuserdata(&lua_cb_list_key);
+		L.pushlightuserdata(&CONST_lua_cb_list_key);
 		L.rawget(LUA_REGISTRYINDEX);
 		if(!L.isnil(-1)) {
 			Dx = (lua_debug_callback_dict*)L.touserdata(-1);
@@ -845,7 +845,7 @@ namespace
 		return 1;
 	}
 
-	lua::functions memoryfuncs(lua_func_misc, "memory", {
+	lua::functions LUA_memory_fns(lua_func_misc, "memory", {
 		{"vma_count", vma_count},
 		{"cheat", cheat},
 		{"setxmask", setxmask},
@@ -907,7 +907,7 @@ namespace
 		{"unregistertrace", lua_registerX<debug_context::DEBUG_TRACE, false>},
 	});
 
-	lua::_class<lua_mmap_struct> class_mmap_struct(lua_class_memory, "MMAP_STRUCT", {
+	lua::_class<lua_mmap_struct> LUA_class_mmap_struct(lua_class_memory, "MMAP_STRUCT", {
 		{"new", &lua_mmap_struct::create},
 	}, {
 		{"__index", &lua_mmap_struct::index},

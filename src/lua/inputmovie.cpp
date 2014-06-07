@@ -622,7 +622,7 @@ namespace
 			return *core.mlogic->get_mfile().input;
 	}
 
-	lua::_class<lua_inputmovie> class_inputmovie(lua_class_movie, "INPUTMOVIE", {}, {
+	lua::_class<lua_inputmovie> LUA_class_inputmovie(lua_class_movie, "INPUTMOVIE", {}, {
 			{"copy_movie", &lua_inputmovie::copy_movie},
 			{"get_frame", &lua_inputmovie::get_frame},
 			{"set_frame", &lua_inputmovie::set_frame},
@@ -639,7 +639,7 @@ namespace
 			{"serialize", &lua_inputmovie::serialize},
 	}, &lua_inputmovie::print);
 
-	lua::_class<lua_inputframe> class_inputframe(lua_class_movie, "INPUTFRAME", {}, {
+	lua::_class<lua_inputframe> LUA_class_inputframe(lua_class_movie, "INPUTFRAME", {}, {
 			{"get_button", &lua_inputframe::get_button},
 			{"get_axis", &lua_inputframe::get_axis},
 			{"set_axis", &lua_inputframe::set_axis},
@@ -649,7 +649,7 @@ namespace
 			{"get_stride", &lua_inputframe::get_stride},
 	}, &lua_inputframe::print);
 
-	lua::functions inputmovie_fns(lua_func_misc, "movie", {
+	lua::functions LUA_inputmovie_fns(lua_func_misc, "movie", {
 		{"current_first_subframe", current_first_subframe},
 		{"pollcounter", pollcounter},
 		{"copy_movie", copy_movie},

@@ -104,7 +104,6 @@ moviefile::brief_info::brief_info(const std::string& filename)
 
 moviefile::moviefile() throw(std::bad_alloc)
 {
-	static port_type_set dummy_types;
 	force_corrupt = false;
 	gametype = NULL;
 	input = NULL;
@@ -122,7 +121,6 @@ moviefile::moviefile() throw(std::bad_alloc)
 moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_settings, uint64_t rtc_sec,
 	uint64_t rtc_subsec)
 {
-	static port_type_set dummy_types;
 	force_corrupt = false;
 	gametype = &rom.rtype->combine_region(*rom.region);
 	coreversion = rom.rtype->get_core_identifier();
@@ -346,8 +344,8 @@ const std::string& moviefile::current_branch()
 	for(auto& i : branches)
 		if(&i.second == input)
 			return i.first;
-	static std::string tmp;
-	return tmp;
+	static std::string blank_string;
+	return blank_string;
 }
 
 moviefile::branch_extractor::~branch_extractor()

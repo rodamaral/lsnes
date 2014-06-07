@@ -45,7 +45,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions lua_subtitles(lua_func_misc, "subtitle", {
+	lua::functions LUA_lua_subtitles(lua_func_misc, "subtitle", {
 		{"byindex", sub_byindex},
 		{"get", sub_get},
 		{"set", sub_set},

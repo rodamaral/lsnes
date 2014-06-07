@@ -43,7 +43,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions pixel_fns(lua_func_misc, "gui", {
+	lua::functions LUA_pixel_fns(lua_func_misc, "gui", {
 		{"pixel", pixel},
 	});
 }

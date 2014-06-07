@@ -113,7 +113,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions disasm_fns(lua_func_misc, "memory", {
+	lua::functions LUA_disasm_fns(lua_func_misc, "memory", {
 		{"disassemble", disassemble},
 		{"getregister", getregister},
 		{"getregisters", getregisters},

@@ -11,8 +11,8 @@
 
 namespace
 {
-	globalwrap<std::map<std::string, dumper_factory_base*>> dumpers;
-	globalwrap<std::set<dumper_factory_base::notifier*>> notifiers;
+	globalwrap<std::map<std::string, dumper_factory_base*>> S_dumpers;
+	globalwrap<std::set<dumper_factory_base::notifier*>> S_notifiers;
 }
 
 master_dumper::gameinfo::gameinfo() throw(std::bad_alloc)
@@ -113,14 +113,14 @@ const std::string& dumper_factory_base::id() throw()
 
 dumper_factory_base::~dumper_factory_base()
 {
-	dumpers().erase(d_id);
+	S_dumpers().erase(d_id);
 	run_notify();
 }
 
 std::set<dumper_factory_base*> dumper_factory_base::get_dumper_set() throw(std::bad_alloc)
 {
 	std::set<dumper_factory_base*> d;
-	for(auto i : dumpers())
+	for(auto i : S_dumpers())
 		d.insert(i.second);
 	return d;
 }
@@ -128,7 +128,7 @@ std::set<dumper_factory_base*> dumper_factory_base::get_dumper_set() throw(std::
 dumper_factory_base::dumper_factory_base(const std::string& id) throw(std::bad_alloc)
 {
 	d_id = id;
-	dumpers()[d_id] = this;
+	S_dumpers()[d_id] = this;
 }
 
 void dumper_factory_base::ctor_notify()
@@ -138,17 +138,17 @@ void dumper_factory_base::ctor_notify()
 
 void dumper_factory_base::add_notifier(dumper_factory_base::notifier& n)
 {
-	notifiers().insert(&n);
+	S_notifiers().insert(&n);
 }
 
 void dumper_factory_base::drop_notifier(dumper_factory_base::notifier& n)
 {
-	notifiers().erase(&n);
+	S_notifiers().erase(&n);
 }
 
 void dumper_factory_base::run_notify()
 {
-	for(auto i : notifiers())
+	for(auto i : S_notifiers())
 		i->dumpers_updated();
 }
 

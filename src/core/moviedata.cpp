@@ -30,10 +30,10 @@ void update_movie_state();
 
 namespace
 {
-	settingvar::supervariable<settingvar::model_int<0, 9>> savecompression(lsnes_setgrp, "savecompression",
+	settingvar::supervariable<settingvar::model_int<0, 9>> SET_savecompression(lsnes_setgrp, "savecompression",
 		"Movie‣Saving‣Compression",  7);
-	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> readonly_load_preserves(lsnes_setgrp,
-		"preserve_on_readonly_load", "Movie‣Loading‣Preserve on readonly load", true);
+	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> SET_readonly_load_preserves(
+		lsnes_setgrp, "preserve_on_readonly_load", "Movie‣Loading‣Preserve on readonly load", true);
 	threads::lock mprefix_lock;
 	std::string mprefix;
 	bool mprefix_valid;
@@ -47,7 +47,7 @@ namespace
 			return mprefix + "-";
 	}
 
-	command::fnptr<const std::string&> dump_coresave(lsnes_cmds, "dump-coresave", "Dump bsnes core state",
+	command::fnptr<const std::string&> CMD_dump_coresave(lsnes_cmds, "dump-coresave", "Dump bsnes core state",
 		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
 		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {
 			auto x = our_rom.save_core_state();
@@ -240,7 +240,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 			target.authors = prj->authors;
 		}
 		target.active_macros = core.controls->get_macro_frames();
-		target.save(filename2, savecompression(*core.settings), binary > 0,
+		target.save(filename2, SET_savecompression(*core.settings), binary > 0,
 			core.mlogic->get_rrdata());
 		uint64_t took = framerate_regulator::get_utime() - origtime;
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
@@ -283,7 +283,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 			target.authors = prj->authors;
 		}
 		target.active_macros.clear();
-		target.save(filename2, savecompression(*core.settings), binary > 0,
+		target.save(filename2, SET_savecompression(*core.settings), binary > 0,
 			core.mlogic->get_rrdata());
 		uint64_t took = framerate_regulator::get_utime() - origtime;
 		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
@@ -304,8 +304,6 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 		p->flush();
 	}
 }
-
-extern time_t random_seed_value;
 
 namespace
 {
@@ -409,7 +407,7 @@ namespace
 	void handle_load_core(moviefile& _movie, port_type_set& portset, bool will_load_state)
 	{
 		auto& core = CORE();
-		random_seed_value = _movie.movie_rtc_second;
+		core.random_seed_value = _movie.movie_rtc_second;
 		if(will_load_state) {
 			//If settings possibly change, reload the ROM.
 			if(!*core.mlogic || core.mlogic->get_mfile().projectid != _movie.projectid)
@@ -667,7 +665,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	warn_roms(_movie, our_rom, will_load_state);
 
 	//In certain conditions, trun LOAD_STATE_CURRENT into LOAD_STATE_PRESERVE.
-	if(lmode == LOAD_STATE_CURRENT && current_mode && readonly_load_preserves(*core.settings))
+	if(lmode == LOAD_STATE_CURRENT && current_mode && SET_readonly_load_preserves(*core.settings))
 		lmode = LOAD_STATE_PRESERVE;
 	//If movie file changes, turn LOAD_STATE_CURRENT into LOAD_STATE_RO
 	if(lmode == LOAD_STATE_CURRENT && core.mlogic->get_mfile().projectid != _movie.projectid)

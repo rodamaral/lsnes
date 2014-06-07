@@ -187,7 +187,9 @@ size_t lua_address::overcommit()
 	return 0;
 }
 
-lua::_class<lua_address> class_address(lua_class_memory, "ADDRESS", {
+namespace
+{
+lua::_class<lua_address> LUA_class_address(lua_class_memory, "ADDRESS", {
 	{"new", lua_address::create},
 }, {
 	{"addr", &lua_address::l_get},
@@ -220,3 +222,4 @@ lua::_class<lua_address> class_address(lua_class_memory, "ADDRESS", {
 	{"ifloat", &lua_address::rw<float, true>},
 	{"idouble", &lua_address::rw<double, true>},
 }, &lua_address::print);
+}

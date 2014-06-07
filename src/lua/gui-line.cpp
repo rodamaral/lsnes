@@ -104,7 +104,7 @@ nodraw2:
 		return 0;
 	}
 
-	lua::functions line_fns(lua_func_misc, "gui", {
+	lua::functions LUA_line_fns(lua_func_misc, "gui", {
 		{"line", line},
 	});
 }

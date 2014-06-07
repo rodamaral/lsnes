@@ -89,7 +89,7 @@ namespace
 			auto& core = CORE();
 			core.lua2->callback_keyhook(key.get_name(), key);
 		}
-	} keyhook_listener;
+	} S_keyhook_listener;
 
 	const port_controller_set* lookup_ps(unsigned port)
 	{
@@ -260,10 +260,10 @@ namespace
 			return 0;
 		if(state) {
 			core.lua2->hooked_keys.insert(x);
-			key->add_listener(keyhook_listener, true);
+			key->add_listener(S_keyhook_listener, true);
 		} else {
 			core.lua2->hooked_keys.erase(x);
-			key->remove_listener(keyhook_listener);
+			key->remove_listener(S_keyhook_listener);
 		}
 		return 0;
 	}
@@ -497,7 +497,7 @@ namespace
 		return 1;
 	}
 
-	lua::functions input_fns(lua_func_misc, "input", {
+	lua::functions LUA_input_fns(lua_func_misc, "input", {
 		{"set", set},
 		{"set2", set2},
 		{"get", get},

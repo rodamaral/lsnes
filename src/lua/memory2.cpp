@@ -124,7 +124,7 @@ namespace
 		}
 	};
 
-	lua::_class<lua_vma> class_vma(lua_class_memory, "VMA", {}, {
+	lua::_class<lua_vma> LUA_class_vma(lua_class_memory, "VMA", {}, {
 			{"info", &lua_vma::info},
 			{"read", &lua_vma::scattergather<false, false>},
 			{"sread", &lua_vma::scattergather<false, true>},
@@ -168,7 +168,7 @@ namespace
 			{"unregisterexec", &lua_vma::registerX<debug_context::DEBUG_EXEC, false>},
 	}, &lua_vma::print);
 
-	lua::_class<lua_vma_list> class_vmalist(lua_class_memory, "VMALIST", {
+	lua::_class<lua_vma_list> LUA_class_vmalist(lua_class_memory, "VMALIST", {
 		{"new", lua_vma_list::create},
 	}, {
 		{"__index", &lua_vma_list::index},

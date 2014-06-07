@@ -76,7 +76,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions rectangle_fns(lua_func_misc, "gui", {
+	lua::functions LUA_rectangle_fns(lua_func_misc, "gui", {
 		{"rectangle", rectangle},
 		{"solidrectangle", srectangle},
 	});

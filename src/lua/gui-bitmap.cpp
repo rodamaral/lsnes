@@ -62,7 +62,7 @@ std::vector<char> lua_bitmap::save_png(const lua_palette& pal) const
 
 namespace
 {
-	const char* base64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	const char* CONST_base64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 	struct render_object_bitmap : public framebuffer::object
 	{
@@ -607,10 +607,10 @@ namespace
 				uint8_t c2 = (mem >> 12) & 0x3F;
 				uint8_t c3 = (mem >> 6) & 0x3F;
 				uint8_t c4 = mem & 0x3F;
-				x << base64chars[c1];
-				x << base64chars[c2];
-				x << base64chars[c3];
-				x << base64chars[c4];
+				x << CONST_base64chars[c1];
+				x << CONST_base64chars[c2];
+				x << CONST_base64chars[c3];
+				x << CONST_base64chars[c4];
 				mem = 0;
 				pos = 0;
 			}
@@ -619,16 +619,16 @@ namespace
 			uint8_t c1 = (mem >> 10) & 0x3F;
 			uint8_t c2 = (mem >> 4) & 0x3F;
 			uint8_t c3 = (mem << 2) & 0x3F;
-			x << base64chars[c1];
-			x << base64chars[c2];
-			x << base64chars[c3];
+			x << CONST_base64chars[c1];
+			x << CONST_base64chars[c2];
+			x << CONST_base64chars[c3];
 			x << "=";
 		}
 		if(pos == 1) {
 			uint8_t c1 = (mem >> 2) & 0x3F;
 			uint8_t c2 = (mem << 4) & 0x3F;
-			x << base64chars[c1];
-			x << base64chars[c2];
+			x << CONST_base64chars[c1];
+			x << CONST_base64chars[c2];
 			x << "==";
 		}
 		return x.str();
@@ -734,14 +734,14 @@ namespace
 			return framebuffer::color(rgb | ((uint32_t)(256 - a) << 24));
 	}
 
-	lua::_class<lua_loaded_bitmap> class_loaded_bitmap(lua_class_gui, "IMAGELOADER", {
+	lua::_class<lua_loaded_bitmap> LUA_class_loaded_bitmap(lua_class_gui, "IMAGELOADER", {
 		{"load", lua_loaded_bitmap::load<false>},
 		{"load_str", lua_loaded_bitmap::load_str<false>},
 		{"load_png", lua_loaded_bitmap::load<true>},
 		{"load_png_str", lua_loaded_bitmap::load_str<true>},
 	});
 
-	lua::_class<lua_palette> class_palette(lua_class_gui, "PALETTE", {
+	lua::_class<lua_palette> LUA_class_palette(lua_class_gui, "PALETTE", {
 		{"new", lua_palette::create},
 		{"load", lua_palette::load},
 		{"load_str", lua_palette::load_str},
@@ -752,7 +752,7 @@ namespace
 		{"adjust_transparency", &lua_palette::adjust_transparency},
 	}, &lua_palette::print);
 
-	lua::_class<lua_bitmap> class_bitmap(lua_class_gui, "BITMAP", {
+	lua::_class<lua_bitmap> LUA_class_bitmap(lua_class_gui, "BITMAP", {
 		{"new", lua_bitmap::create},
 	}, {
 		{"draw", &lua_bitmap::draw<false, false>},
@@ -772,7 +772,7 @@ namespace
 		{"save_png", &lua_bitmap::save_png},
 	}, &lua_bitmap::print);
 
-	lua::_class<lua_dbitmap> class_dbitmap(lua_class_gui, "DBITMAP", {
+	lua::_class<lua_dbitmap> LUA_class_dbitmap(lua_class_gui, "DBITMAP", {
 		{"new", lua_dbitmap::create},
 	}, {
 		{"draw", &lua_dbitmap::draw<false, false>},

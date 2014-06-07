@@ -133,7 +133,7 @@ namespace
 		return 1;
 	}
 
-	lua::functions movie_fns(lua_func_misc, "movie", {
+	lua::functions LUA_movie_fns(lua_func_misc, "movie", {
 		{"currentframe", currentframe},
 		{"lagcount", lagcounter},
 		{"framecount", framecount},

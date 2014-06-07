@@ -72,7 +72,7 @@ namespace
 		std::string spec;
 	};
 
-	lua::_class<lua_iconv> class_iconv(lua_class_pure, "ICONV", {
+	lua::_class<lua_iconv> LUA_class_iconv(lua_class_pure, "ICONV", {
 		{"new", lua_iconv::create},
 	}, {
 		{"__call", &lua_iconv::call},
@@ -196,7 +196,7 @@ exit:
 		return 1;
 	}
 
-	lua::functions iconv_fns(lua_func_bit, "", {
+	lua::functions LUA_iconv_fns(lua_func_bit, "", {
 		{"_lsnes_string_byteU", _lsnes_string_byteU},
 		{"_lsnes_string_charU", _lsnes_string_charU},
 	});

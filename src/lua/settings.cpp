@@ -38,7 +38,7 @@ namespace
 		}
 	}
 
-	lua::functions lua_settings(lua_func_misc, "settings", {
+	lua::functions LUA_settings_fns(lua_func_misc, "settings", {
 		{"set", ss_set},
 		{"get", ss_get},
 	});

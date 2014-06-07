@@ -95,7 +95,7 @@ out:
 		return 0;
 	}
 
-	lua::functions actions_fns(lua_func_misc, "memory", {
+	lua::functions LUA_actions_fns(lua_func_misc, "memory", {
 		{"action", action},
 	});
 }

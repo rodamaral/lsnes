@@ -54,7 +54,7 @@ namespace
 		return 1;
 	}
 
-	lua::functions movie_fns(lua_func_bit, "", {
+	lua::functions LUA_string_fns(lua_func_bit, "", {
 		{"_lsnes_string_regex", l_regex},
 		{"_lsnes_string_hex", l_hex},
 		{"_lsnes_string_lpad", l_pad<false>},

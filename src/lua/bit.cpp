@@ -161,13 +161,13 @@ namespace
 		return 1;
 	}
 
-	int poptable[] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
+	const int CONST_poptable[] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
 
 	int popcount(uint64_t x)
 	{
 		int c = 0;
 		for(unsigned i = 0; i < 16; i++) {
-			c += poptable[x & 15];
+			c += CONST_poptable[x & 15];
 			x >>= 4;
 		}
 		return c;
@@ -321,7 +321,7 @@ namespace
 		return 2;
 	}
 
-	lua::functions bitops(lua_func_bit, "bit", {
+	lua::functions LUA_bitops_fn(lua_func_bit, "bit", {
 		{"flagdecode", flagdecode_core<false>},
 		{"rflagdecode", flagdecode_core<true>},
 		{"none", fold<combine_none, BITWISE_MASK>},

@@ -93,7 +93,7 @@ namespace
 		std::string file;
 	};
 
-	lua::_class<lua_zip_writer> class_zipwriter(lua_class_fileio, "ZIPWRITER", {
+	lua::_class<lua_zip_writer> LUA_class_zipwriter(lua_class_fileio, "ZIPWRITER", {
 		{"new", lua_zip_writer::create},
 	}, {
 		{"commit", &lua_zip_writer::commit},
@@ -133,7 +133,7 @@ namespace
 		return 1;
 	}
 
-	lua::functions zip_fns(lua_func_zip, "zip", {
+	lua::functions LUA_zip_fns(lua_func_zip, "zip", {
 		{"enumerate", zip_enumerate},
 	});
 }

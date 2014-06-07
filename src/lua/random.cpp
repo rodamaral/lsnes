@@ -109,7 +109,7 @@ namespace
 		return 1;
 	}
 
-	lua::functions lua_random(lua_func_bit, "random", {
+	lua::functions LUA_random_fns(lua_func_bit, "random", {
 		{"boolean", rand_boolean},
 		{"integer", rand_integer},
 		{"float", rand_float},

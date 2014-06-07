@@ -18,26 +18,26 @@ bool graphics_driver_is_dummy();
 
 namespace
 {
-	command::fnptr<> tturbo(lsnes_cmds, "toggle-turbo", "Toggle turbo",
+	command::fnptr<> CMD_tturbo(lsnes_cmds, "toggle-turbo", "Toggle turbo",
 		"Syntax: toggle-turbo\nToggle turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().framerate->turboed = !CORE().framerate->turboed;
 		});
 
-	command::fnptr<> pturbo(lsnes_cmds, "+turbo", "Activate turbo",
+	command::fnptr<> CMD_pturbo(lsnes_cmds, "+turbo", "Activate turbo",
 		"Syntax: +turbo\nActivate turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().framerate->turboed = true;
 		});
 
-	command::fnptr<> nturbo(lsnes_cmds, "-turbo", "Deactivate turbo",
+	command::fnptr<> CMD_nturbo(lsnes_cmds, "-turbo", "Deactivate turbo",
 		"Syntax: -turbo\nDeactivate turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			CORE().framerate->turboed = false;
 		});
 
-	keyboard::invbind_info turboh(lsnes_invbinds, "+turbo", "Speed‣Turbo hold");
-	keyboard::invbind_info turbot(lsnes_invbinds, "toggle-turbo", "Speed‣Turbo toggle");
+	keyboard::invbind_info IBIND_turboh(lsnes_invbinds, "+turbo", "Speed‣Turbo hold");
+	keyboard::invbind_info IBIND_turbot(lsnes_invbinds, "toggle-turbo", "Speed‣Turbo toggle");
 }
 
 

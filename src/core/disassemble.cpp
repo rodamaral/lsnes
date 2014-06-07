@@ -21,7 +21,7 @@ namespace
 		std::string disasm;
 	};
 
-	command::fnptr<const std::string&> disassemble(lsnes_cmds, "disassemble", "Disassemble code",
+	command::fnptr<const std::string&> CMD_disassemble(lsnes_cmds, "disassemble", "Disassemble code",
 		"Syntax: disassemble <kind> <addr> [<count>] [to <filename>]\nDisassemble code\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 		auto& core = CORE();

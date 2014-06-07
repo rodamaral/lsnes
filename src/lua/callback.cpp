@@ -38,13 +38,13 @@ namespace
 		int special;
 	};
 
-	lua::_class<lua_callbacks_list> class_callbacks_list(lua_class_callback, "CALLBACKS_LIST", {
+	lua::_class<lua_callbacks_list> LUA_class_callbacks_list(lua_class_callback, "CALLBACKS_LIST", {
 		{"new", lua_callbacks_list::create},
 	}, {
 		{"__index", &lua_callbacks_list::index},
 		{"__newindex", &lua_callbacks_list::newindex},
 	});
-	lua::_class<lua_callback_obj> class_callback_obj(lua_class_callback, "CALLBACK_OBJ", {}, {
+	lua::_class<lua_callback_obj> LUA_class_callback_obj(lua_class_callback, "CALLBACK_OBJ", {}, {
 		{"register", &lua_callback_obj::_register},
 		{"unregister", &lua_callback_obj::_unregister},
 		{"__call", &lua_callback_obj::_call},

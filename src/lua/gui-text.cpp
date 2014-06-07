@@ -45,7 +45,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions text_fns(lua_func_misc, "gui", {
+	lua::functions LUA_text_fns(lua_func_misc, "gui", {
 		{"text", internal_gui_text<false, false>},
 		{"textH", internal_gui_text<true, false>},
 		{"textV", internal_gui_text<false, true>},

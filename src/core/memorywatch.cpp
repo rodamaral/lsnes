@@ -9,6 +9,7 @@
 #include "fonts/wrapper.hpp"
 #include "library/directory.hpp"
 #include "library/framebuffer-font2.hpp"
+#include "library/globalwrap.hpp"
 #include "library/int24.hpp"
 #include "library/mathexpr-ntype.hpp"
 #include "library/memoryspace.hpp"
@@ -29,7 +30,7 @@
 
 namespace
 {
-	std::map<std::string, std::pair<framebuffer::font2*, size_t>> fonts_in_use;
+	globalwrap<std::map<std::string, std::pair<framebuffer::font2*, size_t>>> S_fonts_in_use;
 
 	framebuffer::font2& get_builtin_font2()
 	{
@@ -43,13 +44,13 @@ namespace
 		if(filename == "")
 			return &get_builtin_font2();
 		std::string abs_filename = directory::absolute_path(filename);
-		if(fonts_in_use.count(abs_filename)) {
-			fonts_in_use[abs_filename].second++;
-			return fonts_in_use[abs_filename].first;
+		if(S_fonts_in_use().count(abs_filename)) {
+			S_fonts_in_use()[abs_filename].second++;
+			return S_fonts_in_use()[abs_filename].first;
 		}
 		framebuffer::font2* f = new framebuffer::font2(abs_filename);
 		try {
-			fonts_in_use[abs_filename] = std::make_pair(f, 1);
+			S_fonts_in_use()[abs_filename] = std::make_pair(f, 1);
 		} catch(...) {
 			delete f;
 			throw;
@@ -63,15 +64,15 @@ namespace
 			return;
 		//Find font using this.
 		std::string filename;
-		for(auto& i : fonts_in_use)
+		for(auto& i : S_fonts_in_use())
 			if(i.second.first == font)
 				filename = i.first;
 		if(filename == "")
 			return;
-		fonts_in_use[filename].second--;
-		if(!fonts_in_use[filename].second) {
-			delete fonts_in_use[filename].first;
-			fonts_in_use.erase(filename);
+		S_fonts_in_use()[filename].second--;
+		if(!S_fonts_in_use()[filename].second) {
+			delete S_fonts_in_use()[filename].first;
+			S_fonts_in_use().erase(filename);
 		}
 	}
 

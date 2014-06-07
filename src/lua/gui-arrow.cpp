@@ -108,7 +108,7 @@ namespace
 		return 0;
 	}
 
-	lua::functions arrow_fns(lua_func_misc, "gui", {
+	lua::functions LUA_arrow_fns(lua_func_misc, "gui", {
 		{"arrow", arrow},
 	});
 }

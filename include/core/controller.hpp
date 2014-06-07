@@ -12,6 +12,7 @@ struct port_type;
 struct emu_framebuffer;
 struct emulator_dispatch;
 struct lua_state;
+struct core_core;
 namespace keyboard { class invbind; }
 namespace keyboard { class ctrlrkey; }
 namespace keyboard { class mapper; }
@@ -121,6 +122,7 @@ private:
 	std::map<std::string, controller_bind> all_buttons;
 	std::map<std::string, active_bind> active_buttons;
 	std::map<std::string, keyboard::ctrlrkey*> added_keys;
+	std::set<core_core*> cores_done;
 	controller_state& controls;
 	keyboard::mapper& mapper;
 	keyboard::keyboard& keyboard;
