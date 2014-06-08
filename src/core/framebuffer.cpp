@@ -16,8 +16,6 @@
 #include "library/triplebuffer.hpp"
 #include "lua/lua.hpp"
 
-framebuffer::raw screen_corrupt;
-
 namespace
 {
 	struct render_list_entry
@@ -28,7 +26,7 @@ namespace
 		uint32_t scale;
 	};
 
-	struct render_list_entry rl_corrupt[] = {
+	const struct render_list_entry rl_corrupt[] = {
 		{'S', 88, 56, 7},
 		{'Y', 144, 56, 7},
 		{'S', 200, 56, 7},
@@ -50,7 +48,7 @@ namespace
 		{0, 0, 0, 0}
 	};
 
-	void draw_special_screen(uint32_t* target, struct render_list_entry* rlist)
+	void draw_special_screen(uint32_t* target, const struct render_list_entry* rlist)
 	{
 		while(rlist->scale) {
 			auto g = main_font.get_glyph(rlist->codepoint);
