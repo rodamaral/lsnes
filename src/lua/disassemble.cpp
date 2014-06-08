@@ -48,11 +48,12 @@ namespace
 
 	int getregister(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		std::string r;
 
 		P(r);
 
-		const interface_device_reg* regs = our_rom.rtype->get_registers();
+		const interface_device_reg* regs = core.rom->rtype->get_registers();
 		if(!regs) {
 			L.pushnil();
 			return 1;
@@ -72,7 +73,8 @@ namespace
 
 	int getregisters(lua::state& L, lua::parameters& P)
 	{
-		const interface_device_reg* regs = our_rom.rtype->get_registers();
+		auto& core = CORE();
+		const interface_device_reg* regs = core.rom->rtype->get_registers();
 		if(!regs) {
 			L.pushnil();
 			return 1;
@@ -91,11 +93,12 @@ namespace
 
 	int setregister(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		std::string r;
 
 		P(r);
 
-		const interface_device_reg* regs = our_rom.rtype->get_registers();
+		const interface_device_reg* regs = core.rom->rtype->get_registers();
 		if(!regs) {
 			return 0;
 		}

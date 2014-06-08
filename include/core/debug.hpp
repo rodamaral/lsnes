@@ -7,6 +7,7 @@
 #include "library/dispatch.hpp"
 
 class emulator_dispatch;
+class loaded_rom;
 
 /**
  * Debugging context.
@@ -14,7 +15,7 @@ class emulator_dispatch;
 class debug_context
 {
 public:
-	debug_context(emulator_dispatch& _dispatch);
+	debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom);
 /**
  * Type of event.
  */
@@ -157,6 +158,7 @@ private:
 	uint64_t xmask = 1;
 	std::function<void()> tracelog_change_cb;
 	emulator_dispatch& edispatch;
+	loaded_rom& rom;
 	struct dispatch::target<> corechange;
 	bool corechange_r = false;
 	bool requesting_break = false;

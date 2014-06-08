@@ -40,7 +40,7 @@ void handle_wx_mouse(emulator_instance& inst, wxMouseEvent& e)
 	auto s = mkeys.lookup(inst);
 	if(!s) return;
 	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled,
-		(our_rom.rtype) ? our_rom.rtype->get_PAR() : 1.0);
+		(inst.rom->rtype) ? inst.rom->rtype->get_PAR() : 1.0);
 	inst.iqueue->queue(keypress_info(keyboard::modifier_set(), s->mouse_x, e.GetX() /
 		sfactors.first));
 	inst.iqueue->queue(keypress_info(keyboard::modifier_set(), s->mouse_y, e.GetY() /

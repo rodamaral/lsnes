@@ -88,7 +88,8 @@ emulator_instance::emulator_instance()
 	D.init(controls, *project, *mlogic, *buttons, *dispatch);
 	D.init(keyboard);
 	D.init(mapper, *keyboard, *command);
-	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2);
+	D.init(rom);
+	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2, *rom);
 	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch, *lua2);
 	D.init(mteditor, *mlogic, *controls, *dispatch);
 	D.init(status_A);
@@ -97,9 +98,9 @@ emulator_instance::emulator_instance()
 	D.init(status, *status_A, *status_B, *status_C);
 	D.init(abindmanager, *mapper, *command);
 	D.init(nrrdata);
-	D.init(cmapper, *memory, *mlogic);
-	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue);
-	D.init(dbg, *dispatch);
+	D.init(cmapper, *memory, *mlogic, *rom);
+	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue, *rom);
+	D.init(dbg, *dispatch, *rom);
 	D.init(framerate);
 	D.init(mdumper, *lua2);
 

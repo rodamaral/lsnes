@@ -16,7 +16,7 @@ bool load_null_rom()
 		return false;
 	}
 	loaded_rom newrom;
-	our_rom = newrom;
+	*core.rom = newrom;
 	if(*core.mlogic)
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 			core.mlogic->get_mfile().romimg_sha256[i] = "";
@@ -31,20 +31,21 @@ namespace
 {
 	void load_new_rom_inner(const romload_request& req)
 	{
+		auto& core = CORE();
 		if(req.packfile != "") {
 			messages << "Loading ROM " << req.packfile << std::endl;
 			loaded_rom newrom(req.packfile);
-			our_rom = newrom;
+			*core.rom = newrom;
 			return;
 		} else if(req.singlefile != "") {
 			messages << "Loading ROM " << req.singlefile << std::endl;
 			loaded_rom newrom(req.singlefile, req.core, req.system, req.region);
-			our_rom = newrom;
+			*core.rom = newrom;
 			return;
 		} else {
 			messages << "Loading multi-file ROM."  << std::endl;
 			loaded_rom newrom(req.files, req.core, req.system, req.region);
-			our_rom = newrom;
+			*core.rom = newrom;
 			return;
 		}
 	}
@@ -99,16 +100,16 @@ bool _load_new_rom(const romload_request& req)
 		load_new_rom_inner(req);
 		if(*core.mlogic)
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				core.mlogic->get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-				core.mlogic->get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
-				core.mlogic->get_mfile().namehint[i] = our_rom.romimg[i].namehint;
+				core.mlogic->get_mfile().romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
+				core.mlogic->get_mfile().romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
+				core.mlogic->get_mfile().namehint[i] = core.rom->romimg[i].namehint;
 			}
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Can't load ROM: ") + e.what());
 		messages << "Can't reload ROM: " << e.what() << std::endl;
 		return false;
 	}
-	messages << "Using core: " << our_rom.rtype->get_core_identifier() << std::endl;
+	messages << "Using core: " << core.rom->rtype->get_core_identifier() << std::endl;
 	core.dispatch->core_change();
 	return true;
 }
@@ -116,22 +117,23 @@ bool _load_new_rom(const romload_request& req)
 
 bool reload_active_rom()
 {
+	auto& core = CORE();
 	romload_request req;
-	if(our_rom.rtype->isnull()) {
+	if(core.rom->rtype->isnull()) {
 		platform::error_message("Can't reload ROM: No existing ROM");
 		messages << "No ROM loaded" << std::endl;
 		return false;
 	}
-	if(our_rom.load_filename != "") {
-		req.packfile = our_rom.load_filename;
+	if(core.rom->load_filename != "") {
+		req.packfile = core.rom->load_filename;
 		return _load_new_rom(req);
 	}
 	//This is composite ROM.
-	req.core = our_rom.rtype->get_core_identifier();
-	req.system = our_rom.rtype->get_iname();
-	req.region = our_rom.orig_region->get_iname();
+	req.core = core.rom->rtype->get_core_identifier();
+	req.system = core.rom->rtype->get_iname();
+	req.region = core.rom->orig_region->get_iname();
 	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++)
-		req.files[i] = our_rom.romimg[i].filename;
+		req.files[i] = core.rom->romimg[i].filename;
 	return _load_new_rom(req);
 }
 

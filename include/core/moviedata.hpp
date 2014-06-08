@@ -29,7 +29,6 @@
 #define SAVE_STATE 0
 #define SAVE_MOVIE 1
 
-extern struct loaded_rom our_rom;
 extern bool system_corrupt;
 
 std::string resolve_relative_path(const std::string& path);

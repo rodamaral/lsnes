@@ -1,12 +1,15 @@
 #include "core/command.hpp"
+#include "core/instance.hpp"
 #include "core/messages.hpp"
 #include "core/moviedata.hpp"
+#include "core/rom.hpp"
 
 namespace
 {
 	command::fnptr<const std::string&> CMD_action(lsnes_cmds, "action", "Execute core action",
 		"Syntax: action <name> [<params>...]\nExecutes core action.\n",
 		[](const std::string& _args) throw(std::bad_alloc, std::runtime_error) {
+			auto& core = CORE();
 			if(_args == "") {
 				messages << "Action name required." << std::endl;
 				return;
@@ -15,7 +18,7 @@ namespace
 			token_iterator<char> itre;
 			std::string sym = *itr++;
 			const interface_action* act = NULL;
-			for(auto i : our_rom.rtype->get_actions())
+			for(auto i : core.rom->rtype->get_actions())
 				if(i->get_symbol() == sym) {
 					act = i;
 					break;
@@ -24,7 +27,7 @@ namespace
 				messages << "No such action." << std::endl;
 				return;
 			}
-			if(!(our_rom.rtype->action_flags(act->id) & 1)) {
+			if(!(core.rom->rtype->action_flags(act->id) & 1)) {
 				messages << "Action not enabled." << std::endl;
 				return;
 			}
@@ -121,6 +124,6 @@ out:
 				messages << "Excess parameters for action." << std::endl;
 				return;
 			}
-			our_rom.rtype->execute_action(act->id, params);
+			core.rom->rtype->execute_action(act->id, params);
 		});
 }

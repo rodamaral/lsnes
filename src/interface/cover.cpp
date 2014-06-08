@@ -1,3 +1,4 @@
+#include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/memorymanip.hpp"
 #include "interface/cover.hpp"
@@ -102,7 +103,8 @@ void cover_next_position(const std::string& str, unsigned& x, unsigned& y)
 
 std::vector<std::string> cover_information()
 {
+	auto& core = CORE();
 	std::vector<std::string> ret;
-	ret.push_back("System: " + our_rom.rtype->get_hname() + " (" + our_rom.region->get_hname() + ")");
+	ret.push_back("System: " + core.rom->rtype->get_hname() + " (" + core.rom->region->get_hname() + ")");
 	return ret;
 }

@@ -50,7 +50,7 @@ void tracelog_menu::on_select(wxCommandEvent& e)
 
 void tracelog_menu::update()
 {
-	auto _items = our_rom.rtype->get_trace_cpus();
+	auto _items = inst.rom->rtype->get_trace_cpus();
 	for(auto i : items)
 		Delete(i);
 	items.clear();

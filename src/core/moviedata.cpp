@@ -23,7 +23,6 @@
 #include <iomanip>
 #include <fstream>
 
-struct loaded_rom our_rom;
 bool system_corrupt;
 std::string last_save;
 void update_movie_state();
@@ -50,7 +49,8 @@ namespace
 	command::fnptr<const std::string&> CMD_dump_coresave(lsnes_cmds, "dump-coresave", "Dump bsnes core state",
 		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
 		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {
-			auto x = our_rom.save_core_state();
+			auto& core = CORE();
+			auto x = core.rom->save_core_state();
 			x.resize(x.size() - 32);
 			std::ofstream y(name.c_str(), std::ios::out | std::ios::binary);
 			y.write(&x[0], x.size());
@@ -116,11 +116,11 @@ namespace
 		}
 		int get_pflag()
 		{
-			return our_rom.rtype->get_pflag();
+			return CORE().rom->rtype->get_pflag();
 		}
 		void set_pflag(int flag)
 		{
-			our_rom.rtype->set_pflag(flag);
+			CORE().rom->rtype->set_pflag(flag);
 		}
 	} lsnes_pflag_handler;
 }
@@ -223,17 +223,17 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 	try {
 		uint64_t origtime = framerate_regulator::get_utime();
 		target.is_savestate = true;
-		target.sram = our_rom.rtype->save_sram();
+		target.sram = core.rom->rtype->save_sram();
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			target.romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-			target.romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
-			target.namehint[i] = our_rom.romimg[i].namehint;
+			target.romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
+			target.romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
+			target.namehint[i] = core.rom->romimg[i].namehint;
 		}
-		target.savestate = our_rom.save_core_state();
+		target.savestate = core.rom->save_core_state();
 		core.fbuf->get_framebuffer().save(target.screenshot);
 		core.mlogic->get_movie().save_state(target.projectid, target.save_frame,
 			target.lagged_frames, target.pollcounters);
-		target.poll_flag = our_rom.rtype->get_pflag();
+		target.poll_flag = core.rom->rtype->get_pflag();
 		auto prj = core.project->get();
 		if(prj) {
 			target.gamename = prj->gamename;
@@ -411,28 +411,28 @@ namespace
 		if(will_load_state) {
 			//If settings possibly change, reload the ROM.
 			if(!*core.mlogic || core.mlogic->get_mfile().projectid != _movie.projectid)
-				our_rom.load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
+				core.rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 			//Load the savestate and movie state.
 			//Set the core ports in order to avoid port state being reinitialized when loading.
 			core.controls->set_ports(portset);
-			our_rom.load_core_state(_movie.savestate);
-			our_rom.rtype->set_pflag(_movie.poll_flag);
+			core.rom->load_core_state(_movie.savestate);
+			core.rom->rtype->set_pflag(_movie.poll_flag);
 			core.controls->set_macro_frames(_movie.active_macros);
 		} else {
 			//Reload the ROM in order to rewind to the beginning.
-			our_rom.load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
+			core.rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 			//Load the SRAM and volatile RAM. Or anchor savestate if any.
 			core.controls->set_ports(portset);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			if(!_movie.anchor_savestate.empty()) {
-				our_rom.load_core_state(_movie.anchor_savestate);
+				core.rom->load_core_state(_movie.anchor_savestate);
 			} else {
-				our_rom.rtype->load_sram(_movie.movie_sram);
-				std::list<core_vma_info> vmas = our_rom.rtype->vma_list();
+				core.rom->rtype->load_sram(_movie.movie_sram);
+				std::list<core_vma_info> vmas = core.rom->rtype->vma_list();
 				populate_volatile_ram(_movie, vmas);
 			}	
-			our_rom.rtype->set_pflag(0);
+			core.rom->rtype->set_pflag(0);
 			core.controls->set_macro_frames(std::map<std::string, uint64_t>());
 		}
 	}
@@ -443,10 +443,10 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 	auto& core = CORE();
 	bool load_readwrite = !*core.mlogic || !core.mlogic->get_movie().readonly_mode();
 	if(*core.mlogic) {
-		port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), our_rom);
+		port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 		//If portset or gametype changes, force readwrite with new movie.
 		if(core.mlogic->get_mfile().input->get_types() != portset) load_readwrite = true;
-		if(our_rom.rtype != &core.mlogic->get_mfile().gametype->get_type()) load_readwrite = true;
+		if(core.rom->rtype != &core.mlogic->get_mfile().gametype->get_type()) load_readwrite = true;
 	}
 
 	if(!load_readwrite) {
@@ -457,20 +457,20 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 				core.mlogic->get_mfile().projectid), false);
 		core.mlogic->get_rrdata().add((*core.nrrdata)());
 
-		port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), our_rom);
+		port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 
 		try {
 			handle_load_core(core.mlogic->get_mfile(), portset, false);
-			core.mlogic->get_mfile().gametype = &our_rom.rtype->combine_region(*our_rom.region);
+			core.mlogic->get_mfile().gametype = &core.rom->rtype->combine_region(*core.rom->region);
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				core.mlogic->get_mfile().namehint[i] = our_rom.romimg[i].namehint;
-				core.mlogic->get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-				core.mlogic->get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
+				core.mlogic->get_mfile().namehint[i] = core.rom->romimg[i].namehint;
+				core.mlogic->get_mfile().romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
+				core.mlogic->get_mfile().romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
 			}
 			core.mlogic->get_mfile().is_savestate = false;
 			core.mlogic->get_mfile().host_memory.clear();
 			core.mlogic->get_movie().reset_state();
-			core.fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
+			core.fbuf->redraw_framebuffer(core.rom->rtype->draw_cover());
 			core.lua2->callback_do_rewind();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -485,14 +485,14 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		temporary_handle<moviefile> _movie;
 		_movie.get()->force_corrupt = false;
 		_movie.get()->gametype = NULL;		//Not yet known.
-		_movie.get()->coreversion = our_rom.rtype->get_core_identifier();
+		_movie.get()->coreversion = core.rom->rtype->get_core_identifier();
 		_movie.get()->projectid = get_random_hexstring(40);
 		_movie.get()->rerecords = "0";
 		_movie.get()->rerecords_mem = 0;
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			_movie.get()->namehint[i] = our_rom.romimg[i].namehint;
-			_movie.get()->romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-			_movie.get()->romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
+			_movie.get()->namehint[i] = core.rom->romimg[i].namehint;
+			_movie.get()->romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
+			_movie.get()->romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
 		}
 		_movie.get()->is_savestate = false;
 		_movie.get()->save_frame = 0;
@@ -502,7 +502,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		_movie.get()->movie_rtc_subsecond = _movie.get()->rtc_subsecond = 0;
 		_movie.get()->start_paused = false;
 		_movie.get()->lazy_project_create = true;
-		port_type_set& portset2 = construct_movie_portset(*_movie.get(), our_rom);
+		port_type_set& portset2 = construct_movie_portset(*_movie.get(), *core.rom);
 		_movie.get()->input = NULL;
 		_movie.get()->create_default_branch(portset2);
 
@@ -521,8 +521,8 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		core.lua2->callback_movie_lost("reload");
 		try {
 			handle_load_core(*_movie.get(), portset2, false);
-			_movie.get()->gametype = &our_rom.rtype->combine_region(*our_rom.region);
-			core.fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
+			_movie.get()->gametype = &core.rom->rtype->combine_region(*core.rom->region);
+			core.fbuf->redraw_framebuffer(core.rom->rtype->draw_cover());
 			core.lua2->callback_do_rewind();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -550,7 +550,7 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 	if(!*core.mlogic || !core.mlogic->get_mfile().gametype)
 		throw std::runtime_error("Can't rewind movie without existing movie");
 
-	port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), our_rom);
+	port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 
 	//Force unlazying of rrdata and count a rerecord.
 	if(core.mlogic->get_rrdata().is_lazy())
@@ -566,7 +566,7 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 		core.mlogic->get_mfile().is_savestate = false;
 		core.mlogic->get_mfile().host_memory.clear();
 		core.mlogic->get_movie().reset_state();
-		core.fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
+		core.fbuf->redraw_framebuffer(core.rom->rtype->draw_cover());
 		core.lua2->callback_do_rewind();
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -588,7 +588,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 		throw std::runtime_error("Savestate is from different movie");
 
 	bool will_load_state = _movie.is_savestate;
-	port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), our_rom);
+	port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 
 	//Construct a new movie sharing the input data.
 	temporary_handle<movie> newmovie;
@@ -635,7 +635,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 			tmp.load(_movie.screenshot);
 			core.fbuf->redraw_framebuffer(tmp);
 		} else
-			core.fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
+			core.fbuf->redraw_framebuffer(core.rom->rtype->draw_cover());
 	} catch(...) {
 	}
 	delete &_movie;
@@ -657,12 +657,12 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	//Various checks.
 	if(_movie.force_corrupt)
 		throw std::runtime_error("Movie file invalid");
-	if(&(_movie.gametype->get_type()) != our_rom.rtype)
+	if(&(_movie.gametype->get_type()) != core.rom->rtype)
 		throw std::runtime_error("ROM types of movie and loaded ROM don't match");
-	if(our_rom.orig_region && !our_rom.orig_region->compatible_with(_movie.gametype->get_region()))
+	if(core.rom->orig_region && !core.rom->orig_region->compatible_with(_movie.gametype->get_region()))
 		throw std::runtime_error("NTSC/PAL select of movie and loaded ROM don't match");
-	warn_coretype(_movie.coreversion, our_rom, will_load_state);
-	warn_roms(_movie, our_rom, will_load_state);
+	warn_coretype(_movie.coreversion, *core.rom, will_load_state);
+	warn_roms(_movie, *core.rom, will_load_state);
 
 	//In certain conditions, trun LOAD_STATE_CURRENT into LOAD_STATE_PRESERVE.
 	if(lmode == LOAD_STATE_CURRENT && current_mode && SET_readonly_load_preserves(*core.settings))
@@ -717,7 +717,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 		newmovie.get()->set_movie_data(_movie.input);
 	}
 
-	port_type_set& portset = construct_movie_portset(_movie, our_rom);
+	port_type_set& portset = construct_movie_portset(_movie, *core.rom);
 
 	temporary_handle<rrdata_set> rrd;
 	bool new_rrdata = false;
@@ -735,7 +735,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	}
 	//Negative return.
 	try {
-		our_rom.region = _movie.gametype ? &(_movie.gametype->get_region()) : NULL;
+		core.rom->region = _movie.gametype ? &(_movie.gametype->get_region()) : NULL;
 		handle_load_core(_movie, portset, will_load_state);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -779,11 +779,11 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 			tmp.load(_movie.screenshot);
 			core.fbuf->redraw_framebuffer(tmp);
 		} else
-			core.fbuf->redraw_framebuffer(our_rom.rtype->draw_cover());
+			core.fbuf->redraw_framebuffer(core.rom->rtype->draw_cover());
 	}
 
 	core.dispatch->mode_change(m.readonly_mode());
-	print_movie_info(_movie, our_rom, core.mlogic->get_rrdata());
+	print_movie_info(_movie, *core.rom, core.mlogic->get_rrdata());
 	core.dispatch->mbranch_change();
 	set_gameinfo(core.mlogic->get_mfile());
 }
@@ -828,7 +828,7 @@ void try_request_rom(const std::string& moviefile)
 		throw std::runtime_error("Invalid ROM type selected");
 	core_type* selected_core = req.cores[req.selected];
 	loaded_rom newrom(req.filename, selected_core->get_core_identifier(), selected_core->get_iname(), "");
-	our_rom = newrom;
+	*core.rom = newrom;
 	core.dispatch->core_change();
 }
 
@@ -843,9 +843,9 @@ bool do_load_state(const std::string& filename, int lmode)
 	struct moviefile* mfile = NULL;
 	bool used = false;
 	try {
-		if(our_rom.rtype->isnull())
+		if(core.rom->rtype->isnull())
 			try_request_rom(filename2);
-		mfile = new moviefile(filename2, *our_rom.rtype);
+		mfile = new moviefile(filename2, *core.rom->rtype);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -881,7 +881,7 @@ void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint6
 	core.mlogic->get_rrdata().add((*core.nrrdata)());
 	core.mlogic->get_mfile().rtc_second = secs;
 	core.mlogic->get_mfile().rtc_subsecond = ssecs;
-	our_rom.load_core_state(state, true);
+	core.rom->load_core_state(state, true);
 }
 
 rrdata::rrdata()

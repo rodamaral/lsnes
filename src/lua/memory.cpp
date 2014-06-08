@@ -644,7 +644,8 @@ namespace
 
 	int hash_state(lua::state& L, lua::parameters& P)
 	{
-		auto x = our_rom.save_core_state();
+		auto& core = CORE();
+		auto x = core.rom->save_core_state();
 		size_t offset = x.size() - 32;
 		L.pushlstring(hex::b_to((uint8_t*)&x[offset], 32));
 		return 1;

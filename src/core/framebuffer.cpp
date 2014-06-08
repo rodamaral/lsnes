@@ -98,9 +98,9 @@ namespace
 framebuffer::raw emu_framebuffer::screen_corrupt;
 
 emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
-	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2)
+	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom)
 	: buffering(buffer1, buffer2, buffer3), subtitles(_subtitles), settings(_settings), mwatch(_mwatch),
-	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2)
+	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2), rom(_rom)
 {
 	last_redraw_no_lua = false;
 }
@@ -137,7 +137,7 @@ void emu_framebuffer::init_special_screens() throw(std::bad_alloc)
 void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 {
 	uint32_t hscl, vscl;
-	auto g = our_rom.rtype->get_scale_factors(todraw.get_width(), todraw.get_height());
+	auto g = rom.rtype->get_scale_factors(todraw.get_width(), todraw.get_height());
 	hscl = g.first;
 	vscl = g.second;
 	render_info& ri = buffering.get_write();

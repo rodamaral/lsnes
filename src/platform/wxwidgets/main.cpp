@@ -549,7 +549,7 @@ bool lsnes_app::OnInit()
 	else {
 		mov = new moviefile(rom, c_settings, DEFAULT_RTC_SECOND, DEFAULT_RTC_SUBSECOND);
 	}
-	our_rom = rom;
+	*lsnes_instance.rom = rom;
 	mov->start_paused = start_unpaused ? !(rom.rtype && !rom.rtype->isnull()) : true;
 	for(auto i : c_lua)
 		lsnes_instance.lua2->add_startup_script(i);

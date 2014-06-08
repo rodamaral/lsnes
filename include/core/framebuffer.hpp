@@ -11,6 +11,7 @@ class subtitle_commentary;
 class memwatch_set;
 class emulator_dispatch;
 class lua_state;
+class loaded_rom;
 namespace settingvar
 {
 	class group;
@@ -27,7 +28,7 @@ class emu_framebuffer
 {
 public:
 	emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
-		keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2);
+		keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom);
 /**
  * The main framebuffer.
  */
@@ -102,6 +103,7 @@ private:
 	keyboard::keyboard& keyboard;
 	emulator_dispatch& edispatch;
 	lua_state& lua2;
+	loaded_rom& rom;
 };
 
 #endif

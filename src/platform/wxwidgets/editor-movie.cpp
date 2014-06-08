@@ -1456,7 +1456,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		framebuffer::raw& _fb = inst.fbuf->render_get_latest_screen();
 		framebuffer::fb<false> fb;
 		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
-		auto size = our_rom.rtype->lightgun_scale();
+		auto size = inst.rom->rtype->lightgun_scale();
 		fb.reallocate(osize.first, osize.second, false);
 		fb.copy_from(_fb, 1, 1);
 		inst.fbuf->render_get_latest_screen_end();

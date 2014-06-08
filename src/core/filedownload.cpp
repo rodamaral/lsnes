@@ -8,9 +8,9 @@
 
 namespace
 {
-	void file_download_thread_trampoline(file_download* d)
+	void file_download_thread_trampoline(file_download* d, loaded_rom* rom)
 	{
-		d->_do_async();
+		d->_do_async(*rom);
 	}
 
 	class file_download_handler : public http_request::output_handler
@@ -57,7 +57,7 @@ void file_download::cancel()
 	finished = true;
 }
 
-void file_download::do_async()
+void file_download::do_async(loaded_rom& rom)
 {
 	tempname = get_temp_file();
 	req.ihandler = NULL;
@@ -66,7 +66,7 @@ void file_download::do_async()
 	req.url = url;
 	try {
 		req.lauch_async();
-		(new threads::thread(file_download_thread_trampoline, this))->detach();
+		(new threads::thread(file_download_thread_trampoline, this, &rom))->detach();
 	} catch(std::exception& e) {
 		req.cancel();
 		threads::alock h(m);
@@ -92,7 +92,7 @@ std::string file_download::statusmsg()
 		return (stringfmt() << "Downloading finished").str();
 }
 
-void file_download::_do_async()
+void file_download::_do_async(loaded_rom& rom)
 {
 	while(!req.finished) {
 		threads::alock h(req.m);
@@ -143,8 +143,8 @@ void file_download::_do_async()
 	if(tempname != tempname2) remove(tempname.c_str());
 	try {
 		core_type* gametype = NULL;
-		if(!our_rom.rtype->isnull())
-			gametype = our_rom.rtype;
+		if(!rom.rtype->isnull())
+			gametype = rom.rtype;
 		else {
 			moviefile::brief_info info(tempname2);
 			auto sysregs = core_sysregion::find_matching(info.sysregion);

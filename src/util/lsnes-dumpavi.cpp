@@ -45,7 +45,7 @@ namespace
 		if(download_in_progress->url != origname)
 			messages << "Internally redirecting to " << download_in_progress->url << std::endl;
 		download_in_progress->target_slot = "dumpavi_download_tmp";
-		download_in_progress->do_async();
+		download_in_progress->do_async(*lsnes_instance.rom);
 		messages << "Downloading " << download_in_progress->url << ":" << std::endl;
 		while(!download_in_progress->finished) {
 			messages << download_in_progress->statusmsg() << std::endl;
@@ -417,10 +417,10 @@ int main(int argc, char** argv)
 	try {
 		movie = new moviefile(movfn, *r.rtype);
 		//Load ROM before starting the dumper.
-		our_rom = r;
-		messages << "Using core: " << our_rom.rtype->get_core_identifier() << std::endl;
-		our_rom.region = &movie->gametype->get_region();
-		our_rom.load(movie->settings, movie->movie_rtc_second, movie->movie_rtc_subsecond);
+		*lsnes_instance.rom = r;
+		messages << "Using core: " << lsnes_instance.rom->rtype->get_core_identifier() << std::endl;
+		lsnes_instance.rom->region = &movie->gametype->get_region();
+		lsnes_instance.rom->load(movie->settings, movie->movie_rtc_second, movie->movie_rtc_subsecond);
 		startup_lua_scripts(cmdline);
 		if(overdump_mode)
 			length = overdump_length + movie->get_frame_count();

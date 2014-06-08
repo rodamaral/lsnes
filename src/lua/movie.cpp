@@ -103,11 +103,12 @@ namespace
 
 	int to_rewind(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		std::string filename;
 
 		P(filename);
 
-		moviefile mfile(filename, *our_rom.rtype);
+		moviefile mfile(filename, *core.rom->rtype);
 		if(!mfile.is_savestate)
 			throw std::runtime_error("movie.to_rewind only allows savestates");
 		lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(L);

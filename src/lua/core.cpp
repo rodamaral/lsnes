@@ -170,11 +170,12 @@ namespace
 
 	int bus_address(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		uint64_t addr;
 
 		P(addr);
 
-		auto busrange = our_rom.rtype->get_bus_map();
+		auto busrange = core.rom->rtype->get_bus_map();
 		if(!busrange.second)
 			throw std::runtime_error("This platform does not have bus mapping");
 		L.pushnumber(busrange.first + (addr % busrange.second));
@@ -183,18 +184,20 @@ namespace
 
 	int get_lag_flag(lua::state& L, lua::parameters& P)
 	{
-		L.pushboolean(!(our_rom.rtype && our_rom.rtype->get_pflag()));
+		auto& core = CORE();
+		L.pushboolean(!(core.rom->rtype && core.rom->rtype->get_pflag()));
 		return 1;
 	}
 
 	int set_lag_flag(lua::state& L, lua::parameters& P)
 	{
+		auto& core = CORE();
 		bool flag;
 
 		P(flag);
 
-		if(our_rom.rtype)
-			our_rom.rtype->set_pflag(!flag);
+		if(core.rom->rtype)
+			core.rom->rtype->set_pflag(!flag);
 		return 0;
 	}
 

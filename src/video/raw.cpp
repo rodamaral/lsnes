@@ -97,10 +97,12 @@ namespace
 		}
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
+			auto& core = CORE();
 			if(!video)
 				return;
 			uint32_t hscl, vscl;
-			rpair(hscl, vscl) = our_rom.rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
+			rpair(hscl, vscl) = core.rom->rtype->get_scale_factors(_frame.get_width(),
+				_frame.get_height());
 			if(bits64) {
 				size_t w = dscr2.get_width();
 				size_t h = dscr2.get_height();

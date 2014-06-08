@@ -388,7 +388,7 @@ namespace
 			return;
 		unsigned act_id = action_by_id[e.GetId()];
 		const interface_action* act = NULL;
-		for(auto i : our_rom.rtype->get_actions())
+		for(auto i : inst.rom->rtype->get_actions())
 			if(i->id == act_id) {
 				act = i;
 				break;
@@ -397,7 +397,7 @@ namespace
 			return;
 		try {
 			auto p = prompt_action_params(pwin, act->get_title(), act->params);
-			inst.iqueue->run([act_id,p]() { our_rom.rtype->execute_action(act_id, p); });
+			inst.iqueue->run([this, act_id,p]() { this->inst.rom->rtype->execute_action(act_id, p); });
 		} catch(canceled_exception& e) {
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -423,13 +423,13 @@ namespace
 			submenui_by_name.clear();
 			toggles.clear();
 
-			for(auto i : our_rom.rtype->get_actions())
+			for(auto i : inst.rom->rtype->get_actions())
 				insert_act(i->id, i->get_title(), !i->params.empty(), i->is_toggle());
 		}
 		for(auto i : item_by_action)
-			i.second->Enable(our_rom.rtype->action_flags(i.first) & 1);
+			i.second->Enable(inst.rom->rtype->action_flags(i.first) & 1);
 		for(auto i : toggles)
-			item_by_action[i]->Check(our_rom.rtype->action_flags(i) & 2);
+			item_by_action[i]->Check(inst.rom->rtype->action_flags(i) & 2);
 	}
 
 	std::string munge_name(const std::string& orig)
@@ -588,13 +588,14 @@ namespace
 		if(p)
 			windowname = windowname + p->name;
 		else
-			windowname = windowname + our_rom.rtype->get_core_identifier();
+			windowname = windowname + inst.rom->rtype->get_core_identifier();
 		windowname = windowname + "]";
 		return towxstring(windowname);
 	}
 
 	struct emu_args
 	{
+		emulator_instance* inst;
 		struct loaded_rom rom;
 		struct moviefile* initial;
 		bool load_has_to_succeed;
@@ -603,13 +604,14 @@ namespace
 	void* emulator_main(void* _args)
 	{
 		struct emu_args* args = reinterpret_cast<struct emu_args*>(_args);
+		auto& inst = *args->inst;
 		try {
-			our_rom = args->rom;
-			messages << "Using core: " << our_rom.rtype->get_core_identifier() << std::endl;
+			*inst.rom = args->rom;
+			messages << "Using core: " << inst.rom->rtype->get_core_identifier() << std::endl;
 			struct moviefile* movie = args->initial;
 			bool has_to_succeed = args->load_has_to_succeed;
 			platform::flush_command_queue();
-			main_loop(our_rom, *movie, has_to_succeed);
+			main_loop(*inst.rom, *movie, has_to_succeed);
 			signal_program_exit();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -756,6 +758,7 @@ void boot_emulator(emulator_instance& inst, loaded_rom& rom, moviefile& movie, b
 		a->rom = rom;
 		a->initial = &movie;
 		a->load_has_to_succeed = false;
+		a->inst = &inst;
 		modal_pause_holder hld;
 		emulation_thread = new threads::thread(emulator_main, a);
 		main_window = new wxwin_mainwindow(inst, fscreen);
@@ -895,8 +898,8 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	wxPaintDC dc(this);
 	uint32_t tw, th;
 	bool aux = hflip_enabled || vflip_enabled || rotate_enabled;
-	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, our_rom.rtype ?
-		our_rom.rtype->get_PAR() : 1.0);
+	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, inst.rom->rtype ?
+		inst.rom->rtype->get_PAR() : 1.0);
 	if(rotate_enabled) {
 		tw = inst.fbuf->main_screen.get_height() * sfactors.second + 0.5;
 		th = inst.fbuf->main_screen.get_width() * sfactors.first + 0.5;
@@ -1187,7 +1190,7 @@ wxwin_mainwindow::wxwin_mainwindow(emulator_instance& _inst, bool fscreen)
 	spanel->SetDropTarget(new loadfile(this, inst));
 	set_hasher_callback(hash_callback);
 	reinterpret_cast<system_menu*>(sysmenu)->update(false);
-	menubar->SetMenuLabel(1, towxstring(our_rom.rtype->get_systemmenu_name()));
+	menubar->SetMenuLabel(1, towxstring(inst.rom->rtype->get_systemmenu_name()));
 	focus_timer = new _focus_timer;
 	status_timer = new _status_timer;
 	if(fscreen) {
@@ -1355,7 +1358,7 @@ void wxwin_mainwindow::refresh_title() throw()
 	menu_enable(wxID_CLOSE_PROJECT, p != NULL);
 	menu_enable(wxID_CLOSE_ROM, p == NULL);
 	reinterpret_cast<system_menu*>(sysmenu)->update(false);
-	menubar->SetMenuLabel(1, towxstring(our_rom.rtype->get_systemmenu_name()));
+	menubar->SetMenuLabel(1, towxstring(inst.rom->rtype->get_systemmenu_name()));
 }
 
 namespace
@@ -1790,7 +1793,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		download_in_progress = new file_download();
 		download_in_progress->url = lsnes_uri_rewrite(filename);
 		download_in_progress->target_slot = "wxwidgets_download_tmp";
-		download_in_progress->do_async();
+		download_in_progress->do_async(*inst.rom);
 		new download_timer(this, inst);
 		return;
 	}
