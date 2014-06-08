@@ -33,7 +33,6 @@ void reload_current_rom();
 void do_break_pause();
 void convert_break_to_pause();
 
-extern settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> jukebox_dflt_binary;
 extern settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> movie_dflt_binary;
 extern settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> save_dflt_binary;
 

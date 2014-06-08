@@ -6,6 +6,7 @@
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "core/instance.hpp"
+#include "core/jukebox.hpp"
 #include "core/mainloop.hpp"
 #include "core/messages.hpp"
 #include "core/moviedata.hpp"
@@ -152,7 +153,7 @@ std::string translate_name_mprefix(std::string original, int& binary, int save)
 	regex_results r = regex("\\$SLOT:(.*)", original);
 	if(r) {
 		if(binary < 0)
-			binary = jukebox_dflt_binary(*core.settings) ? 1 : 0;
+			binary = core.jukebox->save_binary() ? 1 : 0;
 		if(p) {
 			uint64_t branch = p->get_current_branch();
 			std::string branch_str;

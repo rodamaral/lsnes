@@ -321,7 +321,7 @@ not_alias:
 		} catch(std::bad_alloc& e) {
 			oom_panic_routine();
 		} catch(std::exception& e) {
-			(*output) << "Error: " << e.what() << std::endl;
+			(*output) << "Error[" << cmd2 << "]: " << e.what() << std::endl;
 			command_stack.erase(cmd2);
 			return;
 		}

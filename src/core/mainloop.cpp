@@ -10,6 +10,7 @@
 #include "core/framerate.hpp"
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
+#include "core/jukebox.hpp"
 #include "core/keymapper.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
@@ -50,8 +51,6 @@
 
 void update_movie_state();
 
-settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> jukebox_dflt_binary(lsnes_setgrp,
-	"jukebox-default-binary", "Movie‣Saving‣Saveslots binary", true);
 settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> movie_dflt_binary(lsnes_setgrp,
 	"movie-default-binary", "Movie‣Saving‣Movies binary", false);
 settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> save_dflt_binary(lsnes_setgrp,
@@ -65,8 +64,6 @@ namespace
 		"advance-subframe-timeout", "Delays‣Subframe advance", 100);
 	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> SET_pause_on_end(lsnes_setgrp,
 		"pause-on-end", "Movie‣Pause on end", false);
-	settingvar::supervariable<settingvar::model_int<0,999999999>> SET_jukebox_size(lsnes_setgrp, "jukebox-size",
-		"Movie‣Number of save slots", 12);
 
 	enum advance_mode
 	{
@@ -95,8 +92,6 @@ namespace
 	std::string pending_new_project;
 	//Queued saves (all savestates).
 	std::set<std::pair<std::string, int>> queued_saves;
-	//Save jukebox.
-	size_t save_jukebox_pointer;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
 	//Unsafe rewind.
@@ -125,11 +120,6 @@ namespace
 			amode = ADVANCE_PAUSE;
 		}
 		return false;
-	}
-
-	std::string save_jukebox_name(size_t i)
-	{
-		return (stringfmt() << "$SLOT:" << (i + 1)).str();
 	}
 }
 
@@ -263,22 +253,6 @@ namespace
 		queued_saves.insert(std::make_pair(filename, binary));
 		messages << "Pending save on '" << filename << "'" << std::endl;
 	}
-
-	struct jukebox_size_listener : public settingvar::listener
-	{
-		jukebox_size_listener(settingvar::group& _grp) : grp(_grp) { grp.add_listener(*this); }
-		~jukebox_size_listener() throw() { grp.remove_listener(*this); };
-		void on_setting_change(settingvar::group& _grp, const settingvar::base& val)
-		{
-			if(val.get_iname() == "jukebox-size") {
-				if(save_jukebox_pointer >= (size_t)SET_jukebox_size(_grp))
-					save_jukebox_pointer = 0;
-			}
-			update_movie_state();
-		}
-	private:
-		settingvar::group& grp;
-	};
 }
 
 void update_movie_state()
@@ -336,13 +310,13 @@ void update_movie_state()
 			else
 				_status.mode = 'F';
 		}
-		if(SET_jukebox_size(*core.settings) > 0) {
+		try {
 			_status.saveslot_valid = true;
 			int tmp = -1;
-			std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, -1);
-			_status.saveslot = save_jukebox_pointer + 1;
+			std::string sfilen = translate_name_mprefix(core.jukebox->get_slot_name(), tmp, -1);
+			_status.saveslot = core.jukebox->get_slot() + 1;
 			_status.slotinfo = utf8::to32(core.slotcache->get(sfilen));
-		} else {
+		} catch(...) {
 			_status.saveslot_valid = false;
 		}
 		_status.branch_valid = (p != NULL);
@@ -590,31 +564,15 @@ namespace
 	command::fnptr<> CMD_save_jukebox_prev(lsnes_cmds, "cycle-jukebox-backward", "Cycle save jukebox backwards",
 		"Syntax: cycle-jukebox-backward\nCycle save jukebox backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			size_t jbsize = SET_jukebox_size(*CORE().settings);
-			if(jbsize == 0)
-				return;
-			if(save_jukebox_pointer == 0)
-				save_jukebox_pointer = jbsize - 1;
-			else
-				save_jukebox_pointer--;
-			if(save_jukebox_pointer >= (size_t)jbsize)
-				save_jukebox_pointer = 0;
-			update_movie_state();
+			auto& core = CORE();
+			core.jukebox->cycle_prev();
 		});
 
 	command::fnptr<> CMD_save_jukebox_next(lsnes_cmds, "cycle-jukebox-forward", "Cycle save jukebox forwards",
 		"Syntax: cycle-jukebox-forward\nCycle save jukebox forwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			size_t jbsize = SET_jukebox_size(*CORE().settings);
-			if(jbsize == 0)
-				return;
-			if(save_jukebox_pointer + 1 >= (size_t)jbsize)
-				save_jukebox_pointer = 0;
-			else
-				save_jukebox_pointer++;
-			if(save_jukebox_pointer >= (size_t)jbsize)
-				save_jukebox_pointer = 0;
-			update_movie_state();
+			auto& core = CORE();
+			core.jukebox->cycle_next();
 		});
 
 	command::fnptr<const std::string&> CMD_save_jukebox_set(lsnes_cmds, "set-jukebox-slot", "Set jukebox slot",
@@ -623,58 +581,50 @@ namespace
 			if(!regex_match("[1-9][0-9]{0,8}", args))
 				throw std::runtime_error("Bad slot number");
 			uint32_t slot = parse_value<uint32_t>(args);
-			if(slot >= (size_t)SET_jukebox_size(*CORE().settings))
-				throw std::runtime_error("Bad slot number");
-			save_jukebox_pointer = slot - 1;
-			update_movie_state();
+			auto& core = CORE();
+			core.jukebox->set_slot(slot);
 		});
 
 	command::fnptr<> CMD_load_jukebox(lsnes_cmds, "load-jukebox", "Load save from jukebox",
 		"Syntax: load-jukebox\nLoad save from jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(SET_jukebox_size(*CORE().settings) == 0)
-				throw std::runtime_error("No slot selected");
-			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_CURRENT);
+			auto& core = CORE();
+			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_CURRENT);
 		});
 
 	command::fnptr<> CMD_load_jukebox_readwrite(lsnes_cmds, "load-jukebox-readwrite", "Load save from jukebox in"
 		" recording mode", "Syntax: load-jukebox-readwrite\nLoad save from jukebox in recording mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(SET_jukebox_size(*CORE().settings) == 0)
-				throw std::runtime_error("No slot selected");
-			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_RW);
+			auto& core = CORE();
+			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_RW);
 		});
 
 	command::fnptr<> CMD_load_jukebox_readonly(lsnes_cmds, "load-jukebox-readonly", "Load save from jukebox in "
 		"playback mode", "Syntax: load-jukebox-readonly\nLoad save from jukebox in playback mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(SET_jukebox_size(*CORE().settings) == 0)
-				throw std::runtime_error("No slot selected");
-			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_RO);
+			auto& core = CORE();
+			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_RO);
 		});
 
 	command::fnptr<> CMD_load_jukebox_preserve(lsnes_cmds, "load-jukebox-preserve", "Load save from jukebox, "
 		"preserving input", "Syntax: load-jukebox-preserve\nLoad save from jukebox, preserving input\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(SET_jukebox_size(*CORE().settings) == 0)
-				throw std::runtime_error("No slot selected");
-			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_PRESERVE);
+			auto& core = CORE();
+			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_PRESERVE);
 		});
 
 	command::fnptr<> CMD_load_jukebox_movie(lsnes_cmds, "load-jukebox-movie", "Load save from jukebox as movie",
 		"Syntax: load-jukebox-movie\nLoad save from jukebox as movie\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(SET_jukebox_size(*CORE().settings) == 0)
-				throw std::runtime_error("No slot selected");
-			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_MOVIE);
+			auto& core = CORE();
+			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_MOVIE);
 		});
 
 	command::fnptr<> CMD_save_jukebox_c(lsnes_cmds, "save-jukebox", "Save save to jukebox",
 		"Syntax: save-jukebox\nSave save to jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(SET_jukebox_size(*CORE().settings) == 0)
-				throw std::runtime_error("No slot selected");
-			mark_pending_save(save_jukebox_name(save_jukebox_pointer), SAVE_STATE, -1);
+			auto& core = CORE();
+			mark_pending_save(core.jukebox->get_slot_name(), SAVE_STATE, -1);
 		});
 
 	command::fnptr<> CMD_padvance_frame(lsnes_cmds, "+advance-frame", "Advance one frame",
@@ -1219,7 +1169,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	mywindowcallbacks mywcb(*core.dispatch);
 	core.iqueue->system_thread_available = true;
 	//Basic initialization.
-	jukebox_size_listener jlistener(*core.settings);
 	core.commentary->init();
 	core.fbuf->init_special_screens();
 	*core.rom = rom;

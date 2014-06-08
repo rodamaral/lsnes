@@ -10,6 +10,7 @@
 #include "core/framerate.hpp"
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
+#include "core/jukebox.hpp"
 #include "core/keymapper.hpp"
 #include "core/mbranch.hpp"
 #include "core/memorymanip.hpp"
@@ -81,6 +82,7 @@ emulator_instance::emulator_instance()
 	D.init(lua2, *lua, *command);
 	D.init(mwatch, *memory, *project, *fbuf);
 	D.init(settings);
+	D.init(jukebox, *settings);
 	D.init(setcache, *settings);
 	D.init(audio);
 	D.init(commentary, *settings, *dispatch, *audio);

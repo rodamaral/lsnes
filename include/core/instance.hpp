@@ -27,6 +27,7 @@ class slotinfo_cache;
 class lua_state;
 class audioapi_instance;
 class loaded_rom;
+class save_jukebox;
 namespace command { class group; }
 namespace lua { class state; }
 namespace settingvar { class group; }
@@ -121,6 +122,7 @@ struct emulator_instance
 	slotinfo_cache* slotcache;
 	audioapi_instance* audio;
 	loaded_rom* rom;
+	save_jukebox* jukebox;
 	threads::id emu_thread;
 	time_t random_seed_value;
 	dtor_list D;
