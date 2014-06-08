@@ -18,7 +18,7 @@ namespace
 			token_iterator<char> itre;
 			std::string sym = *itr++;
 			const interface_action* act = NULL;
-			for(auto i : core.rom->rtype->get_actions())
+			for(auto i : core.rom->get_actions())
 				if(i->get_symbol() == sym) {
 					act = i;
 					break;
@@ -27,7 +27,7 @@ namespace
 				messages << "No such action." << std::endl;
 				return;
 			}
-			if(!(core.rom->rtype->action_flags(act->id) & 1)) {
+			if(!(core.rom->action_flags(act->id) & 1)) {
 				messages << "Action not enabled." << std::endl;
 				return;
 			}
@@ -124,6 +124,6 @@ out:
 				messages << "Excess parameters for action." << std::endl;
 				return;
 			}
-			core.rom->rtype->execute_action(act->id, params);
+			core.rom->execute_action(act->id, params);
 		});
 }

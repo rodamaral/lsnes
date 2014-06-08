@@ -6,6 +6,8 @@
 #include "core/instance.hpp"
 #include "core/project.hpp"
 #include "core/moviedata.hpp"
+#include "core/rom.hpp"
+
 
 tracelog_menu::tracelog_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
 	: inst(_inst)
@@ -50,7 +52,7 @@ void tracelog_menu::on_select(wxCommandEvent& e)
 
 void tracelog_menu::update()
 {
-	auto _items = inst.rom->rtype->get_trace_cpus();
+	auto _items = inst.rom->get_trace_cpus();
 	for(auto i : items)
 		Delete(i);
 	items.clear();

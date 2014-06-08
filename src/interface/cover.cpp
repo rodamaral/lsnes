@@ -1,6 +1,7 @@
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/memorymanip.hpp"
+#include "core/rom.hpp"
 #include "interface/cover.hpp"
 #include "library/minmax.hpp"
 #include "library/utf8.hpp"
@@ -105,6 +106,6 @@ std::vector<std::string> cover_information()
 {
 	auto& core = CORE();
 	std::vector<std::string> ret;
-	ret.push_back("System: " + core.rom->rtype->get_hname() + " (" + core.rom->region->get_hname() + ")");
+	ret.push_back("System: " + core.rom->get_hname() + " (" + core.rom->region_get_hname() + ")");
 	return ret;
 }

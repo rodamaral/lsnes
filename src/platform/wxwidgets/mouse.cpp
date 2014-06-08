@@ -1,6 +1,7 @@
 #include "core/instance.hpp"
 #include "core/instance-map.hpp"
 #include "core/moviedata.hpp"
+#include "core/rom.hpp"
 #include "library/keyboard.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -39,8 +40,7 @@ void handle_wx_mouse(emulator_instance& inst, wxMouseEvent& e)
 {
 	auto s = mkeys.lookup(inst);
 	if(!s) return;
-	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled,
-		(inst.rom->rtype) ? inst.rom->rtype->get_PAR() : 1.0);
+	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, inst.rom->get_PAR());
 	inst.iqueue->queue(keypress_info(keyboard::modifier_set(), s->mouse_x, e.GetX() /
 		sfactors.first));
 	inst.iqueue->queue(keypress_info(keyboard::modifier_set(), s->mouse_y, e.GetY() /

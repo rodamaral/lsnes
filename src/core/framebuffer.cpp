@@ -5,6 +5,7 @@
 #include "core/memorywatch.hpp"
 #include "core/messages.hpp"
 #include "core/moviedata.hpp"
+#include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/subtitles.hpp"
 #include "fonts/wrapper.hpp"
@@ -137,7 +138,7 @@ void emu_framebuffer::init_special_screens() throw(std::bad_alloc)
 void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 {
 	uint32_t hscl, vscl;
-	auto g = rom.rtype->get_scale_factors(todraw.get_width(), todraw.get_height());
+	auto g = rom.get_scale_factors(todraw.get_width(), todraw.get_height());
 	hscl = g.first;
 	vscl = g.second;
 	render_info& ri = buffering.get_write();

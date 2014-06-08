@@ -52,9 +52,9 @@ namespace
 
 	void dump_what_was_loaded(loaded_rom& r, moviefile& f)
 	{
-		std::cout << "Core:\t" << r.rtype->get_core_identifier() << std::endl;
-		std::cout << "System:\t" << r.rtype->get_hname() << std::endl;
-		std::cout << "Region:\t" << r.region->get_hname() << std::endl;
+		std::cout << "Core:\t" << r.get_core_identifier() << std::endl;
+		std::cout << "System:\t" << r.get_hname() << std::endl;
+		std::cout << "Region:\t" << r.region_get_hname() << std::endl;
 		for(auto i = 0; i < ROM_SLOT_COUNT; i++) {
 			std::string risha = r.romimg[i].sha_256.read();
 			std::string rxsha = r.romxml[i].sha_256.read();
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
 	moviefile* movie = NULL;
 	try {
 		if(movfn != "")
-			movie = new moviefile(movfn, *r.rtype);
+			movie = new moviefile(movfn, r.get_internal_rom_type());
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {

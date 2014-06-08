@@ -4,6 +4,7 @@
 #include "core/moviedata.hpp"
 #include "core/random.hpp"
 #include "core/messages.hpp"
+#include "core/rom.hpp"
 #include "video/sox.hpp"
 #include "library/serialization.hpp"
 #include "library/string.hpp"

@@ -5,8 +5,8 @@
 #include <map>
 #include <list>
 #include <vector>
+#include "core/rom-small.hpp"
 #include "library/json.hpp"
-#include "core/rom.hpp"
 
 class voice_commentary;
 class memwatch_set;

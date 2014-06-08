@@ -1,7 +1,8 @@
+#include "core/dispatch.hpp"
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
 #include "core/project.hpp"
-#include <stdexcept>
+#include "library/string.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
@@ -10,10 +11,9 @@
 #include <wx/event.h>
 #include <wx/control.h>
 #include <wx/combobox.h>
-
-#include "core/dispatch.hpp"
-#include "library/string.hpp"
+#include <stdexcept>
 #include <sstream>
+#include <set>
 
 #define NOTHING 0xFFFFFFFFFFFFFFFFULL
 

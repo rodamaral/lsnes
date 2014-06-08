@@ -21,6 +21,7 @@
 #include "core/project.hpp"
 #include "core/queue.hpp"
 #include "core/random.hpp"
+#include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "library/command.hpp"
 #include "library/keyboard.hpp"

@@ -1,5 +1,6 @@
 #include "core/filedownload.hpp"
 #include "core/moviedata.hpp"
+#include "core/rom.hpp"
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
@@ -143,8 +144,8 @@ void file_download::_do_async(loaded_rom& rom)
 	if(tempname != tempname2) remove(tempname.c_str());
 	try {
 		core_type* gametype = NULL;
-		if(!rom.rtype->isnull())
-			gametype = rom.rtype;
+		if(!rom.isnull())
+			gametype = &rom.get_internal_rom_type();
 		else {
 			moviefile::brief_info info(tempname2);
 			auto sysregs = core_sysregion::find_matching(info.sysregion);

@@ -399,7 +399,7 @@ int main(int argc, char** argv)
 		std::map<std::string, std::string> tmp;
 		r = construct_rom(movfn, cmdline);
 		r.load(tmp, 1000000000, 0);
-		messages << "Using core: " << r.rtype->get_core_identifier() << std::endl;
+		messages << "Using core: " << r.get_core_identifier() << std::endl;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -408,18 +408,18 @@ int main(int argc, char** argv)
 		fatal_error();
 		exit(1);
 	}
-	messages << "Detected region: " << r.rtype->combine_region(*r.region).get_name() << std::endl;
-	lsnes_instance.framerate->set_nominal_framerate(r.region->approx_framerate());
+	messages << "Detected region: " << r.get_sysregion().get_name() << std::endl;
+	lsnes_instance.framerate->set_nominal_framerate(r.region_approx_framerate());
 
 	messages << "--- End of Startup --- " << std::endl;
 
 	moviefile* movie;
 	try {
-		movie = new moviefile(movfn, *r.rtype);
+		movie = new moviefile(movfn, r.get_internal_rom_type());
 		//Load ROM before starting the dumper.
 		*lsnes_instance.rom = r;
-		messages << "Using core: " << lsnes_instance.rom->rtype->get_core_identifier() << std::endl;
-		lsnes_instance.rom->region = &movie->gametype->get_region();
+		messages << "Using core: " << lsnes_instance.rom->get_core_identifier() << std::endl;
+		lsnes_instance.rom->set_internal_region(movie->gametype->get_region());
 		lsnes_instance.rom->load(movie->settings, movie->movie_rtc_second, movie->movie_rtc_subsecond);
 		startup_lua_scripts(cmdline);
 		if(overdump_mode)

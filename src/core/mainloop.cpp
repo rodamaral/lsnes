@@ -220,7 +220,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 	}
 	platform::flush_command_queue();
 	controller_frame tmp = core.controls->get(core.mlogic->get_movie().get_current_frame());
-	core.rom->rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
+	core.rom->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	core.lua2->callback_do_input(tmp, subframe);
 	core.mteditor->process_frame(tmp);
 	core.controls->commit(tmp);
@@ -288,7 +288,7 @@ void update_movie_state()
 	bool readonly = false;
 	{
 		uint64_t magic[4];
-		core.rom->region->fill_framerate_magic(magic);
+		core.rom->region_fill_framerate_magic(magic);
 		if(*core.mlogic)
 			core.commentary->frame_number(core.mlogic->get_movie().get_current_frame(),
 				1.0 * magic[1] / magic[0]);
@@ -488,7 +488,7 @@ public:
 		core.lua2->callback_do_frame_emulated();
 		location_special = SPECIAL_FRAME_VIDEO;
 		core.fbuf->redraw_framebuffer(screen, false, true);
-		auto rate = core.rom->rtype->get_audio_rate();
+		auto rate = core.rom->get_audio_rate();
 		uint32_t gv = gcd(fps_n, fps_d);
 		uint32_t ga = gcd(rate.first, rate.second);
 		core.mdumper->on_rate_change(rate.first / ga, rate.second / ga);
@@ -727,26 +727,26 @@ namespace
 		"Syntax: reset\nReset\nResets the system in beginning of the next frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
-			int sreset_action = core.rom->rtype->reset_action(false);
+			int sreset_action = core.rom->reset_action(false);
 			if(sreset_action < 0) {
 				platform::error_message("Core does not support resets");
 				messages << "Emulator core does not support resets" << std::endl;
 				return;
 			}
-			core.rom->rtype->execute_action(sreset_action, std::vector<interface_action_paramval>());
+			core.rom->execute_action(sreset_action, std::vector<interface_action_paramval>());
 		});
 
 	command::fnptr<> CMD_hreset_c(lsnes_cmds, "reset-hard", "Reset the system",
 		"Syntax: reset-hard\nReset-hard\nHard resets the system in beginning of the next frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
-			int hreset_action = core.rom->rtype->reset_action(true);
+			int hreset_action = core.rom->reset_action(true);
 			if(hreset_action < 0) {
 				platform::error_message("Core does not support hard resets");
 				messages << "Emulator core does not support hard resets" << std::endl;
 				return;
 			}
-			core.rom->rtype->execute_action(hreset_action, std::vector<interface_action_paramval>());
+			core.rom->execute_action(hreset_action, std::vector<interface_action_paramval>());
 		});
 
 	command::fnptr<command::arg_filename> CMD_load_c(lsnes_cmds, "load", "Load savestate (current mode)",
@@ -1170,7 +1170,7 @@ nothing_to_do:
 		if(!*core.mlogic)
 			return;
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
-			core.rom->rtype->runtosave();
+			core.rom->runtosave();
 			for(auto i : queued_saves) {
 				do_save_state(i.first, i.second);
 				int tmp = -1;
@@ -1316,7 +1316,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = false;
 		}
 		core.dbg->do_callback_frame(core.mlogic->get_movie().get_current_frame(), false);
-		core.rom->rtype->emulate();
+		core.rom->emulate();
 		random_mix_timing_entropy();
 		if(amode == ADVANCE_AUTO)
 			platform::wait(core.framerate->to_wait_frame(framerate_regulator::get_utime()));

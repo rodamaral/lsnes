@@ -474,7 +474,7 @@ private:
 
 void show_projectwindow(wxWindow* modwin, emulator_instance& inst)
 {
-	if(!inst.rom->rtype) {
+	if(inst.rom->isnull()) {
 		show_message_ok(modwin, "Can't start new movie", "No ROM loaded", wxICON_EXCLAMATION);
 		return;
 	}
@@ -491,7 +491,7 @@ wxwin_project::wxwin_project(emulator_instance& _inst)
 {
 	std::vector<wxString> cchoices;
 
-	std::set<std::string> sram_set = inst.rom->rtype->srams();
+	std::set<std::string> sram_set = inst.rom->srams();
 
 	Centre();
 	//2 Top-level block.
@@ -509,7 +509,7 @@ wxwin_project::wxwin_project(emulator_instance& _inst)
 	wxFlexGridSizer* new_sizer = new wxFlexGridSizer(3, 1, 0, 0);
 	new_panel->SetSizer(new_sizer);
 	//Controllertypes/Gamename/initRTC/SRAMs.
-	auto settingblock = inst.rom->rtype->get_settings().settings;
+	auto settingblock = inst.rom->get_settings().settings;
 	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + settingblock.size() + sram_set.size(), 2, 0, 0);
 	auto _settingblock = sort_settingblock(settingblock);
 	for(auto i : _settingblock) {
@@ -645,13 +645,13 @@ struct moviefile& wxwin_project::make_movie()
 {
 	moviefile& f = *new moviefile;
 	f.force_corrupt = false;
-	f.gametype = &inst.rom->rtype->combine_region(*inst.rom->region);
+	f.gametype = &inst.rom->get_sysregion();
 	for(auto i : settings) {
 		f.settings[i.first] = i.second.read();
 		if(!i.second.get_setting().validate(f.settings[i.first]))
 			throw std::runtime_error((stringfmt() << "Bad value for setting " << i.first).str());
 	}
-	f.coreversion = inst.rom->rtype->get_core_identifier();
+	f.coreversion = inst.rom->get_core_identifier();
 	f.gamename = tostdstring(projectname->GetValue());
 	f.projectid = get_random_hexstring(40);
 	set_mprefix_for_project(f.projectid, tostdstring(prefix->GetValue()));
@@ -682,7 +682,7 @@ struct moviefile& wxwin_project::make_movie()
 	f.movie_rtc_subsecond = f.rtc_subsecond = boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
-	auto ctrldata = inst.rom->rtype->controllerconfig(f.settings);
+	auto ctrldata = inst.rom->controllerconfig(f.settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 	f.create_default_branch(ports);
 	return f;
@@ -690,7 +690,7 @@ struct moviefile& wxwin_project::make_movie()
 
 void open_new_project_window(wxWindow* parent, emulator_instance& inst)
 {
-	if(inst.rom->rtype->isnull()) {
+	if(inst.rom->isnull()) {
 		show_message_ok(parent, "Can't start new project", "No ROM loaded", wxICON_EXCLAMATION);
 		return;
 	}

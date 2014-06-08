@@ -94,12 +94,10 @@ cart_mappings_refresher::cart_mappings_refresher(memory_space& _mspace, movie_lo
 
 void cart_mappings_refresher::operator()() throw(std::bad_alloc)
 {
-	if(!rom.rtype)
-		return;
 	std::list<memory_region*> cur_regions = mspace.get_regions();
 	std::list<memory_region*> regions;
 	memory_region* tmp = NULL;
-	auto vmalist = rom.rtype->vma_list();
+	auto vmalist = rom.vma_list();
 	auto _mlogic = &mlogic;
 	try {
 		tmp = new iospace_region("LSNESMMIO", 0xFFFFFFFF00000000ULL, 32, true, 

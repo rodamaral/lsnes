@@ -638,7 +638,7 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, emulator_instance
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
 	file->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
-	if(!inst.mlogic || !inst.rom->rtype || inst.rom->rtype->isnull()) {
+	if(!inst.mlogic || inst.rom->isnull()) {
 		current->Enable(false);
 		file->SetValue(true);
 	}

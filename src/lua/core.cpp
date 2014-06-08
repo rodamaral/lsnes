@@ -4,6 +4,7 @@
 #include "core/instance.hpp"
 #include "core/moviefile.hpp"
 #include "core/moviedata.hpp"
+#include "core/rom.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
@@ -175,7 +176,7 @@ namespace
 
 		P(addr);
 
-		auto busrange = core.rom->rtype->get_bus_map();
+		auto busrange = core.rom->get_bus_map();
 		if(!busrange.second)
 			throw std::runtime_error("This platform does not have bus mapping");
 		L.pushnumber(busrange.first + (addr % busrange.second));
@@ -185,7 +186,7 @@ namespace
 	int get_lag_flag(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		L.pushboolean(!(core.rom->rtype && core.rom->rtype->get_pflag()));
+		L.pushboolean(!core.rom->get_pflag());
 		return 1;
 	}
 
@@ -196,8 +197,7 @@ namespace
 
 		P(flag);
 
-		if(core.rom->rtype)
-			core.rom->rtype->set_pflag(!flag);
+		core.rom->set_pflag(!flag);
 		return 0;
 	}
 

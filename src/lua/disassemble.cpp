@@ -6,6 +6,7 @@
 #include "core/instance.hpp"
 #include "core/memorymanip.hpp"
 #include "core/moviedata.hpp"
+#include "core/rom.hpp"
 
 namespace
 {
@@ -53,7 +54,7 @@ namespace
 
 		P(r);
 
-		const interface_device_reg* regs = core.rom->rtype->get_registers();
+		const interface_device_reg* regs = core.rom->get_registers();
 		if(!regs) {
 			L.pushnil();
 			return 1;
@@ -74,7 +75,7 @@ namespace
 	int getregisters(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		const interface_device_reg* regs = core.rom->rtype->get_registers();
+		const interface_device_reg* regs = core.rom->get_registers();
 		if(!regs) {
 			L.pushnil();
 			return 1;
@@ -98,7 +99,7 @@ namespace
 
 		P(r);
 
-		const interface_device_reg* regs = core.rom->rtype->get_registers();
+		const interface_device_reg* regs = core.rom->get_registers();
 		if(!regs) {
 			return 0;
 		}

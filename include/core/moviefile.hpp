@@ -6,10 +6,13 @@
 #include <stdexcept>
 #include <map>
 #include "core/controllerframe.hpp"
-#include "core/rom.hpp"
+#include "core/rom-small.hpp"
 #include "core/subtitles.hpp"
+#include "interface/romtype.hpp"
 #include "library/rrdata.hpp"
 #include "library/zip.hpp"
+
+class loaded_rom;
 
 /**
  * This structure gives parsed representationg of movie file, as result of decoding or for encoding.

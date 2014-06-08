@@ -4,6 +4,7 @@
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/messages.hpp"
+#include "core/rom.hpp"
 #include "video/tcp.hpp"
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
@@ -101,7 +102,7 @@ namespace
 			if(!video)
 				return;
 			uint32_t hscl, vscl;
-			rpair(hscl, vscl) = core.rom->rtype->get_scale_factors(_frame.get_width(),
+			rpair(hscl, vscl) = core.rom->get_scale_factors(_frame.get_width(),
 				_frame.get_height());
 			if(bits64) {
 				size_t w = dscr2.get_width();

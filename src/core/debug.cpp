@@ -5,6 +5,7 @@
 #include "core/mainloop.hpp"
 #include "core/messages.hpp"
 #include "core/moviedata.hpp"
+#include "core/rom.hpp"
 #include "library/directory.hpp"
 
 #include <stdexcept>
@@ -67,7 +68,7 @@ void debug_context::add_callback(uint64_t addr, debug_context::etype type, debug
 		corechange_r = true;
 	}
 	if(!xcb.count(addr) && type != DEBUG_FRAME)
-		core.rom->rtype->set_debug_flags(addr, debug_flag(type), 0);
+		core.rom->set_debug_flags(addr, debug_flag(type), 0);
 	auto& lst = xcb[addr];
 	lst.push_back(&cb);
 }
@@ -87,7 +88,7 @@ void debug_context::remove_callback(uint64_t addr, debug_context::etype type, de
 	if(xcb[addr].empty()) {
 		xcb.erase(addr);
 		if(type != DEBUG_FRAME)
-			rom.rtype->set_debug_flags(addr, 0, debug_flag(type));
+			rom.set_debug_flags(addr, 0, debug_flag(type));
 	}
 }
 
@@ -176,12 +177,12 @@ void debug_context::do_callback_frame(uint64_t frame, bool loadstate)
 
 void debug_context::set_cheat(uint64_t addr, uint64_t value)
 {
-	rom.rtype->set_cheat(addr, value, true);
+	rom.set_cheat(addr, value, true);
 }
 
 void debug_context::clear_cheat(uint64_t addr)
 {
-	rom.rtype->set_cheat(addr, 0, false);
+	rom.set_cheat(addr, 0, false);
 }
 
 void debug_context::setxmask(uint64_t mask)
@@ -201,7 +202,7 @@ void debug_context::set_tracelog_change_cb(std::function<void()> cb)
 
 void debug_context::core_change()
 {
-	rom.rtype->debug_reset();
+	rom.debug_reset();
 	kill_hooks(read_cb, DEBUG_READ);
 	kill_hooks(write_cb, DEBUG_WRITE);
 	kill_hooks(exec_cb, DEBUG_EXEC);
@@ -340,7 +341,7 @@ namespace
 		std::string cpu = r[1];
 		std::string filename = r[3];
 		uint64_t _cpu = 0;
-		for(auto i : core.rom->rtype->get_trace_cpus()) {
+		for(auto i : core.rom->get_trace_cpus()) {
 			if(cpu == i)
 				goto out;
 			_cpu++;

@@ -361,21 +361,21 @@ bool project_state::set(project_info* p, bool current)
 			}
 			newrom = loaded_rom(p->roms, ctype->get_core_identifier(), ctype->get_iname(), "");
 		}
-		if(newrom.rtype->get_core_identifier() != p->coreversion) {
-			messages << "Warning: Can't find matching core, using " << newrom.rtype->get_core_identifier()
+		if(newrom.get_core_identifier() != p->coreversion) {
+			messages << "Warning: Can't find matching core, using " << newrom.get_core_identifier()
 				<< std::endl;
 		}
 		if(p->last_save != "")
 			try {
-				newmovie = new moviefile(p->last_save, *newrom.rtype);
+				newmovie = new moviefile(p->last_save, newrom.get_internal_rom_type());
 			} catch(std::exception& e) {
 				messages << "Warning: Can't load last save: " << e.what() << std::endl;
 				newmovie = new moviefile();
-				fill_stub_movie(*newmovie, *p, *newrom.rtype);
+				fill_stub_movie(*newmovie, *p, newrom.get_internal_rom_type());
 			}
 		else {
 			newmovie = new moviefile();
-			fill_stub_movie(*newmovie, *p, *newrom.rtype);
+			fill_stub_movie(*newmovie, *p, newrom.get_internal_rom_type());
 		}
 		//Okay, loaded, load into core.
 		newrom.load(p->settings, p->movie_rtc_second, p->movie_rtc_subsecond);

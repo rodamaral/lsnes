@@ -1,6 +1,7 @@
 #include "core/moviefile-common.hpp"
 #include "core/moviefile.hpp"
 #include "core/random.hpp"
+#include "core/rom.hpp"
 #include "library/binarystream.hpp"
 #include "library/directory.hpp"
 #include "library/minmax.hpp"
@@ -120,8 +121,8 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 	uint64_t rtc_subsec)
 {
 	force_corrupt = false;
-	gametype = &rom.rtype->combine_region(*rom.region);
-	coreversion = rom.rtype->get_core_identifier();
+	gametype = &rom.get_sysregion();
+	coreversion = rom.get_core_identifier();
 	projectid = get_random_hexstring(40);
 	rerecords = "0";
 	is_savestate = false;
@@ -132,10 +133,10 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 	poll_flag = 0;
 	settings = c_settings;
 	input = NULL;
-	auto ctrldata = rom.rtype->controllerconfig(settings);
+	auto ctrldata = rom.controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 	create_default_branch(ports);
-	if(!rom.rtype->isnull()) {
+	if(!rom.isnull()) {
 		//Initialize the remainder.
 		rerecords = "0";
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {

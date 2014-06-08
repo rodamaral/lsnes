@@ -13,6 +13,7 @@
 #include "core/settings.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
+#include "core/rom.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -408,7 +409,7 @@ again:
 				hscl = fxfact;
 				vscl = fyfact;
 			} else if(dump_large(*core.settings)) {
-				rpair(hscl, vscl) = core.rom->rtype->get_scale_factors(_frame.get_width(),
+				rpair(hscl, vscl) = core.rom->get_scale_factors(_frame.get_width(),
 					_frame.get_height());
 			}
 			if(!render_video_hud(dscr, _frame, fps_n, fps_d, hscl, vscl, dlb(*core.settings),

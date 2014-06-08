@@ -3,6 +3,7 @@
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/messages.hpp"
+#include "core/rom.hpp"
 
 namespace
 {
@@ -14,14 +15,14 @@ namespace
 		P(name);
 
 		const interface_action* act = NULL;
-		for(auto i : core.rom->rtype->get_actions())
+		for(auto i : core.rom->get_actions())
 			if(i->get_symbol() == name) {
 				act = i;
 				break;
 			}
 		if(!act)
 			throw std::runtime_error("No such action");
-		if(!(core.rom->rtype->action_flags(act->id) & 1))
+		if(!(core.rom->action_flags(act->id) & 1))
 			throw std::runtime_error("Action not enabled.");
 		std::vector<interface_action_paramval> params;
 		for(auto i : act->params) {
@@ -93,7 +94,7 @@ out:
 		}
 		if(P.more())
 			throw std::runtime_error("Excess arguments for action");
-		core.rom->rtype->execute_action(act->id, params);
+		core.rom->execute_action(act->id, params);
 		return 0;
 	}
 

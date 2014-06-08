@@ -480,7 +480,7 @@ bool lsnes_app::OnInit()
 
 	loaded_rom dummy_rom;
 	std::map<std::string, std::string> settings;
-	auto ctrldata = dummy_rom.rtype->controllerconfig(settings);
+	auto ctrldata = dummy_rom.controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	lsnes_instance.buttons->reinit();
@@ -537,7 +537,7 @@ bool lsnes_app::OnInit()
 	moviefile* mov = NULL;
 	if(movie_file != "")
 		try {
-			mov = new moviefile(movie_file, *rom.rtype);
+			mov = new moviefile(movie_file, rom.get_internal_rom_type());
 			rom.load(mov->settings, mov->movie_rtc_second, mov->movie_rtc_subsecond);
 		} catch(std::exception& e) {
 			std::cerr << "Can't load state: " << e.what() << std::endl;
@@ -550,7 +550,7 @@ bool lsnes_app::OnInit()
 		mov = new moviefile(rom, c_settings, DEFAULT_RTC_SECOND, DEFAULT_RTC_SUBSECOND);
 	}
 	*lsnes_instance.rom = rom;
-	mov->start_paused = start_unpaused ? !(rom.rtype && !rom.rtype->isnull()) : true;
+	mov->start_paused = start_unpaused ? rom.isnull() : true;
 	for(auto i : c_lua)
 		lsnes_instance.lua2->add_startup_script(i);
 	boot_emulator(lsnes_instance, rom, *mov, fullscreen_mode);

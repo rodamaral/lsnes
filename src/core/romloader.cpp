@@ -109,7 +109,7 @@ bool _load_new_rom(const romload_request& req)
 		messages << "Can't reload ROM: " << e.what() << std::endl;
 		return false;
 	}
-	messages << "Using core: " << core.rom->rtype->get_core_identifier() << std::endl;
+	messages << "Using core: " << core.rom->get_core_identifier() << std::endl;
 	core.dispatch->core_change();
 	return true;
 }
@@ -119,7 +119,7 @@ bool reload_active_rom()
 {
 	auto& core = CORE();
 	romload_request req;
-	if(core.rom->rtype->isnull()) {
+	if(core.rom->isnull()) {
 		platform::error_message("Can't reload ROM: No existing ROM");
 		messages << "No ROM loaded" << std::endl;
 		return false;
@@ -129,9 +129,9 @@ bool reload_active_rom()
 		return _load_new_rom(req);
 	}
 	//This is composite ROM.
-	req.core = core.rom->rtype->get_core_identifier();
-	req.system = core.rom->rtype->get_iname();
-	req.region = core.rom->orig_region->get_iname();
+	req.core = core.rom->get_core_identifier();
+	req.system = core.rom->get_iname();
+	req.region = core.rom->orig_region_get_iname();
 	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++)
 		req.files[i] = core.rom->romimg[i].filename;
 	return _load_new_rom(req);
@@ -294,14 +294,14 @@ loaded_rom construct_rom(const std::string& movie_filename, const std::vector<st
 			//Okay, load as ROM bundle and check validity.
 			loaded_rom cr(r[1], requested_core);
 			for(auto j : sysregs) {
-				if(&j->get_type() != cr.rtype)
+				if(cr.is_of_type(j->get_type()))
 					continue;
-				for(auto k : cr.rtype->get_regions())
+				for(auto k : cr.get_regions())
 					if(k == &j->get_region())
 						goto valid;
 			}
 			throw std::runtime_error("Specified ROM is of wrong type ('" +
-				cr.rtype->get_hname() + "') for movie ('" + info.sysregion + ")");
+				cr.get_hname() + "') for movie ('" + info.sysregion + ")");
 valid:
 			return cr;
 		}
