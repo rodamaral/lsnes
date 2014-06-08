@@ -23,6 +23,7 @@
 #include "core/queue.hpp"
 #include "core/random.hpp"
 #include "core/rom.hpp"
+#include "core/runmode.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/callbacks.hpp"
@@ -42,12 +43,6 @@
 #include <set>
 #include <sys/time.h>
 
-#define QUIT_MAGIC 0x5a8c4bef
-
-#define SPECIAL_FRAME_START 0
-#define SPECIAL_FRAME_VIDEO 1
-#define SPECIAL_SAVEPOINT 2
-#define SPECIAL_NONE 3
 
 void update_movie_state();
 
@@ -65,35 +60,12 @@ namespace
 	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> SET_pause_on_end(lsnes_setgrp,
 		"pause-on-end", "Movie‣Pause on end", false);
 
-	enum advance_mode
-	{
-		ADVANCE_INVALID,		//In case someone trashes this.
-		ADVANCE_QUIT,			//Quit the emulator.
-		ADVANCE_AUTO,			//Normal (possibly slowed down play).
-		ADVANCE_LOAD,			//Loading a state.
-		ADVANCE_FRAME,			//Frame advance.
-		ADVANCE_SUBFRAME,		//Subframe advance.
-		ADVANCE_SKIPLAG,		//Skip lag (oneshot, reverts to normal).
-		ADVANCE_SKIPLAG_PENDING,	//Activate skip lag mode at next frame.
-		ADVANCE_PAUSE,			//Unconditional pause.
-		ADVANCE_BREAK_PAUSE,		//Break pause.
-	};
-
-	//Flags related to repeating advance.
-	bool advanced_once;
-	bool cancel_advance;
-	//Emulator advance mode. Detemines pauses at start of frame / subframe, etc..
-	enum advance_mode amode;
-	enum advance_mode old_mode;
 	//Mode and filename of pending load, one of LOAD_* constants.
-	bool load_paused;
 	int loadmode;
 	std::string pending_load;
 	std::string pending_new_project;
 	//Queued saves (all savestates).
 	std::set<std::pair<std::string, int>> queued_saves;
-	//Special subframe location. One of SPECIAL_* constants.
-	int location_special;
 	//Unsafe rewind.
 	bool do_unsafe_rewind = false;
 	void* unsafe_rewind_obj = NULL;
@@ -103,32 +75,13 @@ namespace
 	//Macro hold.
 	bool macro_hold_1;
 	bool macro_hold_2;
-	//Quit magic.
-	unsigned quit_magic;
-
-	bool is_quitting()
-	{
-		if(amode == ADVANCE_QUIT && quit_magic == QUIT_MAGIC)
-			return true;
-		if(amode == ADVANCE_INVALID || (amode == ADVANCE_QUIT && quit_magic != QUIT_MAGIC) ||
-			amode > ADVANCE_BREAK_PAUSE) {
-			//Ouch.
-			if(lsnes_instance.mlogic)
-				emerg_save_movie(lsnes_instance.mlogic->get_mfile(),
-					lsnes_instance.mlogic->get_rrdata());
-			messages << "WARNING: Emulator runmode undefined, invoked movie dump." << std::endl;
-			amode = ADVANCE_PAUSE;
-		}
-		return false;
-	}
 }
 
 void mainloop_signal_need_rewind(void* ptr)
 {
-	if(ptr) {
-		old_mode = amode;
-		amode = ADVANCE_LOAD;
-	}
+	auto& core = CORE();
+	if(ptr)
+		core.runmode->start_load();
 	do_unsafe_rewind = true;
 	unsafe_rewind_obj = ptr;
 }
@@ -140,72 +93,70 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		core.fbuf->redraw_framebuffer();
 
 	if(subframe) {
-		if(amode == ADVANCE_SUBFRAME) {
-			if(!cancel_advance) {
-				if(!advanced_once)
-					platform::wait(SET_advance_timeout_first(*core.settings) * 1000);
-				else
+		if(core.runmode->is_advance_subframe()) {
+			//Note that platform::wait() may change value of cancel flag.
+			if(!core.runmode->test_cancel()) {
+				if(core.runmode->set_and_test_advanced())
 					platform::wait(SET_advance_timeout_subframe(*core.settings) * 1000);
-				advanced_once = true;
+				else
+					platform::wait(SET_advance_timeout_first(*core.settings) * 1000);
+				core.runmode->set_and_test_advanced();
 			}
-			if(cancel_advance) {
+			if(core.runmode->clear_and_test_cancel()) {
 				stop_at_frame_active = false;
-				amode = ADVANCE_PAUSE;
-				cancel_advance = false;
+				core.runmode->set_pause();
 			}
-			platform::set_paused(amode == ADVANCE_PAUSE);
-		} else if(amode == ADVANCE_FRAME) {
+			platform::set_paused(core.runmode->is_paused());
+		} else if(core.runmode->is_advance_frame()) {
 			;
 		} else {
-			if(amode == ADVANCE_SKIPLAG) {
+			if(core.runmode->is_skiplag()) {
 				stop_at_frame_active = false;
-				amode = ADVANCE_PAUSE;
+				core.runmode->set_pause();
 			}
-			platform::set_paused(amode == ADVANCE_PAUSE);
-			cancel_advance = false;
+			core.runmode->clear_and_test_cancel();
 		}
-		location_special = SPECIAL_NONE;
+		platform::set_paused(core.runmode->is_paused());
+		core.runmode->set_point(emulator_runmode::P_NONE);
 		update_movie_state();
 	} else {
-		if(amode == ADVANCE_SKIPLAG_PENDING)
-			amode = ADVANCE_SKIPLAG;
-		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
-			if(!cancel_advance) {
+		core.runmode->decay_skiplag();
+		if(core.runmode->is_advance()) {
+			//Note that platform::wait() may change value of cancel flag.
+			if(!core.runmode->test_cancel()) {
 				uint64_t wait = 0;
-				if(!advanced_once)
+				if(!core.runmode->test_advanced())
 					wait = SET_advance_timeout_first(*core.settings) * 1000;
-				else if(amode == ADVANCE_SUBFRAME)
+				else if(core.runmode->is_advance_subframe())
 					wait = SET_advance_timeout_subframe(*core.settings) * 1000;
 				else
 					wait = core.framerate->to_wait_frame(framerate_regulator::get_utime());
 				platform::wait(wait);
-				advanced_once = true;
+				core.runmode->set_and_test_advanced();
 			}
-			if(cancel_advance) {
+			if(core.runmode->clear_and_test_cancel()) {
 				stop_at_frame_active = false;
-				amode = ADVANCE_PAUSE;
-				cancel_advance = false;
+				core.runmode->set_pause();
 			}
-			platform::set_paused(amode == ADVANCE_PAUSE);
-		} else if(amode == ADVANCE_AUTO && core.mlogic->get_movie().readonly_mode() &&
+			platform::set_paused(core.runmode->is_paused());
+		} else if(core.runmode->is_freerunning() && core.mlogic->get_movie().readonly_mode() &&
 			SET_pause_on_end(*core.settings) && !stop_at_frame_active) {
 			if(core.mlogic->get_movie().get_current_frame() ==
 				core.mlogic->get_movie().get_frame_count()) {
 				stop_at_frame_active = false;
-				amode = ADVANCE_PAUSE;
+				core.runmode->set_pause();
 				platform::set_paused(true);
 			}
-		} else if(amode == ADVANCE_AUTO && stop_at_frame_active) {
+		} else if(core.runmode->is_freerunning() && stop_at_frame_active) {
 			if(core.mlogic->get_movie().get_current_frame() >= stop_at_frame) {
 				stop_at_frame_active = false;
-				amode = ADVANCE_PAUSE;
+				core.runmode->set_pause();
 				platform::set_paused(true);
 			}
 		} else {
-			platform::set_paused((amode == ADVANCE_PAUSE));
-			cancel_advance = false;
+			platform::set_paused(core.runmode->is_paused());
 		}
-		location_special = SPECIAL_FRAME_START;
+		core.runmode->set_point(emulator_runmode::P_START);
 		update_movie_state();
 	}
 	platform::flush_command_queue();
@@ -224,12 +175,11 @@ namespace
 	void mark_pending_load(std::string filename, int lmode)
 	{
 		//Convert break pause to ordinary pause.
-		if(amode == ADVANCE_BREAK_PAUSE)
-			amode = ADVANCE_PAUSE;
+		auto& core = CORE();
 		loadmode = lmode;
 		pending_load = filename;
-		old_mode = amode;
-		amode = ADVANCE_LOAD;
+		core.runmode->decay_break();
+		core.runmode->start_load();
 		platform::cancel_wait();
 		platform::set_paused(false);
 	}
@@ -244,7 +194,7 @@ namespace
 			core.slotcache->flush(translate_name_mprefix(filename, tmp, -1));
 			return;
 		}
-		if(location_special == SPECIAL_SAVEPOINT) {
+		if(core.runmode->get_point() == emulator_runmode::P_SAVE) {
 			//We can save immediately here.
 			do_save_state(filename, binary);
 			core.slotcache->flush(translate_name_mprefix(filename, tmp, -1));
@@ -271,16 +221,16 @@ void update_movie_state()
 	}
 	auto& _status = core.status->get_write();
 	try {
-		if(*core.mlogic && !system_corrupt) {
+		if(*core.mlogic && !core.runmode->is_corrupt()) {
 			_status.movie_valid = true;
 			_status.curframe = core.mlogic->get_movie().get_current_frame();
 			_status.length = core.mlogic->get_movie().get_frame_count();
 			_status.lag = core.mlogic->get_movie().get_lag_frames();
-			if(location_special == SPECIAL_FRAME_START)
+			if(core.runmode->get_point() == emulator_runmode::P_START)
 				_status.subframe = 0;
-			else if(location_special == SPECIAL_SAVEPOINT)
+			else if(core.runmode->get_point() == emulator_runmode::P_SAVE)
 				_status.subframe = _lsnes_status::subframe_savepoint;
-			else if(location_special == SPECIAL_FRAME_VIDEO)
+			else if(core.runmode->get_point() == emulator_runmode::P_VIDEO)
 				_status.subframe = _lsnes_status::subframe_video;
 			else
 				_status.subframe = core.mlogic->get_movie().next_poll_number();
@@ -292,16 +242,16 @@ void update_movie_state()
 			_status.subframe = 0;
 		}
 		_status.dumping = (core.mdumper->get_dumper_count() > 0);
-		if(amode == ADVANCE_BREAK_PAUSE)
+		if(core.runmode->is_paused_break())
 			_status.pause = _lsnes_status::pause_break;
-		else if(amode == ADVANCE_PAUSE)
+		else if(core.runmode->is_paused_normal())
 			_status.pause = _lsnes_status::pause_normal;
 		else
 			_status.pause = _lsnes_status::pause_none;
 		if(*core.mlogic) {
 			auto& mo = core.mlogic->get_movie();
 			readonly = mo.readonly_mode();
-			if(system_corrupt)
+			if(core.runmode->is_corrupt())
 				_status.mode = 'C';
 			else if(!readonly)
 				_status.mode = 'R';
@@ -329,7 +279,7 @@ void update_movie_state()
 
 		_status.speed = (unsigned)(100 * core.framerate->get_realized_multiplier() + 0.5);
 
-		if(*core.mlogic && !system_corrupt) {
+		if(*core.mlogic && !core.runmode->is_corrupt()) {
 			time_t timevalue = static_cast<time_t>(core.mlogic->get_mfile().rtc_second);
 			struct tm* time_decompose = gmtime(&timevalue);
 			char datebuffer[512];
@@ -460,7 +410,7 @@ public:
 	{
 		auto& core = CORE();
 		core.lua2->callback_do_frame_emulated();
-		location_special = SPECIAL_FRAME_VIDEO;
+		core.runmode->set_point(emulator_runmode::P_VIDEO);
 		core.fbuf->redraw_framebuffer(screen, false, true);
 		auto rate = core.rom->get_audio_rate();
 		uint32_t gv = gcd(fps_n, fps_d);
@@ -532,8 +482,7 @@ namespace
 	command::fnptr<const std::string&> CMD_quit_emulator(lsnes_cmds, "quit-emulator", "Quit the emulator",
 		"Syntax: quit-emulator [/y]\nQuits emulator (/y => don't ask for confirmation).\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			amode = ADVANCE_QUIT;
-			quit_magic = QUIT_MAGIC;
+			CORE().runmode->set_quit();
 			platform::set_paused(false);
 			platform::cancel_wait();
 		});
@@ -541,7 +490,10 @@ namespace
 	command::fnptr<> CMD_unpause_emulator(lsnes_cmds, "unpause-emulator", "Unpause the emulator",
 		"Syntax: unpause-emulator\nUnpauses the emulator.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			amode = ADVANCE_AUTO;
+			auto& core = CORE();
+			if(core.runmode->is_special())
+				return;
+			core.runmode->set_freerunning();
 			platform::set_paused(false);
 			platform::cancel_wait();
 		});
@@ -549,15 +501,17 @@ namespace
 	command::fnptr<> CMD_pause_emulator(lsnes_cmds, "pause-emulator", "(Un)pause the emulator",
 		"Syntax: pause-emulator\n(Un)pauses the emulator.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(amode != ADVANCE_AUTO) {
-				amode = ADVANCE_AUTO;
+			auto& core = CORE();
+			if(core.runmode->is_special())
+				;
+			else if(core.runmode->is_freerunning()) {
+				platform::cancel_wait();
+				stop_at_frame_active = false;
+				core.runmode->set_pause();
+			} else {
+				core.runmode->set_freerunning();
 				platform::set_paused(false);
 				platform::cancel_wait();
-			} else {
-				platform::cancel_wait();
-				cancel_advance = false;
-				stop_at_frame_active = false;
-				amode = ADVANCE_PAUSE;
 			}
 		});
 
@@ -630,9 +584,10 @@ namespace
 	command::fnptr<> CMD_padvance_frame(lsnes_cmds, "+advance-frame", "Advance one frame",
 		"Syntax: +advance-frame\nAdvances the emulation by one frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			amode = ADVANCE_FRAME;
-			cancel_advance = false;
-			advanced_once = false;
+			auto& core = CORE();
+			if(core.runmode->is_special())
+				return;
+			core.runmode->set_frameadvance();
 			platform::cancel_wait();
 			platform::set_paused(false);
 		});
@@ -640,7 +595,7 @@ namespace
 	command::fnptr<> CMD_nadvance_frame(lsnes_cmds, "-advance-frame", "Advance one frame",
 		"No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			cancel_advance = true;
+			CORE().runmode->set_cancel();
 			platform::cancel_wait();
 			platform::set_paused(false);
 		});
@@ -648,9 +603,10 @@ namespace
 	command::fnptr<> CMD_padvance_poll(lsnes_cmds, "+advance-poll", "Advance one subframe",
 		"Syntax: +advance-poll\nAdvances the emulation by one subframe.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			amode = ADVANCE_SUBFRAME;
-			cancel_advance = false;
-			advanced_once = false;
+			auto& core = CORE();
+			if(core.runmode->is_special())
+				return;
+			core.runmode->set_subframeadvance();
 			platform::cancel_wait();
 			platform::set_paused(false);
 		});
@@ -658,9 +614,9 @@ namespace
 	command::fnptr<> CMD_nadvance_poll(lsnes_cmds, "-advance-poll", "Advance one subframe",
 		"No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(amode == ADVANCE_BREAK_PAUSE)
-				amode = ADVANCE_PAUSE;
-			cancel_advance = true;
+			auto& core = CORE();
+			core.runmode->decay_break();
+			core.runmode->set_cancel();
 			platform::cancel_wait();
 			platform::set_paused(false);
 		});
@@ -668,7 +624,7 @@ namespace
 	command::fnptr<> CMD_advance_skiplag(lsnes_cmds, "advance-skiplag", "Skip to next poll",
 		"Syntax: advance-skiplag\nAdvances the emulation to the next poll.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			amode = ADVANCE_SKIPLAG_PENDING;
+			CORE().runmode->set_skiplag_pending();
 			platform::cancel_wait();
 			platform::set_paused(false);
 		});
@@ -1003,12 +959,11 @@ namespace
 	class mywindowcallbacks : public master_dumper::notifier
 	{
 	public:
-		mywindowcallbacks(emulator_dispatch& dispatch)
+		mywindowcallbacks(emulator_dispatch& dispatch, emulator_runmode& runmode)
 		{
-			closenotify.set(dispatch.close, [this]() {
+			closenotify.set(dispatch.close, [this, &runmode]() {
 				try {
-					amode = ADVANCE_QUIT;
-					quit_magic = QUIT_MAGIC;
+					runmode.set_quit();
 					platform::set_paused(false);
 					platform::cancel_wait();
 				} catch(...) {
@@ -1040,7 +995,7 @@ jumpback:
 			core.dispatch->mode_change(false);
 			do_unsafe_rewind = false;
 			core.mlogic->get_mfile().is_savestate = true;
-			location_special = SPECIAL_SAVEPOINT;
+			core.runmode->set_point(emulator_runmode::P_SAVE);
 			update_movie_state();
 			messages << "Rewind done in " << (framerate_regulator::get_utime() - t) << " usec."
 				<< std::endl;
@@ -1065,21 +1020,18 @@ jumpback:
 				goto nothing_to_do;
 			}
 nothing_to_do:
-			amode = old_mode;
-			platform::set_paused(amode == ADVANCE_PAUSE);
+			core.runmode->end_load();
+			platform::set_paused(core.runmode->is_paused());
 			platform::flush_command_queue();
-			if(amode == ADVANCE_LOAD)
+			if(core.runmode->is_load())
 				goto jumpback;
 			return 0;
 		}
 		if(pending_load != "") {
-			bool system_was_corrupt = system_corrupt;
-			system_corrupt = false;
 			try {
 				if(loadmode != LOAD_STATE_BEGINNING && loadmode != LOAD_STATE_ROMRELOAD &&
 					!do_load_state(pending_load, loadmode)) {
-					if(system_was_corrupt)
-						system_corrupt = system_was_corrupt;
+					core.runmode->end_load();
 					pending_load = "";
 					return -1;
 				}
@@ -1087,23 +1039,21 @@ nothing_to_do:
 					do_load_rewind();
 				if(loadmode == LOAD_STATE_ROMRELOAD)
 					do_load_rom();
+				core.runmode->clear_corrupt();
 			} catch(std::exception& e) {
-				if(!system_corrupt && system_was_corrupt)
-					system_corrupt = true;
+				core.runmode->set_corrupt();
 				platform::error_message(std::string("Load failed: ") + e.what());
 				messages << "Load failed: " << e.what() << std::endl;
 			}
 			pending_load = "";
-			amode = load_paused ? ADVANCE_PAUSE : ADVANCE_AUTO;
-			platform::set_paused(load_paused);
-			load_paused = false;
-			if(!system_corrupt) {
-				location_special = SPECIAL_SAVEPOINT;
+			if(!core.runmode->is_corrupt()) {
+				core.runmode->end_load();
+				core.runmode->set_point(emulator_runmode::P_SAVE);
 				update_movie_state();
 				platform::flush_command_queue();
-				if(is_quitting())
+				if(core.runmode->is_quit())
 					return -1;
-				if(amode == ADVANCE_LOAD)
+				if(core.runmode->is_load())
 					goto jumpback;
 			}
 			if(old_project != (*core.mlogic ? core.mlogic->get_mfile().projectid : ""))
@@ -1143,13 +1093,14 @@ nothing_to_do:
 
 	bool handle_corrupt()
 	{
-		if(!system_corrupt)
+		auto& core = CORE();
+		if(!core.runmode->is_corrupt())
 			return false;
-		while(system_corrupt) {
+		while(core.runmode->is_corrupt()) {
 			platform::set_paused(true);
 			platform::flush_command_queue();
 			handle_load();
-			if(is_quitting())
+			if(core.runmode->is_quit())
 				return true;
 		}
 		return true;
@@ -1166,7 +1117,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 {
 	lsnes_instance.emu_thread = threads::id();
 	auto& core = CORE();
-	mywindowcallbacks mywcb(*core.dispatch);
+	mywindowcallbacks mywcb(*core.dispatch, *core.runmode);
 	core.iqueue->system_thread_available = true;
 	//Basic initialization.
 	core.commentary->init();
@@ -1182,7 +1133,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	bool used = false;
 	try {
 		do_load_state(initial, LOAD_STATE_INITIAL, used);
-		location_special = SPECIAL_SAVEPOINT;
+		core.runmode->set_point(emulator_runmode::P_SAVE);
 		update_movie_state();
 		first_round = core.mlogic->get_mfile().is_savestate;
 		just_did_loadstate = first_round;
@@ -1197,25 +1148,24 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			messages << "FATAL: Can't load movie" << std::endl;
 			throw;
 		}
-		system_corrupt = true;
+		core.runmode->set_corrupt();
 		core.fbuf->redraw_framebuffer(emu_framebuffer::screen_corrupt);
 	}
 
-	platform::set_paused(initial.start_paused);
-	amode = initial.start_paused ? ADVANCE_PAUSE : ADVANCE_AUTO;
+	core.runmode->set_pause_cond(initial.start_paused);
+	platform::set_paused(core.runmode->is_paused());
 	stop_at_frame_active = false;
 
 	core.lua2->run_startup_scripts();
 
-	while(!is_quitting() || !queued_saves.empty()) {
+	while(!core.runmode->is_quit() || !queued_saves.empty()) {
 		if(handle_corrupt()) {
 			first_round = *core.mlogic && core.mlogic->get_mfile().is_savestate;
 			just_did_loadstate = first_round;
 			continue;
 		}
 		core.framerate->ack_frame_tick(framerate_regulator::get_utime());
-		if(amode == ADVANCE_SKIPLAG_PENDING)
-			amode = ADVANCE_SKIPLAG;
+		core.runmode->decay_skiplag();
 
 		if(!first_round) {
 			core.controls->reset_framehold();
@@ -1224,22 +1174,18 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			}
 			macro_hold_2 = false;
 			core.mlogic->get_movie().get_pollcounters().set_framepflag(false);
-			core.mlogic->new_frame_starting(amode == ADVANCE_SKIPLAG);
+			core.mlogic->new_frame_starting(core.runmode->is_skiplag());
 			core.mlogic->get_movie().get_pollcounters().set_framepflag(true);
-			if(is_quitting() && queued_saves.empty())
+			if(core.runmode->is_quit() && queued_saves.empty())
 				break;
 			handle_saves();
 			int r = 0;
 			if(queued_saves.empty())
 				r = handle_load();
-			if(r > 0 || system_corrupt) {
+			if(r > 0 || core.runmode->is_corrupt()) {
 				core.mlogic->get_movie().get_pollcounters().set_framepflag(
 					core.mlogic->get_mfile().is_savestate);
 				first_round = core.mlogic->get_mfile().is_savestate;
-				if(system_corrupt)
-					amode = ADVANCE_PAUSE;
-				else
-					amode = old_mode;
 				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
 				core.controls->reset_framehold();
@@ -1248,16 +1194,16 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
 				stop_at_frame_active = false;
-				if(is_quitting())
+				if(core.runmode->is_quit())
 					goto out;
-				amode = ADVANCE_PAUSE;
+				core.runmode->set_pause();
 			}
 		}
 		if(just_did_loadstate) {
 			//If we just loadstated, we are up to date.
-			if(is_quitting())
+			if(core.runmode->is_quit())
 				break;
-			platform::set_paused(amode == ADVANCE_PAUSE);
+			platform::set_paused(core.runmode->is_paused());
 			platform::flush_command_queue();
 			//We already have done the reset this frame if we are going to do one at all.
 			core.mlogic->get_movie().set_controls(core.mlogic->update_controls(true));
@@ -1267,7 +1213,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		core.dbg->do_callback_frame(core.mlogic->get_movie().get_current_frame(), false);
 		core.rom->emulate();
 		random_mix_timing_entropy();
-		if(amode == ADVANCE_AUTO)
+		if(core.runmode->is_freerunning())
 			platform::wait(core.framerate->to_wait_frame(framerate_regulator::get_utime()));
 		first_round = false;
 		core.lua2->callback_do_frame();
@@ -1285,9 +1231,11 @@ out:
 
 void set_stop_at_frame(uint64_t frame)
 {
+	auto& core = CORE();
 	stop_at_frame = frame;
 	stop_at_frame_active = (frame != 0);
-	amode = ADVANCE_AUTO;
+	if(!core.runmode->is_special())
+		core.runmode->set_freerunning();
 	platform::set_paused(false);
 }
 
@@ -1299,8 +1247,7 @@ void do_flush_slotinfo()
 void switch_projects(const std::string& newproj)
 {
 	pending_new_project = newproj;
-	amode = ADVANCE_LOAD;
-	old_mode = ADVANCE_PAUSE;
+	CORE().runmode->start_load();
 	platform::cancel_wait();
 	platform::set_paused(false);
 }
@@ -1322,16 +1269,17 @@ void reload_current_rom()
 void close_rom()
 {
 	if(load_null_rom()) {
-		load_paused = true;
+		CORE().runmode->set_pause();
 		mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
 	}
 }
 
 void do_break_pause()
 {
-	amode = ADVANCE_BREAK_PAUSE;
+	auto& core = CORE();
+	core.runmode->set_break();
 	update_movie_state();
-	while(amode == ADVANCE_BREAK_PAUSE) {
+	while(core.runmode->is_paused_break()) {
 		platform::set_paused(true);
 		platform::flush_command_queue();
 	}
@@ -1339,8 +1287,9 @@ void do_break_pause()
 
 void convert_break_to_pause()
 {
-	if(amode == ADVANCE_BREAK_PAUSE) {
-		amode = ADVANCE_PAUSE;
+	auto& core = CORE();
+	if(core.runmode->is_paused_break()) {
+		core.runmode->set_pause();
 		update_movie_state();
 	}
 }

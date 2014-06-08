@@ -29,8 +29,6 @@
 #define SAVE_STATE 0
 #define SAVE_MOVIE 1
 
-extern bool system_corrupt;
-
 std::string resolve_relative_path(const std::string& path);
 std::pair<std::string, std::string> split_author(const std::string& author) throw(std::bad_alloc,
 	std::runtime_error);

@@ -13,6 +13,7 @@
 #include "core/project.hpp"
 #include "core/random.hpp"
 #include "core/rom.hpp"
+#include "core/runmode.hpp"
 #include "core/settings.hpp"
 #include "interface/romtype.hpp"
 #include "library/directory.hpp"
@@ -24,7 +25,6 @@
 #include <iomanip>
 #include <fstream>
 
-bool system_corrupt;
 std::string last_save;
 void update_movie_state();
 
@@ -476,7 +476,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
-			system_corrupt = true;
+			core.runmode->set_corrupt();
 			core.fbuf->redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 			throw;
 		}
@@ -528,7 +528,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
-			system_corrupt = true;
+			core.runmode->set_corrupt();
 			core.fbuf->redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 			throw;
 		}
@@ -572,7 +572,7 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		system_corrupt = true;
+		core.runmode->set_corrupt();
 		core.fbuf->redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 		throw;
 	}
@@ -613,7 +613,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		system_corrupt = true;
+		core.runmode->set_corrupt();
 		core.fbuf->redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 		throw;
 	}
@@ -741,7 +741,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		system_corrupt = true;
+		core.runmode->set_corrupt();
 		core.fbuf->redraw_framebuffer(emu_framebuffer::screen_corrupt, true);
 		throw;
 	}

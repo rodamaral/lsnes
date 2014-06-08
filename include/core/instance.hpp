@@ -28,6 +28,7 @@ class lua_state;
 class audioapi_instance;
 class loaded_rom;
 class save_jukebox;
+class emulator_runmode;
 namespace command { class group; }
 namespace lua { class state; }
 namespace settingvar { class group; }
@@ -123,6 +124,7 @@ struct emulator_instance
 	audioapi_instance* audio;
 	loaded_rom* rom;
 	save_jukebox* jukebox;
+	emulator_runmode* runmode;
 	threads::id emu_thread;
 	time_t random_seed_value;
 	dtor_list D;

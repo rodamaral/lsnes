@@ -23,6 +23,7 @@
 #include "core/queue.hpp"
 #include "core/random.hpp"
 #include "core/rom.hpp"
+#include "core/runmode.hpp"
 #include "core/settings.hpp"
 #include "library/command.hpp"
 #include "library/keyboard.hpp"
@@ -106,6 +107,7 @@ emulator_instance::emulator_instance()
 	D.init(dbg, *dispatch, *rom);
 	D.init(framerate);
 	D.init(mdumper, *lua2);
+	D.init(runmode);
 
 	status_A->valid = false;
 	status_B->valid = false;
