@@ -34,7 +34,6 @@ namespace
 	}
 }
 
-void update_movie_state();
 void do_flush_slotinfo();
 
 void UI_get_branch_map(emulator_instance& inst, uint64_t& cur, std::map<uint64_t, std::string>& namemap,
@@ -74,12 +73,13 @@ void UI_rename_branch(emulator_instance& inst, uint64_t id, const std::string& n
 	std::function<void(std::exception&)> onerror)
 {
 	auto project = inst.project;
-	inst.iqueue->run_async([project, id, name]() {
+	auto supdater = inst.supdater;
+	inst.iqueue->run_async([project, supdater, id, name]() {
 		auto p = project->get();
 		if(!p) return;
 		p->set_branch_name(id, name);
 		p->flush();
-		update_movie_state();
+		supdater->update();
 	}, onerror);
 }
 
@@ -87,12 +87,13 @@ void UI_reparent_branch(emulator_instance& inst, uint64_t id, uint64_t pid,
 	std::function<void(std::exception&)> onerror)
 {
 	auto project = inst.project;
-	inst.iqueue->run_async([project, id, pid]() {
+	auto supdater = inst.supdater;
+	inst.iqueue->run_async([project, supdater, id, pid]() {
 		auto p = project->get();
 		if(!p) return;
 		p->set_parent_branch(id, pid);
 		p->flush();
-		update_movie_state();
+		supdater->update();
 	}, onerror);
 }
 
@@ -110,12 +111,13 @@ void UI_delete_branch(emulator_instance& inst, uint64_t id, std::function<void(s
 void UI_switch_branch(emulator_instance& inst, uint64_t id, std::function<void(std::exception&)> onerror)
 {
 	auto project = inst.project;
-	inst.iqueue->run_async([project, id]() {
+	auto supdater = inst.supdater;
+	inst.iqueue->run_async([project, supdater, id]() {
 		auto p = project->get();
 		if(!p) return;
 		p->set_current_branch(id);
 		p->flush();
-		update_movie_state();
+		supdater->update();
 	}, onerror);
 }
 
@@ -162,7 +164,7 @@ void UI_save_author_info(emulator_instance& inst, project_author_info& info)
 			proj->flush();
 			//For save status to immediately update.
 			do_flush_slotinfo();
-			update_movie_state();
+			inst.supdater->update();
 			inst.dispatch->title_change();
 		} else {
 			inst.mlogic->get_mfile().gamename = info.gamename;

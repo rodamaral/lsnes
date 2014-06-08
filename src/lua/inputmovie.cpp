@@ -8,7 +8,6 @@
 #include "core/window.hpp"
 #include <fstream>
 
-void update_movie_state();
 
 namespace
 {
@@ -194,7 +193,7 @@ namespace
 
 		if(&v == core.mlogic->get_mfile().input) {
 			//This can't add frames, so no need to adjust the movie.
-			update_movie_state();
+			core.supdater->update();
 			core.dispatch->status_update();
 		}
 		return 0;
@@ -250,7 +249,7 @@ namespace
 				v.append(v.blank_frame(true));
 		}
 		if(&v == core.mlogic->get_mfile().input) {
-			update_movie_state();
+			core.supdater->update();
 			core.dispatch->status_update();
 		}
 		return 0;
@@ -266,14 +265,14 @@ namespace
 
 		v.append(v.blank_frame(true));
 		if(&v == core.mlogic->get_mfile().input) {
-			update_movie_state();
+			core.supdater->update();
 			core.dispatch->status_update();
 			check_can_edit(0, 0, 0, v.size() - 1);
 		}
 		v[v.size() - 1] = f->get_frame();
 		if(&v == core.mlogic->get_mfile().input) {
 			if(!v[v.size() - 1].sync()) {
-				update_movie_state();
+				core.supdater->update();
 			}
 			core.dispatch->status_update();
 		}
@@ -294,7 +293,7 @@ namespace
 			check_can_edit(0, 0, 0, n);
 		v.resize(n);
 		if(&v == core.mlogic->get_mfile().input) {
-			update_movie_state();
+			core.supdater->update();
 			core.dispatch->status_update();
 		}
 		return 0;
@@ -319,7 +318,7 @@ namespace
 		v[frame].axis3(port, controller, button, value);
 
 		if(&v == core.mlogic->get_mfile().input) {
-			update_movie_state();
+			core.supdater->update();
 			core.dispatch->status_update();
 		}
 		return 0;
@@ -356,7 +355,7 @@ namespace
 				dstv[dst + i] = srcv[src + i];
 		}
 		if(&dstv == core.mlogic->get_mfile().input) {
-			update_movie_state();
+			core.supdater->update();
 			core.dispatch->status_update();
 		}
 		return 0;

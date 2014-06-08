@@ -14,6 +14,7 @@ class controller_state;
 class button_mapping;
 class emulator_dispatch;
 class input_queue;
+class status_updater;
 namespace command
 {
 	class group;
@@ -170,7 +171,7 @@ class project_state
 public:
 	project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
 		controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
-		emulator_dispatch& _edispatch, input_queue& _iqueue, loaded_rom& _rom);
+		emulator_dispatch& _edispatch, input_queue& _iqueue, loaded_rom& _rom, status_updater& _supdater);
 	~project_state();
 /**
  * Get currently active project.
@@ -235,6 +236,7 @@ private:
 	emulator_dispatch& edispatch;
 	input_queue& iqueue;
 	loaded_rom& rom;
+	status_updater& supdater;
 };
 
 #endif

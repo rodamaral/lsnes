@@ -1,15 +1,14 @@
 #include "core/command.hpp"
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
+#include "core/emustatus.hpp"
 #include "core/mbranch.hpp"
 #include "core/messages.hpp"
 #include "core/movie.hpp"
 #include "library/string.hpp"
 
-void update_movie_state();
-
-movie_branches::movie_branches(movie_logic& _mlogic, emulator_dispatch& _dispatch)
-	: mlogic(_mlogic), edispatch(_dispatch)
+movie_branches::movie_branches(movie_logic& _mlogic, emulator_dispatch& _dispatch, status_updater& _supdater)
+	: mlogic(_mlogic), edispatch(_dispatch), supdater(_supdater)
 {
 }
 
@@ -50,7 +49,7 @@ void movie_branches::set(const std::string& branch)
 	mf.input = &mf.branches[branch];
 	mlogic.get_movie().set_movie_data(mf.input);
 	edispatch.mbranch_change();
-	update_movie_state();
+	supdater.update();
 	messages << "Switched to branch '" << name(branch) << "'" << std::endl;
 }
 
@@ -81,7 +80,7 @@ void movie_branches::rename(const std::string& oldn, const std::string& newn)
 	mf.branches.erase(oldn);
 	messages << "Renamed branch '" << name(oldn) << "' to '" << name(newn) << "'" << std::endl;
 	edispatch.mbranch_change();
-	update_movie_state();
+	supdater.update();
 }
 
 void movie_branches::_delete(const std::string& branch)

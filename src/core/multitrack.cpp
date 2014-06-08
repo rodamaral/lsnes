@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
+#include "core/emustatus.hpp"
 #include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/movie.hpp"
@@ -9,10 +10,9 @@
 
 #include <string>
 
-void update_movie_state();
-
-multitrack_edit::multitrack_edit(movie_logic& _mlogic, controller_state& _controls, emulator_dispatch& _dispatch)
-	: mlogic(_mlogic), controls(_controls), edispatch(_dispatch)
+multitrack_edit::multitrack_edit(movie_logic& _mlogic, controller_state& _controls, emulator_dispatch& _dispatch,
+	status_updater& _supdater)
+	: mlogic(_mlogic), controls(_controls), edispatch(_dispatch), supdater(_supdater)
 {
 }
 
@@ -28,7 +28,7 @@ void multitrack_edit::enable(bool state)
 		enabled = state;
 		controllerstate.clear();
 	}
-	update_movie_state();
+	supdater.update();
 }
 
 void multitrack_edit::set(unsigned port, unsigned controller, state s)
@@ -37,7 +37,7 @@ void multitrack_edit::set(unsigned port, unsigned controller, state s)
 		threads::alock h(mlock);
 		controllerstate[std::make_pair(port, controller)] = s;
 	}
-	update_movie_state();
+	supdater.update();
 }
 
 void multitrack_edit::set_and_notify(unsigned port, unsigned controller, state s)
@@ -77,7 +77,7 @@ void multitrack_edit::rotate(bool forward)
 		controllerstate[x[i2]] = s;
 		edispatch.multitrack_change(x[i2].first, x[i2].second, s);
 	}
-	update_movie_state();
+	supdater.update();
 }
 
 multitrack_edit::state multitrack_edit::get(unsigned port, unsigned controller)
@@ -177,15 +177,17 @@ namespace
 	command::fnptr<> CMD_rotate_forward(lsnes_cmds, "rotate-multitrack", "Rotate multitrack",
 		"Syntax: rotate-multitrack\nRotate multitrack\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().mteditor->rotate(true);
-			update_movie_state();
+			auto& core = CORE();
+			core.mteditor->rotate(true);
+			core.supdater->update();
 		});
 
 	command::fnptr<> CMD_rotate_backward(lsnes_cmds, "rotate-multitrack-backwards", "Rotate multitrack backwards",
 		"Syntax: rotate-multitrack-backwards\nRotate multitrack backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().mteditor->rotate(false);
-			update_movie_state();
+			auto& core = CORE();
+			core.mteditor->rotate(false);
+			core.supdater->update();
 		});
 
 	command::fnptr<const std::string&> CMD_set_mt(lsnes_cmds, "set-multitrack", "Set multitrack mode",
@@ -208,7 +210,7 @@ namespace
 				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_XOR);
 			else
 				throw std::runtime_error("Invalid mode (keep, rewrite, or, xor)");
-			update_movie_state();
+			core.supdater->update();
 		});
 
 	keyboard::invbind_info IBIND_mtback(lsnes_invbinds, "rotate-multitrack-backwards",

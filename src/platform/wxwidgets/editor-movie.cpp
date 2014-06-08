@@ -66,8 +66,6 @@ enum
 	wxID_MBRANCH_LAST = wxID_MBRANCH_FIRST + 1024
 };
 
-void update_movie_state();
-
 namespace
 {
 	unsigned lines_to_display = 28;

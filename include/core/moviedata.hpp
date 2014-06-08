@@ -1,6 +1,7 @@
 #ifndef _moviedata__hpp__included__
 #define _moviedata__hpp__included__
 
+#include "core/emustatus.hpp"
 #include "core/moviefile.hpp"
 #include "core/movie.hpp"
 #include "library/rrdata.hpp"

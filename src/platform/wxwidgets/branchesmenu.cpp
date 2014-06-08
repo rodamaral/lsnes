@@ -10,8 +10,6 @@
 #include "core/moviedata.hpp"
 #include "core/ui-services.hpp"
 
-void update_movie_state();
-
 namespace
 {
 	//Tree of branches.

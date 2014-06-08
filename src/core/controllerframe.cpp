@@ -9,16 +9,14 @@
 #include <cstdio>
 #include <iostream>
 
-void update_movie_state();
-
 namespace
 {
 	port_type_set dummytypes;
 }
 
 controller_state::controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons,
-	emulator_dispatch& _dispatch) throw()
-	: project(_project), mlogic(_mlogic), buttons(_buttons), edispatch(_dispatch)
+	emulator_dispatch& _dispatch, status_updater& _supdater) throw()
+	: project(_project), mlogic(_mlogic), buttons(_buttons), edispatch(_dispatch), supdater(_supdater)
 {
 	types = &dummytypes;
 	tasinput_enaged = false;
@@ -360,7 +358,7 @@ void controller_state::do_macro(const std::string& a, int mode) {
 		if(mode & 4) active_macros.push_back(std::make_pair(0, m));
 	}
 end:
-	update_movie_state();
+	supdater.update();
 	edispatch.status_update();
 }
 

@@ -72,6 +72,7 @@ emulator_instance::emulator_instance()
 	D.prealloc(project);
 	D.prealloc(buttons);
 	D.prealloc(dispatch);
+	D.prealloc(supdater);
 
 	D.init(dispatch);
 	D.init(command);
@@ -88,14 +89,14 @@ emulator_instance::emulator_instance()
 	D.init(audio);
 	D.init(commentary, *settings, *dispatch, *audio);
 	D.init(subtitles, *mlogic, *fbuf, *dispatch);
-	D.init(mbranch, *mlogic, *dispatch);
-	D.init(controls, *project, *mlogic, *buttons, *dispatch);
+	D.init(mbranch, *mlogic, *dispatch, *supdater);
+	D.init(controls, *project, *mlogic, *buttons, *dispatch, *supdater);
 	D.init(keyboard);
 	D.init(mapper, *keyboard, *command);
 	D.init(rom);
-	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2, *rom);
+	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2, *rom, *supdater);
 	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch, *lua2);
-	D.init(mteditor, *mlogic, *controls, *dispatch);
+	D.init(mteditor, *mlogic, *controls, *dispatch, *supdater);
 	D.init(status_A);
 	D.init(status_B);
 	D.init(status_C);
@@ -103,11 +104,14 @@ emulator_instance::emulator_instance()
 	D.init(abindmanager, *mapper, *command);
 	D.init(nrrdata);
 	D.init(cmapper, *memory, *mlogic, *rom);
-	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue, *rom);
+	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue, *rom,
+		*supdater);
 	D.init(dbg, *dispatch, *rom);
 	D.init(framerate);
 	D.init(mdumper, *lua2);
 	D.init(runmode);
+	D.init(supdater, *project, *mlogic, *commentary, *status, *runmode, *mdumper, *jukebox, *slotcache,
+	       *framerate, *controls, *mteditor, *lua2, *rom, *mwatch, *dispatch);
 
 	status_A->valid = false;
 	status_B->valid = false;

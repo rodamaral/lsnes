@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
+#include "core/emustatus.hpp"
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
 #include "core/memorywatch.hpp"
@@ -16,7 +17,6 @@
 #include "lua/lua.hpp"
 
 framebuffer::raw screen_corrupt;
-void update_movie_state();
 
 namespace
 {
@@ -99,9 +99,10 @@ namespace
 framebuffer::raw emu_framebuffer::screen_corrupt;
 
 emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
-	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom)
+	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom,
+	status_updater& _supdater)
 	: buffering(buffer1, buffer2, buffer3), subtitles(_subtitles), settings(_settings), mwatch(_mwatch),
-	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2), rom(_rom)
+	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2), rom(_rom), supdater(_supdater)
 {
 	last_redraw_no_lua = false;
 }
@@ -166,7 +167,7 @@ void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, 
 	buffering.put_write();
 	edispatch.screen_update();
 	last_redraw_no_lua = no_lua;
-	update_movie_state();
+	supdater.update();
 }
 
 void emu_framebuffer::redraw_framebuffer()

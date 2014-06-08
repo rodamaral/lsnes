@@ -1536,7 +1536,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 			core.dispatch->mode_change(s);
 			if(!s)
 				core.lua2->callback_do_readwrite();
-			update_movie_state();
+			core.supdater->update();
 			core.dispatch->status_update();
 		});
 		return;

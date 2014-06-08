@@ -8,6 +8,19 @@
 #include "library/triplebuffer.hpp"
 
 class movie_logic;
+class project_state;
+class voice_commentary;
+class emulator_runmode;
+class master_dumper;
+class save_jukebox;
+class slotinfo_cache;
+class framerate_regulator;
+class controller_state;
+class multitrack_edit;
+class lua_state;
+class loaded_rom;
+class memwatch_set;
+class emulator_dispatch;
 
 struct _lsnes_status
 {
@@ -51,6 +64,33 @@ struct slotinfo_cache
 private:
 	std::map<std::string, std::string> cache;
 	movie_logic& mlogic;
+};
+
+struct status_updater
+{
+public:
+	status_updater(project_state& _project, movie_logic& _mlogic, voice_commentary& _commentary,
+	triplebuffer::triplebuffer<_lsnes_status>& _status, emulator_runmode& _runmode, master_dumper& _mdumper,
+	save_jukebox& _jukebox, slotinfo_cache& _slotcache, framerate_regulator& _framerate,
+	controller_state& _controls, multitrack_edit& _mteditor, lua_state& _lua2, loaded_rom& _rom,
+	memwatch_set& _mwatch, emulator_dispatch& _dispatch);
+	void update();
+private:
+	project_state& project;
+	movie_logic& mlogic;
+	voice_commentary& commentary;
+	triplebuffer::triplebuffer<_lsnes_status>& status;
+	emulator_runmode& runmode;
+	master_dumper& mdumper;
+	save_jukebox& jukebox;
+	slotinfo_cache& slotcache;
+	framerate_regulator& framerate;
+	controller_state& controls;
+	multitrack_edit& mteditor;
+	lua_state& lua2;
+	loaded_rom& rom;
+	memwatch_set& mwatch;
+	emulator_dispatch& dispatch;
 };
 
 #endif

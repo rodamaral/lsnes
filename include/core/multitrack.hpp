@@ -18,7 +18,8 @@ public:
 		MT_OR,
 		MT_XOR
 	};
-	multitrack_edit(movie_logic& _mlogic, controller_state& _controls, emulator_dispatch& _dispatch);
+	multitrack_edit(movie_logic& _mlogic, controller_state& _controls, emulator_dispatch& _dispatch,
+		status_updater& _supdater);
 	void enable(bool state);
 	void set(unsigned port, unsigned controller, state s);
 	void set_and_notify(unsigned port, unsigned controller, state s);
@@ -35,6 +36,7 @@ private:
 	movie_logic& mlogic;
 	controller_state& controls;
 	emulator_dispatch& edispatch;
+	status_updater& supdater;
 };
 
 #endif

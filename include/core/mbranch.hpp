@@ -6,10 +6,12 @@
 #define MBRANCH_IMPORT_MOVIE 2
 
 class emulator_dispatch;
+class status_updater;
+class movie_logic;
 
 struct movie_branches
 {
-	movie_branches(movie_logic& _mlogic, emulator_dispatch& _dispatch);
+	movie_branches(movie_logic& _mlogic, emulator_dispatch& _dispatch, status_updater& _supdater);
 	std::string name(const std::string& internal);
 	std::set<std::string> enumerate();
 	std::string get();
@@ -24,6 +26,7 @@ struct movie_branches
 private:
 	movie_logic& mlogic;
 	emulator_dispatch& edispatch;
+	status_updater& supdater;
 };
 
 #endif

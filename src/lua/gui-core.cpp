@@ -1,9 +1,8 @@
 #include "lua/internal.hpp"
+#include "core/emustatus.hpp"
 #include "core/instance.hpp"
 #include "core/window.hpp"
 #include "library/minmax.hpp"
-
-void update_movie_state();
 
 namespace
 {
@@ -80,7 +79,7 @@ namespace
 			core.lua2->watch_vars.erase(name);
 		else
 			core.lua2->watch_vars[name] = utf8::to32(value);
-		update_movie_state();
+		core.supdater->update();
 		return 1;
 	}
 

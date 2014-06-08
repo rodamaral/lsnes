@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
+#include "core/emustatus.hpp"
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
 #include "core/mainloop.hpp"
@@ -189,9 +190,9 @@ namespace
 
 project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
 	controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
-	emulator_dispatch& _edispatch, input_queue& _iqueue, loaded_rom& _rom)
+	emulator_dispatch& _edispatch, input_queue& _iqueue, loaded_rom& _rom, status_updater& _supdater)
 	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache),
-	buttons(_buttons), edispatch(_edispatch), iqueue(_iqueue), rom(_rom)
+	buttons(_buttons), edispatch(_edispatch), iqueue(_iqueue), rom(_rom), supdater(_supdater)
 {
 	active_project = NULL;
 }
@@ -409,7 +410,7 @@ skip_rom_movie:
 	}
 	if(switched) {
 		do_flush_slotinfo();
-		update_movie_state();
+		supdater.update();
 		edispatch.core_change();
 		edispatch.branch_change();
 	}
@@ -776,20 +777,21 @@ namespace
 	command::fnptr<const std::string&> CMD_set_branch(lsnes_cmds, "set-branch", "Set current slot branch",
 		"Syntax: set-branch <id>\nSet current branch to <id>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			auto& core = CORE();
 			regex_results r = regex("([0-9]+)[ \t]*", args);
 			if(!r) {
 				messages << "Syntax: set-branch <id>" << std::endl;
 				return;
 			}
 			try {
-				auto prj = CORE().project->get();
+				auto prj = core.project->get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
 				if(!prj)
 					throw std::runtime_error("Not in project context");
 				prj->set_current_branch(bid);
 				messages << "Set current branch to #" << bid << std::endl;
 				prj->flush();
-				update_movie_state();
+				core.supdater->update();
 			} catch(std::exception& e) {
 				messages << "Can't set branch: " << e.what() << std::endl;
 			}
@@ -799,13 +801,14 @@ namespace
 		"Reparent a slot branch",
 		"Syntax: reparent-branch <id> <newpid>\nReparent branch <id> to be child of <newpid>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			auto& core = CORE();
 			regex_results r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]*", args);
 			if(!r) {
 				messages << "Syntax: reparent-branch <id> <newpid>" << std::endl;
 				return;
 			}
 			try {
-				auto prj = CORE().project->get();
+				auto prj = core.project->get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
 				uint64_t pbid = parse_value<uint64_t>(r[2]);
 				if(!prj)
@@ -813,7 +816,7 @@ namespace
 				prj->set_parent_branch(bid, pbid);
 				messages << "Reparented branch #" << bid << std::endl;
 				prj->flush();
-				update_movie_state();
+				core.supdater->update();
 			} catch(std::exception& e) {
 				messages << "Can't reparent branch: " << e.what() << std::endl;
 			}
@@ -822,20 +825,21 @@ namespace
 	command::fnptr<const std::string&> CMD_rename_branch(lsnes_cmds, "rename-branch", "Rename a slot branch",
 		"Syntax: rename-branch <id> <name>\nRename branch <id> to <name>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			auto& core = CORE();
 			regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
 			if(!r) {
 				messages << "Syntax: rename-branch <id> <name>" << std::endl;
 				return;
 			}
 			try {
-				auto prj = CORE().project->get();
+				auto prj = core.project->get();
 				uint64_t bid = parse_value<uint64_t>(r[1]);
 				if(!prj)
 					throw std::runtime_error("Not in project context");
 				prj->set_branch_name(bid, r[2]);
 				messages << "Renamed branch #" << bid << std::endl;
 				prj->flush();
-				update_movie_state();
+				core.supdater->update();
 			} catch(std::exception& e) {
 				messages << "Can't rename branch: " << e.what() << std::endl;
 			}

@@ -44,8 +44,6 @@
 #include <sys/time.h>
 
 
-void update_movie_state();
-
 settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> movie_dflt_binary(lsnes_setgrp,
 	"movie-default-binary", "Movie‣Saving‣Movies binary", false);
 settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> save_dflt_binary(lsnes_setgrp,
@@ -118,7 +116,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		}
 		platform::set_paused(core.runmode->is_paused());
 		core.runmode->set_point(emulator_runmode::P_NONE);
-		update_movie_state();
+		core.supdater->update();
 	} else {
 		core.runmode->decay_skiplag();
 		if(core.runmode->is_advance()) {
@@ -157,7 +155,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 			platform::set_paused(core.runmode->is_paused());
 		}
 		core.runmode->set_point(emulator_runmode::P_START);
-		update_movie_state();
+		core.supdater->update();
 	}
 	platform::flush_command_queue();
 	controller_frame tmp = core.controls->get(core.mlogic->get_movie().get_current_frame());
@@ -205,140 +203,6 @@ namespace
 	}
 }
 
-void update_movie_state()
-{
-	auto& core = CORE();
-	auto p = core.project->get();
-	bool readonly = false;
-	{
-		uint64_t magic[4];
-		core.rom->region_fill_framerate_magic(magic);
-		if(*core.mlogic)
-			core.commentary->frame_number(core.mlogic->get_movie().get_current_frame(),
-				1.0 * magic[1] / magic[0]);
-		else
-			core.commentary->frame_number(0, 60.0);	//Default.
-	}
-	auto& _status = core.status->get_write();
-	try {
-		if(*core.mlogic && !core.runmode->is_corrupt()) {
-			_status.movie_valid = true;
-			_status.curframe = core.mlogic->get_movie().get_current_frame();
-			_status.length = core.mlogic->get_movie().get_frame_count();
-			_status.lag = core.mlogic->get_movie().get_lag_frames();
-			if(core.runmode->get_point() == emulator_runmode::P_START)
-				_status.subframe = 0;
-			else if(core.runmode->get_point() == emulator_runmode::P_SAVE)
-				_status.subframe = _lsnes_status::subframe_savepoint;
-			else if(core.runmode->get_point() == emulator_runmode::P_VIDEO)
-				_status.subframe = _lsnes_status::subframe_video;
-			else
-				_status.subframe = core.mlogic->get_movie().next_poll_number();
-		} else {
-			_status.movie_valid = false;
-			_status.curframe = 0;
-			_status.length = 0;
-			_status.lag = 0;
-			_status.subframe = 0;
-		}
-		_status.dumping = (core.mdumper->get_dumper_count() > 0);
-		if(core.runmode->is_paused_break())
-			_status.pause = _lsnes_status::pause_break;
-		else if(core.runmode->is_paused_normal())
-			_status.pause = _lsnes_status::pause_normal;
-		else
-			_status.pause = _lsnes_status::pause_none;
-		if(*core.mlogic) {
-			auto& mo = core.mlogic->get_movie();
-			readonly = mo.readonly_mode();
-			if(core.runmode->is_corrupt())
-				_status.mode = 'C';
-			else if(!readonly)
-				_status.mode = 'R';
-			else if(mo.get_frame_count() >= mo.get_current_frame())
-				_status.mode = 'P';
-			else
-				_status.mode = 'F';
-		}
-		try {
-			_status.saveslot_valid = true;
-			int tmp = -1;
-			std::string sfilen = translate_name_mprefix(core.jukebox->get_slot_name(), tmp, -1);
-			_status.saveslot = core.jukebox->get_slot() + 1;
-			_status.slotinfo = utf8::to32(core.slotcache->get(sfilen));
-		} catch(...) {
-			_status.saveslot_valid = false;
-		}
-		_status.branch_valid = (p != NULL);
-		if(p) _status.branch = utf8::to32(p->get_branch_string());
-
-		std::string cur_branch = *core.mlogic ? core.mlogic->get_mfile().current_branch() :
-			"";
-		_status.mbranch_valid = (cur_branch != "");
-		_status.mbranch = utf8::to32(cur_branch);
-
-		_status.speed = (unsigned)(100 * core.framerate->get_realized_multiplier() + 0.5);
-
-		if(*core.mlogic && !core.runmode->is_corrupt()) {
-			time_t timevalue = static_cast<time_t>(core.mlogic->get_mfile().rtc_second);
-			struct tm* time_decompose = gmtime(&timevalue);
-			char datebuffer[512];
-			strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
-			_status.rtc = utf8::to32(datebuffer);
-			_status.rtc_valid = true;
-		} else {
-			_status.rtc_valid = false;
-		}
-
-		auto mset = core.controls->active_macro_set();
-		bool mfirst = true;
-		std::ostringstream mss;
-		for(auto i: mset) {
-			if(!mfirst) mss << ",";
-			mss << i;
-			mfirst = false;
-		}
-		_status.macros = utf8::to32(mss.str());
-
-		controller_frame c;
-		if(!core.mteditor->any_records())
-			c = core.mlogic->get_movie().get_controls();
-		else
-			c = core.controls->get_committed();
-		_status.inputs.clear();
-		for(unsigned i = 0;; i++) {
-			auto pindex = core.controls->lcid_to_pcid(i);
-			if(pindex.first < 0 || !core.controls->is_present(pindex.first, pindex.second))
-				break;
-			char32_t buffer[MAX_DISPLAY_LENGTH];
-			c.display(pindex.first, pindex.second, buffer);
-			std::u32string _buffer = buffer;
-			if(readonly && core.mteditor->is_enabled()) {
-				multitrack_edit::state st = core.mteditor->get(pindex.first, pindex.second);
-				if(st == multitrack_edit::MT_PRESERVE)
-					_buffer += U" (keep)";
-				else if(st == multitrack_edit::MT_OVERWRITE)
-					_buffer += U" (rewrite)";
-				else if(st == multitrack_edit::MT_OR)
-					_buffer += U" (OR)";
-				else if(st == multitrack_edit::MT_XOR)
-					_buffer += U" (XOR)";
-				else
-					_buffer += U" (\?\?\?)";
-			}
-			_status.inputs.push_back(_buffer);
-		}
-		//Lua variables.
-		_status.lvars = core.lua2->get_watch_vars();
-		//Memory watches.
-		_status.mvars = core.mwatch->get_window_vars();
-
-		_status.valid = true;
-	} catch(...) {
-	}
-	core.status->put_write();
-	core.dispatch->status_update();
-}
 
 struct lsnes_callbacks : public emucore_callbacks
 {
@@ -744,7 +608,7 @@ namespace
 			core.mlogic->get_movie().readonly_mode(false);
 			core.dispatch->mode_change(false);
 			core.lua2->callback_do_readwrite();
-			update_movie_state();
+			core.supdater->update();
 		});
 
 	command::fnptr<> CMD_set_romode(lsnes_cmds, "set-romode", "Switch to playback mode",
@@ -753,7 +617,7 @@ namespace
 			auto& core = CORE();
 			core.mlogic->get_movie().readonly_mode(true);
 			core.dispatch->mode_change(true);
-			update_movie_state();
+			core.supdater->update();
 		});
 
 	command::fnptr<> CMD_toggle_rwmode(lsnes_cmds, "toggle-rwmode", "Toggle recording mode",
@@ -767,7 +631,7 @@ namespace
 			core.dispatch->mode_change(!c);
 			if(c)
 				core.lua2->callback_do_readwrite();
-			update_movie_state();
+			core.supdater->update();
 		});
 
 	command::fnptr<> CMD_repaint(lsnes_cmds, "repaint", "Redraw the screen",
@@ -959,7 +823,8 @@ namespace
 	class mywindowcallbacks : public master_dumper::notifier
 	{
 	public:
-		mywindowcallbacks(emulator_dispatch& dispatch, emulator_runmode& runmode)
+		mywindowcallbacks(emulator_dispatch& dispatch, emulator_runmode& runmode, status_updater& _supdater)
+			: supdater(_supdater)
 		{
 			closenotify.set(dispatch.close, [this, &runmode]() {
 				try {
@@ -973,10 +838,11 @@ namespace
 		~mywindowcallbacks() throw() {}
 		void dump_status_change() throw()
 		{
-			update_movie_state();
+			supdater.update();
 		}
 	private:
 		struct dispatch::target<> closenotify;
+		status_updater& supdater;
 	};
 
 	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load
@@ -996,7 +862,7 @@ jumpback:
 			do_unsafe_rewind = false;
 			core.mlogic->get_mfile().is_savestate = true;
 			core.runmode->set_point(emulator_runmode::P_SAVE);
-			update_movie_state();
+			core.supdater->update();
 			messages << "Rewind done in " << (framerate_regulator::get_utime() - t) << " usec."
 				<< std::endl;
 			return 1;
@@ -1049,7 +915,7 @@ nothing_to_do:
 			if(!core.runmode->is_corrupt()) {
 				core.runmode->end_load();
 				core.runmode->set_point(emulator_runmode::P_SAVE);
-				update_movie_state();
+				core.supdater->update();
 				platform::flush_command_queue();
 				if(core.runmode->is_quit())
 					return -1;
@@ -1117,7 +983,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 {
 	lsnes_instance.emu_thread = threads::id();
 	auto& core = CORE();
-	mywindowcallbacks mywcb(*core.dispatch, *core.runmode);
+	mywindowcallbacks mywcb(*core.dispatch, *core.runmode, *core.supdater);
 	core.iqueue->system_thread_available = true;
 	//Basic initialization.
 	core.commentary->init();
@@ -1134,7 +1000,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	try {
 		do_load_state(initial, LOAD_STATE_INITIAL, used);
 		core.runmode->set_point(emulator_runmode::P_SAVE);
-		update_movie_state();
+		core.supdater->update();
 		first_round = core.mlogic->get_mfile().is_savestate;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
@@ -1278,7 +1144,7 @@ void do_break_pause()
 {
 	auto& core = CORE();
 	core.runmode->set_break();
-	update_movie_state();
+	core.supdater->update();
 	while(core.runmode->is_paused_break()) {
 		platform::set_paused(true);
 		platform::flush_command_queue();
@@ -1290,7 +1156,7 @@ void convert_break_to_pause()
 	auto& core = CORE();
 	if(core.runmode->is_paused_break()) {
 		core.runmode->set_pause();
-		update_movie_state();
+		core.supdater->update();
 	}
 }
 

@@ -26,7 +26,6 @@
 #include <fstream>
 
 std::string last_save;
-void update_movie_state();
 
 namespace
 {
@@ -80,12 +79,13 @@ namespace
 
 	void set_mprefix(const std::string& pfx)
 	{
+		auto& core = CORE();
 		{
 			threads::alock h(mprefix_lock);
 			mprefix_valid = (pfx != "");
 			mprefix = pfx;
 		}
-		update_movie_state();
+		core.supdater->update();
 	}
 
 	std::string get_mprefix_for_project(const std::string& prjid)
