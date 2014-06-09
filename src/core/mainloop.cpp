@@ -988,6 +988,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	//Basic initialization.
 	core.commentary->init();
 	core.fbuf->init_special_screens();
+	core.jukebox->set_update([&core]() { core.supdater->update(); });
 	*core.rom = rom;
 	init_main_callbacks();
 	initialize_all_builtin_c_cores();
@@ -1085,6 +1086,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		core.lua2->callback_do_frame();
 	}
 out:
+	core.jukebox->unset_update();
 	core.mdumper->end_dumps();
 	core_core::uninstall_all_handlers();
 	core.commentary->kill();
