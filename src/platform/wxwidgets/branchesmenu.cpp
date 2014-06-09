@@ -397,5 +397,5 @@ void branches_menu::update()
 
 bool branches_menu::any_enabled()
 {
-	return inst.project->get();
+	return UI_in_project_context(inst);
 }
