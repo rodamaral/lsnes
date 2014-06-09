@@ -24,6 +24,7 @@
 #include "core/framerate.hpp"
 #include "core/instance.hpp"
 #include "core/keymapper.hpp"
+#include "core/ui-services.hpp"
 #include "interface/romtype.hpp"
 #include "core/loadlib.hpp"
 #include "lua/lua.hpp"
@@ -1474,13 +1475,13 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		inst.iqueue->queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		filename = choose_file_load(this, "Load Movie", inst.project->moviepath(),
+		filename = choose_file_load(this, "Load Movie", UI_get_project_moviepath(inst),
 			filetype_movie).second;
 		recent_movies->add(filename);
 		inst.iqueue->queue("load-movie " + filename);
 		return;
 	case wxID_LOAD_STATE:
-		filename2 = choose_file_load(this, "Load State", inst.project->moviepath(),
+		filename2 = choose_file_load(this, "Load State", UI_get_project_moviepath(inst),
 			filetype_savestate);
 		recent_movies->add(filename2.second);
 		inst.iqueue->queue("load" + filename2.first + " " + filename2.second);
@@ -1489,31 +1490,31 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		inst.iqueue->queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		filename2 = choose_file_save(this, "Save Movie", inst.project->moviepath(), filetype_movie,
+		filename2 = choose_file_save(this, "Save Movie", UI_get_project_moviepath(inst), filetype_movie,
 			project_prefixname(inst, "lsmv"));
 		recent_movies->add(filename2.second);
 		inst.iqueue->queue("save-movie" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SUBTITLES:
 		inst.iqueue->queue("save-subtitle " + choose_file_save(this, "Save subtitles",
-			inst.project->moviepath(), filetype_sub, project_prefixname(inst, "sub")));
+			UI_get_project_moviepath(inst), filetype_sub, project_prefixname(inst, "sub")));
 		return;
 	case wxID_SAVE_STATE:
-		filename2 = choose_file_save(this, "Save State", inst.project->moviepath(),
+		filename2 = choose_file_save(this, "Save State", UI_get_project_moviepath(inst),
 			filetype_savestate);
 		recent_movies->add(filename2.second);
 		inst.iqueue->queue("save-state" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SCREENSHOT:
 		inst.iqueue->queue("take-screenshot " + choose_file_save(this, "Save Screenshot",
-			inst.project->moviepath(), filetype_png, get_default_screenshot_name(inst)));
+			UI_get_project_moviepath(inst), filetype_png, get_default_screenshot_name(inst)));
 		return;
 	case wxID_RUN_SCRIPT:
 		inst.iqueue->queue("run-script " + pick_file_member(this, "Select Script",
-			inst.project->otherpath()));
+			UI_get_project_otherpath(inst)));
 		return;
 	case wxID_RUN_LUA: {
-		std::string f = choose_file_load(this, "Select Lua Script", inst.project->otherpath(),
+		std::string f = choose_file_load(this, "Select Lua Script", UI_get_project_otherpath(inst),
 			filetype_lua_script);
 		inst.iqueue->queue("run-lua " + f);
 		recent_scripts->add(f);
@@ -1563,7 +1564,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::set<std::string> old_watches;
 		inst.iqueue->run([&old_watches]() { old_watches = CORE().mwatch->enumerate(); });
 		std::string filename = choose_file_save(this, "Save watches to file",
-			inst.project->otherpath(), filetype_watch);
+			UI_get_project_otherpath(inst), filetype_watch);
 		std::ofstream out(filename.c_str());
 		for(auto i : old_watches) {
 			std::string val;
@@ -1586,7 +1587,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		inst.iqueue->run([&old_watches]() { old_watches = CORE().mwatch->enumerate(); });
 		std::map<std::string, std::string> new_watches;
 		std::string filename = choose_file_load(this, "Choose memory watch file",
-			inst.project->otherpath(), filetype_watch);
+			UI_get_project_otherpath(inst), filetype_watch);
 		try {
 			std::istream& in = zip::openrel(filename, "");
 			while(in) {
@@ -1719,7 +1720,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + loadlib::library::name();
 		with_loaded_library(*new loadlib::module(loadlib::library(choose_file_load(this, name,
-			inst.project->otherpath(), single_type(loadlib::library::extension(),
+			UI_get_project_otherpath(inst), single_type(loadlib::library::extension(),
 			loadlib::library::name())))));
 		handle_post_loadlibrary();
 		break;

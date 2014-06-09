@@ -5,6 +5,7 @@
 #include "core/mainloop.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
+#include "core/ui-services.hpp"
 #include "library/zip.hpp"
 #include "library/minmax.hpp"
 #include "library/json.hpp"
@@ -384,7 +385,7 @@ void wxeditor_macro::on_load(wxCommandEvent& e)
 		std::string mname = pick_text(this, "Name new macro", "Enter name for the new macro:", "");
 		if(mname == "")
 			return;
-		std::string file = choose_file_load(this, "Load macro from", inst.project->otherpath(),
+		std::string file = choose_file_load(this, "Load macro from", UI_get_project_otherpath(inst),
 			filetype_macro);
 		std::vector<char> contents = zip::readrel(file, "");
 		controller_macro m(JSON::node(std::string(contents.begin(), contents.end())));
@@ -411,7 +412,7 @@ void wxeditor_macro::on_save(wxCommandEvent& e)
 	std::string mdata = _macro->serialize().serialize();
 	//Okay, have the macro data, now prompt for file and save.
 	try {
-		std::string tfile = choose_file_save(this, "Save macro to", inst.project->otherpath(),
+		std::string tfile = choose_file_save(this, "Save macro to", UI_get_project_otherpath(inst),
 			filetype_macro);
 		std::ofstream f(tfile);
 		f << mdata;

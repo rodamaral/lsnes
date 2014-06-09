@@ -2,6 +2,7 @@
 #include "core/moviedata.hpp"
 #include "core/memorywatch.hpp"
 #include "core/memorymanip.hpp"
+#include "core/ui-services.hpp"
 #include "library/memoryspace.hpp"
 #include "core/project.hpp"
 
@@ -444,7 +445,7 @@ void wxeditor_memorywatch::on_position_change(wxCommandEvent& e)
 void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 {
 	try {
-		std::string filename = choose_file_load(this, "Choose font file", inst.project->otherpath(),
+		std::string filename = choose_file_load(this, "Choose font file", UI_get_project_otherpath(inst),
 			filetype_font);
 		font->SetValue(towxstring(filename));
 	} catch(canceled_exception& e) {

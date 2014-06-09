@@ -7,6 +7,7 @@
 #include "core/project.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
+#include "core/ui-services.hpp"
 
 
 tracelog_menu::tracelog_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
@@ -39,7 +40,7 @@ void tracelog_menu::on_select(wxCommandEvent& e)
 		if(ch) {
 			try {
 				std::string filename = choose_file_save(pwin, "Save " + cpunames[rid] + " Trace",
-					inst.project->moviepath(), filetype_trace, "");
+					UI_get_project_moviepath(inst), filetype_trace, "");
 				inst.dbg->tracelog(rid, filename);
 			} catch(canceled_exception& e) {
 			}

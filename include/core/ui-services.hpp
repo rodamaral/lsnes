@@ -128,5 +128,13 @@ void UI_save_movie(emulator_instance& inst, std::ostringstream& buffer);
  * Look up (platform,game) pair.
  */
 std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instance& inst);
+/**
+ * Get otherpath of current project.
+ */
+std::string UI_get_project_otherpath(emulator_instance& inst);
+/**
+ * Get moviepath of current project.
+ */
+std::string UI_get_project_moviepath(emulator_instance& inst);
 
 #endif

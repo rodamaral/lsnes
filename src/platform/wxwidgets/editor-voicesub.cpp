@@ -2,6 +2,7 @@
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
 #include "core/project.hpp"
+#include "core/ui-services.hpp"
 #include "library/string.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -139,10 +140,12 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent, emulator_instance& _inst)
 
 	top_s->SetSizeHints(this);
 	Fit();
-	vstreamchange.set(inst.dispatch->voice_stream_change, [this]() { runuifun([this]() -> void {
-		this->refresh(); }); });
-	corechange.set(inst.dispatch->core_change, [this]() { runuifun([this]() -> void {
-		this->refresh(); }); });
+	vstreamchange.set(inst.dispatch->voice_stream_change, [this]() {
+		runuifun([this]() -> void { this->refresh(); }); 
+	});
+	corechange.set(inst.dispatch->core_change, [this]() {
+		runuifun([this]() -> void { this->refresh(); });
+	});
 	refresh();
 }
 
@@ -217,7 +220,7 @@ void wxeditor_voicesub::on_export(wxCommandEvent& e)
 	if(id == NOTHING)
 		return;
 	try {
-		auto filename = choose_file_save(this, "Select file to epxort", inst.project->otherpath(),
+		auto filename = choose_file_save(this, "Select file to epxort", UI_get_project_otherpath(inst),
 			filetype_opus_sox);
 		inst.commentary->export_stream(id, filename.first, filename.second);
 	} catch(canceled_exception& e) {
@@ -231,7 +234,7 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 	try {
 		std::string filename;
 		filename = choose_file_save(this, "Select file to export superstream",
-			inst.project->otherpath(), filetype_sox);
+			UI_get_project_otherpath(inst), filetype_sox);
 		inst.commentary->export_superstream(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -245,7 +248,7 @@ void wxeditor_voicesub::on_import(wxCommandEvent& e)
 		uint64_t ts;
 		ts = inst.commentary->parse_timebase(pick_text(this, "Enter timebase",
 			"Enter position for newly imported stream"));
-		auto filename = choose_file_save(this, "Select file to import", inst.project->otherpath(),
+		auto filename = choose_file_save(this, "Select file to import", UI_get_project_otherpath(inst),
 			filetype_opus_sox);
 		inst.commentary->import_stream(ts, filename.first, filename.second);
 	} catch(canceled_exception& e) {

@@ -8,6 +8,7 @@
 #include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
 #include "core/project.hpp"
+#include "core/ui-services.hpp"
 #include "interface/disassembler.hpp"
 #include "library/minmax.hpp"
 #include "library/hex.hpp"
@@ -882,7 +883,7 @@ namespace
 		} else if(e.GetId() == wxID_SAVE) {
 			try {
 				std::string filename = choose_file_save(this, "Save tracelog to",
-					inst.project->otherpath(), filetype_trace);
+					UI_get_project_otherpath(inst), filetype_trace);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				for(auto& i : panel->rows)
@@ -1006,7 +1007,7 @@ namespace
 		case wxID_SAVE:
 			try {
 				std::string filename = choose_file_save(this, "Save tracelog fragment to",
-					inst.project->otherpath(), filetype_trace);
+					UI_get_project_otherpath(inst), filetype_trace);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				if(lines == 1) str += "\n";
@@ -1045,7 +1046,7 @@ namespace
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save tracelog to",
-				inst.project->otherpath(), filetype_trace);
+				UI_get_project_otherpath(inst), filetype_trace);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			for(auto& i : panel->rows)
@@ -1306,7 +1307,7 @@ back:
 		} else if(e.GetId() == wxID_SAVE) {
 			try {
 				std::string filename = choose_file_save(this, "Save disassembly to",
-					inst.project->otherpath(), filetype_disassembly);
+					UI_get_project_otherpath(inst), filetype_disassembly);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				for(auto& i : panel->rows)
@@ -1472,7 +1473,7 @@ back:
 		case wxID_SAVE:
 			try {
 				std::string filename = choose_file_save(this, "Save disassembly fragment to",
-					inst.project->otherpath(), filetype_disassembly);
+					UI_get_project_otherpath(inst), filetype_disassembly);
 				std::ofstream s(filename, std::ios::app);
 				if(!s) throw std::runtime_error("Error opening output file");
 				if(lines == 1) str += "\n";
@@ -1704,7 +1705,7 @@ back:
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save disassembly to",
-				inst.project->otherpath(), filetype_disassembly);
+				UI_get_project_otherpath(inst), filetype_disassembly);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			for(auto& i : panel->rows)

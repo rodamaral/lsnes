@@ -92,7 +92,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			std::string prefix;
 			if((d & dumper_factory_base::target_type_mask) == dumper_factory_base::target_type_file) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"),
-					towxstring(inst.project->otherpath()), wxT(""), wxT("*.*"),
+					towxstring(UI_get_project_otherpath(inst)), wxT(""), wxT("*.*"),
 					wxFD_SAVE);
 				std::string modext = t->mode_extension(mode);
 					d->SetWildcard(towxstring(modext + " files|*." + modext));
@@ -105,7 +105,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			} else if((d & dumper_factory_base::target_type_mask) ==
 				dumper_factory_base::target_type_prefix) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose prefix"),
-					towxstring(inst.project->otherpath()), wxT(""), wxT("*.*"),
+					towxstring(UI_get_project_otherpath(inst)), wxT(""), wxT("*.*"),
 					wxFD_SAVE);
 				auto p = inst.project->get();
 				if(p)

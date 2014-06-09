@@ -5,6 +5,7 @@
 #include "core/instance-map.hpp"
 #include "core/project.hpp"
 #include "core/memorymanip.hpp"
+#include "core/ui-services.hpp"
 #include "library/memorysearch.hpp"
 #include "library/hex.hpp"
 
@@ -368,7 +369,7 @@ public:
 	{
 		try {
 			std::string filename = choose_file_load(this, "Load bookmarks from file",
-				inst.project->otherpath(), filetype_hexbookmarks);
+				UI_get_project_otherpath(inst), filetype_hexbookmarks);
 			auto _in = zip::readrel(filename, "");
 			std::string in(_in.begin(), _in.end());
 			JSON::node root(in);
@@ -415,7 +416,7 @@ public:
 		std::string doc = root.serialize();
 		try {
 			std::string filename = choose_file_save(this, "Save bookmarks to file",
-				inst.project->otherpath(), filetype_hexbookmarks);
+				UI_get_project_otherpath(inst), filetype_hexbookmarks);
 			std::ofstream out(filename.c_str());
 			out << doc << std::endl;
 			out.close();

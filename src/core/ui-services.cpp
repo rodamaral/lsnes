@@ -252,3 +252,21 @@ std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instanc
 	});
 	return std::make_pair(plat, game);
 }
+
+std::string UI_get_project_otherpath(emulator_instance& inst)
+{
+	std::string path;
+	lsnes_instance.iqueue->run([&inst, &path]() {
+		path = inst.project->otherpath();
+	});
+	return path;
+}
+
+std::string UI_get_project_moviepath(emulator_instance& inst)
+{
+	std::string path;
+	lsnes_instance.iqueue->run([&inst, &path]() {
+		path = inst.project->moviepath();
+	});
+	return path;
+}

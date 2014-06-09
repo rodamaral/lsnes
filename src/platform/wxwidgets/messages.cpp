@@ -7,6 +7,7 @@
 #include "core/instance.hpp"
 #include "core/window.hpp"
 #include "core/project.hpp"
+#include "core/ui-services.hpp"
 
 #define MAXMESSAGES 20
 #define PANELWIDTH 48
@@ -104,7 +105,7 @@ void wxwin_messages::panel::on_menu(wxCommandEvent& e)
 	case wxID_SAVE:
 		try {
 			std::string filename = choose_file_save(this, "Save messages to",
-				inst.project->otherpath(), filetype_textfile);
+				UI_get_project_otherpath(inst), filetype_textfile);
 			std::ofstream s(filename, std::ios::app);
 			if(!s) throw std::runtime_error("Error opening output file");
 			if(lines == 1) str += "\n";

@@ -4,6 +4,7 @@
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/project.hpp"
+#include "core/ui-services.hpp"
 #include "library/hex.hpp"
 #include "library/string.hpp"
 #include "library/memorysearch.hpp"
@@ -824,7 +825,7 @@ void wxwindow_memorysearch::dump_candidates_text()
 {
 	try {
 		std::string filename = choose_file_save(this, "Dump memory search",
-			inst.project->otherpath(), filetype_textfile);
+			UI_get_project_otherpath(inst), filetype_textfile);
 		std::ofstream out(filename);
 		auto ms = msearch;
 		inst.iqueue->run([ms, this, &out]() {
@@ -853,7 +854,7 @@ void wxwindow_memorysearch::handle_save(memory_search::savestate_type type)
 		std::vector<char> state;
 		msearch->savestate(state, type);
 		std::string filename = choose_file_save(this, "Save memory search",
-			inst.project->otherpath(), filetype_memorysearch);
+			UI_get_project_otherpath(inst), filetype_memorysearch);
 		std::ofstream out(filename, std::ios::binary);
 		out.write(&state[0], state.size());
 		if(!out)
@@ -869,7 +870,7 @@ void wxwindow_memorysearch::handle_load()
 {
 	try {
 		std::string filename = choose_file_load(this, "Load memory search",
-			inst.project->otherpath(), filetype_memorysearch);
+			UI_get_project_otherpath(inst), filetype_memorysearch);
 		std::vector<char> state = zip::readrel(filename, "");
 		push_undo();
 		msearch->loadstate(state);
