@@ -270,3 +270,12 @@ std::string UI_get_project_moviepath(emulator_instance& inst)
 	});
 	return path;
 }
+
+bool UI_in_project_context(emulator_instance& inst)
+{
+	bool pc;
+	lsnes_instance.iqueue->run([&inst, &pc]() {
+		pc = (inst.project->get() != NULL);
+	});
+	return pc;
+}

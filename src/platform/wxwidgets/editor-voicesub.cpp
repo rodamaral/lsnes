@@ -291,7 +291,7 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_load(wxCommandEvent& e)
 {
-	if(inst.project->get() != NULL)
+	if(UI_in_project_context(inst))
 		return;
 	try {
 		std::string filename;
@@ -310,7 +310,7 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_unload(wxCommandEvent& e)
 {
-	if(inst.project->get() != NULL)
+	if(UI_in_project_context(inst))
 		return;
 	inst.commentary->unload_collection();
 }
@@ -331,7 +331,7 @@ void wxeditor_voicesub::refresh()
 	if(closing)
 		return;
 	bool cflag = inst.commentary->collection_loaded();
-	bool pflag = (inst.project->get() != NULL);
+	bool pflag = UI_in_project_context(inst);
 	unloadbutton->Enable(cflag && !pflag);
 	loadbutton->Enable(!pflag);
 	exportsbutton->Enable(cflag);

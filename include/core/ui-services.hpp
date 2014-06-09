@@ -136,5 +136,9 @@ std::string UI_get_project_otherpath(emulator_instance& inst);
  * Get moviepath of current project.
  */
 std::string UI_get_project_moviepath(emulator_instance& inst);
+/**
+ * Is in project context?
+ */
+bool UI_in_project_context(emulator_instance& inst);
 
 #endif
