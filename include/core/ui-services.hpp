@@ -6,6 +6,7 @@
 #include <functional>
 #include <list>
 #include <string>
+#include <sstream>
 
 /*********************************************************************************************************************
 UI services.
@@ -115,5 +116,17 @@ void UI_end_dump(emulator_instance& inst, dumper_factory_base& factory);
  */
 void UI_do_keypress(emulator_instance& inst, const keyboard::modifier_set& mods, keyboard::key_key& key,
 	bool polarity);
+/**
+ * Is there a valid movie?
+ */
+bool UI_has_movie(emulator_instance& inst);
+/**
+ * Save a movie into buffer.
+ */
+void UI_save_movie(emulator_instance& inst, std::ostringstream& buffer);
+/**
+ * Look up (platform,game) pair.
+ */
+std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instance& inst);
 
 #endif

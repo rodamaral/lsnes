@@ -5,6 +5,7 @@
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
 #include "core/queue.hpp"
+#include "core/rom.hpp"
 #include "core/ui-services.hpp"
 #include "library/keyboard.hpp"
 
@@ -212,4 +213,42 @@ void UI_do_keypress(emulator_instance& inst, const keyboard::modifier_set& mods,
 	inst.iqueue->run_async([mods, _key, polarity]() {
 		_key->set_state(mods, polarity ? 1 : 0);
 	}, [](std::exception& e) {});
+}
+
+bool UI_has_movie(emulator_instance& inst)
+{
+	bool ret = false;
+	lsnes_instance.iqueue->run([&inst, &ret]() {
+		ret = !!*inst.mlogic && !inst.rom->isnull();
+	});
+	return ret;
+}
+
+void UI_save_movie(emulator_instance& inst, std::ostringstream& stream)
+{
+	lsnes_instance.iqueue->run([&inst, &stream]() {
+		inst.mlogic->get_mfile().is_savestate = false;
+		auto prj = inst.project->get();
+		if(prj) {
+			inst.mlogic->get_mfile().gamename = prj->gamename;
+			inst.mlogic->get_mfile().authors = prj->authors;
+		}
+		inst.mlogic->get_mfile().active_macros.clear();
+		inst.mlogic->get_mfile().save(stream, inst.mlogic->get_rrdata());
+	});
+}
+
+std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instance& inst)
+{
+	std::string plat;
+	std::string game;
+	lsnes_instance.iqueue->run([&inst, &plat, &game]() {
+		auto prj = inst.project->get();
+		if(prj)
+			game = prj->gamename;
+		else
+			game = inst.mlogic->get_mfile().gamename;
+		plat = lookup_sysregion_mapping(inst.mlogic->get_mfile().gametype->get_name());
+	});
+	return std::make_pair(plat, game);
 }

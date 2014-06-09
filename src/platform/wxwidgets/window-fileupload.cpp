@@ -7,6 +7,7 @@
 #include "core/rom.hpp"
 #include "core/project.hpp"
 #include "core/moviedata.hpp"
+#include "core/ui-services.hpp"
 #include "library/directory.hpp"
 #include "library/skein.hpp"
 #include "library/zip.hpp"
@@ -638,7 +639,7 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, emulator_instance
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
 	file->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
-	if(!inst.mlogic || inst.rom->isnull()) {
+	if(!UI_has_movie(inst)) {
 		current->Enable(false);
 		file->SetValue(true);
 	}
@@ -751,15 +752,8 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 	} else {
 		if(fn.length() < 6 || fn.substr(fn.length() - 5) != ".lsmv")
 			filename->SetValue(towxstring(fn + ".lsmv"));
-		inst.mlogic->get_mfile().is_savestate = false;
-		auto prj = inst.project->get();
-		if(prj) {
-			inst.mlogic->get_mfile().gamename = prj->gamename;
-			inst.mlogic->get_mfile().authors = prj->authors;
-		}
-		inst.mlogic->get_mfile().active_macros.clear();
 		std::ostringstream stream;
-		inst.mlogic->get_mfile().save(stream, inst.mlogic->get_rrdata());
+		UI_save_movie(inst, stream);
 		std::string _stream = stream.str();
 		content = std::vector<char>(_stream.begin(), _stream.end());
 	}
@@ -781,15 +775,9 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 	file_select->Enable(file->GetValue());
 	if(!games_req) {
 		if(current->GetValue()) {
-			std::string curgame;
-			auto prj = inst.project->get();
-			if(prj)
-				curgame = prj->gamename;
-			else
-				curgame = inst.mlogic->get_mfile().gamename;
-
-			std::string plat = lookup_sysregion_mapping(
-				inst.mlogic->get_mfile().gametype->get_name()) + " ";
+			auto g = UI_lookup_platform_and_game(inst);
+			std::string plat = g.first + " ";
+			std::string curgame = g.second;
 			size_t platlen = plat.length();
 			std::string c = tostdstring(game->GetLabel());
 			std::string fullname = plat + curgame;
@@ -830,8 +818,9 @@ void wxeditor_uploaddialog::on_game_sel(wxCommandEvent& e)
 {
 	auto pos = game_sel_button->GetScreenPosition();
 	std::string system;
-	if(current->GetValue())
-		system = lookup_sysregion_mapping(inst.mlogic->get_mfile().gametype->get_name());
+	if(current->GetValue()) {
+		system = UI_lookup_platform_and_game(inst).first;
+	}
 	wxwin_gameselect* gs = new wxwin_gameselect(this, games_list, tostdstring(game->GetLabel()), system,
 		pos.x, pos.y);
 	if(gs->ShowModal() != wxID_OK) {
