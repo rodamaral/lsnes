@@ -1,7 +1,7 @@
 From b19b3b2d1d7a522af695f4482abb28e52804326b Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:30:36 +0200
-Subject: [PATCH 01/20] Make libsnes compile
+Subject: [PATCH 01/21] Make libsnes compile
 
 Changes between v083 and v084 had broken libsnes. Fix it so it at least
 compiles.
@@ -78,5 +78,5 @@ index fbb4482..5f5ded6 100755
    }
    SNES::cartridge.load(SNES::Cartridge::Mode::SuperGameBoy, xmlrom);
 -- 
-2.0.0.rc0
+2.0.0
 

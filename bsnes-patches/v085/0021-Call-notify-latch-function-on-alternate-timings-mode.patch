@@ -1,0 +1,25 @@
+From 63fc77b07d517c2f9a0fd6ca3fa94f30fb0f5ec2 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Sun, 15 Jun 2014 22:01:26 +0300
+Subject: [PATCH 21/21] Call notify latch function on alternate timings mode
+ too
+
+---
+ snes/cpu/timing/joypad.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/snes/cpu/timing/joypad.cpp b/snes/cpu/timing/joypad.cpp
+index ae8e94f..3fd4d23 100755
+--- a/snes/cpu/timing/joypad.cpp
++++ b/snes/cpu/timing/joypad.cpp
+@@ -41,6 +41,7 @@ void CPU::step_auto_joypad_poll_NEW(bool polarity) {
+     } else {
+       if(status.auto_joypad_counter == 1) {
+         status.auto_joypad_active = true;
++        interface->notifyLatched();
+         input.port1->latch(1);
+         input.port2->latch(1);
+       }
+-- 
+2.0.0
+
