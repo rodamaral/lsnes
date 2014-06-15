@@ -41,6 +41,7 @@ void CPU::step_auto_joypad_poll_NEW(bool polarity) {
     } else {
       if(status.auto_joypad_counter == 1) {
         status.auto_joypad_active = true;
+        interface->notifyLatched();
         input.port1->latch(1);
         input.port2->latch(1);
       }
