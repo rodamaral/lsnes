@@ -859,7 +859,7 @@ namespace
 		{"store", copy_to_host<false>},
 		{"storecmp", copy_to_host<true>},
 		{"readregion", readregion},
-		{"writeregion", readregion},
+		{"writeregion", writeregion},
 		{"read_sg", memory_scattergather<false, false>},
 		{"sread_sg", memory_scattergather<false, true>},
 		{"write_sg", memory_scattergather<true, false>},
