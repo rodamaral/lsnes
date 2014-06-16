@@ -11,18 +11,6 @@
 #define STATWIDTH 40
 #define MAXSTATUS 15
 
-namespace
-{
-	std::string string_pad(const std::string& x, size_t width)
-	{
-		if(x.length() >= width)
-			return x;
-		std::string y = x;
-		y.append(width - y.length(), ' ');
-		return y;
-	}
-}
-
 wxwin_status::panel::panel(wxWindow* _parent, emulator_instance& _inst, wxWindow* focuswin, unsigned lines)
 	: text_framebuffer_panel(_parent, STATWIDTH, lines ? lines : MAXSTATUS, wxID_ANY, focuswin), inst(_inst)
 {

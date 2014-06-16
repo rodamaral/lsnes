@@ -64,12 +64,6 @@ namespace
 		C = (-2 * v1 - 3 * v2 + 6 * v3 - v4) / 6;
 		D = v2;
 	}
-
-	void linintr_solve(double v1, double v2, double& A, double& B)
-	{
-		A = (v2 - v1);
-		B = v1;
-	}
 }
 
 audioapi_instance::resampler::resampler()

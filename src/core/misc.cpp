@@ -41,15 +41,6 @@ namespace
 {
 	bool reached_main_flag;
 
-	char endian_char(int e)
-	{
-		if(e < 0)
-			return 'L';
-		if(e > 0)
-			return 'B';
-		return 'N';
-	}
-
 	void fatal_signal_handler(int sig)
 	{
 		write(2, "Caught fatal signal!\n", 21);

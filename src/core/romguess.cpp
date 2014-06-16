@@ -134,18 +134,6 @@ namespace
 		return "";
 	}
 
-	std::string implode(const std::set<std::string>& s, const std::string& e)
-	{
-		bool first = true;
-		std::ostringstream y;
-		for(auto i : s) {
-			if(!first) y << e;
-			y << i;
-			first = false;
-		}
-		return y.str();
-	}
-
 	std::string try_guess_rom_core(const std::string& hint, const std::string& hash, const std::string& xhash,
 		const std::set<std::string>& extensions, uint64_t headersize, bool bios)
 	{

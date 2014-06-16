@@ -281,21 +281,6 @@ namespace
 			throw std::runtime_error("PNG file chunk CRC check failed");
 	}
 
-	std::string format_type(uint32_t type)
-	{
-		uint8_t t1 = type >> 24;
-		uint8_t t2 = type >> 16;
-		uint8_t t3 = type >> 8;
-		uint8_t t4 = type;
-		if(t1 < 'A' || t2 < 'A' || t3 < 'A' || t4 < 'A')
-			goto badtype;
-		if(t1 > 'z' || t2 > 'z' || t3 > 'z' || t4 > 'z')
-			goto badtype;
-		return (stringfmt() << t1 << t2 << t3 << t4).str();
-badtype:
-		return hex::to(type, true);
-	}
-
 	//=========================================================
 	//=================== PNG IHDR CHUNK ======================
 	//=========================================================

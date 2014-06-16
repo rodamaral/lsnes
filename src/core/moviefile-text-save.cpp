@@ -18,38 +18,6 @@
 
 namespace
 {
-	std::map<std::string, uint64_t> read_active_macros(zip::reader& r, const std::string& member)
-	{
-		std::map<std::string, uint64_t> x;
-		if(!r.has_member(member))
-			return x;
-		std::istream& m = r[member];
-		try {
-			while(m) {
-				std::string out;
-				std::getline(m, out);
-				istrip_CR(out);
-				if(out == "")
-					continue;
-				regex_results rx = regex("([0-9]+) +(.*)", out);
-				if(!rx) {
-					messages << "Warning: Bad macro state: '" << out << "'" << std::endl;
-					continue;
-				}
-				try {
-					uint64_t f = parse_value<uint64_t>(rx[1]);
-					x[rx[2]] = f;
-				} catch(...) {
-				}
-			}
-			delete &m;
-		} catch(...) {
-			delete &m;
-			throw;
-		}
-		return x;
-	}
-
 	void write_active_macros(zip::writer& w, const std::string& member, const std::map<std::string, uint64_t>& ma)
 	{
 		if(ma.empty())

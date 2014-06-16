@@ -99,11 +99,6 @@ namespace
 			return CHRCLASS_EOS;
 	}
 
-	std::string substr(std::string x, std::pair<size_t, size_t> m, size_t base)
-	{
-		return x.substr(m.first + base, m.second);
-	}
-
 	bool read_char(const std::string& input, size_t& itr, char ch)
 	{
 		if(input[itr] == ch) {

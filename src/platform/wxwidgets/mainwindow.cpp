@@ -535,27 +535,6 @@ namespace
 
 	}
 
-	double pick_volume(wxWindow* win, const std::string& title, std::string& last)
-	{
-		std::string value;
-		regex_results r;
-		double parsed = 1;
-		value = pick_text(win, title, "Enter volume in absolute units, percentage (%) or dB:",
-			last);
-		if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
-			parsed = strtod(r[1].c_str(), NULL);
-		else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
-			parsed = strtod(r[1].c_str(), NULL) / 100;
-		else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
-			parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
-		else {
-			wxMessageBox(wxT("Invalid volume"), _T("Error"), wxICON_EXCLAMATION | wxOK, win);
-			return -1;
-		}
-		last = value;
-		return parsed;
-	}
-
 	void recent_rom_selected(emulator_instance& inst, const recentfiles::multirom& file)
 	{
 		romload_request req;
@@ -638,13 +617,6 @@ namespace
 		return ret;
 	}
 
-	std::pair<int, int> UI_controller_index_by_logical(emulator_instance& inst, unsigned lid)
-	{
-		std::pair<int, int> ret;
-		inst.iqueue->run([&ret, lid]() { ret = CORE().controls->lcid_to_pcid(lid); });
-		return ret;
-	}
-
 	void set_speed(emulator_instance& inst, double target)
 	{
 		if(target < 0)
@@ -667,11 +639,6 @@ namespace
 			if(core_selections.count(key2) && core_selections[key2] == val)
 				preferred_core[key2] = i;
 		}
-	}
-
-	std::string movie_path(emulator_instance& inst)
-	{
-		return inst.setcache->get("moviepath");
 	}
 
 	bool is_lsnes_movie(const std::string& filename)

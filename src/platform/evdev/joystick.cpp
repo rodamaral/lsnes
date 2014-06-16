@@ -169,22 +169,6 @@ namespace
 
 	std::map<int, unsigned> gamepad_map;
 
-	std::string get_button_name(uint16_t code)
-	{
-		if(code <= sizeof(buttonnames)/sizeof(buttonnames[0]) && buttonnames[code])
-			return buttonnames[code];
-		else
-			return (stringfmt() << "Unknown button #" << code).str();
-	}
-
-	std::string get_axis_name(uint16_t code)
-	{
-		if(code <= sizeof(axisnames)/sizeof(axisnames[0]) && axisnames[code])
-			return axisnames[code];
-		else
-			return (stringfmt() << "Unknown axis #" << code).str();
-	}
-
 	bool read_one_input_event(int fd)
 	{
 		struct input_event ev;

@@ -30,63 +30,6 @@ namespace
 		return int_to_bits(v >> 1) + std::string(1, 48 + (v & 1));
 	}
 
-	const char* numbers_l = "0123456789abcdef";
-	const char* numbers_u = "0123456789ABCDEF";
-
-	std::string print_decimals(double tail, unsigned base, int places, bool trimzero, bool uppercase)
-	{
-		std::string y;
-		for(int i = 0; i < places; i++) {
-			uint32_t n = floor(tail);
-			y += std::string(1, (uppercase ? numbers_u : numbers_l)[n % base]);
-			tail *= base;
-			tail = tail - n;
-		}
-		if(trimzero) {
-			size_t p = y.find_last_not_of("0");
-			if(p < y.length())
-				y = y.substr(0, p);
-		}
-		return y;
-	}
-
-	std::string format_float_base(double v, _format fmt, unsigned base)
-	{
-		bool exponential = false;
-		std::string out;
-		char expsep = (base == 16) ? 'g' : 'e';
-		if(fmt.uppercasehex) expsep -= 32;
-		int exponent = 0;
-		v += 0.5 * pow(base, fmt.precision);  //Round.
-again:
-		out = "";
-		if(fmt.showsign || v < 0)
-			out += (v < 0) ? "-" : "+";
-		if(exponential) {
-			//TODO.
-			out += std::string(1, expsep);
-			out += (stringfmt() << exponent).str();
-		} else {
-			//TODO: Print whole part.
-			double tail = v - floor(v);
-			if(fmt.precision < 0) {
-				//Print up to 5 places.
-				std::string y = print_decimals(tail, base, fmt.precision, true, fmt.uppercasehex);
-				if(y != "")
-					out = out + "." + y;
-			} else if(fmt.precision > 0) {
-				//Print . and fmt.precision places.
-				out += ".";
-				out += print_decimals(tail, base, fmt.precision, false, fmt.uppercasehex);
-			}
-		}
-		if(!exponential && (ssize_t)out.length() > fmt.width) {
-			exponential = true;
-			goto again;
-		}
-		return out;
-	}
-
 	std::string format_float_10(double v, _format fmt)
 	{
 		std::string format;

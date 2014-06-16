@@ -65,21 +65,6 @@ namespace
 		return levels;
 	}
 
-	uint64_t get_levelsize(unsigned n)
-	{
-		static uint64_t table[levels];
-		static bool init = false;
-		if(!init) {
-			uint64_t r = 1;
-			for(unsigned i = 0; i < levels; i++) {
-				table[i] = r;
-				r = 8 * r + 1;
-			}
-			init = true;
-		}
-		return table[n];
-	}
-
 	unsigned lsbz(uint8_t b)
 	{
 		return ((b & 1) ? ((b & 2) ? ((b & 4) ? ((b & 8) ? ((b & 16) ? ((b & 32) ? ((b & 64) ?

@@ -55,11 +55,6 @@ namespace
 	{
 		return (a->get_handle() < b->get_handle());
 	}
-
-	unsigned default_headersize(size_t imagesize)
-	{
-		return 0;
-	}
 }
 
 bool interface_action::is_toggle() const

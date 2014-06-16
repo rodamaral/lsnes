@@ -346,11 +346,6 @@ namespace
 		return (clipboard.length() > 0);
 	}
 
-	void clear_clipboard()
-	{
-		clipboard = "";
-	}
-
 	std::string copy_from_clipboard()
 	{
 		return clipboard;

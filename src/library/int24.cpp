@@ -47,12 +47,12 @@ namespace
 {
 	char assert1[(sizeof(ss_int24_t) == 3) ? 1 : -1];
 	char assert2[(sizeof(ss_uint24_t) == 3) ? 1 : -1];
+}
 
-	void foo()
-	{
-		char* x = assert1;
-		x[0] = 0;
-		x = assert2;
-		x[0] = 1;
-	}
+void dummy_3263623632786738267323()
+{
+	char* x = assert1;
+	x[0] = 0;
+	x = assert2;
+	x[0] = 1;
 }
