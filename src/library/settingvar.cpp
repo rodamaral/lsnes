@@ -34,7 +34,7 @@ listener::~listener() throw()
 {
 }
 
-set::listener::~listener() throw()
+set::listener::~listener()
 {
 }
 

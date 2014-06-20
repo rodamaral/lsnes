@@ -74,6 +74,9 @@ namespace
 		{
 			keygrab_active = false;
 		}
+		~keygrabber() throw()
+		{
+		}
 		void on_key_event(keyboard::modifier_set& mods, keyboard::key& key, keyboard::event& event)
 		{
 			if(!keygrab_active)

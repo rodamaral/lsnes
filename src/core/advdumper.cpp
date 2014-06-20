@@ -102,7 +102,7 @@ uint64_t master_dumper::gameinfo::get_rerecords() const throw()
 	return v;
 }
 
-dumper_factory_base::notifier::~notifier()
+dumper_factory_base::notifier::~notifier() throw()
 {
 }
 
@@ -179,7 +179,7 @@ dumper_base::~dumper_base() throw()
 	mdumper->statuschange();
 }
 
-master_dumper::notifier::~notifier()
+master_dumper::notifier::~notifier() throw()
 {
 }
 
