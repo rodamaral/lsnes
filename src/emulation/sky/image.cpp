@@ -43,7 +43,7 @@ namespace sky
 			throw std::runtime_error("Expected CMAP magic, got EOF");
 		if(data[0] != 'C' || data[1] != 'M' || data[2] != 'A' || data[3] != 'P')
 			throw std::runtime_error("Bad CMAP magic");
-		colors = data[4];
+		colors = (unsigned char)data[4];
 		if(data.size() < 5 * colors + 5)
 			throw std::runtime_error("Expected CMAP, got EOF");
 		for(unsigned i = 0; i < colors; i++) {
