@@ -15,13 +15,9 @@ HOSTCCFLAGS = -std=gnu++0x
 CFLAGS += -std=gnu++0x $(USER_CFLAGS)
 ifdef BOOST_NEEDS_MT
 BOOST_LIB_POSTFIX=-mt
-else
-BOOST_LIB_POSTFIX=
 endif
 ifdef HOST_BOOST_NEEDS_MT
-HOST_BOOST_LIB_POSTFIX=-mt
-else
-HOST_BOOST_LIB_POSTFIX=
+HOST_BOOST_POSTFIX=-mt
 endif
 
 LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS)
@@ -84,7 +80,7 @@ buildaux/txt2cstr.exe: buildaux/txt2cstr.cpp
 buildaux/version.exe: buildaux/version.cpp VERSION
 	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $<
 buildaux/mkdeps.exe: buildaux/mkdeps.cpp VERSION
-	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $< -lboost_filesystem$(HOST_BOOST_LIB_POSTFIX) -lboost_system$(HOST_BOOST_LIB_POSTFIX)
+	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $< -lboost_filesystem$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX)
 src/core/version.cpp: buildaux/version.exe forcelook
 	buildaux/version.exe >$@
 
