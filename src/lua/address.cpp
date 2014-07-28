@@ -111,7 +111,7 @@ int lua_address::l_get_offset(lua::state& L, lua::parameters& P)
 int lua_address::l_shift(lua::state& L, lua::parameters& P)
 {
 	int addrs = 1;
-	int64_t a, b, c;
+	int64_t a = 0, b = 0, c = 0;
 
 	P(P.skipped(), a);
 	if(P.more()) {
