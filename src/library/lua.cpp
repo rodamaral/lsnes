@@ -242,7 +242,12 @@ namespace
 	void recursive_lookup_table(state& L, const std::string& tab)
 	{
 		if(tab == "") {
+#if LUA_VERSION_NUM == 501
+			L.pushvalue(LUA_GLOBALSINDEX);
+#endif
+#if LUA_VERSION_NUM == 502
 			L.rawgeti(LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+#endif
 			assert(L.type(-1) == LUA_TTABLE);
 			return;
 		}

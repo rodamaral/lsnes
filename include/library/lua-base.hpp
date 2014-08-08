@@ -429,8 +429,14 @@ public:
 	void pushboolean(int b) { lua_pushboolean(lua_handle, b); }
 	lua_Number tonumber(int index) { return lua_tonumber(lua_handle, index); }
 	void gettable(int index) { lua_gettable(lua_handle, index); }
+#if LUA_VERSION_NUM == 501
+	int load(lua_Reader reader, void* data, const char* chunkname) { return lua_load(lua_handle, reader, data,
+		chunkname); }
+#endif
+#if LUA_VERSION_NUM == 502
 	int load(lua_Reader reader, void* data, const char* chunkname, const char* mode) { return lua_load(lua_handle,
 		reader, data, chunkname, mode); }
+#endif
 	const char* tostring(int index) { return lua_tostring(lua_handle, index); }
 	const char* tolstring(int index, size_t& len) { return lua_tolstring(lua_handle, index, &len); }
 	void pushlstring(const char* s, size_t len) { lua_pushlstring(lua_handle, s, len); }

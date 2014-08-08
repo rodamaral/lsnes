@@ -128,7 +128,12 @@ namespace
 
 	void copy_system_tables(lua::state& L)
 	{
+#if LUA_VERSION_NUM == 501
+		L.pushvalue(LUA_GLOBALSINDEX);
+#endif
+#if LUA_VERSION_NUM == 502
 		L.rawgeti(LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+#endif
 		L.newtable();
 		L.pushnil();
 		while(L.next(-3)) {
@@ -505,7 +510,12 @@ bool lua_state::run_lua_fragment() throw(std::bad_alloc)
 	bool result = true;
 	if(recursive_flag)
 		return false;
+#if LUA_VERSION_NUM == 501
+	int t = L.load(read_lua_fragment, &luareader_fragment, "run_lua_fragment");
+#endif
+#if LUA_VERSION_NUM == 502
 	int t = L.load(read_lua_fragment, &luareader_fragment, "run_lua_fragment", "t");
+#endif
 	if(t == LUA_ERRSYNTAX) {
 		messages << "Can't run Lua: Internal syntax error: " << L.tostring(-1)
 			<< std::endl;

@@ -38,9 +38,9 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 12. libao (libao sound only)
 
-13. Lua version 5.2.X
+13. Lua version 5.1.X or 5.2.X
 
-14. G++ 4.7 or 4.8
+14. G++ 4.6 or 4.7
 
 15. libopus (optional, for commentary track tool)
 
