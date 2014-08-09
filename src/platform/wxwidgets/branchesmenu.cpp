@@ -341,8 +341,7 @@ branches_menu::branches_menu(wxWindow* win, emulator_instance& _inst, int wxid_l
 	wxid_range_high = wxid_high;
 	win->Connect(wxid_low, wxid_high, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(branches_menu::on_select), NULL, this);
-	branchchange.set(inst.dispatch->branch_change, [this]() { runuifun([this]() {
-		this->update(); }); });
+	branchchange.set(inst.dispatch->branch_change, [this]() { runuifun([this]() { this->update(); }); });
 }
 
 branches_menu::~branches_menu()
