@@ -20,6 +20,14 @@
 #define OPUS_BANDWIDTH_WIDEBAND 1103
 #define OPUS_BITRATE_MAX -1
 #define OPUS_BUFFER_TOO_SMALL -2
+#define OPUS_FRAMESIZE_ARG 5000
+#define OPUS_FRAMESIZE_2_5_MS 5001
+#define OPUS_FRAMESIZE_5_MS 5002
+#define OPUS_FRAMESIZE_10_MS 5003
+#define OPUS_FRAMESIZE_20_MS 5004
+#define OPUS_FRAMESIZE_40_MS 5005
+#define OPUS_FRAMESIZE_60_MS 5006
+#define OPUS_FRAMESIZE_VARIABLE 5010
 #define OPUS_GET_APPLICATION_REQUEST 4001
 #define OPUS_GET_BANDWIDTH_REQUEST 4009
 #define OPUS_GET_BITRATE_REQUEST 4003
@@ -65,6 +73,10 @@
 #define OPUS_SET_LSB_DEPTH_REQUEST 4036
 #define OPUS_GET_LSB_DEPTH_REQUEST 4037
 #define OPUS_GET_LAST_PACKET_DURATION_REQUEST 4039
+#define OPUS_SET_EXPERT_FRAME_DURATION_REQUEST 4040
+#define OPUS_GET_EXPERT_FRAME_DURATION_REQUEST 4041
+#define OPUS_SET_PREDICTION_DISABLED_REQUEST 4042
+#define OPUS_GET_PREDICTION_DISABLED_REQUEST 4043
 
 namespace opus
 {
@@ -556,11 +568,22 @@ dtx dtx::enabled(true);
 lsbdepth lsbdepth::d8(8);
 lsbdepth lsbdepth::d16(16);
 lsbdepth lsbdepth::d24(24);
+prediction_disabled prediction_disabled::enabled(false);
+prediction_disabled prediction_disabled::disabled(true);
+frame_duration frame_duration::argument(OPUS_FRAMESIZE_ARG);
+frame_duration frame_duration::variable(OPUS_FRAMESIZE_VARIABLE);
+frame_duration frame_duration::l2ms(OPUS_FRAMESIZE_2_5_MS);
+frame_duration frame_duration::l5ms(OPUS_FRAMESIZE_5_MS);
+frame_duration frame_duration::l10ms(OPUS_FRAMESIZE_10_MS);
+frame_duration frame_duration::l20ms(OPUS_FRAMESIZE_20_MS);
+frame_duration frame_duration::l40ms(OPUS_FRAMESIZE_40_MS);
+frame_duration frame_duration::l60ms(OPUS_FRAMESIZE_60_MS);
 _reset reset;
 _finalrange finalrange;
 _pitch pitch;
 _pktduration pktduration;
 _lookahead lookahead;
+_last_packet_duration last_packet_duration;
 
 bad_argument::bad_argument()
 	: std::runtime_error("Invalid argument") {}
@@ -657,6 +680,9 @@ template<> const int32_t get_ctlnum<lossperc>::num = OPUS_GET_PACKET_LOSS_PERC_R
 template<> const int32_t get_ctlnum<dtx>::num = OPUS_GET_DTX_REQUEST;
 template<> const int32_t get_ctlnum<lsbdepth>::num = OPUS_GET_LSB_DEPTH_REQUEST;
 template<> const int32_t get_ctlnum<gain>::num = OPUS_GET_GAIN_REQUEST;
+template<> const int32_t get_ctlnum<prediction_disabled>::num = OPUS_GET_PREDICTION_DISABLED_REQUEST;
+template<> const int32_t get_ctlnum<frame_duration>::num = OPUS_GET_EXPERT_FRAME_DURATION_REQUEST;
+template<> const int32_t get_ctlnum<_last_packet_duration>::num = OPUS_GET_LAST_PACKET_DURATION_REQUEST;
 
 template<> complexity get_ctlnum<complexity>::errordefault() { return complexity(10); }
 template<> bitrate get_ctlnum<bitrate>::errordefault() { return bitrate::_auto; }
@@ -672,7 +698,8 @@ template<> lossperc get_ctlnum<lossperc>::errordefault() { return lossperc(0); }
 template<> dtx get_ctlnum<dtx>::errordefault() { return dtx::disabled; }
 template<> lsbdepth get_ctlnum<lsbdepth>::errordefault() { return lsbdepth(24); }
 template<> gain get_ctlnum<gain>::errordefault() { return gain(0); }
-
+template<> prediction_disabled get_ctlnum<prediction_disabled>::errordefault() { return prediction_disabled::enabled; }
+template<> frame_duration get_ctlnum<frame_duration>::errordefault() { return frame_duration::argument; }
 
 OpusEncoder* E(encoder& e) { return reinterpret_cast<OpusEncoder*>(e.getmem()); }
 OpusDecoder* D(decoder& d) { return reinterpret_cast<OpusDecoder*>(d.getmem()); }
@@ -986,6 +1013,51 @@ void gain::operator()(decoder& d) const
 
 generic_mdget<gain> gain::get;
 
+void prediction_disabled::operator()(encoder& e) const
+{
+	generic_ctl(e, OPUS_SET_PREDICTION_DISABLED_REQUEST, d ? 1 : 0);
+}
+
+void prediction_disabled::operator()(multistream_encoder& e) const
+{
+	generic_ctl(e, OPUS_SET_PREDICTION_DISABLED_REQUEST, d ? 1 : 0);
+}
+
+void prediction_disabled::operator()(surround_encoder& e) const
+{
+	generic_ctl(e, OPUS_SET_PREDICTION_DISABLED_REQUEST, d ? 1 : 0);
+}
+
+generic_meget<prediction_disabled> prediction_disabled::get;
+
+void frame_duration::operator()(encoder& e) const
+{
+	generic_ctl(e, OPUS_SET_EXPERT_FRAME_DURATION_REQUEST, v);
+}
+
+void frame_duration::operator()(multistream_encoder& e) const
+{
+	generic_ctl(e, OPUS_SET_EXPERT_FRAME_DURATION_REQUEST, v);
+}
+
+void frame_duration::operator()(surround_encoder& e) const
+{
+	generic_ctl(e, OPUS_SET_EXPERT_FRAME_DURATION_REQUEST, v);
+}
+
+
+generic_meget<frame_duration> frame_duration::get;
+
+_last_packet_duration _last_packet_duration::operator()(decoder& d) const
+{
+	return _last_packet_duration(generic_ctl<int32_t>(d, OPUS_GET_LAST_PACKET_DURATION_REQUEST));
+}
+
+_last_packet_duration _last_packet_duration::operator()(multistream_decoder& d) const
+{
+	return _last_packet_duration(generic_ctl<int32_t>(d, OPUS_GET_LAST_PACKET_DURATION_REQUEST));
+}
+
 void set_control_int::operator()(encoder& e) const
 {
 	generic_ctl(e, ctl, val);
@@ -1060,6 +1132,8 @@ void force_instantiate()
 	dtx::get(e);
 	lsbdepth::get(e);
 	gain::get(d);
+	prediction_disabled::get(e);
+	frame_duration::get(e);
 	bitrate::get(me);
 	lsbdepth::get(me);
 	vbr::get(me);
@@ -1073,6 +1147,8 @@ void force_instantiate()
 	signal::get(me);
 	fec::get(me);
 	force_channels::get(me);
+	prediction_disabled::get(me);
+	frame_duration::get(me);
 	bitrate::get(se);
 	lsbdepth::get(se);
 	vbr::get(se);
@@ -1085,6 +1161,8 @@ void force_instantiate()
 	signal::get(se);
 	fec::get(se);
 	force_channels::get(se);
+	prediction_disabled::get(se);
+	frame_duration::get(se);
 
 	complexity::get.errordefault();
 	bitrate::get.errordefault();
@@ -1100,12 +1178,15 @@ void force_instantiate()
 	dtx::get.errordefault();
 	lsbdepth::get.errordefault();
 	gain::get.errordefault();
+	prediction_disabled::get.errordefault();
+	frame_duration::get.errordefault();
 
 	d.ctl(opus::pktduration);
 	//d.ctl_quiet(opus::pktduration);
 	e.ctl_quiet(opus::reset);
 	e.ctl_quiet(opus::finalrange);
 	e.ctl_quiet(opus::signal::get);
+	d.ctl_quiet(opus::last_packet_duration);
 }
 
 encoder::~encoder()

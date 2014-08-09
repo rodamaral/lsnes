@@ -398,6 +398,60 @@ private:
 	int32_t g;
 };
 
+struct prediction_disabled
+{
+	prediction_disabled(bool _d) { d = _d; }
+	static prediction_disabled disabled;
+	static prediction_disabled enabled;
+	operator bool() { return d; }
+	static generic_meget<prediction_disabled> get;
+	typedef void erettype;
+	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
+	void errordefault() const { }
+private:
+	bool d;
+};
+
+struct frame_duration
+{
+	frame_duration(int32_t _v) { v = _v; }
+	static frame_duration argument;
+	static frame_duration variable;
+	static frame_duration l2ms;	//Really 2.5ms.
+	static frame_duration l5ms;
+	static frame_duration l10ms;
+	static frame_duration l20ms;
+	static frame_duration l40ms;
+	static frame_duration l60ms;
+	operator int32_t() { return v; }
+	static generic_meget<frame_duration> get;
+	typedef void erettype;
+	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
+	void errordefault() const { }
+private:
+	int32_t v;
+};
+
+struct _last_packet_duration
+{
+	_last_packet_duration() { p = 0; }
+	_last_packet_duration(uint32_t _p) { p = _p; }
+	operator uint32_t() { return p; }
+	typedef _last_packet_duration drettype;
+	_last_packet_duration operator()(decoder& e) const;
+	_last_packet_duration operator()(multistream_decoder& e) const;
+	_last_packet_duration errordefault() const { return _last_packet_duration(0); }
+private:
+	uint32_t p;
+};
+extern _last_packet_duration last_packet_duration;
+
+
+
 struct set_control_int
 {
 	set_control_int(int32_t _ctl, int32_t _val) { ctl = _ctl; val = _val; }
