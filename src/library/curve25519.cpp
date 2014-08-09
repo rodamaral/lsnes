@@ -516,6 +516,17 @@ void curve25519_clamp(uint8_t* key)
 
 const uint8_t curve25519_base[32] = {9};
 
+#ifdef CURVE25519_VALGRIND_TEST
+
+int main()
+{
+	uint8_t buf[128];
+	curve25519(buf+64, buf, buf+32);
+	std::cerr << buf[64] << std::endl;
+	return 0;
+}
+
+#endif
 
 #ifdef CURVE25519_TEST_MODE
 #include <cmath>
@@ -541,6 +552,7 @@ int main()
 	double tsum;
 	double tsqr;
 	uint64_t tmin = 999999999;
+
 	buf[32] = 9;
 	fread(buf, 1, 32, fd);
 	buf[0] &= 248;
