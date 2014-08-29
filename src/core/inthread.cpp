@@ -676,7 +676,7 @@ out:
 		header.channels = 1;
 		header.preskip = pregap_length;
 		header.rate = OPUS_SAMPLERATE;
-		header.gain = 0;
+		header.gain = gain;
 		header.map_family = 0;
 		header.streams = 1;
 		header.coupled = 0;
