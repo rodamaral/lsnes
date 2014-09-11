@@ -12,7 +12,7 @@ REALRANLIB = $(CROSS_PREFIX)$(RANLIB)
 
 #Flags.
 HOSTCCFLAGS = -std=gnu++0x
-CFLAGS += -std=gnu++0x $(USER_CFLAGS)
+CFLAGS += -std=gnu++0x -pthread $(USER_CFLAGS)
 ifdef BOOST_NEEDS_MT
 BOOST_LIB_POSTFIX=-mt
 endif
@@ -20,7 +20,7 @@ ifdef HOST_BOOST_NEEDS_MT
 HOST_BOOST_POSTFIX=-mt
 endif
 
-LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS)
+LDFLAGS = -pthread -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS)
 
 ifeq ($(THREADS), NATIVE)
 CFLAGS += -DNATIVE_THREADS
