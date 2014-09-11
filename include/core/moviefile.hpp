@@ -237,6 +237,18 @@ struct moviefile
  */
 	std::map<std::string, uint64_t> active_macros;
 /**
+ * VI counters valid.
+ */
+	bool vi_valid;
+/**
+ * VI counter.
+ */
+	uint64_t vi_counter;
+/**
+ * VI counter for this frame.
+ */
+	uint32_t vi_this_frame;
+/**
  * Get number of frames in movie.
  *
  * returns: Number of frames.

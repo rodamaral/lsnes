@@ -97,7 +97,8 @@ portctrl::frame movie_logic::update_controls(bool subframe, bool forced) throw(s
 	if(core.lua2->requests_subframe_paint)
 		core.fbuf->redraw_framebuffer();
 
-	if(subframe) {
+	//If VI did not occur last frame, do subframe anyway.
+	if(subframe || !core.vi_prev_frame) {
 		if(core.runmode->is_advance_subframe()) {
 			//Note that platform::wait() may change value of cancel flag.
 			if(!core.runmode->test_cancel()) {
@@ -163,6 +164,8 @@ portctrl::frame movie_logic::update_controls(bool subframe, bool forced) throw(s
 		}
 		core.runmode->set_point(emulator_runmode::P_START);
 		core.supdater->update();
+		//Clear the previous VI flag, so next poll will be subframe.
+		core.vi_prev_frame = false;
 	}
 	platform::flush_command_queue();
 	portctrl::frame tmp = core.controls->get(core.mlogic->get_movie().get_current_frame());
@@ -280,7 +283,14 @@ public:
 	void output_frame(framebuffer::raw& screen, uint32_t fps_n, uint32_t fps_d)
 	{
 		auto& core = CORE();
-		core.lua2->callback_do_frame_emulated();
+		//VI occured.
+		auto& mfile = core.mlogic->get_mfile();
+		mfile.vi_this_frame++;
+		mfile.vi_counter++;
+
+		//This is done elsewhere for VFR.
+		if(!mfile.gametype->get_type().is_vfr())
+			core.lua2->callback_do_frame_emulated();
 		core.runmode->set_point(emulator_runmode::P_VIDEO);
 		core.fbuf->redraw_framebuffer(screen, false, true);
 		auto rate = core.rom->get_audio_rate();
@@ -686,7 +696,7 @@ namespace
 
 	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load
 	//failing.
-	int handle_load()
+	int _handle_load()
 	{
 		auto& core = CORE();
 		std::string old_project = *core.mlogic ? core.mlogic->get_mfile().projectid : "";
@@ -770,6 +780,17 @@ nothing_to_do:
 			return 1;
 		}
 		return 0;
+	}
+
+	int handle_load()
+	{
+		auto& core = CORE();
+		int r = _handle_load();
+		if(r > 0) {
+			//Set the vi prev frame flag, as not to mess up frame advance at first oppurtunity.
+			core.vi_prev_frame = true;
+		}
+		return r;
 	}
 
 	//If there are pending saves, perform them.
@@ -865,6 +886,10 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	core.runmode->set_pause_cond(initial.start_paused);
 	platform::set_paused(core.runmode->is_paused());
 	stop_at_frame_active = false;
+	//Always set VI last frame flag when loading any savestate or movie, as not to distrupt frame advance at
+	//first oppurtunity. And since we loadstated above, VI count this frame is set apporiately.
+	core.vi_prev_frame = true;
+
 
 	core.lua2->run_startup_scripts();
 
@@ -874,7 +899,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = first_round;
 			continue;
 		}
-		core.framerate->ack_frame_tick(framerate_regulator::get_utime());
+		//Only consider frames with VI real frames.
+		if(core.vi_prev_frame)
+			core.framerate->ack_frame_tick(framerate_regulator::get_utime());
 		core.runmode->decay_skiplag();
 
 		if(!first_round) {
@@ -921,9 +948,20 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = false;
 		}
 		core.dbg->do_callback_frame(core.mlogic->get_movie().get_current_frame(), false);
+		//VI count this frame should be 0 here.
 		core.rom->emulate();
+		//This is done elsewhere for non-VFR.
+		if(core.mlogic->get_mfile().gametype->get_type().is_vfr())
+			core.lua2->callback_do_frame_emulated();
+		//Reset the vi this frame count to 0, as it is only meaningful inside emulate.
+		//Also, if VIs occured, set flag informing that so frame advance can stop only on output frames.
+		auto& VIs = core.mlogic->get_mfile().vi_this_frame;
+		if(VIs > 0)
+			core.vi_prev_frame = true;
+		VIs = 0;
 		random_mix_timing_entropy();
-		if(core.runmode->is_freerunning())
+		//Only wait if VI, to get about proper framerate.
+		if(core.runmode->is_freerunning() && core.vi_prev_frame)
 			platform::wait(core.framerate->to_wait_frame(framerate_regulator::get_utime()));
 		first_round = false;
 		core.lua2->callback_do_frame();

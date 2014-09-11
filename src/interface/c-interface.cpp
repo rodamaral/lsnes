@@ -668,6 +668,10 @@ failed:
 		{
 			internal_pflag = true;
 		}
+		bool supports_vfr_sel()
+		{
+			return (caps1 & LSNES_CORE_CAP1_TYPEEXT1);
+		}
 	private:
 		std::string fullname;
 		std::string shortname;
@@ -691,8 +695,9 @@ failed:
 	struct c_core_type : public core_type
 	{
 		c_core_type(c_lib_init& lib, core_type_params& p, std::map<unsigned, portctrl::type*> _ports,
-			unsigned _rcount, unsigned _id)
-			: core_type(p), ports(_ports), entrypoint(lib.get_entrypoint()), rcount(_rcount), id(_id)
+			unsigned _rcount, unsigned _id, bool _vfr)
+			: core_type(p), ports(_ports), entrypoint(lib.get_entrypoint()), rcount(_rcount), id(_id),
+			vfr(_vfr)
 		{
 		}
 		~c_core_type() throw()
@@ -749,6 +754,10 @@ failed:
 			}
 			return cset;
 		}
+		bool t_is_vfr()
+		{
+			return vfr;
+		}
 	private:
 		void copy_settings(std::vector<char>& tmpmem, std::vector<lsnes_core_system_setting>& tmpmem2,
 			std::map<std::string, std::string>& settings)
@@ -779,6 +788,7 @@ failed:
 		entrypoint_fn entrypoint;
 		unsigned rcount;
 		unsigned id;
+		bool vfr;
 	};
 
 	std::vector<char> msgbuf;
@@ -1141,12 +1151,13 @@ no_parameters:
 		if(!cores.count(_core))
 			throw std::runtime_error("create_type: Unknown core");
 		p.core = cores[_core];
+		bool is_vfr = dynamic_cast<c_core_core*>(p.core)->supports_vfr_sel() && r.is_vfr;
 		for(unsigned* reg = r.regions; *reg != 0xFFFFFFFFU; reg++) {
 			if(!regions.count(*reg))
 				throw std::runtime_error("create_type: Unknown region");
 			p.regions.push_back(regions[*reg]);
 		}
-		return new c_core_type(lib, p, cores[_core]->get_ports(), rcount, type);
+		return new c_core_type(lib, p, cores[_core]->get_ports(), rcount, type, is_vfr);
 	}
 
 	std::map<const void*, std::list<core_sysregion*>> bylib_sysregion;
@@ -1184,7 +1195,7 @@ no_parameters:
 		//Enumerate what the thing supports.
 		entrypoint_fn entrypoint(fn);
 		lsnes_core_enumerate_cores r;
-		r.emu_flags1 = 2;
+		r.emu_flags1 = 3;
 		r.message = callback_message;
 		r.get_input = callback_get_input;
 		r.notify_action_update = callback_notify_action_update;

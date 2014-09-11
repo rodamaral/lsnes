@@ -109,8 +109,9 @@ extern "C" {
 #define LSNES_CORE_CAP1_MEMWATCH	0x00010000U
 //Core supports lightguns (By setting lightgun_height/lightgun_width in LSNES_CORE_GET_AV_STATE).
 #define LSNES_CORE_CAP1_LIGHTGUN	0x00020000U
+//Core signals type extensions #1 (VFR flag). Only supported if emu_flags1 >= 3
+#define LSNES_CORE_CAP1_TYPEEXT1	0x00040000U
 //Reserved capabilities.
-#define LSNES_CORE_CAP1_RESERVED18	0x00040000U
 #define LSNES_CORE_CAP1_RESERVED19	0x00080000U
 #define LSNES_CORE_CAP1_RESERVED20	0x00100000U
 #define LSNES_CORE_CAP1_RESERVED21	0x00200000U
@@ -379,6 +380,9 @@ struct lsnes_core_get_type_info
 	struct lsnes_core_get_type_info_romimage* images;
 	//Output: List of settings. Terminated by setting with NULL iname.
 	struct lsnes_core_get_type_info_param* settings;
+	//Output: Nonzero if input and output framerates should be decoupled.
+	//Present only if LSNES_CORE_CAP1_TYPEEXT1 is set.
+	int is_vfr;
 };
 
 //Request 3: Request information about region.

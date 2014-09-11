@@ -13,6 +13,13 @@ namespace
 		return 1;
 	}
 
+	int currentvi(lua::state& L, lua::parameters& P)
+	{
+		auto& m = CORE().mlogic->get_mfile();
+		L.pushnumber(m.vi_counter);
+		return 1;
+	}
+
 	int lagcounter(lua::state& L, lua::parameters& P)
 	{
 		auto& m = CORE().mlogic->get_movie();
@@ -136,6 +143,7 @@ namespace
 
 	lua::functions LUA_movie_fns(lua_func_misc, "movie", {
 		{"currentframe", currentframe},
+		{"currentvi", currentvi},
 		{"lagcount", lagcounter},
 		{"framecount", framecount},
 		{"rerecords", rerecords},

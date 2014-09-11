@@ -6265,6 +6265,18 @@ Return number of current frame.
 \end_layout
 
 \begin_layout Subsection
+movie.currentvi: Get current VI number
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.currentvi()
+\end_layout
+
+\begin_layout Standard
+Return number of current VI.
+\end_layout
+
+\begin_layout Subsection
 movie.framecount: Get move frame count
 \end_layout
 

@@ -443,6 +443,19 @@ namespace
 			core.controls->set_macro_frames(std::map<std::string, uint64_t>());
 		}
 	}
+
+	//Clear the data that should be cleared when movie is at beginning.
+	void clear_runtime_movie_data(emulator_instance& core)
+	{
+		auto& mf = core.mlogic->get_mfile();
+		mf.is_savestate = false;
+		mf.host_memory.clear();
+		core.mlogic->get_movie().reset_state();
+		mf.vi_valid = true;
+		mf.vi_counter = 0;
+		mf.vi_this_frame = 0;
+		core.fbuf->redraw_framebuffer(core.rom->draw_cover());
+	}
 }
 
 void do_load_rom() throw(std::bad_alloc, std::runtime_error)
@@ -474,10 +487,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 				core.mlogic->get_mfile().romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
 				core.mlogic->get_mfile().romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
 			}
-			core.mlogic->get_mfile().is_savestate = false;
-			core.mlogic->get_mfile().host_memory.clear();
-			core.mlogic->get_movie().reset_state();
-			core.fbuf->redraw_framebuffer(core.rom->draw_cover());
+			clear_runtime_movie_data(core);
 			core.lua2->callback_do_rewind();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -490,21 +500,13 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		//The more complicated Read-Write case.
 		//We need to create a new movie and movie file.
 		temporary_handle<moviefile> _movie;
-		_movie.get()->force_corrupt = false;
-		_movie.get()->gametype = NULL;		//Not yet known.
 		_movie.get()->coreversion = core.rom->get_core_identifier();
 		_movie.get()->projectid = get_random_hexstring(40);
-		_movie.get()->rerecords = "0";
-		_movie.get()->rerecords_mem = 0;
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 			_movie.get()->namehint[i] = core.rom->romimg[i].namehint;
 			_movie.get()->romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
 			_movie.get()->romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
 		}
-		_movie.get()->is_savestate = false;
-		_movie.get()->save_frame = 0;
-		_movie.get()->lagged_frames = 0;
-		_movie.get()->poll_flag = false;
 		_movie.get()->movie_rtc_second = _movie.get()->rtc_second = 1000000000ULL;
 		_movie.get()->movie_rtc_subsecond = _movie.get()->rtc_subsecond = 0;
 		_movie.get()->start_paused = false;
@@ -570,10 +572,7 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 	core.dispatch->mode_change(true);
 	try {
 		handle_load_core(core.mlogic->get_mfile(), portset, false);
-		core.mlogic->get_mfile().is_savestate = false;
-		core.mlogic->get_mfile().host_memory.clear();
-		core.mlogic->get_movie().reset_state();
-		core.fbuf->redraw_framebuffer(core.rom->draw_cover());
+		clear_runtime_movie_data(core);
 		core.lua2->callback_do_rewind();
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -765,6 +764,15 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	core.mlogic->set_movie(*newmovie(), true);
 	core.mlogic->set_mfile(_movie, true);
 	used = true;
+
+	//Set up VI counter if none is available.
+	if(!_movie.vi_valid) {
+		//If no VI counter available, set it to frame-1 and there have been 0 this frame.
+		uint64_t f = core.mlogic->get_movie().get_current_frame();
+		_movie.vi_counter = (f > 0) ? (f - 1) : 0;
+		_movie.vi_this_frame = 0;
+		_movie.vi_valid = true;
+	}
 
 	set_mprefix(get_mprefix_for_project(core.mlogic->get_mfile().projectid));
 

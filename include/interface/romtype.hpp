@@ -619,6 +619,7 @@ public:
 	void debug_reset() { core->debug_reset(); }
 	bool isnull() { return core->isnull(); }
 	bool safe_to_unload(loadlib::module& mod) { return core->safe_to_unload(mod); }
+	bool is_vfr() { return t_is_vfr(); }
 protected:
 /**
  * Load a ROM slot set. Changes the ROM currently loaded for core.
@@ -638,6 +639,10 @@ protected:
  * Returns: The controller configuration.
  */
 	virtual controller_set t_controllerconfig(std::map<std::string, std::string>& settings) = 0;
+/**
+ * Is VFR (defaults to false).
+ */
+	virtual bool t_is_vfr();
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
