@@ -200,9 +200,12 @@ void moviefile::brief_info::load(zip::reader& r)
 	r.read_linefile("gametype", sysregion);
 	r.read_linefile("coreversion", corename);
 	r.read_linefile("projectid", projectid);
-	if(r.has_member("savestate"))
-		r.read_numeric_file("saveframe", current_frame);
-	else
+	if(r.has_member("savestate")) {
+		if(r.has_member("vicount"))
+			r.read_numeric_file("vicount", current_frame);
+		else
+			r.read_numeric_file("saveframe", current_frame);
+	} else
 		current_frame = 0;
 	r.read_numeric_file("rerecords", rerecords);
 	r.read_linefile("rom.sha256", hash[0], true);
@@ -242,6 +245,10 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
+	vi_valid = true;
+	vi_counter = 0;
+	vi_this_frame = 0;
+
 	branches.clear();
 	r.read_linefile("gamename", gamename, true);
 	r.read_linefile("projectid", projectid);
@@ -271,6 +278,12 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	if(r.has_member("savestate.anchor"))
 		r.read_raw_file("savestate.anchor", anchor_savestate);
 	if(r.has_member("savestate")) {
+		vi_valid = false;
+		if(r.has_member("vicounter")) {
+			r.read_numeric_file("vicounter", vi_counter);
+			r.read_numeric_file("vithisframe", vi_this_frame);
+			vi_valid = true;
+		}
 		is_savestate = true;
 		r.read_numeric_file("saveframe", save_frame, true);
 		r.read_numeric_file("lagcounter", lagged_frames, true);

@@ -20,6 +20,8 @@
 
 void moviefile::brief_info::binary_io(int _stream)
 {
+	bool vi_override = false;
+
 	binarystream::input in(_stream);
 	sysregion = in.string();
 	//Discard the settings.
@@ -32,8 +34,14 @@ void moviefile::brief_info::binary_io(int _stream)
 			this->corename = s.string_implicit();
 		}},{TAG_PROJECT_ID, [this](binarystream::input& s) {
 			this->projectid = s.string_implicit();
-		}},{TAG_SAVESTATE, [this](binarystream::input& s) {
+		}},{TAG_SAVESTATE, [this, &vi_override](binarystream::input& s) {
+			//TAG_VICOUNTER overrides this.
+			if(!vi_override)
+				this->current_frame = s.number();
+		}},{TAG_VICOUNTER, [this, &vi_override](binarystream::input& s) {
+			//TAG_VICOUNTER overrides TAG_SAVESTATE.
 			this->current_frame = s.number();
+			vi_override = true;
 		}},{TAG_RRDATA, [this](binarystream::input& s) {
 			std::vector<char> c_rrdata;
 			s.blob_implicit(c_rrdata);
@@ -177,6 +185,11 @@ void moviefile::binary_io(int _stream, rrdata_set& rrd) throw(std::bad_alloc, st
 		});
 	}
 
+	out.extension(TAG_VICOUNTER, [this](binarystream::output& s) {
+		s.number(vi_counter);
+		s.number(vi_this_frame);
+	});
+
 	int64_t next_bnum = 0;
 	std::map<std::string, uint64_t> branch_table;
 	for(auto& i : branches) {
@@ -212,6 +225,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 	input = NULL;
+	vi_valid = false;
 
 	in.extension({
 		{TAG_ANCHOR_SAVE, [this](binarystream::input& s) {
@@ -288,6 +302,10 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 			uint64_t l = s.number();
 			std::string x = s.string_implicit();
 			this->subtitles[moviefile_subtiming(f, l)] = x;
+		}},{TAG_VICOUNTER, [this](binarystream::input& s) {
+			vi_counter = s.number();
+			vi_this_frame = s.number();
+			vi_valid = true;
 		}}
 	}, binarystream::null_default);
 

@@ -569,6 +569,11 @@ std::vector<std::string> core_core::get_trace_cpus()
 	return c_get_trace_cpus();
 }
 
+bool core_type::t_is_vfr()
+{
+	return false;
+}
+
 emucore_callbacks::~emucore_callbacks() throw()
 {
 }

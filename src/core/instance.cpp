@@ -121,6 +121,7 @@ emulator_instance::emulator_instance()
 	settings->add_set(lsnes_setgrp);
 	dispatch->set_error_streams(&messages.getstream());
 	random_seed_value = 0;
+	vi_prev_frame = false;
 }
 
 emulator_instance::~emulator_instance()

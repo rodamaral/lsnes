@@ -51,6 +51,8 @@ struct _lsnes_status
 	bool rtc_valid;					//RTC time valid?
 	std::u32string rtc;				//RTC time.
 	std::vector<std::u32string> inputs;		//Input display.
+	bool vi_valid;					//VI count valid?
+	uint64_t vi_counter;				//VI counter.
 	std::map<std::string, std::u32string> mvars;	//Memory watches.
 	std::map<std::string, std::u32string> lvars;	//Lua variables.
 };

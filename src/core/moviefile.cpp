@@ -109,12 +109,18 @@ moviefile::moviefile() throw(std::bad_alloc)
 	coreversion = "";
 	projectid = "";
 	rerecords = "0";
+	rerecords_mem = 0;
 	is_savestate = false;
+	save_frame = 0;
+	lagged_frames = 0;
 	movie_rtc_second = rtc_second = DEFAULT_RTC_SECOND;
 	movie_rtc_subsecond = rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	start_paused = false;
 	lazy_project_create = true;
 	poll_flag = 0;
+	vi_valid = true;
+	vi_counter = 0;
+	vi_this_frame = 0;
 }
 
 moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_settings, uint64_t rtc_sec,
@@ -125,7 +131,10 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 	coreversion = rom.get_core_identifier();
 	projectid = get_random_hexstring(40);
 	rerecords = "0";
+	rerecords_mem = 0;
 	is_savestate = false;
+	save_frame = 0;
+	lagged_frames = 0;
 	movie_rtc_second = rtc_second = rtc_sec;
 	movie_rtc_subsecond = rtc_subsecond = rtc_subsec;
 	start_paused = false;
@@ -133,6 +142,9 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 	poll_flag = 0;
 	settings = c_settings;
 	input = NULL;
+	vi_valid = true;
+	vi_counter = 0;
+	vi_this_frame = 0;
 	auto ctrldata = rom.controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 	create_default_branch(ports);
@@ -329,6 +341,9 @@ void moviefile::copy_fields(const moviefile& mv)
 	lazy_project_create = mv.lazy_project_create;
 	subtitles = mv.subtitles;
 	active_macros = mv.active_macros;
+	vi_valid = mv.vi_valid;
+	vi_counter = mv.vi_counter;
+	vi_this_frame = mv.vi_this_frame;
 }
 
 void moviefile::fork_branch(const std::string& oldname, const std::string& newname)

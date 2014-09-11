@@ -129,6 +129,7 @@ struct emulator_instance
 	status_updater* supdater;
 	threads::id emu_thread;
 	time_t random_seed_value;
+	bool vi_prev_frame;
 	dtor_list D;
 private:
 	emulator_instance(const emulator_instance&);

@@ -14,6 +14,8 @@ struct lua_unsaferewind
 	uint64_t ptr;
 	uint64_t secs;
 	uint64_t ssecs;
+	uint64_t vi_counter;
+	uint32_t vi_this_frame;
 	std::vector<uint32_t> pollcounters;
 	std::vector<char> hostmemory;
 	std::string print()

@@ -173,8 +173,10 @@ void moviefile::save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std:
 	w.write_numeric_file("starttime.second", movie_rtc_second);
 	w.write_numeric_file("starttime.subsecond", movie_rtc_subsecond);
 	if(!anchor_savestate.empty())
-			w.write_raw_file("savestate.anchor", anchor_savestate);
+		w.write_raw_file("savestate.anchor", anchor_savestate);
 	if(is_savestate) {
+		w.write_numeric_file("vicounter", vi_counter);
+		w.write_numeric_file("vithisframe", vi_this_frame);
 		w.write_numeric_file("saveframe", save_frame);
 		w.write_numeric_file("lagcounter", lagged_frames);
 		write_pollcounters(w, "pollcounters", pollcounters);

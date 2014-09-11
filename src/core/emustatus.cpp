@@ -193,6 +193,9 @@ void status_updater::update()
 			}
 			_status.inputs.push_back(_buffer);
 		}
+		//VI counts. Only display if type is VFR.
+		_status.vi_valid = mlogic.get_mfile().gametype->get_type().is_vfr();
+		_status.vi_counter = mlogic.get_mfile().vi_counter;
 		//Lua variables.
 		_status.lvars = lua2.get_watch_vars();
 		//Memory watches.

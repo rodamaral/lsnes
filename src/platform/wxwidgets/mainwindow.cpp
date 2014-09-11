@@ -1253,6 +1253,8 @@ void wxwin_mainwindow::update_statusbar()
 				s << "Frame: " << vars.curframe;
 			else
 				s << "Frame: " << vars.curframe << "/" << vars.length;
+			if(vars.vi_valid)
+				s << "  VI: " << vars.vi_counter;
 			s << "  Lag: " << vars.lag;
 			if(vars.subframe == _lsnes_status::subframe_savepoint)
 				s << "  Subframe: S";
