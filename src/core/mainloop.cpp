@@ -879,6 +879,7 @@ jumpback:
 				if(core.project->get() != old)
 					delete old;
 				core.slotcache->flush();		//Wrong movie may be stale.
+				core.runmode->end_load();		//Restore previous mode.
 				return 1;
 			} catch(std::exception& e) {
 				platform::error_message(std::string("Can't switch projects: ") + e.what());
