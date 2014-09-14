@@ -465,6 +465,7 @@ namespace
 				case port_controller_button::TYPE_RAXIS: L.pushstring("raxis"); break;
 				case port_controller_button::TYPE_TAXIS: L.pushstring("axis"); break;
 				case port_controller_button::TYPE_LIGHTGUN: L.pushstring("lightgun"); break;
+				case port_controller_button::TYPE_KEYBOARD: L.pushstring("keyboard"); break;
 			};
 			L.rawset(-3);
 			if(cs.buttons[i].symbol) {

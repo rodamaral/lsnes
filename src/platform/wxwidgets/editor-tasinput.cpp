@@ -522,6 +522,8 @@ void wxeditor_tasinput::update_controls()
 			current->Add(t.check);
 			t.check->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 				wxCommandEventHandler(wxeditor_tasinput::on_control), NULL, this);
+		} else if(i.type == port_controller_button::TYPE_KEYBOARD) {
+			//TODO.
 		} else {
 			t.panel = new xypanel(current_p, inst, current, i, this,
 				wxCommandEventHandler(wxeditor_tasinput::on_control), next_id);

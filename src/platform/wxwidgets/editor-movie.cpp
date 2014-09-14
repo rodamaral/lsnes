@@ -74,6 +74,16 @@ namespace
 	uint64_t divsl[] = {1000000, 100000, 10000, 1000, 100, 10, 0};
 	const unsigned divcnt = sizeof(divs)/sizeof(divs[0]);
 
+	bool is_ctype(int type)
+	{
+		return (type == 0 || type == 1 || type == 2);
+	}
+
+	bool is_wtype(int type)
+	{
+		return (type == -1 || type == 1 || type == 2);
+	}
+
 	class exp_imp_type
 	{
 	public:
@@ -110,7 +120,7 @@ struct control_info
 	unsigned position_left;
 	unsigned reserved;	//Must be at least 6 for axes.
 	unsigned index;		//Index in poll vector.
-	int type;		//-2 => Port, -1 => Fixed, 0 => Button, 1 => axis.
+	int type;		//-2 => Port, -1 => Fixed, 0 => Button, 1 => axis, 2 => Key
 	char32_t ch;
 	std::u32string title;
 	unsigned port;
@@ -124,6 +134,7 @@ struct control_info
 		unsigned port, unsigned controller);
 	static control_info axisinfo(unsigned& p, const std::u32string& title, unsigned idx,
 		unsigned port, unsigned controller, port_controller_button::_type _axistype, int _rmin, int _rmax);
+	//TODO: keyinfo().
 };
 
 control_info control_info::portinfo(unsigned& p, unsigned port, unsigned controller)
@@ -261,6 +272,8 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 				controlinfo.push_back(control_info::axisinfo(c, utf8::to32(pcb.name), idx, pid, i,
 					pcb.type, pcb.rmin, pcb.rmax));
 				last_multibyte = true;
+			} else if(pcb.type == port_controller_button::TYPE_KEYBOARD) {
+				//TODO
 			}
 		}
 		if(nextp > c)
@@ -322,7 +335,7 @@ void frame_controls::format_lines()
 	//Line2
 	for(auto i : controlinfo) {
 		auto _title = i.title;
-		if(i.type == -1 || i.type == 1)
+		if(is_wtype(i.type))
 			std::copy(_title.begin(), _title.end(), &cp2[i.position_left + off]);
 		if(i.type == 0)
 			cp2[i.position_left + off] = i.ch;
@@ -389,6 +402,9 @@ namespace
 				first = false;
 				last_axis = true;
 				break;
+			case 2:		//key
+				//TODO.
+				break;
 			}
 		}
 		return x.str();
@@ -450,6 +466,9 @@ namespace
 				first = false;
 				last_axis = true;
 				break;
+			case 2:		//Key.
+				//TODO.
+				break;
 			}
 		}
 	}
@@ -496,7 +515,7 @@ namespace
 	{
 		std::set<unsigned> r;
 		for(auto i : info.get_controlinfo()) {
-			if(i.port == port && i.controller == controller && (i.type == 0 || i.type == 1))
+			if(i.port == port && i.controller == controller && is_ctype(i.type))
 				r.insert(i.index);
 		}
 		return r;
@@ -1016,6 +1035,9 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 			char c[7];
 			sprintf(c, "%6d", fcontrols.read_index(f, i.index));
 			fb.write(c, 0, divcnt + 1 + i.position_left, y, 0x000000, bgc);
+		} else if(i.type == 2) {
+			//Key.
+			//TODO.
 		}
 	}
 }
@@ -1416,6 +1438,8 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 						}
 				} else
 					do_alter_axis(idx, press_line, line);
+			} else if(i.type == 2) {
+				//TODO.
 			}
 		}
 	}
@@ -1831,7 +1855,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	} else {
 		for(auto i : fcontrols.get_controlinfo())
 			if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
-				if(i.type == 0 || i.type == 1) {
+				if(is_ctype(i.type)) {
 					clicked_button = true;
 					clicked = i;
 					controller_name = (stringfmt() << "controller " << i.port << "-"
@@ -1847,7 +1871,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	uint64_t ebutton_low = clicked_button ? first_editable(clicked.index) : std::numeric_limits<uint64_t>::max();
 	uint64_t econtroller_low = ebutton_low;
 	for(auto i : fcontrols.get_controlinfo())
-		if(i.port == clicked.port && i.controller == clicked.controller && (i.type == 0 || i.type == 1))
+		if(i.port == clicked.port && i.controller == clicked.controller && is_ctype(i.type))
 			econtroller_low = max(econtroller_low, first_editable(i.index));
 
 	bool click_zero = (clicked_button && !clicked.port && !clicked.controller);
@@ -1876,6 +1900,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		press_line < linecount) || (rpress_line >= ebutton_low && rpress_line < linecount)));
 	//Sweep axis is enabled if change axis is enabled and lines don't match.
 	enable_sweep_axis = (enable_change_axis && press_line != rpress_line);
+	//TODO: Handle clicked.type == 2.
 	//Insert frame is enabled if this frame is completely editable and press and release lines match.
 	enable_insert_frame = (!not_editable && press_line + 1 >= eframe_low && press_line < linecount &&
 		press_line == rpress_line);

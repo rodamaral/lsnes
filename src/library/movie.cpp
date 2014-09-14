@@ -120,7 +120,7 @@ void movie::next_frame() throw(std::bad_alloc)
 	}
 
 	//Reset the poll counters and DRDY flags.
-	pollcounters.clear();
+	pollcounters.clear_unmasked();
 
 	//Increment the current frame counter and subframe counter. Note that first subframe is undefined for
 	//frame 0 and 0 for frame 1.
@@ -346,7 +346,7 @@ void movie::reset_state() throw()
 	readonly = true;
 	current_frame = 0;
 	current_frame_first_subframe = 0;
-	pollcounters.clear();
+	pollcounters.clear_all();
 	lag_frames = 0;
 	clear_caches();
 }

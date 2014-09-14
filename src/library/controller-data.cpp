@@ -159,8 +159,10 @@ port_type_set::port_type_set(std::vector<class port_type*> types, struct port_in
 	//Count maximum number of controller indices to determine the controller multiplier.
 	controller_multiplier = 1;
 	for(size_t i = 0; i < port_count; i++)
-		for(unsigned j = 0; j < types[i]->controller_info->controllers.size(); j++)
-			controller_multiplier = max(controller_multiplier, (size_t)types[i]->used_indices(j));
+		for(unsigned j = 0; j < types[i]->controller_info->controllers.size(); j++) {
+			auto idxcnt = types[i]->used_indices(j);
+			controller_multiplier = max(controller_multiplier, (size_t)(idxcnt.first + idxcnt.second));
+		}
 	//Count maximum number of controllers to determine the port multiplier.
 	port_multiplier = 1;
 	for(size_t i = 0; i < port_count; i++)
@@ -190,6 +192,28 @@ port_type_set::port_type_set(std::vector<class port_type*> types, struct port_in
 		auto& i = _indices[j];
 		if(i.valid)
 			indices_tab[i.port * port_multiplier + i.controller * controller_multiplier + i.control] = j;
+	}
+}
+
+void port_type_set::set_pollcounter_mask(uint32_t* mask) const
+{
+	for(unsigned i = 0; i < indices_size; i++) {
+		unsigned v = indices_tab[i];
+		//i is the index into map (which decomposes into triple). v is the index in array (which may be
+		//invalid).
+		if(v == 0xFFFFFFFFUL)
+			continue;
+		unsigned _port = i / port_multiplier;
+		unsigned _controller = (i % port_multiplier) / controller_multiplier;
+		unsigned _button = i % controller_multiplier;
+		if(_port >= port_count)
+			continue;
+		//Determine if this is reserved or not (it is reserved if index is beyond limit) and set bit.
+		auto idxcnt = port_types[_port]->used_indices(_controller);
+		if(_button >= idxcnt.first)
+			mask[v >> 5] &= ~(1U << (v & 31));
+		else
+			mask[v >> 5] |= (1U << (v & 31));
 	}
 }
 
@@ -272,7 +296,6 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 	}
 	const port_controller& pc = ptype.controller_info->controllers[controller];
 	bool need_space = false;
-	short val;
 	for(unsigned i = 0; i < pc.buttons.size(); i++) {
 		const port_controller_button& pcb = pc.buttons[i];
 		if(need_space && pcb.type != port_controller_button::TYPE_NULL) {
@@ -289,8 +312,14 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 		case port_controller_button::TYPE_RAXIS:
 		case port_controller_button::TYPE_TAXIS:
 		case port_controller_button::TYPE_LIGHTGUN:
-			val = ptype.read(&ptype, backingmem, controller, i);
-			buf += writeu32val(buf, val);
+			buf += writeu32val(buf, ptype.read(&ptype, backingmem, controller, i));
+			need_space = true;
+			break;
+		case port_controller_button::TYPE_KEYBOARD:
+			//Write name.
+			auto str = pc.get_namemap_entry(ptype.read(&ptype, backingmem, controller, i));
+			for(auto x : str)
+				*(buf++) = x;
 			need_space = true;
 			break;
 		}
@@ -301,22 +330,34 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 pollcounter_vector::pollcounter_vector() throw(std::bad_alloc)
 {
 	types = &dummytypes();
-	ctrs = new uint32_t[types->indices()];
-	clear();
+	size_t elts_base = types->indices();
+	size_t elts_mask = (elts_base + 31) / 32;
+	size_t elts_all = elts_base + elts_mask;
+	ctrs = new uint32_t[elts_all];
+	memset(ctrs_valid_mask = ctrs + elts_base, 0xFF, sizeof(uint32_t) * elts_mask);
+	clear_all();
 }
 
 pollcounter_vector::pollcounter_vector(const port_type_set& p) throw(std::bad_alloc)
 {
 	types = &p;
-	ctrs = new uint32_t[types->indices()];
-	clear();
+	size_t elts_base = types->indices();
+	size_t elts_mask = (elts_base + 31) / 32;
+	size_t elts_all = elts_base + elts_mask;
+	ctrs = new uint32_t[elts_all];
+	types->set_pollcounter_mask(ctrs_valid_mask = ctrs + elts_base);
+	clear_all();
 }
 
 pollcounter_vector::pollcounter_vector(const pollcounter_vector& p) throw(std::bad_alloc)
 {
-	ctrs = new uint32_t[p.types->indices()];
+	size_t elts_base = p.types->indices();
+	size_t elts_mask = (elts_base + 31) / 32;
+	size_t elts_all = elts_base + elts_mask;
+	ctrs = new uint32_t[elts_all];
+	ctrs_valid_mask = ctrs + elts_base;
 	types = p.types;
-	memcpy(ctrs, p.ctrs, sizeof(uint32_t) * p.types->indices());
+	memcpy(ctrs, p.ctrs, sizeof(uint32_t) * elts_all);
 	framepflag = p.framepflag;
 }
 
@@ -324,21 +365,34 @@ pollcounter_vector& pollcounter_vector::operator=(const pollcounter_vector& p) t
 {
 	if(this == &p)
 		return *this;
-	uint32_t* n = new uint32_t[p.types->indices()];
+	size_t elts_base = p.types->indices();
+	size_t elts_mask = (elts_base + 31) / 32;
+	size_t elts_all = elts_base + elts_mask;
+	uint32_t* n = new uint32_t[elts_all];
 	types = p.types;
-	memcpy(n, p.ctrs, sizeof(uint32_t) * p.types->indices());
+	memcpy(n, p.ctrs, sizeof(uint32_t) * elts_all);
 	delete[] ctrs;
 	ctrs = n;
+	ctrs_valid_mask = ctrs + elts_base;
 	framepflag = p.framepflag;
 	return *this;
 }
 
 pollcounter_vector::~pollcounter_vector() throw()
 {
+	//ctrs_valid_mask is part of this.
 	delete[] ctrs;
 }
 
-void pollcounter_vector::clear() throw()
+void pollcounter_vector::clear_unmasked() throw()
+{
+	for(size_t i = 0; i < types->indices(); i++)
+		if((ctrs_valid_mask[i >> 5] >> (i & 31)) & 1)
+			ctrs[i] = 0;
+	framepflag = false;
+}
+
+void pollcounter_vector::clear_all() throw()
 {
 	memset(ctrs, 0, sizeof(uint32_t) * types->indices());
 	framepflag = false;
@@ -346,46 +400,65 @@ void pollcounter_vector::clear() throw()
 
 void pollcounter_vector::set_all_DRDY() throw()
 {
+	//Only manipulate valid pcounters.
 	for(size_t i = 0; i < types->indices(); i++)
-		ctrs[i] |= 0x80000000UL;
+		if((ctrs_valid_mask[i >> 5] >> (i & 31)) & 1)
+			ctrs[i] |= 0x80000000UL;
 }
 
 void pollcounter_vector::clear_DRDY(unsigned idx) throw()
 {
-	ctrs[idx] &= 0x7FFFFFFFUL;
+	//Only manipulate valid pcounters.
+	if((ctrs_valid_mask[idx >> 5] >> (idx & 31)) & 1)
+		ctrs[idx] &= 0x7FFFFFFFUL;
 }
 
 bool pollcounter_vector::get_DRDY(unsigned idx) throw()
 {
-	return ((ctrs[idx] & 0x80000000UL) != 0);
+	//For not valid pcounters, DRDY is permanently 1.
+	if((ctrs_valid_mask[idx >> 5] >> (idx & 31)) & 1)
+		return ((ctrs[idx] & 0x80000000UL) != 0);
+	else
+		return true;
 }
 
 bool pollcounter_vector::has_polled() throw()
 {
 	uint32_t res = 0;
-	for(size_t i = 0; i < types->indices() ; i++)
-		res |= ctrs[i];
+	for(size_t i = 0; i < types->indices(); i++)
+		if((ctrs_valid_mask[i >> 5] >> (i & 31)) & 1)
+			res |= ctrs[i];
 	return ((res & 0x7FFFFFFFUL) != 0);
 }
 
 uint32_t pollcounter_vector::get_polls(unsigned idx) throw()
 {
-	return ctrs[idx] & 0x7FFFFFFFUL;
+	//For not valid pcounters, polls is permanently 0.
+	if((ctrs_valid_mask[idx >> 5] >> (idx & 31)) & 1)
+		return ctrs[idx] & 0x7FFFFFFFUL;
+	else
+		return 0;
 }
 
 uint32_t pollcounter_vector::increment_polls(unsigned idx) throw()
 {
-	uint32_t x = ctrs[idx] & 0x7FFFFFFFUL;
-	++ctrs[idx];
-	return x;
+	//Only manipulate valid pcounters, for others, permanently 0.
+	if((ctrs_valid_mask[idx >> 5] >> (idx & 31)) & 1) {
+		uint32_t x = ctrs[idx] & 0x7FFFFFFFUL;
+		++ctrs[idx];
+		return x;
+	} else
+		return 0;
 }
 
 uint32_t pollcounter_vector::max_polls() throw()
 {
 	uint32_t max = 0;
 	for(unsigned i = 0; i < types->indices(); i++) {
-		uint32_t tmp = ctrs[i] & 0x7FFFFFFFUL;
-		max = (max < tmp) ? tmp : max;
+		if((ctrs_valid_mask[i >> 5] >> (i & 31)) & 1) {
+			uint32_t tmp = ctrs[i] & 0x7FFFFFFFUL;
+			max = (max < tmp) ? tmp : max;
+		}
 	}
 	return max;
 }
@@ -393,7 +466,6 @@ uint32_t pollcounter_vector::max_polls() throw()
 void pollcounter_vector::save_state(std::vector<uint32_t>& mem) throw(std::bad_alloc)
 {
 	mem.resize(types->indices());
-	//Compatiblity fun.
 	for(size_t i = 0; i < types->indices(); i++)
 		mem[i] = ctrs[i];
 }
@@ -824,6 +896,7 @@ unsigned port_controller::analog_actions() const
 			break;
 		case port_controller_button::TYPE_NULL:
 		case port_controller_button::TYPE_BUTTON:
+		case port_controller_button::TYPE_KEYBOARD:
 			;
 		};
 	}
@@ -868,6 +941,7 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 			break;
 		case port_controller_button::TYPE_NULL:
 		case port_controller_button::TYPE_BUTTON:
+		case port_controller_button::TYPE_KEYBOARD:
 			;
 		};
 	}

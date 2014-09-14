@@ -161,6 +161,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		core.vi_prev_frame = false;
 	}
 	platform::flush_command_queue();
+	//TODO: Collapse keyboard symbols.
 	controller_frame tmp = core.controls->get(core.mlogic->get_movie().get_current_frame());
 	core.rom->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	core.lua2->callback_do_input(tmp, subframe);

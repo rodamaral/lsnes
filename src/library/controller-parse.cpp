@@ -23,6 +23,22 @@ namespace
 		return y.str();
 	}
 
+	std::string quote(const std::u32string& _s)
+	{
+		auto s = utf8::to8(_s);
+		std::ostringstream y;
+		y << "U\"";
+		for(auto i : s)
+			if(i == '\"')
+				y << "\"";
+			else if(i == '\\')
+				y << "\\\\";
+			else
+				y << i;
+		y << "\"";
+		return y.str();
+	}
+
 	std::string read_str(const JSON::node& root, const JSON::pointer& ptr)
 	{
 		if(root.type_of(ptr) != JSON::string)
@@ -117,6 +133,22 @@ namespace
 		return ret;
 	}
 
+	port_controller_button pcb_key(const JSON::node& root, const JSON::pointer& ptr)
+	{
+		auto pshadow = ptr.field("shadow");
+		auto pname = ptr.field("name");
+		struct port_controller_button ret;
+		ret.type = port_controller_button::TYPE_KEYBOARD;
+		ret.symbol = U'\0';
+		ret.shadow = (root.type_of(pshadow) != JSON::none) ? read_bool(root, pshadow) : false;
+		ret.rmin = 0;
+		ret.rmax = 0;
+		ret.centers = false;
+		ret.macro = "";
+		ret.msymbol = '\0';
+		return ret;
+	}
+
 	struct port_controller_button pcs_parse_button(const JSON::node& root, JSON::pointer ptr)
 	{
 		if(root.type_of_indirect(ptr) != JSON::object)
@@ -129,6 +161,8 @@ namespace
 			return pcb_button(root, ptr);
 		else if(type == "axis" || type == "raxis" || type == "taxis" || type == "lightgun")
 			return pcb_axis(root, ptr, type);
+		else if(type == "key")
+			return pcb_key(root, ptr);
 		else
 			(stringfmt() << "Unknown type '" << type << "' for '" << ptr << "'").throwex();
 		return pcb_null(root, ptr); //NOTREACHED.
@@ -153,6 +187,22 @@ namespace
 		ret.cclass = cclass;
 		ret.type = type;
 		ret.buttons = buttons;
+		JSON::pointer _buttonmap = ptr.field("buttonmap");
+		//Namemap is OPTIONAL. If present, it must be an array, giving the entries as strings (or nil)
+		//for not present.
+		if(root.type_of_indirect(_buttonmap) != JSON::none) {
+			if(root.type_of_indirect(_buttonmap) != JSON::array)
+				(stringfmt() << "Expected array or not present for '" << _buttonmap << "'").throwex();
+			for(auto i = root[_buttonmap].begin(); i != root[_buttonmap].end(); ++i) {
+				if(i->type() == JSON::string) {
+					ret.namemap[i.index()] = i->as_string();
+				} else if(i->type() != JSON::none) {
+					(stringfmt() << "Expected string or not present for '"
+						<< _buttonmap.index(i.index()) << "'").throwex();
+				}
+			}
+		}
+		ret.reserved_idx = (ret.namemap.size() + 31) / 32;		//One bit per namemap entry.
 		return ret;
 	}
 
@@ -202,6 +252,7 @@ namespace
 		case port_controller_button::TYPE_RAXIS: s << "RAXIS"; break;
 		case port_controller_button::TYPE_TAXIS: s << "TAXIS"; break;
 		case port_controller_button::TYPE_LIGHTGUN: s << "LIGHTGUN"; break;
+		case port_controller_button::TYPE_KEYBOARD: s << "KEYBOARD"; break;
 		}
 		s << "," << (int)b.symbol << ", " << quote(b.name) << ", " << b.shadow << ", " << b.rmin << ", "
 			<< b.rmax << ", " << b.centers << ", " << quote(b.macro) << ", " << (int)b.msymbol << "}";
@@ -216,7 +267,10 @@ namespace
 			write_button(s, i);
 			s << ",\n";
 		}
-		s << "}};\n";
+		s << "},{";
+		for(auto i : c.namemap)
+			s << "\t{" << i.first << ", " << quote(i.second) << "},\n";
+		s << "}," << c.reserved_idx << "};\n";
 	}
 
 	void write_portdata(std::ostream& s, const port_controller_set& cs, unsigned& idx)
@@ -249,6 +303,7 @@ namespace
 				case port_controller_button::TYPE_NULL: break;
 				case port_controller_button::TYPE_RAXIS: x+=16; break;
 				case port_controller_button::TYPE_TAXIS: x+=16; break;
+				case port_controller_button::TYPE_KEYBOARD: x+=16; break;
 			};
 		}
 		return (x + 7) / 8;
@@ -266,6 +321,7 @@ namespace
 				case port_controller_button::TYPE_NULL: break;
 				case port_controller_button::TYPE_RAXIS: break;
 				case port_controller_button::TYPE_TAXIS: break;
+				case port_controller_button::TYPE_KEYBOARD: break;
 			};
 		}
 		return (x + 7) / 8;
@@ -297,6 +353,7 @@ namespace
 				case port_controller_button::TYPE_RAXIS:
 				case port_controller_button::TYPE_TAXIS:
 				case port_controller_button::TYPE_LIGHTGUN:
+				case port_controller_button::TYPE_KEYBOARD:
 					ii.type = 2;
 					ii.offset = aoffset + 2 * axisidx2;
 					axisidx2++;
@@ -343,6 +400,7 @@ namespace
 				case port_controller_button::TYPE_RAXIS:
 				case port_controller_button::TYPE_TAXIS:
 				case port_controller_button::TYPE_LIGHTGUN:
+				case port_controller_button::TYPE_KEYBOARD:
 					ins.type = 1;
 					ins.offset = aoffset + 2 * axisidx;
 					ret.push_back(ins);

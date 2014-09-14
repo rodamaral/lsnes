@@ -191,6 +191,7 @@ struct port_controller_button
 		TYPE_RAXIS,	//Relative Axis (mouse).
 		TYPE_TAXIS,	//Throttle Axis (does not pair).
 		TYPE_LIGHTGUN,	//Lightgun axis.
+		TYPE_KEYBOARD,	//Keyboard. The names are translated via namemap.
 	};
 	enum _type type;
 	char32_t symbol;
@@ -216,6 +217,8 @@ struct port_controller
 	std::string cclass;				//Controller class.
 	std::string type;				//Controller type.
 	std::vector<port_controller_button> buttons;	//Buttons.
+	std::map<signed, std::u32string> namemap;	//Button translation map.
+	unsigned reserved_idx;				//Number of extra reserved indices.
 /**
  * Count number of analog actions on this controller.
  */
@@ -232,6 +235,15 @@ struct port_controller
 		if(i >= buttons.size())
 			return NULL;
 		return &buttons[i];
+	}
+/**
+ * Access specified entry in namemap. Returns '???' if unknown.
+ */
+	std::u32string get_namemap_entry(short entry) const
+	{
+		if(!namemap.count(entry))
+			return U"???";
+		return namemap.find(entry)->second;
 	}
 };
 
@@ -336,12 +348,12 @@ public:
  * Get number of used control indices on controller.
  *
  * Parameter controller: Number of controller.
- * Returns: Number of used control indices.
+ * Returns: Number of used control indices. First is number of actual indices, second is number of reserved ones.
  */
-	unsigned used_indices(unsigned controller)
+	std::pair<unsigned, unsigned> used_indices(unsigned controller) const
 	{
 		auto c = controller_info->get(controller);
-		return c ? c->buttons.size() : 0;
+		return c ? std::make_pair((unsigned)c->buttons.size(), c->reserved_idx) : std::make_pair(0U, 0U);
 	}
 /**
  * Human-readable name.
@@ -519,6 +531,12 @@ public:
 			throw std::runtime_error("Bad legacy PCID");
 		return legacy_pcids[pcid];
 	}
+/**
+ * Set pollcounters mask.
+ *
+ * Parameter mask: The mask to write.
+ */
+	void set_pollcounter_mask(uint32_t* mask) const;
 private:
 	port_type_set(std::vector<class port_type*> types, struct port_index_map control_map);
 	size_t* port_offsets;
@@ -567,9 +585,13 @@ public:
  */
 	pollcounter_vector& operator=(const pollcounter_vector& v) throw(std::bad_alloc);
 /**
+ * Zero all unmasked poll counters and clear all DRDY bits. System flag is cleared.
+ */
+	void clear_unmasked() throw();
+/**
  * Zero all poll counters and clear all DRDY bits. System flag is cleared.
  */
-	void clear() throw();
+	void clear_all() throw();
 /**
  * Set all DRDY bits.
  */
@@ -707,8 +729,47 @@ public:
  * Get raw pollcounter data.
  */
 	const uint32_t* rawdata() const throw() { return ctrs; }
+/**
+ * Write reserved index for controller.
+ *
+ * Parameter port: The port.
+ * Parameter controller: The controller.
+ * Parameter _index: The reserved index (0-based).
+ * Parameter val: The value to write.
+ * Throws std::runtime_error: Specified reserved slot is not valid.
+ */
+	void reserved(unsigned port, unsigned controller, unsigned _index, uint32_t val)
+		throw(std::runtime_error)
+	{
+		auto counts = (port < types->ports()) ? types->port_type(port).used_indices(controller) :
+			std::make_pair(0U, 0U);
+		unsigned pindex = types->triple_to_index(port, controller, _index + counts.first);
+		if(pindex == 0xFFFFFFFFU)
+			throw std::runtime_error("write_reserved: Invalid reserved index");
+		ctrs[pindex] = val;
+	}
+/**
+ * Read reserved index for controller.
+ *
+ * Parameter port: The port.
+ * Parameter controller: The controller.
+ * Parameter _index: The reserved index (0-based).
+ * Returns: The value read.
+ * Throws std::runtime_error: Specified reserved slot is not valid.
+ */
+	uint32_t reserved(unsigned port, unsigned controller, unsigned _index)
+		throw(std::runtime_error)
+	{
+		auto counts = (port < types->ports()) ? types->port_type(port).used_indices(controller) :
+			std::make_pair(0U, 0U);
+		unsigned pindex = types->triple_to_index(port, controller, _index + counts.first);
+		if(pindex == 0xFFFFFFFFU)
+			throw std::runtime_error("write_reserved: Invalid reserved index");
+		return ctrs[pindex];
+	}
 private:
 	uint32_t* ctrs;
+	uint32_t* ctrs_valid_mask;
 	const port_type_set* types;
 	bool framepflag;
 };
