@@ -175,20 +175,20 @@ void moviefile::save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std:
 	if(!anchor_savestate.empty())
 		w.write_raw_file("savestate.anchor", anchor_savestate);
 	if(is_savestate) {
-		w.write_numeric_file("vicounter", vi_counter);
-		w.write_numeric_file("vithisframe", vi_this_frame);
-		w.write_numeric_file("saveframe", save_frame);
-		w.write_numeric_file("lagcounter", lagged_frames);
-		write_pollcounters(w, "pollcounters", pollcounters);
-		w.write_raw_file("hostmemory", host_memory);
-		w.write_raw_file("savestate", savestate);
-		w.write_raw_file("screenshot", screenshot);
-		for(auto i : sram)
+		w.write_numeric_file("vicounter", dynamic.vi_counter);
+		w.write_numeric_file("vithisframe", dynamic.vi_this_frame);
+		w.write_numeric_file("saveframe", dynamic.save_frame);
+		w.write_numeric_file("lagcounter", dynamic.lagged_frames);
+		write_pollcounters(w, "pollcounters", dynamic.pollcounters);
+		w.write_raw_file("hostmemory", dynamic.host_memory);
+		w.write_raw_file("savestate", dynamic.savestate);
+		w.write_raw_file("screenshot", dynamic.screenshot);
+		for(auto i : dynamic.sram)
 			w.write_raw_file("sram." + i.first, i.second);
-		w.write_numeric_file("savetime.second", rtc_second);
-		w.write_numeric_file("savetime.subsecond", rtc_subsecond);
-		w.write_numeric_file("pollflag", poll_flag);
-		write_active_macros(w, "macros", active_macros);
+		w.write_numeric_file("savetime.second", dynamic.rtc_second);
+		w.write_numeric_file("savetime.subsecond", dynamic.rtc_subsecond);
+		w.write_numeric_file("pollflag", dynamic.poll_flag);
+		write_active_macros(w, "macros", dynamic.active_macros);
 	}
 	for(auto i : ramcontent)
 		w.write_raw_file("initram." + i.first, i.second);

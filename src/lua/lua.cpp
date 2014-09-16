@@ -431,10 +431,10 @@ void lua_state::callback_do_unsafe_rewind(const std::vector<char>& save, uint64_
 			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
 			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			auto& mf = core.mlogic->get_mfile();
-			mf.vi_counter = u2->vi_counter;
-			mf.vi_this_frame = u2->vi_this_frame;
-			mf.vi_valid = true;
-			try { mf.host_memory = u2->hostmemory; } catch(...) {}
+			mf.dynamic.vi_counter = u2->vi_counter;
+			mf.dynamic.vi_this_frame = u2->vi_this_frame;
+			mf.dynamic.vi_valid = true;
+			try { mf.dynamic.host_memory = u2->hostmemory; } catch(...) {}
 			run_callback(*on_post_rewind);
 			delete reinterpret_cast<lua::objpin<lua_unsaferewind>*>(u);
 		} catch(...) {
@@ -449,9 +449,9 @@ void lua_state::callback_do_unsafe_rewind(const std::vector<char>& save, uint64_
 			u2->secs = secs,
 			u2->ssecs = ssecs;
 			auto& mf = core.mlogic->get_mfile();
-			u2->vi_this_frame = mf.vi_this_frame;
-			u2->vi_counter = mf.vi_counter;
-			u2->hostmemory = mf.host_memory;
+			u2->vi_this_frame = mf.dynamic.vi_this_frame;
+			u2->vi_counter = mf.dynamic.vi_counter;
+			u2->hostmemory = mf.dynamic.host_memory;
 			mov.fast_save(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			return 1;
 		}));

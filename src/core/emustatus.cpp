@@ -147,7 +147,7 @@ void status_updater::update()
 		_status.speed = (unsigned)(100 * framerate.get_realized_multiplier() + 0.5);
 
 		if(mlogic && !runmode.is_corrupt()) {
-			time_t timevalue = static_cast<time_t>(mlogic.get_mfile().rtc_second);
+			time_t timevalue = static_cast<time_t>(mlogic.get_mfile().dynamic.rtc_second);
 			struct tm* time_decompose = gmtime(&timevalue);
 			char datebuffer[512];
 			strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
@@ -197,7 +197,7 @@ void status_updater::update()
 		}
 		//VI counts. Only display if type is VFR.
 		_status.vi_valid = mlogic.get_mfile().gametype->get_type().is_vfr();
-		_status.vi_counter = mlogic.get_mfile().vi_counter;
+		_status.vi_counter = mlogic.get_mfile().dynamic.vi_counter;
 		//Lua variables.
 		_status.lvars = lua2.get_watch_vars();
 		//Memory watches.

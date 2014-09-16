@@ -252,10 +252,10 @@ public:
 		if(!*core.mlogic)
 			return;
 		auto& m = core.mlogic->get_mfile();
-		m.rtc_subsecond += increment;
-		while(m.rtc_subsecond >= per_second) {
-			m.rtc_second++;
-			m.rtc_subsecond -= per_second;
+		m.dynamic.rtc_subsecond += increment;
+		while(m.dynamic.rtc_subsecond >= per_second) {
+			m.dynamic.rtc_second++;
+			m.dynamic.rtc_subsecond -= per_second;
 		}
 	}
 
@@ -272,7 +272,7 @@ public:
 	time_t get_time()
 	{
 		auto& core = CORE();
-		return *core.mlogic ? core.mlogic->get_mfile().rtc_second : 0;
+		return *core.mlogic ? core.mlogic->get_mfile().dynamic.rtc_second : 0;
 	}
 
 	time_t get_randomseed()
@@ -285,8 +285,8 @@ public:
 		auto& core = CORE();
 		//VI occured.
 		auto& mfile = core.mlogic->get_mfile();
-		mfile.vi_this_frame++;
-		mfile.vi_counter++;
+		mfile.dynamic.vi_this_frame++;
+		mfile.dynamic.vi_counter++;
 
 		//This is done elsewhere for VFR.
 		if(!mfile.gametype->get_type().is_vfr())
@@ -809,8 +809,9 @@ nothing_to_do:
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = framerate_regulator::get_utime();
 				std::vector<char> s = core.rom->save_core_state(true);
-				uint64_t secs = core.mlogic->get_mfile().rtc_second;
-				uint64_t ssecs = core.mlogic->get_mfile().rtc_subsecond;
+				auto& dynstate = core.mlogic->get_mfile().dynamic;
+				uint64_t secs = dynstate.rtc_second;
+				uint64_t ssecs = dynstate.rtc_subsecond;
 				core.lua2->callback_do_unsafe_rewind(s, secs, ssecs, core.mlogic->get_movie(),
 					NULL);
 				do_unsafe_rewind = false;
@@ -955,7 +956,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			core.lua2->callback_do_frame_emulated();
 		//Reset the vi this frame count to 0, as it is only meaningful inside emulate.
 		//Also, if VIs occured, set flag informing that so frame advance can stop only on output frames.
-		auto& VIs = core.mlogic->get_mfile().vi_this_frame;
+		auto& VIs = core.mlogic->get_mfile().dynamic.vi_this_frame;
 		if(VIs > 0)
 			core.vi_prev_frame = true;
 		VIs = 0;

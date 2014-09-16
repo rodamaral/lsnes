@@ -245,9 +245,9 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
 	portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 
-	vi_valid = true;
-	vi_counter = 0;
-	vi_this_frame = 0;
+	dynamic.vi_valid = true;
+	dynamic.vi_counter = 0;
+	dynamic.vi_this_frame = 0;
 
 	branches.clear();
 	r.read_linefile("gamename", gamename, true);
@@ -273,40 +273,42 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	movie_rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	r.read_numeric_file("starttime.second", movie_rtc_second, true);
 	r.read_numeric_file("starttime.subsecond", movie_rtc_subsecond, true);
-	rtc_second = movie_rtc_second;
-	rtc_subsecond = movie_rtc_subsecond;
+	dynamic.rtc_second = movie_rtc_second;
+	dynamic.rtc_subsecond = movie_rtc_subsecond;
 	if(r.has_member("savestate.anchor"))
 		r.read_raw_file("savestate.anchor", anchor_savestate);
 	if(r.has_member("savestate")) {
-		vi_valid = false;
+		dynamic.vi_valid = false;
 		if(r.has_member("vicounter")) {
-			r.read_numeric_file("vicounter", vi_counter);
-			r.read_numeric_file("vithisframe", vi_this_frame);
-			vi_valid = true;
+			r.read_numeric_file("vicounter", dynamic.vi_counter);
+			r.read_numeric_file("vithisframe", dynamic.vi_this_frame);
+			dynamic.vi_valid = true;
 		}
 		is_savestate = true;
-		r.read_numeric_file("saveframe", save_frame, true);
-		r.read_numeric_file("lagcounter", lagged_frames, true);
-		read_pollcounters(r, "pollcounters", pollcounters);
+		r.read_numeric_file("saveframe", dynamic.save_frame, true);
+		r.read_numeric_file("lagcounter", dynamic.lagged_frames, true);
+		read_pollcounters(r, "pollcounters", dynamic.pollcounters);
 		if(r.has_member("hostmemory"))
-			r.read_raw_file("hostmemory", host_memory);
-		r.read_raw_file("savestate", savestate);
+			r.read_raw_file("hostmemory", dynamic.host_memory);
+		else
+			dynamic.host_memory.clear();
+		r.read_raw_file("savestate", dynamic.savestate);
 		for(auto name : r)
 			if(name.length() >= 5 && name.substr(0, 5) == "sram.")
-				r.read_raw_file(name, sram[name.substr(5)]);
-		r.read_raw_file("screenshot", screenshot);
+				r.read_raw_file(name, dynamic.sram[name.substr(5)]);
+		r.read_raw_file("screenshot", dynamic.screenshot);
 		//If these can't be read, just use some (wrong) values.
-		r.read_numeric_file("savetime.second", rtc_second, true);
-		r.read_numeric_file("savetime.subsecond", rtc_subsecond, true);
+		r.read_numeric_file("savetime.second", dynamic.rtc_second, true);
+		r.read_numeric_file("savetime.subsecond", dynamic.rtc_subsecond, true);
 		uint64_t _poll_flag = 2;	//Legacy behaviour is the default.
 		r.read_numeric_file("pollflag", _poll_flag, true);
-		poll_flag = _poll_flag;
-		active_macros = read_active_macros(r, "macros");
+		dynamic.poll_flag = _poll_flag;
+		dynamic.active_macros = read_active_macros(r, "macros");
 	}
 	for(auto name : r)
 		if(name.length() >= 8 && name.substr(0, 8) == "initram.")
 			 r.read_raw_file(name, ramcontent[name.substr(8)]);
-	if(rtc_subsecond < 0 || movie_rtc_subsecond < 0)
+	if(dynamic.rtc_subsecond < 0 || movie_rtc_subsecond < 0)
 		throw std::runtime_error("Invalid RTC subsecond value");
 	std::string name = r.find_first();
 	for(auto name : r)

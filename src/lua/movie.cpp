@@ -16,7 +16,7 @@ namespace
 	int currentvi(lua::state& L, lua::parameters& P)
 	{
 		auto& m = CORE().mlogic->get_mfile();
-		L.pushnumber(m.vi_counter);
+		L.pushnumber(m.dynamic.vi_counter);
 		return 1;
 	}
 
@@ -86,8 +86,8 @@ namespace
 	int read_rtc(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		L.pushnumber(core.mlogic->get_mfile().rtc_second);
-		L.pushnumber(core.mlogic->get_mfile().rtc_subsecond);
+		L.pushnumber(core.mlogic->get_mfile().dynamic.rtc_second);
+		L.pushnumber(core.mlogic->get_mfile().dynamic.rtc_subsecond);
 		return 2;
 	}
 
@@ -119,15 +119,15 @@ namespace
 		if(!mfile.is_savestate)
 			throw std::runtime_error("movie.to_rewind only allows savestates");
 		lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(L);
-		u2->state = mfile.savestate;
+		u2->state = mfile.dynamic.savestate;
 		if(u2->state.size() >= 32)
 			u2->state.resize(u2->state.size() - 32);
-		u2->secs = mfile.rtc_second;
-		u2->ssecs = mfile.rtc_subsecond;
-		u2->pollcounters = mfile.pollcounters;
-		u2->lag = mfile.lagged_frames;
-		u2->frame = mfile.save_frame;
-		u2->hostmemory = mfile.host_memory;
+		u2->secs = mfile.dynamic.rtc_second;
+		u2->ssecs = mfile.dynamic.rtc_subsecond;
+		u2->pollcounters = mfile.dynamic.pollcounters;
+		u2->lag = mfile.dynamic.lagged_frames;
+		u2->frame = mfile.dynamic.save_frame;
+		u2->hostmemory = mfile.dynamic.host_memory;
 		//Now the remaining field ptr is somewhat nastier.
 		uint64_t f = 0;
 		uint64_t s = mfile.input->size();

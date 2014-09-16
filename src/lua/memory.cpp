@@ -760,7 +760,7 @@ namespace
 		if((size_t)(daddr + rows * size) < daddr)
 			throw std::runtime_error("Size to copy too large");
 
-		auto& h = core.mlogic->get_mfile().host_memory;
+		auto& h = core.mlogic->get_mfile().dynamic.host_memory;
 		if(daddr + rows * size > h.size()) {
 			equals = false;
 			h.resize(daddr + rows * size);

@@ -53,6 +53,80 @@ struct moviefile
 		branch_extractor* real;
 	};
 /**
+ * Dynamic information (savestate).
+ */
+	struct dynamic_state
+	{
+/**
+ * Initialize dynamic state to load defaults.
+ */
+		dynamic_state();
+/**
+ * Clear the state.
+ */
+		void clear_state(int64_t sec, int64_t ssec);
+/**
+ * Swap state with another.
+ */
+		void swap_with(dynamic_state& d);
+/**
+ * Contents of SRAM.
+ */
+		std::map<std::string, std::vector<char>> sram;
+/**
+ * Core savestate (if is_savestate is true).
+ */
+		std::vector<char> savestate;		//Savestate to load (if is_savestate is true).
+/**
+ * Host memory (if is_savestate is true).
+ */
+		std::vector<char> host_memory;
+/**
+ * Screenshot (if is_savestate is true).
+ */
+		std::vector<char> screenshot;
+/**
+ * Current frame (if is_savestate is true).
+ */
+		uint64_t save_frame;
+/**
+ * Number of lagged frames (if is_savestate is true).
+ */
+		uint64_t lagged_frames;
+/**
+ * Poll counters (if is_savestate is true).
+ */
+		std::vector<uint32_t> pollcounters;
+/**
+ * Poll flag.
+ */
+		unsigned poll_flag;
+/**
+ * Current RTC second.
+ */
+		int64_t rtc_second;
+/**
+ * Current RTC subsecond.
+ */
+		int64_t rtc_subsecond;
+/**
+ * Active macros at savestate.
+ */
+		std::map<std::string, uint64_t> active_macros;
+/**
+ * VI counters valid.
+ */
+		bool vi_valid;
+/**
+ * VI counter.
+ */
+		uint64_t vi_counter;
+/**
+ * VI counter for this frame.
+ */
+		uint32_t vi_this_frame;
+	};
+/**
  * This constructor construct movie structure with default settings.
  *
  * throws std::bad_alloc: Not enough memory.
@@ -157,41 +231,13 @@ struct moviefile
  */
 	bool is_savestate;
 /**
- * Contents of SRAM on time of savestate (if is_savestate is true).
+ * The dynamic state.
  */
-	std::map<std::string, std::vector<char>> sram;
-/**
- * Core savestate (if is_savestate is true).
- */
-	std::vector<char> savestate;		//Savestate to load (if is_savestate is true).
+	dynamic_state dynamic;
 /**
  * Anchoring core savestate (if not empty).
  */
 	std::vector<char> anchor_savestate;
-/**
- * Host memory (if is_savestate is true).
- */
-	std::vector<char> host_memory;
-/**
- * Screenshot (if is_savestate is true).
- */
-	std::vector<char> screenshot;
-/**
- * Current frame (if is_savestate is true).
- */
-	uint64_t save_frame;
-/**
- * Number of lagged frames (if is_savestate is true).
- */
-	uint64_t lagged_frames;
-/**
- * Poll counters (if is_savestate is true).
- */
-	std::vector<uint32_t> pollcounters;
-/**
- * Poll flag.
- */
-	unsigned poll_flag;
 /**
  * Compressed rrdata.
  */
@@ -204,14 +250,6 @@ struct moviefile
  * Branches.
  */
 	std::map<std::string, portctrl::frame_vector> branches;
-/**
- * Current RTC second.
- */
-	int64_t rtc_second;
-/**
- * Current RTC subsecond.
- */
-	int64_t rtc_subsecond;
 /**
  * Movie starting RTC second.
  */
@@ -232,22 +270,6 @@ struct moviefile
  * Subtitles.
  */
 	std::map<moviefile_subtiming, std::string> subtitles;
-/**
- * Active macros at savestate.
- */
-	std::map<std::string, uint64_t> active_macros;
-/**
- * VI counters valid.
- */
-	bool vi_valid;
-/**
- * VI counter.
- */
-	uint64_t vi_counter;
-/**
- * VI counter for this frame.
- */
-	uint32_t vi_this_frame;
 /**
  * Get number of frames in movie.
  *

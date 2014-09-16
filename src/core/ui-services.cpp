@@ -234,7 +234,6 @@ void UI_save_movie(emulator_instance& inst, std::ostringstream& stream)
 			inst.mlogic->get_mfile().gamename = prj->gamename;
 			inst.mlogic->get_mfile().authors = prj->authors;
 		}
-		inst.mlogic->get_mfile().active_macros.clear();
 		inst.mlogic->get_mfile().save(stream, inst.mlogic->get_rrdata());
 	});
 }
