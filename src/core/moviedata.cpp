@@ -874,17 +874,29 @@ bool do_load_state(const std::string& filename, int lmode)
 	return true;
 }
 
-void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
+void do_quicksave(moviefile::dynamic_state& dstate, struct movie& mov)
 {
 	auto& core = CORE();
-	//Force unlazy rrdata.
-	core.mlogic->get_rrdata().read_base(rrdata::filename(core.mlogic->get_mfile().projectid),
-		false);
-	core.mlogic->get_rrdata().add((*core.nrrdata)());
-	core.mlogic->get_mfile().dynamic.rtc_second = secs;
-	core.mlogic->get_mfile().dynamic.rtc_subsecond = ssecs;
-	core.rom->load_core_state(state, true);
+	auto& mf = core.mlogic->get_mfile();
+	dstate = mf.dynamic;
+	dstate.savestate = core.rom->save_core_state(true);
+	mov.fast_save(dstate.save_frame, dstate.movie_ptr, dstate.lagged_frames, dstate.pollcounters);
 }
+
+void do_quickload(moviefile::dynamic_state& dstate, struct movie& mov)
+{
+	auto& core = CORE();
+	auto& mf = core.mlogic->get_mfile();
+
+	//Force unlazy rrdata.
+	core.mlogic->get_rrdata().read_base(rrdata::filename(core.mlogic->get_mfile().projectid), false);
+	core.mlogic->get_rrdata().add((*core.nrrdata)());
+
+	core.rom->load_core_state(dstate.savestate, true);
+	mov.fast_load(dstate.save_frame, dstate.movie_ptr, dstate.lagged_frames, dstate.pollcounters);
+	mf.dynamic = dstate;
+}
+
 
 rrdata::rrdata()
 	: init(false)

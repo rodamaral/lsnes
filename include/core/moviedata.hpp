@@ -45,13 +45,14 @@ std::string translate_name_mprefix(std::string original, int& binary, int save);
 extern std::string last_save;
 
 /**
- * Restore the actual core state from quicksave. Only call in rewind callback.
- *
- * Parameter state: The state to restore.
- * Parameter secs: The seconds counter.
- * Parameter ssecs: The subsecond counter.
+ * Quicksave state.
  */
-void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs);
+void do_quicksave(moviefile::dynamic_state& dstate, struct movie& mov);
+/**
+ * Quickload state.
+ */
+void do_quickload(moviefile::dynamic_state& dstate, struct movie& mov);
+
 
 std::string get_mprefix_for_project();
 void set_mprefix_for_project(const std::string& pfx);

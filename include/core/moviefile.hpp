@@ -125,6 +125,10 @@ struct moviefile
  * VI counter for this frame.
  */
 		uint32_t vi_this_frame;
+/**
+ * Movie pointer. Only used for quicksave/quickload.
+ */
+		uint64_t movie_ptr;
 	};
 /**
  * This constructor construct movie structure with default settings.
