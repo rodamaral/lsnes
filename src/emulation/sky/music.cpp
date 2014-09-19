@@ -457,7 +457,9 @@ namespace sky
 		if(p.get_last_page()) {
 			uint64_t samples = p.get_granulepos() - ctx.last_granule;
 			if(samples > ctx.pts - ctx.last_pts) {
-				if(ctx.pages > 2)
+				//If there is only one data page, it is assumed to have zero base granulepos.
+				//But for multiple pages, the first granulepos is arbitrary.
+				if(ctx.pages > 2 || p.get_on_eos_page())
 					messages << "Warning: " << debug.page_debug_id() << " Granulepos says there "
 						<< "are " << samples << " samples, found " << ctx.pts - ctx.last_pts
 						<< std::endl;

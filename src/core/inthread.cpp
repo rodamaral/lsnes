@@ -538,8 +538,9 @@ out_parsing:
 						if(samples > p.get_granulepos())
 						samples = 0;
 						uint64_t rsamples = datalen - last_datalen;
-						if((samples > rsamples && state == 3) || (samples <
-							rsamples && !p.get_on_eos_page()))
+						bool eos = p.get_on_eos_page();
+						if((samples > rsamples && (state == 3 || eos)) || (samples <
+							rsamples && !eos))
 							messages << "Warning: Granulepos says there are "
 								<< samples << " samples, found " << rsamples
 								<< std::endl;
