@@ -145,6 +145,7 @@ namespace
 					for(uint32_t c = xmin; c < bX.high(); c++, eptr++) {
 						if(__builtin_expect(cut && c == sX.low(), 0)) {
 							c += sX.size();
+							if(c >= bX.high()) break;
 							eptr += sX.size();
 						}
 						uint16_t i = b->pixels[r * b->width + c];
@@ -155,6 +156,7 @@ namespace
 					for(uint32_t c = xmin; c < bX.high(); c++, eptr++) {
 						if(__builtin_expect(cut && c == sX.low(), 0)) {
 							c += sX.size();
+							if(c >= bX.high()) break;
 							eptr += sX.size();
 						}
 						b2->pixels[r * b2->width + c].apply(rptr[eptr]);
