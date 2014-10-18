@@ -70,6 +70,80 @@ namespace
 			}
 		});
 
+	bool fuzzy_search_list(std::map<std::string, std::string> map, std::string& term)
+	{
+		if(term.length() > 0 && term[0] == '!') {
+			std::map<std::string, std::string> rmap;
+			for(auto i : map) rmap[i.second] = i.first;
+			auto rterm = term.substr(1);
+			for(auto i : rmap) {
+				if(i.first.length() > rterm.length())
+					continue;
+				if(i.first.substr(0, rterm.length()) == rterm) {
+					term = i.second;
+					return true;
+				}
+			}
+			return false;
+		} else
+			return true;
+	}
+
+	command::fnptr<const std::string&> change_playback_dev(lsnes_cmds, "change-playback-device",
+		"Change sound playback device",
+		"Syntax: change-playback-device <device>\nSwitch to playback device <device>.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			auto old_rec = audioapi_driver_get_device(true);
+			auto args2 = args;
+			if(!fuzzy_search_list(audioapi_driver_get_devices(false), args2)) {
+				messages << "No sound device matching '" << args2 << "' found." << std::endl;
+				return;
+			}
+			platform::set_sound_device(args2, old_rec);
+		});
+
+	command::fnptr<const std::string&> change_record_dev(lsnes_cmds, "change-record-device",
+		"Change sound record device",
+		"Syntax: change-record-device <device>\nSwitch to recording device <device>.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			auto old_play = audioapi_driver_get_device(false);
+			auto args2 = args;
+			if(!fuzzy_search_list(audioapi_driver_get_devices(true), args2)) {
+				messages << "No sound device matching '" << args2 << "' found." << std::endl;
+				return;
+			}
+			platform::set_sound_device(old_play, args2);
+		});
+
+	command::fnptr<> show_devices(lsnes_cmds, "show-devices", "Show sound devices available",
+		"Syntax: show-devices\nShows available sound devices.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			messages << "Known playback devices:" << std::endl;
+			auto pdevs = audioapi_driver_get_devices(false);
+			auto cpdev = audioapi_driver_get_device(false);
+			for(auto i : pdevs) {
+				char ind = (i.first == cpdev) ? '*' : ' ';
+				messages << ind << i.first << " (" << i.second << ")" << std::endl;
+			}
+			messages << "Known recording devices:" << std::endl;
+			auto rdevs = audioapi_driver_get_devices(true);
+			auto crdev = audioapi_driver_get_device(true);
+			for(auto i : rdevs) {
+				char ind = (i.first == crdev) ? '*' : ' ';
+				messages << ind << i.first << " (" << i.second << ")" << std::endl;
+			}
+		});
+
+	command::fnptr<> reset_audio(lsnes_cmds, "reset-audio", "Reset audio driver",
+		"Syntax: reset-audio\nResets the audio driver.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			audioapi_driver_quit();
+			audioapi_driver_init();
+			//Where am I?
+			CORE().dispatch->sound_change(std::make_pair(audioapi_driver_get_device(true),
+				audioapi_driver_get_device(false)));
+		});
+
 	keyboard::invbind_info ienable_sound(lsnes_invbinds, "enable-sound on", "Sound‣Enable");
 	keyboard::invbind_info idisable_sound(lsnes_invbinds, "enable-sound off", "Sound‣Disable");
 	keyboard::invbind_info itoggle_sound(lsnes_invbinds, "enable-sound toggle", "Sound‣Toggle");
