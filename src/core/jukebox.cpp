@@ -50,7 +50,7 @@ size_t save_jukebox::get_slot()
 
 void save_jukebox::set_slot(size_t slot)
 {
-	if(current_size >= slot)
+	if(slot >= current_size)
 		throw std::runtime_error("Selected slot out of range");
 	current_slot = slot;
 	if(update) update();

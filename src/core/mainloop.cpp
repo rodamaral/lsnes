@@ -400,7 +400,7 @@ namespace
 				throw std::runtime_error("Bad slot number");
 			uint32_t slot = parse_value<uint32_t>(args);
 			auto& core = CORE();
-			core.jukebox->set_slot(slot);
+			core.jukebox->set_slot(slot - 1);
 		});
 
 	command::fnptr<> CMD_load_jukebox(lsnes_cmds, "load-jukebox", "Load save from jukebox",
