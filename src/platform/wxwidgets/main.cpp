@@ -162,6 +162,9 @@ end:
 		wxPostEvent(ui_services, uic);
 	}
 
+	std::string loaded_pdev;
+	std::string loaded_rdev;
+
 	void handle_config_line(std::string line)
 	{
 		regex_results r;
@@ -198,6 +201,10 @@ end:
 				core_selections[r[1]] = r[2];
 				messages << "Prefer " << r[2] << " for " << r[1] << std::endl;
 			}
+		} else if(r = regex("AUDIO_PDEV[ \t]+(.*)", line)) {
+			loaded_pdev = r[1];
+		} else if(r = regex("AUDIO_RDEV[ \t]+(.*)", line)) {
+			loaded_rdev = r[1];
 		} else
 			(stringfmt() << "Unrecognized directive: " << line).throwex();
 	}
@@ -216,6 +223,7 @@ end:
 			}
 			lineno++;
 		}
+		platform::set_sound_device_by_description(loaded_pdev, loaded_rdev);
 		(*lsnes_instance.abindmanager)();
 		lsnes_uri_rewrite.load(get_config_path() + "/lsnesurirewrite.cfg");
 	}
@@ -259,6 +267,9 @@ end:
 		for(auto i : core_selections)
 			if(i.second != "")
 				cfgfile << "PREFER " << i.first << " " << i.second << std::endl;
+		//Sound config.
+		cfgfile << "AUDIO_PDEV " << platform::get_sound_device_description(false) << std::endl;
+		cfgfile << "AUDIO_RDEV " << platform::get_sound_device_description(true) << std::endl;
 		if(!cfgfile) {
 			show_message_ok(NULL, "Error Saving configuration", "Error saving configuration",
 				wxICON_EXCLAMATION);

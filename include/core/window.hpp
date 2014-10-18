@@ -134,6 +134,14 @@ struct platform
  */
 	static void set_sound_device(const std::string& pdev, const std::string& rdev) throw();
 /**
+ * Set sound device by description.
+ */
+	static void set_sound_device_by_description(const std::string& pdev, const std::string& rdev) throw();
+/**
+ * Get sound device description.
+ */
+	static std::string get_sound_device_description(bool rec) throw(std::bad_alloc);
+/**
  * Show error message dialog after UI thread becomes free.
  *
  * Parameter text: The text for dialog.

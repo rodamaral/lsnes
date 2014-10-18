@@ -138,33 +138,16 @@ namespace
 		"Syntax: reset-audio\nResets the audio driver.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			//Save the old devices. We save descriptions if possible, since handles change.
-			auto pdevs = audioapi_driver_get_devices(false);
-			auto rdevs = audioapi_driver_get_devices(true);
-			auto cpdev = audioapi_driver_get_device(false);
-			auto crdev = audioapi_driver_get_device(true);
-			cpdev = pdevs.count(cpdev) ? pdevs[cpdev] : std::string("");
-			crdev = rdevs.count(crdev) ? rdevs[crdev] : std::string("");
+			auto cpdev = platform::get_sound_device_description(false);
+			auto crdev = platform::get_sound_device_description(true);
 			//Restart the system.
 			audioapi_driver_quit();
 			audioapi_driver_init();
-			//Try to find the devices again.
-			pdevs = audioapi_driver_get_devices(false);
-			rdevs = audioapi_driver_get_devices(true);
-			for(auto i : pdevs)
-				if(i.second == cpdev) {
-					cpdev = i.first;
-					break;
-				}
-			for(auto i : rdevs)
-				if(i.second == crdev) {
-					crdev = i.first;
-					break;
-				}
 			//Defaults.
-			if(cpdev == "") cpdev = audioapi_driver_get_device(false);
-			if(crdev == "") crdev = audioapi_driver_get_device(true);
+			if(cpdev == "") cpdev = platform::get_sound_device_description(false);
+			if(crdev == "") crdev = platform::get_sound_device_description(true);
 			//Try to change device back.
-			platform::set_sound_device(cpdev, crdev);
+			platform::set_sound_device_by_description(cpdev, crdev);
 		});
 
 	keyboard::invbind_info ienable_sound(lsnes_invbinds, "enable-sound on", "Sound‣Enable");
@@ -249,6 +232,36 @@ void platform::set_sound_device(const std::string& pdev, const std::string& rdev
 	CORE().dispatch->sound_change(std::make_pair(audioapi_driver_get_device(true),
 		audioapi_driver_get_device(false)));
 }
+
+void platform::set_sound_device_by_description(const std::string& pdev, const std::string& rdev) throw()
+{
+	std::string old_play = audioapi_driver_get_device(false);
+	std::string old_rec = audioapi_driver_get_device(true);
+	auto pdevs = audioapi_driver_get_devices(false);
+	auto rdevs = audioapi_driver_get_devices(true);
+	for(auto i : pdevs)
+		if(i.second == pdev) {
+			old_play = i.first;
+			break;
+		}
+	for(auto i : rdevs)
+		if(i.second == rdev) {
+			old_rec = i.first;
+			break;
+		}
+	set_sound_device(old_play, old_rec);
+}
+
+std::string platform::get_sound_device_description(bool rec) throw(std::bad_alloc)
+{
+	auto dev = audioapi_driver_get_device(rec);
+	auto devs = audioapi_driver_get_devices(rec);
+	if(devs.count(dev))
+		return devs[dev];
+	else
+		return "";
+}
+
 
 bool platform::is_sound_enabled() throw()
 {
