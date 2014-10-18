@@ -137,11 +137,34 @@ namespace
 	command::fnptr<> reset_audio(lsnes_cmds, "reset-audio", "Reset audio driver",
 		"Syntax: reset-audio\nResets the audio driver.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			//Save the old devices. We save descriptions if possible, since handles change.
+			auto pdevs = audioapi_driver_get_devices(false);
+			auto rdevs = audioapi_driver_get_devices(true);
+			auto cpdev = audioapi_driver_get_device(false);
+			auto crdev = audioapi_driver_get_device(true);
+			cpdev = pdevs.count(cpdev) ? pdevs[cpdev] : std::string("");
+			crdev = rdevs.count(crdev) ? rdevs[crdev] : std::string("");
+			//Restart the system.
 			audioapi_driver_quit();
 			audioapi_driver_init();
-			//Where am I?
-			CORE().dispatch->sound_change(std::make_pair(audioapi_driver_get_device(true),
-				audioapi_driver_get_device(false)));
+			//Try to find the devices again.
+			pdevs = audioapi_driver_get_devices(false);
+			rdevs = audioapi_driver_get_devices(true);
+			for(auto i : pdevs)
+				if(i.second == cpdev) {
+					cpdev = i.first;
+					break;
+				}
+			for(auto i : rdevs)
+				if(i.second == crdev) {
+					crdev = i.first;
+					break;
+				}
+			//Defaults.
+			if(cpdev == "") cpdev = audioapi_driver_get_device(false);
+			if(crdev == "") crdev = audioapi_driver_get_device(true);
+			//Try to change device back.
+			platform::set_sound_device(cpdev, crdev);
 		});
 
 	keyboard::invbind_info ienable_sound(lsnes_invbinds, "enable-sound on", "Sound‣Enable");
