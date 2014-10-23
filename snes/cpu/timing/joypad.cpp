@@ -18,6 +18,8 @@ void CPU::step_auto_joypad_poll() {
 
       uint2 port0 = input.port1->data();
       uint2 port1 = input.port2->data();
+      if(input.port1->on_clock) input.port1->on_clock();
+      if(input.port2->on_clock) input.port2->on_clock();
 
       status.joy1 = (status.joy1 << 1) | (bool)(port0 & 1);
       status.joy2 = (status.joy2 << 1) | (bool)(port1 & 1);
@@ -52,6 +54,8 @@ void CPU::step_auto_joypad_poll_NEW(bool polarity) {
       if((status.auto_joypad_counter & 1) != 0 &&  status.auto_joypad_counter != 1) {
         uint2 port0 = input.port1->data();
         uint2 port1 = input.port2->data();
+        if(input.port1->on_clock) input.port1->on_clock();
+        if(input.port2->on_clock) input.port2->on_clock();
 
         status.joy1 = (status.joy1 << 1) | (bool)(port0 & 1);
         status.joy2 = (status.joy2 << 1) | (bool)(port1 & 1);

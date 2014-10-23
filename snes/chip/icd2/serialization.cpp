@@ -2,7 +2,7 @@
 
 void ICD2::serialize(serializer &s) {
   Processor::serialize(s);
-  GameBoy::system.serialize_all(s);
+  gb_if->serialize(s);
 
   for(unsigned n = 0; n < 64; n++) s.array(packet[n].data);
   s.integer(packetsize);
@@ -29,6 +29,7 @@ void ICD2::serialize(serializer &s) {
   s.array(r7000);
   s.integer(r7800);
   s.integer(mlt_req);
+  s.integer(fdiv);
 
   s.array(lcd.buffer);
   s.array(lcd.output);

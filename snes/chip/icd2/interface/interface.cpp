@@ -2,12 +2,12 @@
 
 //called on rendered lines 0-143 (not on Vblank lines 144-153)
 void ICD2::lcdScanline() {
-  if((GameBoy::lcd.status.ly & 7) == 0) {
+  if((gb_if->get_ly() & 7) == 0) {
     lcd.row = (lcd.row + 1) & 3;
   }
 
-  unsigned offset = (lcd.row * 160 * 8) + ((GameBoy::lcd.status.ly & 7) * 160);
-  memcpy(lcd.buffer + offset, GameBoy::lcd.screen + GameBoy::lcd.status.ly * 160, 160 * sizeof(uint16));
+  unsigned offset = (lcd.row * 160 * 8) + ((gb_if->get_ly() & 7) * 160);
+  memcpy(lcd.buffer + offset, gb_if->get_cur_scanline(), 160 * sizeof(uint16));
 }
 
 void ICD2::joypWrite(bool p15, bool p14) {
@@ -58,12 +58,6 @@ void ICD2::joypWrite(bool p15, bool p14) {
 
   if(packetlock) {
     if(p15 == 1 && p14 == 0) {
-      if((joyp_packet[0] >> 3) == 0x11) {
-        mlt_req = joyp_packet[1] & 3;
-        if(mlt_req == 2) mlt_req = 3;
-        joyp_id = 0;
-      }
-
       if(packetsize < 64) packet[packetsize++] = joyp_packet;
       packetlock = false;
       pulselock = true;
@@ -88,7 +82,7 @@ void ICD2::audioSample(int16_t center, int16_t left, int16_t right) {
 }
 
 bool ICD2::inputPoll(unsigned id) {
-  GameBoy::cpu.status.mlt_req = joyp_id & mlt_req;
+  gb_if->set_mlt_req(joyp_id & mlt_req);
 
   unsigned data = 0x00;
   switch(joyp_id & mlt_req) {
@@ -98,15 +92,15 @@ bool ICD2::inputPoll(unsigned id) {
     case 3: data = ~r6007; break;
   }
 
-  switch((GameBoy::Input)id) {
-    case GameBoy::Input::Start:  return data & 0x80;
-    case GameBoy::Input::Select: return data & 0x40;
-    case GameBoy::Input::B:      return data & 0x20;
-    case GameBoy::Input::A:      return data & 0x10;
-    case GameBoy::Input::Down:   return data & 0x08;
-    case GameBoy::Input::Up:     return data & 0x04;
-    case GameBoy::Input::Left:   return data & 0x02;
-    case GameBoy::Input::Right:  return data & 0x01;
+  switch((gameboy_input)id) {
+    case gameboy_input::Start:  return data & 0x80;
+    case gameboy_input::Select: return data & 0x40;
+    case gameboy_input::B:      return data & 0x20;
+    case gameboy_input::A:      return data & 0x10;
+    case gameboy_input::Down:   return data & 0x08;
+    case gameboy_input::Up:     return data & 0x04;
+    case gameboy_input::Left:   return data & 0x02;
+    case gameboy_input::Right:  return data & 0x01;
   }
 
   return 0;

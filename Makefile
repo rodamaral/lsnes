@@ -12,7 +12,7 @@ ui := ui
 # compiler
 c       := $(compiler) -std=gnu99
 cpp     := $(subst cc,++,$(compiler)) -std=gnu++0x
-flags   := -I. -O3 -fomit-frame-pointer
+flags   := -I. -O3 -fomit-frame-pointer -g
 link    :=
 objects := libco
 

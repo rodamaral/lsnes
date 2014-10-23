@@ -27,6 +27,7 @@ struct Controller : Processor {
   virtual uint2 data() { return 0; }
   virtual void latch(bool data) {}
   Controller(bool port);
+  function<void()> on_clock;
 };
 
 #include "gamepad/gamepad.hpp"

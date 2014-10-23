@@ -1,5 +1,7 @@
 #ifdef ICD2_CPP
 
+const unsigned dividers[4] = {4, 5, 7, 9};
+
 //convert linear pixel data { 0x00, 0x55, 0xaa, 0xff } to 2bpp planar tiledata
 void ICD2::render(const uint16 *source) {
   memset(lcd.output, 0x00, 320 * sizeof(uint16));
@@ -19,7 +21,7 @@ uint8 ICD2::read(unsigned addr) {
 
   //LY counter
   if(addr == 0x6000) {
-    r6000_ly = GameBoy::lcd.status.ly;
+    r6000_ly = gb_if->get_ly();
     r6000_row = lcd.row;
     return r6000_ly;
   }
@@ -74,14 +76,20 @@ void ICD2::write(unsigned addr, uint8 data) {
   //d5,d4: 0 = 1-player, 1 = 2-player, 2 = 4-player, 3 = ???
   //d1,d0: 0 = frequency divider (clock rate adjust)
   if(addr == 0x6003) {
+    unsigned new_mlt_req = ((data & 0x30) >> 4) + 1;
+    if(new_mlt_req == 3) new_mlt_req = 4;
     if((r6003 & 0x80) == 0x00 && (data & 0x80) == 0x80) {
       reset();
     }
-    switch(data & 3) {
-      case 0: frequency = cpu.frequency / 4; break;  //fast (glitchy, even on real hardware)
-      case 1: frequency = cpu.frequency / 5; break;  //normal
-      case 2: frequency = cpu.frequency / 7; break;  //slow
-      case 3: frequency = cpu.frequency / 9; break;  //very slow
+    if(new_mlt_req != (mlt_req + 1)) {
+      //Change MLT mode and reset active joypad.
+      mlt_req = new_mlt_req - 1;
+      joyp_id = 0;
+    }
+    if(gb_if->default_rates) {
+      frequency = cpu.frequency / dividers[data & 3];
+    } else {
+      fdiv = 2 * dividers[data & 3];
     }
     r6003 = data;
     return;

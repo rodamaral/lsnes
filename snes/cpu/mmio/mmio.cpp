@@ -45,6 +45,7 @@ uint8 CPU::mmio_r4016() {
   uint8 r = regs.mdr & 0xfc;
   controller_flag = true;
   r |= input.port1->data();
+  if(input.port1->on_clock) input.port1->on_clock();
   return r;
 }
 
@@ -56,6 +57,7 @@ uint8 CPU::mmio_r4017() {
   uint8 r = (regs.mdr & 0xe0) | 0x1c;
   controller_flag = true;
   r |= input.port2->data();
+  if(input.port2->on_clock) input.port2->on_clock();
   return r;
 }
 

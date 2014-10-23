@@ -563,6 +563,7 @@ Cartridge::Mapping::Mapping(const function<uint8 (unsigned)> &read_, const funct
   write = write_;
   mode = Bus::MapMode::Direct;
   banklo = bankhi = addrlo = addrhi = offset = size = 0;
+  clazz = MemoryClass::MISC;
 }
 
 #endif

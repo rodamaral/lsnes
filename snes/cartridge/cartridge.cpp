@@ -11,6 +11,8 @@ namespace SNES {
 
 Cartridge cartridge;
 
+nall::string gameboy_cartridge_sha256();
+
 void Cartridge::load(Mode cartridge_mode, const char *markup) {
   mode = cartridge_mode;
   region = Region::NTSC;
@@ -58,7 +60,7 @@ void Cartridge::load(Mode cartridge_mode, const char *markup) {
     sha256 = nall::sha256(sufamiturbo.slotA.rom.data(), sufamiturbo.slotA.rom.size());
     break;
   case Mode::SuperGameBoy:
-    sha256 = GameBoy::cartridge.sha256();
+    sha256 = gameboy_cartridge_sha256();
     break;
   }
 
