@@ -28,6 +28,7 @@
 namespace gambatte {
 
 void setInitState(struct SaveState &state, bool cgb, bool gbaCgbMode, time_t starttime);
+void setInitStateBootRom(struct SaveState &state, bool cgb, time_t starttime);
 
 }
 

@@ -47,11 +47,15 @@ CPU::CPU(time_t (**_getCurrentTime)())
 , pcptr(&pc_)
 , aptr(&a_)
 , cyclecountptr(&cycleCounter_)
+, do_extra_ppu_updates(false)
 {
 }
 
 signed CPU::runFor(unsigned const cycles) {
 	process(cycles);
+
+	if(do_extra_ppu_updates)
+		mem_.call_ppu_update(cycleCounter_);
 
 	signed const csb = mem_.cyclesSinceBlit(cycleCounter_);
 

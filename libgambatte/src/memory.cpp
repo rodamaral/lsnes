@@ -18,6 +18,7 @@
  ***************************************************************************/
 #include "memory.h"
 #include "inputgetter.h"
+#include "extracallbacks.h"
 #include "savestate.h"
 #include "sound.h"
 #include "video.h"
@@ -26,6 +27,9 @@
 //
 // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
 //	- Make it rerecording-friendly.
+//
+// Modified 2014-10-22 by H. Ilari Liusvaara
+//	- Add extra callbacks.
 
 namespace gambatte {
 
@@ -33,7 +37,7 @@ Memory::Memory(Interrupter const &interrupter, time_t (**_getCurrentTime)())
 : getInput_(0)
 , divLastUpdate_(0)
 , lastOamDmaUpdate_(disabled_time)
-, lcd_(ioamhram_, 0, VideoInterruptRequester(intreq_))
+, lcd_(ioamhram_, 0, VideoInterruptRequester(intreq_), callbacks_)
 , interrupter_(interrupter)
 , dmaSource_(0)
 , dmaDestination_(0)
@@ -41,6 +45,10 @@ Memory::Memory(Interrupter const &interrupter, time_t (**_getCurrentTime)())
 , serialCnt_(0)
 , blanklcd_(false)
 , cart_(_getCurrentTime)
+, callbacks_(&default_extra_callbacks)
+, orig_bootrom(NULL)
+, bootrom(NULL)
+, bootrom_limit(0)
 {
 	intreq_.setEventTime<intevent_blit>(144 * 456ul);
 	intreq_.setEventTime<intevent_end>(0);
@@ -82,6 +90,11 @@ static int serialCntFrom(unsigned cyclesUntilDone, bool cgbFast) {
 }
 
 void Memory::loadState(SaveState const &state) {
+	if(state.bootrom_enable)
+		enable_bootrom();
+	else
+		disable_bootrom();
+
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < 0xA0 ? cart_.rdisabledRam() : ioamhram_);
 	tima_.loadState(state, TimaInterruptRequester(intreq_));
@@ -378,6 +391,12 @@ unsigned Memory::resetCounters(unsigned cc) {
 void Memory::updateInput() {
 	unsigned button = 0xFF;
 	unsigned dpad = 0xFF;
+	uint8_t v = 0;
+
+	if(callbacks_->read_p1(callbacks_->context, v)) {
+		ioamhram_[0x100] = v;
+		return;
+	}
 
 	if (getInput_) {
 		unsigned is = (*getInput_)();
@@ -387,6 +406,10 @@ void Memory::updateInput() {
 
 	ioamhram_[0x100] |= 0xF;
 
+	if ((ioamhram_[0x100] & 0x30) == 0x30) {
+		ioamhram_[0x100] &= callbacks_->read_p1_high(callbacks_->context);
+		return;
+	}
 	if (!(ioamhram_[0x100] & 0x10))
 		ioamhram_[0x100] &= dpad;
 	if (!(ioamhram_[0x100] & 0x20))
@@ -636,9 +659,11 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned const
 	if (lastOamDmaUpdate_ != disabled_time)
 		updateOamDma(cc);
 
+	uint8_t odata = data;
 	switch (p & 0xFF) {
 	case 0x00:
 		data = (ioamhram_[0x100] & 0xCF) | (data & 0xF0);
+		callbacks_->write_p1(callbacks_->context, odata);
 		break;
 	case 0x01:
 		updateSerial(cc);
@@ -952,6 +977,9 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned const
 		}
 
 		return;
+	case 0x50:
+		disable_bootrom();
+		return;
 	case 0x51:
 		dmaSource_ = data << 8 | (dmaSource_ & 0xFF);
 		return;
@@ -1124,8 +1152,9 @@ LoadRes Memory::loadROM(std::string const &romfile, bool const forceDmg, bool co
 	return LOADRES_OK;
 }
 
-LoadRes Memory::loadROM(const unsigned char* image, size_t isize, const bool forceDmg, const bool multicartCompat) {
-	if (LoadRes fail = cart_.loadROM(image, isize, forceDmg, multicartCompat))
+LoadRes Memory::loadROM(const unsigned char* image, size_t isize, const bool forceDmg, const bool multicartCompat,
+	size_t boot_rom_size) {
+	if (LoadRes fail = cart_.loadROM(image, isize, forceDmg, multicartCompat, boot_rom_size))
 		return fail;
 	postLoadRom();
 	return LOADRES_OK;
@@ -1157,6 +1186,26 @@ void Memory::loadOrSave(loadsave& state)
 	state(oamDmaPos_);
 	state(serialCnt_);
 	state(blanklcd_);
+	if(orig_bootrom != NULL) {
+		//We check for orig_bootrom so that runs without bootrom have compatible savestates.
+		if(state.saving()) {
+			bool bios_flag = (bootrom != NULL);
+			state(bios_flag);
+		} else {
+			bool bios_flag;
+			state(bios_flag);
+			if(bios_flag)
+				enable_bootrom();
+			else
+				disable_bootrom();
+		}
+	}
+}
+
+void Memory::enable_bootrom(const unsigned char* rom, unsigned size)
+{
+	bootrom = orig_bootrom = rom;
+	bootrom_limit = (size > 0x100) ? (size + 0x100) : size;
 }
 
 }

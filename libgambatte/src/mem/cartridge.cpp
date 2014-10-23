@@ -580,15 +580,17 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
                            bool const multicartCompat)
 {
 	scoped_ptr<File> const rom(newFileInstance(romfile));
-	return loadROM(rom.get(), forceDmg, multicartCompat, romfile);
+	return loadROM(rom.get(), forceDmg, multicartCompat, romfile, 0);
 }
 
-LoadRes Cartridge::loadROM(const unsigned char* image, size_t isize, const bool forceDmg, const bool multicartCompat) {
+LoadRes Cartridge::loadROM(const unsigned char* image, size_t isize, const bool forceDmg, const bool multicartCompat,
+	size_t boot_rom_size) {
 	const scoped_ptr<File> rom(newFileInstance(image, isize));
-	return loadROM(rom.get(), forceDmg, multicartCompat, "");
+	return loadROM(rom.get(), forceDmg, multicartCompat, "", boot_rom_size);
 }
 
-LoadRes Cartridge::loadROM(File* rom, const bool forceDmg, const bool multicartCompat, const std::string& filename) {
+LoadRes Cartridge::loadROM(File* rom, const bool forceDmg, const bool multicartCompat, const std::string& filename,
+	size_t boot_rom_size) {
 	if (rom->fail())
 		return LOADRES_IO_ERROR;
 
@@ -659,6 +661,10 @@ LoadRes Cartridge::loadROM(File* rom, const bool forceDmg, const bool multicartC
 		rambanks = numRambanksFromH14x(header[0x147], header[0x149]);
 		cgb = header[0x0143] >> 7 & (1 ^ forceDmg);
 	}
+
+	//Force DMG/CGB if from boot ROM (hack).
+	if(boot_rom_size > 0)
+		cgb = (boot_rom_size > 256);
 
 	std::size_t const filesize = rom->size();
 	rombanks = std::max(pow2ceil(filesize / 0x4000), 2u);

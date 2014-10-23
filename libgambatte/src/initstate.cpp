@@ -1322,4 +1322,55 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	state.rtc.dataM = 0;
 	state.rtc.dataS = 0;
 	state.rtc.lastLatchData = false;
+
+	state.bootrom_enable = false;
+}
+
+//Fixup state for Boot ROM.
+void gambatte::setInitStateBootRom(SaveState &state, bool const cgb, time_t starttime) {
+	state.cpu.cycleCounter = 0;
+	state.cpu.pc = 0;
+	state.cpu.sp = 0;
+	state.cpu.a = 0;
+	state.cpu.b = 0;
+	state.cpu.c = 0;
+	state.cpu.d = 0;
+	state.cpu.e = 0;
+	state.cpu.f = 0;
+	state.cpu.h = 0;
+	state.cpu.l = 0;
+	state.bootrom_enable = true;
+	//VRAM and WRAM.
+	std::memset(state.mem.vram.ptr, 0, 0x4000);
+	if (cgb)
+		std::memset(state.mem.wram.ptr, 0, 0x8000);
+	else
+		std::memset(state.mem.wram.ptr, 0, 0x2000);
+	std::memset(state.ppu.objpData.ptr, 0, 0x40);
+	std::memset(state.mem.ioamhram.ptr, 0, 0x200);
+
+	state.ppu.videoCycles = 0;
+	state.ppu.enableDisplayM0Time = 0;
+	state.ppu.winYPos = 0;
+	state.ppu.xpos = 0;
+	state.ppu.endx = 0;
+	state.ppu.reg0 = 0;
+	state.ppu.reg1 = 0;
+	state.ppu.tileword = 0;
+	state.ppu.ntileword = 0;
+	state.ppu.attrib = 0;
+	state.ppu.nattrib = 0;
+	state.ppu.state = 0;
+	state.ppu.nextSprite = 0;
+	state.ppu.currentSprite = 0;
+	state.ppu.lyc   = 0;
+	state.ppu.m0lyc = 0;
+	state.ppu.weMaster = false;
+	state.ppu.winDrawState = 0;
+	state.ppu.wscx = 0;
+	state.ppu.lastM0Time = 0;
+	state.ppu.nextM0Irq = 0;
+	state.ppu.oldWy = 0;
+	state.ppu.pendingLcdstatIrq = false;
+
 }

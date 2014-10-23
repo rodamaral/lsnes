@@ -28,6 +28,10 @@
 //
 // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
 //	- Make it rerecording-friendly.
+//
+// Modified 2014-10-22 by H. Ilari Liusvaara
+//	- Add extra callbacks.
+
 
 static std::string const itos(int i) {
 	std::stringstream ss;
@@ -48,6 +52,21 @@ namespace
 }
 
 namespace gambatte {
+
+const extra_callbacks default_extra_callbacks = {
+	//Context.
+	NULL,
+	//Read P1 with both P14 and P15 at 1. Gives 0xF.
+	[](void* context) -> uint8_t { return 0xF; },
+	//Write P1 (does nothing..
+	[](void* context, uint8_t value) {},
+	//LCD scanline complete.
+	[](void* context, uint8_t y, const uint32_t* data) {},
+	//Default read routine.
+	[](void* context, uint8_t& v) -> bool { return false; },
+	//Don't call ppu updates.
+	false
+};
 
 struct GB::Priv {
 	CPU cpu;
@@ -90,6 +109,8 @@ void GB::reset() {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 		setInitState(state, p_->cpu.isCgb(), p_->loadflags & GBA_CGB, walltime());
+		if(p_->cpu.has_bootrom())
+			setInitStateBootRom(state, p_->cpu.isCgb(), walltime());
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 	}
@@ -98,6 +119,14 @@ void GB::reset() {
 void GB::setInputGetter(InputGetter *getInput) {
 	p_->cpu.setInputGetter(getInput);
 }
+
+void GB::setExtraCallbacks(const extra_callbacks* callbacks)
+{
+	if(!callbacks)
+		callbacks = &default_extra_callbacks;
+	p_->cpu.setExtraCallbacks(callbacks);
+}
+
 
 void GB::setSaveDir(std::string const &sdir) {
 	p_->cpu.setSaveDir(sdir);
@@ -109,11 +138,13 @@ void GB::preload_common()
 		p_->cpu.saveSavedata();
 }
 
-void GB::postload_common(const unsigned flags)
+void GB::postload_common(const unsigned flags, bool bootrom_enable)
 {
 	SaveState state;
 	p_->cpu.setStatePtrs(state);
 	setInitState(state, p_->cpu.isCgb(), flags & GBA_CGB, walltime());
+	if(bootrom_enable)
+		setInitStateBootRom(state, p_->cpu.isCgb(), walltime());
 	p_->cpu.loadState(state);
 	p_->cpu.loadSavedata();
 
@@ -129,18 +160,20 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 	                                     flags & MULTICART_COMPAT);
 
 	if (loadres == LOADRES_OK)
-		postload_common(flags);
+		postload_common(flags, false);
 
 	return loadres;
 }
 
-LoadRes GB::load(const unsigned char* image, size_t isize, unsigned flags) {
+LoadRes GB::load(const unsigned char* image, size_t isize, unsigned flags, const unsigned char* bootrom,
+	size_t bootrom_size) {
 	preload_common();
 
-	LoadRes const loadres = p_->cpu.load(image, isize, flags & FORCE_DMG, flags & MULTICART_COMPAT);
+	LoadRes const loadres = p_->cpu.load(image, isize, flags & FORCE_DMG, flags & MULTICART_COMPAT,
+		bootrom, bootrom_size);
 
 	if (loadres == LOADRES_OK)
-		postload_common(flags);
+		postload_common(flags, bootrom != NULL);
 
 	return loadres;
 }

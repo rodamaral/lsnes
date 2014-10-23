@@ -41,7 +41,7 @@ struct SaveState {
 
 		friend class SaverList;
 		friend void setInitState(SaveState &, bool, bool, time_t);
-
+		friend void setInitStateBootRom(SaveState &, bool, time_t);
 	private:
 		T *ptr;
 		std::size_t size_;
@@ -196,6 +196,8 @@ struct SaveState {
 		unsigned char dataS;
 		bool lastLatchData;
 	} rtc;
+
+	bool bootrom_enable;
 };
 
 }

@@ -20,9 +20,11 @@
 #define GAMBATTE_H
 #define GAMBATTE_SUPPORTS_ADV_DEBUG
 #define GAMBATTE_SUPPORTS_EMU_FLAGS
+#define GAMBATTE_SUPPORTS_BOOT_ROM
 
 #include "gbint.h"
 #include "inputgetter.h"
+#include "extracallbacks.h"
 #include "loadres.h"
 #include <cstddef>
 #include <string>
@@ -33,10 +35,14 @@
 //
 // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
 //	- Make it rerecording-friendly.
+//
+// Modified 2014-10-22 by H. Ilari Liusvaara
+//	- Add extra callbacks.
 
 namespace gambatte {
 
 enum { BG_PALETTE = 0, SP1_PALETTE = 1, SP2_PALETTE = 2 };
+
 
 struct debugbuffer
 {
@@ -85,7 +91,8 @@ public:
 	  * @param flags    ORed combination of LoadFlags.
 	  * @return 0 on success, negative value on failure.
 	  */
-	LoadRes load(const unsigned char* image, size_t isize, unsigned flags = 0);
+	LoadRes load(const unsigned char* image, size_t isize, unsigned flags = 0,
+		const unsigned char* bootrom = NULL, size_t bootrom_size = 0);
 
 	/**
 	  * Emulates until at least 'samples' audio samples are produced in the
@@ -132,6 +139,9 @@ public:
 
 	/** Sets the callback used for getting input state. */
 	void setInputGetter(InputGetter *getInput);
+
+	/** Sets the extra callbacks. Pass NULL to set to defaults. */
+	void setExtraCallbacks(const extra_callbacks* callbacks);
 
 	/**
 	  * Sets the directory used for storing save data. The default is the same directory as
@@ -286,7 +296,7 @@ public:
 	void set_emuflags(unsigned flags);
 private:
 	void preload_common();
-	void postload_common(const unsigned flags);
+	void postload_common(const unsigned flags, bool enable_bootrom);
 	struct Priv;
 	Priv *const p_;
 	time_t (*walltime)();

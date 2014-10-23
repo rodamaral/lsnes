@@ -86,8 +86,10 @@ public:
 	std::pair<unsigned char*, size_t> getSaveRam();
 	std::pair<unsigned char*, size_t> getVideoRam();
 	LoadRes loadROM(const std::string &romfile, bool forceDmg, bool multicartCompat);
-	LoadRes loadROM(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat);
-	LoadRes loadROM(File* rom, const bool forceDmg, const bool multicartCompat, const std::string& filename);
+	LoadRes loadROM(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat,
+		size_t boot_rom_size);
+	LoadRes loadROM(File* rom, const bool forceDmg, const bool multicartCompat, const std::string& filename,
+		size_t boot_rom_size);
 	void clearMemorySavedData();
 
 private:

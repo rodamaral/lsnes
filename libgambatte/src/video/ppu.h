@@ -158,6 +158,7 @@ public:
 	void resetCc(unsigned oldCc, unsigned newCc);
 	void saveState(SaveState &ss) const;
 	void flipDisplay(uint_least32_t *buf, unsigned pitch) { p_.framebuf.blit(buf, pitch); }
+	uint_least32_t* getCurrentLineBuffer() { return p_.framebuf.fbline(); }
 	void setLcdc(unsigned lcdc, unsigned cc);
 	void setScx(unsigned scx) { p_.scx = scx; }
 	void setScy(unsigned scy) { p_.scy = scy; }

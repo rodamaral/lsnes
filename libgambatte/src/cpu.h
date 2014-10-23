@@ -22,6 +22,9 @@
 //
 // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
 //	- Make it rerecording-friendly.
+//
+// Modified 2014-10-22 by H. Ilari Liusvaara
+//	- Add extra callbacks.
 
 #include "memory.h"
 #include "loadsave.h"
@@ -47,6 +50,11 @@ public:
 		mem_.setInputGetter(getInput);
 	}
 
+	void setExtraCallbacks(const extra_callbacks *callbacks) {
+		mem_.setExtraCallbacks(callbacks);
+		do_extra_ppu_updates = callbacks->ppu_update_timeslice;
+	}
+
 	void setSaveDir(std::string const &sdir) {
 		mem_.setSaveDir(sdir);
 	}
@@ -68,8 +76,11 @@ public:
 		return mem_.loadROM(romfile, forceDmg, multicartCompat);
 	}
 
-	LoadRes load(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat) {
-		return mem_.loadROM(image, isize, forceDmg, multicartCompat);
+	LoadRes load(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat,
+		const unsigned char* bootrom, size_t bootrom_size) {
+		auto r = mem_.loadROM(image, isize, forceDmg, multicartCompat, bootrom_size);
+		mem_.enable_bootrom(bootrom, bootrom_size);
+		return r;
 	}
 
 	bool loaded() const { return mem_.loaded(); }
@@ -95,6 +106,7 @@ public:
         uint8_t bus_read(unsigned addr) { return mem_.read(addr, cycleCounter_, false); }
         void bus_write(unsigned addr, uint8_t val) { mem_.write(addr, val, cycleCounter_); }
 	void set_emuflags(unsigned flags) { emuflags = flags; }
+	bool has_bootrom() { return mem_.has_bootrom(); }
 
 	unsigned cycleCounter_;
 	unsigned short pc_;
@@ -108,6 +120,7 @@ private:
 	Memory mem_;
 	bool skip_;
 	unsigned emuflags;
+	bool do_extra_ppu_updates;
 
 	void process(unsigned cycles);
 };

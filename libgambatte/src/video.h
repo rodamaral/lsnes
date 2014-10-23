@@ -22,11 +22,15 @@
 //
 // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
 //	- Make it rerecording-friendly.
+//
+// Modified 2014-10-22 by H. Ilari Liusvaara
+//	- Add extra callbacks.
 
 #include "video/ppu.h"
 #include "video/lyc_irq.h"
 #include "video/next_m0_time.h"
 #include "interruptrequester.h"
+#include "extracallbacks.h"
 #include "minkeeper.h"
 #include "osd_element.h"
 #include "scoped_ptr.h"
@@ -55,7 +59,7 @@ private:
 class LCD {
 public:
 	LCD(unsigned char const *oamram, unsigned char const *vram,
-	    VideoInterruptRequester memEventRequester);
+	    VideoInterruptRequester memEventRequester, const extra_callbacks*& callbacks);
 	void reset(unsigned char const *oamram, unsigned char const *vram, bool cgb);
 	void setStatePtrs(SaveState &state);
 	void saveState(SaveState &state) const;
@@ -217,6 +221,7 @@ private:
 	unsigned char statReg_;
 	unsigned char m2IrqStatReg_;
 	unsigned char m1IrqStatReg_;
+	const extra_callbacks*& callbacks_;
 
 	static void setDmgPalette(uint_least32_t palette[],
 	                          uint_least32_t const dmgColors[],

@@ -75,12 +75,13 @@ static unsigned long gbcToUyvy(unsigned const bgr15) {
 }*/
 
 LCD::LCD(unsigned char const *oamram, unsigned char const *vram,
-         VideoInterruptRequester memEventRequester)
+         VideoInterruptRequester memEventRequester, const extra_callbacks*& callbacks)
 : ppu_(nextM0Time_, oamram, vram)
 , eventTimes_(memEventRequester)
 , statReg_(0)
 , m2IrqStatReg_(0)
 , m1IrqStatReg_(0)
+, callbacks_(callbacks)
 {
 	std::memset( bgpData_, 0, sizeof  bgpData_);
 	std::memset(objpData_, 0, sizeof objpData_);
@@ -900,6 +901,8 @@ inline void LCD::event() {
 		break;
 
 	case event_ly:
+		//This will increment ly, so send the line.
+		callbacks_->lcd_scan(callbacks_->context, ppu_.lyCounter().ly(), ppu_.getCurrentLineBuffer());
 		ppu_.doLyCountEvent();
 		eventTimes_.set<event_ly>(ppu_.lyCounter().time());
 		break;

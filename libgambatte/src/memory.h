@@ -22,6 +22,9 @@
 //
 // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
 //	- Make it rerecording-friendly.
+//
+// Modified 2014-10-22 by H. Ilari Liusvaara
+//	- Add extra callbacks.
 
 #include "gambatte.h"
 #include "mem/cartridge.h"
@@ -112,6 +115,21 @@ public:
 
 	unsigned read(unsigned p, unsigned cc, bool exec) {
 		uint8_t mask = exec ? 0x4C : 0x19;
+		if(__builtin_expect(bootrom && p < bootrom_limit, 0)) {
+			unsigned rp;
+			uint8_t v;
+			//Bootrom.
+			if(((p >> 8) & 0xFF) == 1)
+				goto pass_page1;	//The cartridge info page.
+			rp = (p < 0x100) ? p : (p - 0x100);
+			v = bootrom[rp];
+			//Trap is only given on bus, not on cart ROM.
+			if(__builtin_expect(dbg->bus[p] & mask, 0))
+				dbg->read(0, p, v, exec);
+			return v;
+		pass_page1:
+			;
+		}
 		const unsigned char* memblock = cart_.rmem(p >> 12);
 		uint8_t v = memblock ? memblock[p] : nontrivial_read(p, cc, exec);
 		uint8_t v2 = v;
@@ -172,7 +190,8 @@ out:			;
 	}
 
 	LoadRes loadROM(const std::string &romfile, bool forceDmg, bool multicartCompat);
-	LoadRes loadROM(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat);
+	LoadRes loadROM(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat,
+		size_t boot_rom_size);
 
 	void setVideoBuffer(uint_least32_t *const videoBuf, std::ptrdiff_t pitch) {
 		videoBuf_ = videoBuf;
@@ -190,6 +209,7 @@ out:			;
 	unsigned resetCounters(unsigned cycleCounter);
 	void setSaveDir(std::string const &dir) { cart_.setSaveDir(dir); }
 	void setInputGetter(InputGetter *getInput) { getInput_ = getInput; }
+	void setExtraCallbacks(const extra_callbacks *callbacks) { callbacks_ = callbacks; }
 	void setEndtime(unsigned cc, unsigned inc);
 	void setSoundBuffer(uint_least32_t *buf) { psg_.setBuffer(buf); }
 	unsigned fillSoundBuffer(unsigned cc);
@@ -198,6 +218,11 @@ out:			;
 	void setGameGenie(std::string const &codes) { cart_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { interrupter_.setGameShark(codes); }
 	debugbuffer* get_debug() { return dbg; }
+	void disable_bootrom() { bootrom = NULL; }
+	void enable_bootrom() { bootrom = orig_bootrom; }
+	void enable_bootrom(const unsigned char* rom, unsigned size);
+	bool has_bootrom() { return (orig_bootrom != NULL); }
+	void call_ppu_update(unsigned const cycles) { lcd_.update(cycles); }
 private:
 	debugbuffer* dbg;
 	Cartridge cart_;
@@ -217,6 +242,10 @@ private:
 	bool blanklcd_;
 	uint_least32_t* videoBuf_;
 	unsigned pitch_;
+	const struct extra_callbacks* callbacks_;
+	const unsigned char* bootrom;
+	const unsigned char* orig_bootrom;
+	unsigned bootrom_limit;
 
 	void updateInput();
 	void decEventCycles(IntEventId eventId, unsigned dec);
