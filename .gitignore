@@ -1,0 +1,9 @@
+bsnes/
+gambatte/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib

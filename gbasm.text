@@ -1,0 +1,96 @@
+Comments:
+=========
+Anything after '#' on line is a comment. Empty lines are ignored.
+
+Names:
+======
+The names must consist only of ASCII alphanumerics and '_'.
+
+Labels:
+=======
+When referencing (but not defining) label, the label is prefixed by '/' (e.g. 'jp /foo.bar').
+
+Labels can be one of the followign forms:
+
+1) <name>
+
+Global label.
+
+2) .<name>
+
+Block-local label. Automatically qualifies with name of the block.
+
+Block-local labels can't be used with LABEL pseudo-instruction.
+
+3) <name>.<name>
+
+Label in another block. The first <name> is the name of the block, and the second is the block-local name of the
+label.
+
+Labels in another block can only be referenced, not defined (must be defined as block-local).
+
+Pseudo-instructions valid outside blocks:
+=========================================
+1) INCLUDE <file>
+
+Include the contents of file <file>. Recursive includes are handled.
+
+2) LABEL <name> <addr>
+
+Define global label <name> to address <addr> (given as four hexadecimal digits).
+
+3) BLOCK <name>
+
+Start a named block of instructions. The name of the block also Automatically becomes a global label.
+
+
+Pseudo-instructions valid inside blocks:
+========================================
+1) DATA <block>
+
+Read hexadecimal byte values on line (separated by spaces) as literial bytes.
+
+2) ENDBLOCK
+
+End a block.
+
+3) <name>:  or .<name>:
+
+Define global or block-local label named <name>.
+
+4) NOPS <number>
+
+Expands to <number> (hexadecimal!) NOPs.
+
+Special blocks:
+===============
+The following block names are special:
+
+- __start: The startup block. Always placed at 0x100, can be at most 4 bytes in size.
+- __fixed150: This block is always placed at 0x150.
+- __header: The cartridge header. Placed at 0x134, Must be 25 bytes.
+- __freestanding_labels: Logically contains labels defined by LABEL pseudo-instruction. Must be empty.
+
+
+Instructions & operands:
+========================
+Here are the rules for operands:
+
+- Instructions are only valid inside blocks.
+- Following are appended into opcode (no space in between), everything else has space separating it from opcode:
+  * Condition codes (z, nz, c or nc)
+  * Bit numbers (0, 1, 2, 3, 4, 5, 6 or 7)
+  * Reset vectors (00, 08, 10, 18, 20, 28, 30 or 38)
+- Basic 8-bit "registers" are denoted 'a', 'b', 'c', 'd', 'e', 'h', 'l' and '(hl)'
+- Basic 16-bit "registers" are denoted 'bc', 'de', 'hl', 'sp' and 'af'
+- There is no implicit a register operand in arithmetic operations.
+- Memory address operands or registers used as pointers are enclosed in parenthesis.
+- Increment/decrement hl on access is written as '(hl-)' and '(hl+)'
+- One can encode raw byte as instruction xxx<two hex digits>.
+- 8-bit unsigned immediate operands are given as two hexadecimal digits
+- 8-bit direct address in ldh can also be given as /<label>, but that label must point to FFxx (and is still
+  enclosed in parenthesis)
+- 16-bit unsigned immediate operands are either given as four hexadecimal digits or /<label>
+- Relative jumps (jr) are always given as /<label> (and must be in range of jump).
+- The signed 8-bit immediates in 'add sp,<imm>' and 'ld hl,sp<imm>' are given as '+' (optional with first) or '-'
+  followed by two hexadecimal digits.
