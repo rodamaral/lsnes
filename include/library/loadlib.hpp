@@ -93,6 +93,7 @@ public:
 		if(lib) ++lib->refs;
 		return *this;
 	}
+	std::string get_libname() const { return lib->libname; }
 private:
 	struct internal
 	{
@@ -107,6 +108,7 @@ private:
 		void* handle;
 #endif
 		size_t refs;
+		std::string libname;
 	};
 	internal* lib;
 };
@@ -162,6 +164,10 @@ public:
 		return (typename fntype<T, U...>::t)(*this)[symbol];
 	}
 /**
+ * Get name.
+ */
+	std::string get_libname() const { return libname; }
+/**
  * Run all not ran initialization functions.
  */
 	static void run_initializers();
@@ -170,6 +176,7 @@ private:
 	library lib;
 	std::map<std::string, void*> symbols;
 	std::function<void(const module&)> init;
+	std::string libname;
 };
 
 }

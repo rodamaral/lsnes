@@ -35,6 +35,7 @@ namespace
 
 library::internal::internal(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
+	libname = filename;
 	refs = 1;
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 	char buffer[16384];
@@ -137,12 +138,14 @@ module::module(std::initializer_list<symbol> _symbols, std::function<void(const 
 		threads::alock h(global_mutex());
 		module_queue().push_back(this);
 	}
+	libname = "<anonymous module inside executable>";
 }
 
 module::module(library _lib)
 {
 	dynamic = true;
 	lib = _lib;
+	libname = _lib.get_libname();
 }
 
 module::~module()
@@ -162,6 +165,7 @@ module::module(const module& mod)
 	lib = mod.lib;
 	symbols = mod.symbols;
 	init = mod.init;
+	libname = mod.libname;
 	if(init) {
 		threads::alock h(global_mutex());
 		module_queue().push_back(this);

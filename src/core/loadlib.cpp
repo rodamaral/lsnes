@@ -90,6 +90,7 @@ void with_loaded_library(const loadlib::module& l)
 	} catch(...) {
 		//Ignored.
 	}
+	messages << "Loaded library '" << l.get_libname() << "'" << std::endl;
 }
 
 namespace
