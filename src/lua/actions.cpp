@@ -98,7 +98,27 @@ out:
 		return 0;
 	}
 
+	int action_flags(lua::state& L, lua::parameters& P)
+	{
+		auto& core = CORE();
+		std::string name;
+
+		P(name);
+
+		const interface_action* act = NULL;
+		for(auto i : core.rom->get_actions())
+			if(i->get_symbol() == name) {
+				act = i;
+				break;
+			}
+		if(!act)
+			throw std::runtime_error("No such action");
+		L.pushnumber(core.rom->action_flags(act->id));
+		return 1;
+	}
+
 	lua::functions LUA_actions_fns(lua_func_misc, "memory", {
 		{"action", action},
+		{"action_flags", action_flags},
 	});
 }
