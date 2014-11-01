@@ -375,6 +375,7 @@ private:
 	std::vector<std::string> cmdline;
 	std::map<std::string, std::string> c_settings;
 	std::vector<std::string> c_lua;
+	std::vector<std::string> c_library;
 	bool exit_immediately;
 	bool fullscreen_mode;
 	bool start_unpaused;
@@ -414,6 +415,7 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 			std::cout << "--rom=<filename>: Load specified ROM on startup" << std::endl;
 			std::cout << "--load=<filename>: Load specified save/movie on starup" << std::endl;
 			std::cout << "--lua=<filename>: Load specified Lua script on startup" << std::endl;
+			std::cout << "--library=<filename>: Load specified library on startup" << std::endl;
 			std::cout << "--set=<a>=<b>: Set setting <a> to value <b>" << std::endl;
 			std::cout << "<filename>: Load specified ROM on startup" << std::endl;
 			exit_immediately = true;
@@ -431,6 +433,8 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 			c_settings[r[1]] = r[2];
 		if(r = regex("--lua=(.+)", i))
 			c_lua.push_back(r[1]);
+		if(r = regex("--library=(.+)", i))
+			c_library.push_back(r[1]);
 	}
 	return true;
 }
@@ -564,6 +568,14 @@ bool lsnes_app::OnInit()
 	mov->start_paused = start_unpaused ? rom.isnull() : true;
 	for(auto i : c_lua)
 		lsnes_instance.lua2->add_startup_script(i);
+	for(auto i : c_library) {
+		try {
+			with_loaded_library(*new loadlib::module(loadlib::library(i)));
+		} catch(std::exception& e) {
+			show_message_ok(NULL, "Error loading library", std::string("Error loading library '") +
+				i + "':\n\n" + e.what(), wxICON_EXCLAMATION);
+		}
+	}
 	boot_emulator(lsnes_instance, rom, *mov, fullscreen_mode);
 	return true;
 }
