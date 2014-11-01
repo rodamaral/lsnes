@@ -30,6 +30,7 @@ namespace
 #endif
 #else
 	std::string callsign = "";
+	std::string callsign_ext = "";
 #endif
 }
 
