@@ -11,6 +11,7 @@
 #include "library/framebuffer-pixfmt-rgb24.hpp"
 #include "library/framebuffer-pixfmt-rgb32.hpp"
 #include "library/framebuffer-pixfmt-lrgb.hpp"
+#include "fonts/wrapper.hpp"
 #include "core/audioapi.hpp"
 #include "core/instance.hpp"
 #include "core/messages.hpp"
@@ -916,6 +917,90 @@ failed:
 		delete reinterpret_cast<ccore_disasm*>(handle);
 	}
 
+	struct utf8_strlen_iter
+	{
+		utf8_strlen_iter() { str_len = 0; }
+		utf8_strlen_iter& operator++() { str_len++; return *this; }
+		uint32_t& operator*() { return dummy; }
+		size_t str_len;
+		uint32_t dummy;
+	};
+
+	template<typename T>
+	void callback_render_text2(struct lsnes_core_fontrender_req& req, const std::string& str)
+	{
+		auto size = main_font.get_metrics(str);
+		auto layout = main_font.dolayout(str);
+		size_t memreq = size.first * size.second * sizeof(T);
+		if(!memreq) memreq = 1;
+		if(size.first && memreq / size.first / sizeof(T) < size.second)
+			throw std::bad_alloc();		//Not enough memory.
+		req.bitmap = req.alloc(req.cb_ctx, memreq);
+		if(!req.bitmap)
+			throw std::bad_alloc();		//Not enough memory.
+		T fg = (T)req.fg_color;
+		T bg = (T)req.bg_color;
+		T* bmp = (T*)req.bitmap;
+
+		for(auto i : layout) {
+			auto& g = *i.dglyph;
+			T* _bmp = bmp + (i.y * size.first + i.x);
+			size_t w = g.wide ? 16 : 8;
+			size_t skip = size.first - w;
+			for(size_t _y = 0; _y < 16; _y++) {
+				uint32_t d = g.data[_y >> (g.wide ? 1 : 2)];
+				if(g.wide)
+					d >>= 16 - ((_y & 1) << 4);
+				else
+					d >>= 24 - ((_y & 3) << 3);
+				for(size_t _x = 0; _x < w; _x++, _bmp++) {
+					uint32_t b = w - _x - 1;
+					*_bmp = ((d >> b) & 1) ? fg : bg;
+				}
+				_bmp = _bmp + skip;
+			}
+		}
+		req.width = size.first;
+		req.height = size.second;
+	}
+
+	void callback_render_text1(struct lsnes_core_fontrender_req& req, const std::string& str)
+	{
+		switch(req.bytes_pp) {
+		case 1:
+			callback_render_text2<uint8_t>(req, str);
+			return;
+		case 2:
+			callback_render_text2<uint16_t>(req, str);
+			return;
+		case 3:
+			callback_render_text2<ss_uint24_t>(req, str);
+			return;
+		case 4:
+			callback_render_text2<uint32_t>(req, str);
+			return;
+		default:
+			throw std::runtime_error("Invalid req.bytes_pp");
+		}
+	}
+
+	int callback_render_text(struct lsnes_core_fontrender_req* req)
+	{
+		req->bitmap = NULL;
+		//If indeterminate length, make it determinate.
+		if(req->text_len < 0)
+			req->text_len = strlen(req->text);
+		const char* text_start = req->text;
+		const char* text_end = req->text + req->text_len;
+		try {
+			std::string str(text_start, text_end);
+			callback_render_text1(*req, str);
+			return 0;
+		} catch(...) {
+			return -1;
+		}
+	}
+
 	core_sysregion* create_sysregion(entrypoint_fn& entrypoint, std::map<unsigned, core_region*>& regions,
 		std::map<unsigned, c_core_type*>& types, unsigned sysreg)
 	{
@@ -1085,7 +1170,7 @@ no_parameters:
 		//Enumerate what the thing supports.
 		entrypoint_fn entrypoint(fn);
 		lsnes_core_enumerate_cores r;
-		r.emu_flags1 = 1;
+		r.emu_flags1 = 2;
 		r.message = callback_message;
 		r.get_input = callback_get_input;
 		r.notify_action_update = callback_notify_action_update;
@@ -1103,6 +1188,7 @@ no_parameters:
 		r.submit_frame = callback_submit_frame;
 		r.add_disasm = callback_add_disasm;
 		r.remove_disasm = callback_remove_disasm;
+		r.render_text = callback_render_text;
 		entrypoint(0, r, [](const char* name, const char* err) {
 			(stringfmt() << "LSNES_CORE_ENUMERATE_CORES(0) failed: " << err).throwex();
 		});

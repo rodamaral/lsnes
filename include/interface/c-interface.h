@@ -198,6 +198,34 @@ struct lsnes_core_disassembler
 	const char* (*fn)(uint64_t base, unsigned char(*fetch)(void* ctx), void* ctx);
 };
 
+//Font rendering request.
+struct lsnes_core_fontrender_req
+{
+	//Input: Context to pass to callbacks.
+	void* cb_ctx;
+	//Input: Allocate bitmap memory.
+	//cb_ctx => cb_ctx from above.
+	//mem_size => Number of bytes needed to allocate.
+	//return buffer at least mem_size bytes. Or return NULL on error.
+	void* (*alloc)(void* cb_ctx, size_t mem_size);
+	//Input: Text to render (UTF-8).
+	const char* text;
+	//Input: Length of text in bytes. If negative, text is null-terminated.
+	long text_len;
+	//Input: Bytes per pixel to request. Can be 1, 2, 3 or 4.
+	unsigned bytes_pp;
+	//Input: Foreground color (native endian).
+	unsigned fg_color;
+	//Input: Background color (native endian).
+	unsigned bg_color;
+	//Output: The allocated bitmap (this comes from ->alloc). Not released on failure.
+	void* bitmap;
+	//Output: Width of the bitmap.
+	size_t width;
+	//Output: Height of the bitmap.
+	size_t height;
+};
+
 //Request 0: Initialize and enumerate cores.
 //Item: 0.
 //Default action: (required)
@@ -243,6 +271,8 @@ struct lsnes_core_enumerate_cores
 	void* (*add_disasm)(struct lsnes_core_disassembler* disasm);
 	//Input: Remove disassembler. Only available if emu_flags1>=1.
 	void (*remove_disasm)(void* handle);
+	//Input: Render text into bitmap. Returns 0 on success, -1 on failure. Only available if emu_flags>=2.
+	int (*render_text)(struct lsnes_core_fontrender_req* req);
 };
 
 //Request 1: Request information about core.
