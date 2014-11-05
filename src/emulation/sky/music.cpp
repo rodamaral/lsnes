@@ -313,8 +313,9 @@ namespace sky
 			stransitions[i.second].fixup(psids[psid].pregap, psids[psid].pts, i.first);
 		}
 		if(entry.empty()) {
-			uint32_t next_psid = mscharacteristics.lower_bound(0)->first;
-			entry.insert(ssid_to_lsid[(stringfmt() << "PSID" << next_psid).str()]);
+			for(auto& i : mscharacteristics) {
+				entry.insert(ssid_to_lsid[(stringfmt() << "PSID" << i.first).str()]);
+			}
 		}
 /*
 		for(auto& i : ssid_to_lsid) {
