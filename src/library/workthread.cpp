@@ -3,9 +3,7 @@
 #include <sys/time.h>
 #include <iostream>
 
-namespace workthread
-{
-const uint32_t quit_request = 0x80000000U;
+const uint32_t workthread::quit_request = 0x80000000U;
 
 namespace
 {
@@ -17,19 +15,16 @@ namespace
 	}
 }
 
-struct reflector
+int workthread::reflector::operator()(workthread* x)
 {
-	int operator()(worker* x)
-	{
-		(*x)(42);
-		return 0;
-	}
-};
+	(*x)(42);
+	return 0;
+}
 
-worker::worker()
+workthread::workthread()
 {
 	thread = NULL;
-	reflector = NULL;
+	_reflector = NULL;
 	workflag = 0;
 	busy = false;
 	waitamt_busy = 0;
@@ -39,16 +34,16 @@ worker::worker()
 	joined = false;
 }
 
-worker::~worker()
+workthread::~workthread()
 {
 	set_workflag(quit_request);
 	if(!joined && thread)
 		thread->join();
 	delete thread;
-	delete reflector;
+	delete _reflector;
 }
 
-void worker::request_quit()
+void workthread::request_quit()
 {
 	{
 		//If the thread isn't there yet, wait for it.
@@ -62,19 +57,19 @@ void worker::request_quit()
 	joined = true;
 }
 
-void worker::set_busy()
+void workthread::set_busy()
 {
 	busy = true;
 }
 
-void worker::clear_busy()
+void workthread::clear_busy()
 {
 	threads::alock h(mlock);
 	busy = false;
 	condition.notify_all();
 }
 
-void worker::wait_busy()
+void workthread::wait_busy()
 {
 	threads::alock h(mlock);
 	if(busy) {
@@ -85,7 +80,7 @@ void worker::wait_busy()
 	}
 }
 
-void worker::rethrow()
+void workthread::rethrow()
 {
 	if(exception_caught) {
 		if(exception_oom)
@@ -95,14 +90,14 @@ void worker::rethrow()
 	}
 }
 
-void worker::set_workflag(uint32_t flag)
+void workthread::set_workflag(uint32_t flag)
 {
 	threads::alock h(mlock);
 	workflag |= flag;
 	condition.notify_all();
 }
 
-uint32_t worker::clear_workflag(uint32_t flag)
+uint32_t workthread::clear_workflag(uint32_t flag)
 {
 	threads::alock h(mlock);
 	uint32_t tmp = workflag;
@@ -110,7 +105,7 @@ uint32_t worker::clear_workflag(uint32_t flag)
 	return tmp;
 }
 
-uint32_t worker::wait_workflag()
+uint32_t workthread::wait_workflag()
 {
 	threads::alock h(mlock);
 	if(!workflag) {
@@ -122,13 +117,13 @@ uint32_t worker::wait_workflag()
 	return workflag;
 }
 
-std::pair<uint64_t, uint64_t> worker::get_wait_count()
+std::pair<uint64_t, uint64_t> workthread::get_wait_count()
 {
 	threads::alock h(mlock);
 	return std::make_pair(waitamt_busy, waitamt_work);
 }
 
-int worker::operator()(int dummy)
+int workthread::operator()(int dummy)
 {
 	try {
 		entry();
@@ -144,9 +139,8 @@ int worker::operator()(int dummy)
 	return 0;
 }
 
-void worker::fire()
+void workthread::fire()
 {
-	reflector = new workthread::reflector;
-	thread = new threads::thread(*reflector, this);
-}
+	_reflector = new reflector;
+	thread = new threads::thread(*_reflector, this);
 }

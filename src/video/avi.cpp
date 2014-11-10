@@ -135,7 +135,7 @@ namespace
 
 	struct avi_worker;
 
-	struct resample_worker : public workthread::worker
+	struct resample_worker : public workthread
 	{
 		resample_worker(avi_worker* _worker, double _ratio, uint32_t _nch);
 		~resample_worker();
@@ -155,7 +155,7 @@ namespace
 		avi_worker* worker;
 	};
 
-	struct avi_worker : public workthread::worker
+	struct avi_worker : public workthread
 	{
 		avi_worker(const struct avi_info& info);
 		~avi_worker();

@@ -1577,7 +1577,7 @@ out:
 		active_stream = NULL;
 	}
 
-	class inthread_th : public workthread::worker
+	class inthread_th : public workthread
 	{
 	public:
 		inthread_th(voicesub_state* _internal, audioapi_instance& _audio)

@@ -4,28 +4,26 @@
 #include <cstdint>
 #include "threads.hpp"
 
-namespace workthread
-{
-class reflector;
-
-extern const uint32_t quit_request;
-
 /**
  * A worker thread.
  *
  * Note: All methods (except entrypoints) are thread-safe.
  */
-class worker
+class workthread
 {
 public:
 /**
+ * Standard quit request.
+ */
+	static const uint32_t quit_request;
+/**
  * Constructor.
  */
-	worker();
+	workthread();
 /**
  * Destructor.
  */
-	virtual ~worker();
+	virtual ~workthread();
 /**
  * Request quit. Sets quit request workflag.
  */
@@ -92,7 +90,11 @@ protected:
 	void fire();
 private:
 	threads::thread* thread;
-	workthread::reflector* reflector;
+	struct reflector
+	{
+		int operator()(workthread* x);
+	};
+	reflector* _reflector;
 	threads::cv condition;
 	threads::lock mlock;
 	volatile bool joined;
@@ -104,6 +106,5 @@ private:
 	volatile uint64_t waitamt_work;
 	std::string exception_text;
 };
-}
 
 #endif
