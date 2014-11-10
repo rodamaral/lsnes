@@ -38,7 +38,7 @@
 #include "library/framebuffer-pixfmt-lrgb.hpp"
 #include "library/hex.hpp"
 #include "library/string.hpp"
-#include "library/controller-data.hpp"
+#include "library/portctrl-data.hpp"
 #include "library/memoryspace.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-base.hpp"
@@ -564,7 +564,7 @@ namespace
 	};
 
 	////////////////// PORTS COMMON ///////////////////
-	port_type* index_to_ptype[] = {
+	portctrl::type* index_to_ptype[] = {
 		&none, &gamepad, &gamepad16, &multitap, &multitap16, &mouse, &justifier, &justifiers, &superscope,
 		&ygamepad16
 	};
@@ -1349,7 +1349,7 @@ again2:
 			return (stringfmt() << "bsnes" << BSNES_VERSION << "a").str();
 #endif
 		}
-		void c_pre_emulate_frame(controller_frame& cf)
+		void c_pre_emulate_frame(portctrl::frame& cf)
 		{
 			cf.axis3(0, 0, 1, (do_reset_flag >= 0) ? 1 : 0);
 			if(support_hreset)

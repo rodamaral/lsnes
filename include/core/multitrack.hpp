@@ -27,7 +27,7 @@ public:
 	state get(unsigned port, unsigned controller);
 	bool is_enabled();
 	void config_altered();
-	void process_frame(controller_frame& input);
+	void process_frame(portctrl::frame& input);
 	bool any_records();
 private:
 	threads::lock mlock;

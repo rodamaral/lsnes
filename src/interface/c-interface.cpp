@@ -4,7 +4,7 @@
 #include "interface/setting.hpp"
 #include "interface/disassembler.hpp"
 #include "library/string.hpp"
-#include "library/controller-parse.hpp"
+#include "library/portctrl-parse.hpp"
 #include "library/framebuffer.hpp"
 #include "library/framebuffer-pixfmt-rgb15.hpp"
 #include "library/framebuffer-pixfmt-rgb16.hpp"
@@ -191,7 +191,7 @@ namespace
 	{
 		std::vector<interface_action> actions;
 		std::vector<std::string> trace_cpus;
-		std::vector<port_type*> ports;
+		std::vector<portctrl::type*> ports;
 		const char* shortname;
 		const char* fullname;
 		unsigned flags;
@@ -327,14 +327,14 @@ namespace
 			}
 			return std::make_pair(hscale, vscale);
 		}
-		void c_pre_emulate_frame(controller_frame& cf)
+		void c_pre_emulate_frame(portctrl::frame& cf)
 		{
 			lsnes_core_pre_emulate s;
 			if(caps1 & LSNES_CORE_CAP1_PREEMULATE) {
 				s.context = &cf;
 				s.set_input = [](void* context, unsigned port, unsigned controller, unsigned index,
 					short value) -> void {
-					controller_frame& cf = *(controller_frame*)context;
+					portctrl::frame& cf = *(portctrl::frame*)context;
 					cf.axis3(port, controller, index, value);
 				};
 				entrypoint(id, s);
@@ -660,7 +660,7 @@ failed:
 failed:
 			return std::list<core_vma_info>();
 		}
-		std::map<unsigned, port_type*> get_ports()
+		std::map<unsigned, portctrl::type*> get_ports()
 		{
 			return ports;
 		}
@@ -675,7 +675,7 @@ failed:
 		bool internal_pflag;
 		unsigned caps1;
 		std::vector<std::string> trace_cpus;
-		std::map<unsigned, port_type*> ports;
+		std::map<unsigned, portctrl::type*> ports;
 		std::map<unsigned, core_region*> regions;
 		std::vector<interface_action> actions;
 		framebuffer::raw cover;
@@ -690,7 +690,7 @@ failed:
 
 	struct c_core_type : public core_type
 	{
-		c_core_type(c_lib_init& lib, core_type_params& p, std::map<unsigned, port_type*> _ports,
+		c_core_type(c_lib_init& lib, core_type_params& p, std::map<unsigned, portctrl::type*> _ports,
 			unsigned _rcount, unsigned _id)
 			: core_type(p), ports(_ports), entrypoint(lib.get_entrypoint()), rcount(_rcount), id(_id)
 		{
@@ -740,7 +740,7 @@ failed:
 				unsigned _pt = *pt;
 				if(!ports.count(_pt))
 					throw std::runtime_error("Illegal port type selected by core");
-				port_type* pt2 = ports[_pt];
+				portctrl::type* pt2 = ports[_pt];
 				cset.ports.push_back(pt2);
 			}
 			for(lsnes_core_get_controllerconfig_logical_entry* le = r.logical_map;
@@ -775,7 +775,7 @@ failed:
 			s.value = NULL;
 			tmpmem2.push_back(s);
 		}
-		std::map<unsigned, port_type*> ports;
+		std::map<unsigned, portctrl::type*> ports;
 		entrypoint_fn entrypoint;
 		unsigned rcount;
 		unsigned id;
@@ -1049,7 +1049,7 @@ failed:
 		size_t count = root[rootptr].index_count();
 		for(size_t i = 0; i < count; i++) {
 			JSON::pointer j = rootptr.index(i);
-			p.ports.push_back(new port_type_generic(root, j.as_string8()));
+			p.ports.push_back(new portctrl::type_generic(root, j.as_string8()));
 		}
 		//Read actions.
 		if(r.cap_flags1 & LSNES_CORE_CAP1_ACTION) {

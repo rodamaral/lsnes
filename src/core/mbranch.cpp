@@ -108,13 +108,13 @@ void movie_branches::import_branch(const std::string& filename, const std::strin
 	if(mv.branches.count(branchname) && &mv.branches[branchname] == mv.input)
 		(stringfmt() << "Can't overwrite current branch.").throwex();
 
-	controller_frame_vector v(mv.input->get_types());
+	portctrl::frame_vector v(mv.input->get_types());
 	if(mode == MBRANCH_IMPORT_TEXT || mode == MBRANCH_IMPORT_BINARY) {
 		std::ifstream file(filename, (mode == MBRANCH_IMPORT_BINARY) ? std::ios_base::binary :
 			std::ios_base::in);
 		if(!file)
 			(stringfmt() << "Can't open '" << filename << "' for reading.").throwex();
-		controller_frame_vector::notify_freeze freeze(v);
+		portctrl::frame_vector::notify_freeze freeze(v);
 		if(mode == MBRANCH_IMPORT_BINARY) {
 			uint64_t stride = v.get_stride();
 			uint64_t pageframes = v.get_frames_per_page();
@@ -130,7 +130,7 @@ void movie_branches::import_branch(const std::string& filename, const std::strin
 			v.resize(vsize);
 		} else {
 			std::string line;
-			controller_frame tmpl = v.blank_frame(false);
+			portctrl::frame tmpl = v.blank_frame(false);
 			while(file) {
 				std::getline(file, line);
 				istrip_CR(line);

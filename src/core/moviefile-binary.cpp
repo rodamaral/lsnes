@@ -210,7 +210,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 		settings[name] = in.string();
 	}
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
-	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
+	portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 	input = NULL;
 
 	in.extension({
@@ -336,7 +336,7 @@ std::set<std::string> moviefile_branch_extractor_binary::enumerate()
 	return r;
 }
 
-void moviefile_branch_extractor_binary::read(const std::string& name, controller_frame_vector& v)
+void moviefile_branch_extractor_binary::read(const std::string& name, portctrl::frame_vector& v)
 {
 	std::string mname;
 	if(lseek(s, 5, SEEK_SET) < 0) {

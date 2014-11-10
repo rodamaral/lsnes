@@ -61,7 +61,7 @@ private:
 	void update_controls();
 	bool closing;
 	wxFlexGridSizer* vsizer;
-	const port_type_set* typeset;
+	const portctrl::type_set* typeset;
 };
 
 namespace
@@ -165,23 +165,23 @@ void wxeditor_multitrack::update_controls()
 	std::vector<controller_info2> info;
 	inst.iqueue->run([this, &info](){
 		std::map<std::string, unsigned> next_in_class;
-		controller_frame model = CORE().controls->get_blank();
-		const port_type_set& pts = model.porttypes();
+		portctrl::frame model = CORE().controls->get_blank();
+		const portctrl::type_set& pts = model.porttypes();
 		typeset = &pts;
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
 			auto pcid = CORE().controls->lcid_to_pcid(i);
 			if(pcid.first < 0)
 				break;
-			const port_type& pt = pts.port_type(pcid.first);
-			const port_controller_set& pci = *(pt.controller_info);
+			const portctrl::type& pt = pts.port_type(pcid.first);
+			const portctrl::controller_set& pci = *(pt.controller_info);
 			if((ssize_t)pci.controllers.size() <= pcid.second)
 				continue;
-			const port_controller& pc = pci.controllers[pcid.second];
+			const portctrl::controller& pc = pci.controllers[pcid.second];
 			//First check that this has non-hidden stuff.
 			bool has_buttons = false;
 			for(unsigned k = 0; k < pc.buttons.size(); k++) {
-				const port_controller_button& pcb = pc.buttons[k];
+				const portctrl::button& pcb = pc.buttons[k];
 				if(!pcb.shadow)
 					has_buttons = true;
 			}

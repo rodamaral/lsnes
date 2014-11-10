@@ -37,7 +37,7 @@
 #include "library/framebuffer-pixfmt-rgb32.hpp"
 #include "library/hex.hpp"
 #include "library/string.hpp"
-#include "library/controller-data.hpp"
+#include "library/portctrl-data.hpp"
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
 #include "library/framebuffer.hpp"
@@ -711,7 +711,7 @@ namespace
 			return x;
 		}
 		std::string c_get_core_shortname() { return "gambatte"+gambatte::GB::version(); }
-		void c_pre_emulate_frame(controller_frame& cf) {
+		void c_pre_emulate_frame(portctrl::frame& cf) {
 			cf.axis3(0, 0, 1, do_reset_flag ? 1 : 0);
 		}
 		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p)

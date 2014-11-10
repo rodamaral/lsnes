@@ -1,8 +1,10 @@
-#ifndef _library__controller_parse_asmgen__hpp__included__
-#define _library__controller_parse_asmgen__hpp__included__
+#ifndef _library__portctrl_parse_asmgen__hpp__included__
+#define _library__portctrl_parse_asmgen__hpp__included__
 
 #include "assembler.hpp"
 
+namespace portctrl
+{
 namespace codegen
 {
 //Emit function prologue for serialization function. This also Initializes the read position to start of
@@ -241,6 +243,7 @@ template<class T> void emit_write_button(T& a, assembler::label_list& labels, as
 //
 template<class T> void emit_write_axis(T& a, assembler::label_list& labels, assembler::label& l,
 	assembler::label& end, int32_t offset);
+}
 }
 
 #endif

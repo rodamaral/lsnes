@@ -1,5 +1,5 @@
-#ifndef _library__controller_data__hpp__included__
-#define _library__controller_data__hpp__included__
+#ifndef _library__portctrl_data__hpp__included__
+#define _library__portctrl_data__hpp__included__
 
 #include <cstring>
 #include <climits>
@@ -30,11 +30,11 @@ namespace binarystream
  */
 #define MAXIMUM_CONTROLLER_FRAME_SIZE 128
 /**
- * Maximum amount of data controller_frame::display() can write.
+ * Maximum amount of data frame::display() can write.
  */
 #define MAX_DISPLAY_LENGTH 128
 /**
- * Maximum amount of data controller_frame::serialize() can write.
+ * Maximum amount of data frame::serialize() can write.
  */
 #define MAX_SERIALIZED_SIZE 256
 /**
@@ -46,6 +46,8 @@ namespace binarystream
  */
 #define DESERIALIZE_SPECIAL_BLANK 0xFFFFFFFFUL
 
+namespace portctrl
+{
 /**
  * Is not field terminator.
  *
@@ -135,14 +137,14 @@ inline short unserialize_short(const unsigned char* buf)
 	return static_cast<short>((static_cast<unsigned short>(buf[0]) << 8) | static_cast<unsigned short>(buf[1]));
 }
 
-class port_type;
+class type;
 
 /**
  * Index triple.
  *
  * Note: The index 0 has to be mapped to triple (0, 0, 0).
  */
-struct port_index_triple
+struct index_triple
 {
 /**
  * If true, the other parameters are valid. Otherwise this index doesn't correspond to anything valid, but still
@@ -166,12 +168,12 @@ struct port_index_triple
 /**
  * Controller index mappings
  */
-struct port_index_map
+struct index_map
 {
 /**
  * The poll indices.
  */
-	std::vector<port_index_triple> indices;
+	std::vector<index_triple> indices;
 /**
  * The logical controller mappings.
  */
@@ -183,12 +185,12 @@ struct port_index_map
 };
 
 
-class port_type_set;
+class type_set;
 
 /**
  * A button or axis on controller
  */
-struct port_controller_button
+struct button
 {
 /**
  * Type of button
@@ -221,11 +223,11 @@ struct port_controller_button
 /**
  * A controller.
  */
-struct port_controller
+struct controller
 {
 	std::string cclass;				//Controller class.
 	std::string type;				//Controller type.
-	std::vector<port_controller_button> buttons;	//Buttons.
+	std::vector<button> buttons;	//Buttons.
 /**
  * Count number of analog actions on this controller.
  */
@@ -237,7 +239,7 @@ struct port_controller
 /**
  * Get specified button, or NULL if it doesn't exist.
  */
-	struct port_controller_button* get(unsigned i)
+	struct button* get(unsigned i)
 	{
 		if(i >= buttons.size())
 			return NULL;
@@ -248,17 +250,17 @@ struct port_controller
 /**
  * A port controller set
  */
-struct port_controller_set
+struct controller_set
 {
 	std::string iname;
 	std::string hname;
 	std::string symbol;
-	std::vector<port_controller> controllers;	//Controllers.
+	std::vector<controller> controllers;	//Controllers.
 	std::set<unsigned> legal_for;			//Ports this is legal for
 /**
  * Get specified controller, or NULL if it doesn't exist.
  */
-	struct port_controller* get(unsigned c) throw()
+	struct controller* get(unsigned c) throw()
 	{
 		if(c >= controllers.size())
 			return NULL;
@@ -267,13 +269,13 @@ struct port_controller_set
 /**
  * Get specified button, or NULL if it doesn't exist.
  */
-	struct port_controller_button* get(unsigned c, unsigned i) throw();
+	struct button* get(unsigned c, unsigned i) throw();
 };
 
 /**
  * Type of controller.
  */
-class port_type
+class type
 {
 public:
 /**
@@ -284,11 +286,11 @@ public:
  * Parameter ssize: The storage size in bytes.
  * Throws std::bad_alloc: Not enough memory.
  */
-	port_type(const std::string& iname, const std::string& hname, size_t ssize) throw(std::bad_alloc);
+	type(const std::string& iname, const std::string& hname, size_t ssize) throw(std::bad_alloc);
 /**
  * Unregister a port type.
  */
-	virtual ~port_type() throw();
+	virtual ~type() throw();
 /**
  * Writes controller data into compressed representation.
  *
@@ -297,7 +299,7 @@ public:
  * Parameter ctrl: The control to manipulate.
  * Parameter x: New value for control. Only zero/nonzero matters for buttons.
  */
-	void (*write)(const port_type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x);
+	void (*write)(const type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x);
 /**
  * Read controller data from compressed representation.
  *
@@ -306,7 +308,7 @@ public:
  * Parameter ctrl: The control to query.
  * Returns: The value of control. Buttons return 0 or 1.
  */
-	short (*read)(const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl);
+	short (*read)(const type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl);
 /**
  * Take compressed controller data and serialize it into textual representation.
  *
@@ -316,7 +318,7 @@ public:
  * Parameter textbuf: The text buffer to write to.
  * Returns: Number of bytes written.
  */
-	size_t (*serialize)(const port_type* _this, const unsigned char* buffer, char* textbuf);
+	size_t (*serialize)(const type* _this, const unsigned char* buffer, char* textbuf);
 /**
  * Unserialize textual representation into compressed controller state.
  *
@@ -327,7 +329,7 @@ public:
  * Returns: Number of bytes read.
  * Throws std::runtime_error: Bad serialization.
  */
-	size_t (*deserialize)(const port_type* _this, unsigned char* buffer, const char* textbuf);
+	size_t (*deserialize)(const type* _this, unsigned char* buffer, const char* textbuf);
 /**
  * Is the device legal for port?
  *
@@ -341,7 +343,7 @@ public:
 /**
  * Controller info.
  */
-	port_controller_set* controller_info;
+	controller_set* controller_info;
 /**
  * Get number of used control indices on controller.
  *
@@ -370,20 +372,20 @@ public:
  */
 	bool is_present(unsigned controller) const throw();
 private:
-	port_type(const port_type&);
-	port_type& operator=(const port_type&);
+	type(const type&);
+	type& operator=(const type&);
 };
 
 /**
  * A set of port types.
  */
-class port_type_set
+class type_set
 {
 public:
 /**
  * Create empty port type set.
  */
-	port_type_set() throw();
+	type_set() throw();
 /**
  * Make a port type set with specified types. If called again with the same parameters, returns the same object.
  *
@@ -392,16 +394,16 @@ public:
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Illegal port types.
  */
-	static port_type_set& make(std::vector<port_type*> types, struct port_index_map control_map)
+	static type_set& make(std::vector<type*> types, struct index_map control_map)
 		throw(std::bad_alloc, std::runtime_error);
 /**
  * Compare sets for equality.
  */
-	bool operator==(const port_type_set& s) const throw() { return this == &s; }
+	bool operator==(const type_set& s) const throw() { return this == &s; }
 /**
  * Compare sets for non-equality.
  */
-	bool operator!=(const port_type_set& s) const throw() { return this != &s; }
+	bool operator!=(const type_set& s) const throw() { return this != &s; }
 /**
  * Get offset of specified port.
  *
@@ -422,7 +424,7 @@ public:
  * Returns: The port type.
  * Throws std::runtime_error: Bad port number.
  */
-	const class port_type& port_type(unsigned port) const throw(std::runtime_error)
+	const class type& port_type(unsigned port) const throw(std::runtime_error)
 	{
 		if(port >= port_count)
 			throw std::runtime_error("Invalid port index");
@@ -460,7 +462,7 @@ public:
  * Returns: The triplet (may not be valid).
  * Throws std::runtime_error: Index out of range.
  */
-	port_index_triple index_to_triple(unsigned index) const throw(std::runtime_error)
+	index_triple index_to_triple(unsigned index) const throw(std::runtime_error)
 	{
 		if(index >= _indices.size())
 			throw std::runtime_error("Invalid index");
@@ -482,7 +484,7 @@ public:
 		unsigned pindex = indices_tab[place];
 		if(pindex == 0xFFFFFFFFUL)
 			return 0xFFFFFFFFUL;
-		const struct port_index_triple& t = _indices[pindex];
+		const struct index_triple& t = _indices[pindex];
 		if(!t.valid || t.port != port || t.controller != controller || t.control != _index)
 			return 0xFFFFFFFFUL;
 		return pindex;
@@ -530,12 +532,12 @@ public:
 		return legacy_pcids[pcid];
 	}
 private:
-	port_type_set(std::vector<class port_type*> types, struct port_index_map control_map);
+	type_set(std::vector<class type*> types, struct index_map control_map);
 	size_t* port_offsets;
-	class port_type** port_types;
+	class type** port_types;
 	unsigned port_count;
 	size_t total_size;
-	std::vector<port_index_triple> _indices;
+	std::vector<index_triple> _indices;
 	std::vector<std::pair<unsigned, unsigned>> controllers;
 	std::vector<std::pair<unsigned, unsigned>> legacy_pcids;
 
@@ -548,7 +550,7 @@ private:
 /**
  * Poll counter vector.
  */
-class pollcounter_vector
+class counters
 {
 public:
 /**
@@ -556,26 +558,26 @@ public:
  *
  * Throws std::bad_alloc: Not enough memory.
  */
-	pollcounter_vector() throw(std::bad_alloc);
+	counters() throw(std::bad_alloc);
 /**
  * Create new pollcounter vector suitably sized for given type set.
  *
  * Parameter p: The port types.
  * Throws std::bad_alloc: Not enough memory.
  */
-	pollcounter_vector(const port_type_set& p) throw(std::bad_alloc);
+	counters(const type_set& p) throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	~pollcounter_vector() throw();
+	~counters() throw();
 /**
- * Copy the pollcounter_vector.
+ * Copy the counters.
  */
-	pollcounter_vector(const pollcounter_vector& v) throw(std::bad_alloc);
+	counters(const counters& v) throw(std::bad_alloc);
 /**
- * Assign the pollcounter_vector.
+ * Assign the counters.
  */
-	pollcounter_vector& operator=(const pollcounter_vector& v) throw(std::bad_alloc);
+	counters& operator=(const counters& v) throw(std::bad_alloc);
 /**
  * Zero all poll counters and clear all DRDY bits. System flag is cleared.
  */
@@ -719,28 +721,28 @@ public:
 	const uint32_t* rawdata() const throw() { return ctrs; }
 private:
 	uint32_t* ctrs;
-	const port_type_set* types;
+	const type_set* types;
 	bool framepflag;
 };
 
-class controller_frame_vector;
+class frame_vector;
 
 /**
  * Single (sub)frame of controls.
  */
-class controller_frame
+class frame
 {
 public:
 /**
  * Default constructor. Invalid port types, dedicated memory.
  */
-	controller_frame() throw();
+	frame() throw();
 /**
  * Create subframe of controls with specified controller types and dedicated memory.
  *
  * Parameter p: Types of ports.
  */
-	controller_frame(const port_type_set& p) throw(std::runtime_error);
+	frame(const type_set& p) throw(std::runtime_error);
 /**
  * Create subframe of controls with specified controller types and specified memory.
  *
@@ -750,14 +752,14 @@ public:
  *
  * Throws std::runtime_error: NULL memory.
  */
-	controller_frame(unsigned char* memory, const port_type_set& p, controller_frame_vector* host = NULL)
+	frame(unsigned char* memory, const type_set& p, frame_vector* host = NULL)
 		throw(std::runtime_error);
 /**
  * Copy construct a frame. The memory will be dedicated.
  *
  * Parameter obj: The object to copy.
  */
-	controller_frame(const controller_frame& obj) throw();
+	frame(const frame& obj) throw();
 /**
  * Assign a frame. The types must either match or memory must be dedicated.
  *
@@ -765,14 +767,14 @@ public:
  * Returns: Reference to this.
  * Throws std::runtime_error: The types don't match and memory is not dedicated.
  */
-	controller_frame& operator=(const controller_frame& obj) throw(std::runtime_error);
+	frame& operator=(const frame& obj) throw(std::runtime_error);
 /**
  * Get type of port.
  *
  * Parameter port: Number of port.
  * Returns: The type of port.
  */
-	const port_type& get_port_type(unsigned port) throw()
+	const type& get_port_type(unsigned port) throw()
 	{
 		return types->port_type(port);
 	}
@@ -796,10 +798,10 @@ public:
  * Parameter ptype: New port types.
  * Throws std::runtime_error: Memory is mapped.
  */
-	void set_types(const port_type_set& ptype) throw(std::runtime_error)
+	void set_types(const type_set& ptype) throw(std::runtime_error)
 	{
 		if(memory != backing)
-			throw std::runtime_error("Can't change type of mapped controller_frame");
+			throw std::runtime_error("Can't change type of mapped frame");
 		types = &ptype;
 	}
 /**
@@ -807,9 +809,9 @@ public:
  *
  * Return blank frame.
  */
-	controller_frame blank_frame() throw()
+	frame blank_frame() throw()
 	{
-		return controller_frame(*types);
+		return frame(*types);
 	}
 /**
  * Check that types match.
@@ -817,7 +819,7 @@ public:
  * Parameter obj: Another object.
  * Returns: True if types match, false otherwise.
  */
-	bool types_match(const controller_frame& obj) const throw()
+	bool types_match(const frame& obj) const throw()
 	{
 		return types == obj.types;
 	}
@@ -828,11 +830,11 @@ public:
  * Returns: The XOR result (dedicated memory).
  * Throws std::runtime_error: Type mismatch.
  */
-	controller_frame operator^(const controller_frame& another) throw(std::runtime_error)
+	frame operator^(const frame& another) throw(std::runtime_error)
 	{
-		controller_frame x(*this);
+		frame x(*this);
 		if(types != another.types)
-				throw std::runtime_error("controller_frame::operator^: Type mismatch");
+				throw std::runtime_error("frame::operator^: Type mismatch");
 		for(size_t i = 0; i < types->size(); i++)
 			x.backing[i] ^= another.backing[i];
 		return x;
@@ -894,7 +896,7 @@ public:
  */
 	void axis2(unsigned idx, short x) throw()
 	{
-		port_index_triple t = types->index_to_triple(idx);
+		index_triple t = types->index_to_triple(idx);
 		if(t.valid)
 			axis3(t.port, t.controller, t.control, x);
 	}
@@ -922,7 +924,7 @@ public:
  */
 	short axis2(unsigned idx) throw()
 	{
-		port_index_triple t = types->index_to_triple(idx);
+		index_triple t = types->index_to_triple(idx);
 		if(t.valid)
 			return axis3(t.port, t.controller, t.control);
 		else
@@ -976,9 +978,9 @@ public:
  * Parameter sync: If set, the frame will have sync flag set, otherwise it will have sync flag clear.
  * Returns: Copy of this frame.
  */
-	controller_frame copy(bool sync)
+	frame copy(bool sync)
 	{
-		controller_frame c(*this);
+		frame c(*this);
 		c.sync(sync);
 		return c;
 	}
@@ -988,7 +990,7 @@ public:
  * Parameter obj: Another frame.
  * Returns: True if equal, false if not.
  */
-	bool operator==(const controller_frame& obj) const throw()
+	bool operator==(const frame& obj) const throw()
 	{
 		if(!types_match(obj))
 			return false;
@@ -1000,28 +1002,28 @@ public:
  * Parameter obj: Another frame.
  * Returns: True if not equal, false if equal.
  */
-	bool operator!=(const controller_frame& obj) const throw()
+	bool operator!=(const frame& obj) const throw()
 	{
 		return !(*this == obj);
 	}
 /**
  * Get the port type set.
  */
-	const port_type_set& porttypes()
+	const type_set& porttypes()
 	{
 		return *types;
 	}
 private:
 	unsigned char memory[MAXIMUM_CONTROLLER_FRAME_SIZE];
 	unsigned char* backing;
-	controller_frame_vector* host;
-	const port_type_set* types;
+	frame_vector* host;
+	const type_set* types;
 };
 
 /**
  * Vector of controller frames.
  */
-class controller_frame_vector
+class frame_vector
 {
 public:
 /**
@@ -1037,29 +1039,29 @@ public:
 /**
  * Notify a change.
  */
-		virtual void notify(controller_frame_vector& src, uint64_t old) = 0;
+		virtual void notify(frame_vector& src, uint64_t old) = 0;
 	};
 /**
  * Construct new controller frame vector.
  */
-	controller_frame_vector() throw();
+	frame_vector() throw();
 /**
  * Construct new controller frame vector.
  *
  * Parameter p: The port types.
  */
-	controller_frame_vector(const port_type_set& p) throw();
+	frame_vector(const type_set& p) throw();
 /**
  * Destroy controller frame vector
  */
-	~controller_frame_vector() throw();
+	~frame_vector() throw();
 /**
  * Copy controller frame vector.
  *
  * Parameter obj: The object to copy.
  * Throws std::bad_alloc: Not enough memory.
  */
-	controller_frame_vector(const controller_frame_vector& vector) throw(std::bad_alloc);
+	frame_vector(const frame_vector& vector) throw(std::bad_alloc);
 /**
  * Assign controller frame vector.
  *
@@ -1067,13 +1069,13 @@ public:
  * Returns: Reference to this.
  * Throws std::bad_alloc: Not enough memory.
  */
-	controller_frame_vector& operator=(const controller_frame_vector& vector) throw(std::bad_alloc);
+	frame_vector& operator=(const frame_vector& vector) throw(std::bad_alloc);
 /**
  * Blank vector and change the type of ports.
  *
  * Parameter p: The port types.
  */
-	void clear(const port_type_set& p) throw(std::runtime_error);
+	void clear(const type_set& p) throw(std::runtime_error);
 /**
  * Blank vector.
  */
@@ -1091,7 +1093,7 @@ public:
 /**
  * Get the typeset.
  */
-	const port_type_set& get_types()
+	const type_set& get_types()
 	{
 		return *types;
 	}
@@ -1102,17 +1104,17 @@ public:
  * Returns: The controller frame.
  * Throws std::runtime_error: Invalid frame index.
  */
-	controller_frame operator[](size_t x)
+	frame operator[](size_t x)
 	{
 		size_t page = x / frames_per_page;
 		size_t pageoffset = frame_size * (x % frames_per_page);
 		if(x >= frames)
-			throw std::runtime_error("controller_frame_vector::operator[]: Illegal index");
+			throw std::runtime_error("frame_vector::operator[]: Illegal index");
 		if(page != cache_page_num) {
 			cache_page = &pages[page];
 			cache_page_num = page;
 		}
-		return controller_frame(cache_page->content + pageoffset, *types, this);
+		return frame(cache_page->content + pageoffset, *types, this);
 	}
 /**
  * Append a subframe.
@@ -1121,7 +1123,7 @@ public:
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Port type mismatch.
  */
-	void append(controller_frame frame) throw(std::bad_alloc, std::runtime_error);
+	void append(frame frame) throw(std::bad_alloc, std::runtime_error);
 /**
  * Change length of vector.
  *
@@ -1179,9 +1181,9 @@ public:
  * Parameter sync: If set, the frame will have sync flag set, otherwise it will have sync flag clear.
  * Returns: Blank frame.
  */
-	controller_frame blank_frame(bool sync)
+	frame blank_frame(bool sync)
 	{
-		controller_frame c(*types);
+		frame c(*types);
 		c.sync(sync);
 		return c;
 	}
@@ -1234,7 +1236,7 @@ public:
  * Parameter polls: The poll counters within frame to check to.
  * Returns: True if compatible, false if not.
  */
-	bool compatible(controller_frame_vector& with, uint64_t frame, const uint32_t* polls);
+	bool compatible(frame_vector& with, uint64_t frame, const uint32_t* polls);
 /**
  * Find subframe number corresponding to given frame (1-based).
  */
@@ -1288,14 +1290,14 @@ public:
  *
  * Only the frame data is swapped, not the notifications.
  */
-	void swap_data(controller_frame_vector& v) throw();
+	void swap_data(frame_vector& v) throw();
 
 /**
  * Freeze framecount notifications.
  */
 	struct notify_freeze
 	{
-		notify_freeze(controller_frame_vector& parent)
+		notify_freeze(frame_vector& parent)
 			: frozen(parent)
 		{
 			frozen.freeze_count++;
@@ -1311,7 +1313,7 @@ public:
 	private:
 		notify_freeze(const notify_freeze&);
 		notify_freeze& operator=(const notify_freeze&);
-		controller_frame_vector& frozen;
+		frame_vector& frozen;
 	};
 private:
 	friend class notify_freeze;
@@ -1324,7 +1326,7 @@ private:
 	size_t frames_per_page;
 	size_t frame_size;
 	size_t frames;
-	const port_type_set* types;
+	const type_set* types;
 	size_t cache_page_num;
 	page* cache_page;
 	std::map<size_t, page> pages;
@@ -1342,7 +1344,7 @@ private:
 	}
 };
 
-void controller_frame::sync(bool x) throw()
+void frame::sync(bool x) throw()
 {
 	short old = (backing[0] & 1);
 	if(x)
@@ -1352,7 +1354,7 @@ void controller_frame::sync(bool x) throw()
 	if(host) host->notify_sync_change((backing[0] & 1) - old);
 }
 
-void controller_frame::deserialize(const char* buf) throw(std::runtime_error)
+void frame::deserialize(const char* buf) throw(std::runtime_error)
 {
 	short old = sync();
 	size_t offset = 0;
@@ -1373,18 +1375,18 @@ void controller_frame::deserialize(const char* buf) throw(std::runtime_error)
 
 
 //Parse a controller macro.
-struct controller_macro_data
+struct macro_data
 {
 	struct axis_transform
 	{
 		axis_transform() { coeffs[0] = coeffs[3] = 1; coeffs[1] = coeffs[2] = coeffs[4] = coeffs[5] = 0; }
 		axis_transform(const std::string& expr);
 		double coeffs[6];
-		int16_t transform(const port_controller_button& b, int16_t v);
-		std::pair<int16_t, int16_t> transform(const port_controller_button& b1,
-			const port_controller_button& b2, int16_t v1, int16_t v2);
-		static double unscale_axis(const port_controller_button& b, int16_t v);
-		static int16_t scale_axis(const port_controller_button& b, double v);
+		int16_t transform(const button& b, int16_t v);
+		std::pair<int16_t, int16_t> transform(const button& b1,
+			const button& b2, int16_t v1, int16_t v2);
+		static double unscale_axis(const button& b, int16_t v);
+		static int16_t scale_axis(const button& b, double v);
 	};
 	enum apply_mode
 	{
@@ -1392,15 +1394,15 @@ struct controller_macro_data
 		AM_OR,
 		AM_XOR
 	};
-	controller_macro_data() { buttons = 0; }
-	controller_macro_data(const std::string& spec, const JSON::node& desc, unsigned i);
-	controller_macro_data(const JSON::node& ser, unsigned i);
+	macro_data() { buttons = 0; }
+	macro_data(const std::string& spec, const JSON::node& desc, unsigned i);
+	macro_data(const JSON::node& ser, unsigned i);
 	void serialize(JSON::node& v);
-	static JSON::node make_descriptor(const port_controller& ctrl);
+	static JSON::node make_descriptor(const controller& ctrl);
 	const JSON::node& get_descriptor() { return _descriptor; }
 	static bool syntax_check(const std::string& spec, const JSON::node& ctrl);
-	void write(controller_frame& frame, unsigned port, unsigned controller, int64_t nframe, apply_mode amode);
-	std::string dump(const port_controller& ctrl); //Mainly for debugging.
+	void write(frame& frame, unsigned port, unsigned controller, int64_t nframe, apply_mode amode);
+	std::string dump(const controller& ctrl); //Mainly for debugging.
 	size_t get_frames() { return data.size() / get_stride(); }
 	size_t get_stride() { return buttons; }
 	size_t buttons;
@@ -1414,13 +1416,13 @@ struct controller_macro_data
 	bool autoterminate;
 };
 
-struct controller_macro
+struct macro
 {
-	controller_macro_data::apply_mode amode;
-	std::map<unsigned, controller_macro_data> macros;
-	void write(controller_frame& frame, int64_t nframe);
-	controller_macro() { amode = controller_macro_data::AM_XOR; }
-	controller_macro(const JSON::node& ser);
+	macro_data::apply_mode amode;
+	std::map<unsigned, macro_data> macros;
+	void write(frame& frame, int64_t nframe);
+	macro() { amode = macro_data::AM_XOR; }
+	macro(const JSON::node& ser);
 	JSON::node serialize();
 };
 
@@ -1428,6 +1430,7 @@ struct controller_macro
 /**
  * Get generic default system port type.
  */
-port_type& get_default_system_port_type();
+type& get_default_system_port_type();
+}
 
 #endif

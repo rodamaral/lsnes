@@ -30,12 +30,12 @@ namespace
 	{
 		auto& core = CORE();
 		auto& m = core.mlogic->get_movie();
-		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
+		portctrl::frame f = m.read_subframe(m.get_current_frame(), 0);
 		if(port >= f.get_port_count()) {
 			L.pushnil();
 			return 1;
 		}
-		const port_type& p = f.get_port_type(port);
+		const portctrl::type& p = f.get_port_type(port);
 		if(controller >= p.controller_info->controllers.size())
 			L.pushnil();
 		else
@@ -51,7 +51,7 @@ namespace
 		short val;
 		if(port >= core.lua2->input_controllerdata->get_port_count())
 			return 0;
-		const port_type& pt = core.lua2->input_controllerdata->get_port_type(port);
+		const portctrl::type& pt = core.lua2->input_controllerdata->get_port_type(port);
 		if(controller >= pt.controller_info->controllers.size())
 			return 0;
 		for(unsigned i = 0; i < pt.controller_info->controllers[controller].buttons.size(); i++) {
@@ -69,7 +69,7 @@ namespace
 			return 0;
 		if(port >= core.lua2->input_controllerdata->get_port_count())
 			return 0;
-		const port_type& pt = core.lua2->input_controllerdata->get_port_type(port);
+		const portctrl::type& pt = core.lua2->input_controllerdata->get_port_type(port);
 		if(controller >= pt.controller_info->controllers.size())
 			return 0;
 		uint64_t fret = 0;
@@ -91,12 +91,12 @@ namespace
 		}
 	} S_keyhook_listener;
 
-	const port_controller_set* lookup_ps(unsigned port)
+	const portctrl::controller_set* lookup_ps(unsigned port)
 	{
 		auto& core = CORE();
 		auto& m = core.mlogic->get_movie();
-		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
-		const port_type& p = f.get_port_type(port);
+		portctrl::frame f = m.read_subframe(m.get_current_frame(), 0);
+		const portctrl::type& p = f.get_port_type(port);
 		return p.controller_info;
 	}
 
@@ -199,7 +199,7 @@ namespace
 		P(controller);
 
 		auto& m = core.mlogic->get_movie();
-		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
+		const portctrl::type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		auto _controller = s.legacy_pcid_to_pair(controller);
 		return input_controllertype(L, _controller.first, _controller.second);
 	}
@@ -281,16 +281,16 @@ namespace
 		if(pcid.first < 0)
 			throw std::runtime_error("Invalid controller for input.joyget");
 		L.newtable();
-		const port_type& pt = core.lua2->input_controllerdata->get_port_type(pcid.first);
-		const port_controller& ctrl = pt.controller_info->controllers[pcid.second];
+		const portctrl::type& pt = core.lua2->input_controllerdata->get_port_type(pcid.first);
+		const portctrl::controller& ctrl = pt.controller_info->controllers[pcid.second];
 		unsigned lcnt = ctrl.buttons.size();
 		for(unsigned i = 0; i < lcnt; i++) {
-			if(ctrl.buttons[i].type == port_controller_button::TYPE_NULL)
+			if(ctrl.buttons[i].type == portctrl::button::TYPE_NULL)
 				continue;
 			L.pushlstring(ctrl.buttons[i].name);
 			if(ctrl.buttons[i].is_analog())
 				L.pushnumber(core.lua2->input_controllerdata->axis3(pcid.first, pcid.second, i));
-			else if(ctrl.buttons[i].type == port_controller_button::TYPE_BUTTON)
+			else if(ctrl.buttons[i].type == portctrl::button::TYPE_BUTTON)
 				L.pushboolean(core.lua2->input_controllerdata->axis3(pcid.first, pcid.second, i) !=
 					0);
 			L.settable(-3);
@@ -311,11 +311,11 @@ namespace
 		auto pcid = core.controls->lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			throw std::runtime_error("Invalid controller for input.joyset");
-		const port_type& pt = core.lua2->input_controllerdata->get_port_type(pcid.first);
-		const port_controller& ctrl = pt.controller_info->controllers[pcid.second];
+		const portctrl::type& pt = core.lua2->input_controllerdata->get_port_type(pcid.first);
+		const portctrl::controller& ctrl = pt.controller_info->controllers[pcid.second];
 		unsigned lcnt = ctrl.buttons.size();
 		for(unsigned i = 0; i < lcnt; i++) {
-			if(ctrl.buttons[i].type == port_controller_button::TYPE_NULL)
+			if(ctrl.buttons[i].type == portctrl::button::TYPE_NULL)
 				continue;
 			L.pushlstring(ctrl.buttons[i].name);
 			L.gettable(ltbl);
@@ -392,9 +392,9 @@ namespace
 		P(port);
 
 		auto& m = core.mlogic->get_movie();
-		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
+		const portctrl::type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		try {
-			const port_type& p = s.port_type(port);
+			const portctrl::type& p = s.port_type(port);
 			L.pushlstring(p.name);
 		} catch(...) {
 			return 0;
@@ -416,7 +416,7 @@ namespace
 
 		P(port, controller);
 
-		const port_controller_set* ps;
+		const portctrl::controller_set* ps;
 		unsigned lcid = 0;
 		unsigned classnum = 1;
 		ps = lookup_ps(port);
@@ -430,11 +430,11 @@ namespace
 				lcid = i + 1;
 				break;
 			}
-			const port_controller_set* ps2 = lookup_ps(pcid.first);
+			const portctrl::controller_set* ps2 = lookup_ps(pcid.first);
 			if(ps->controllers[controller].cclass == ps2->controllers[pcid.second].cclass)
 				classnum++;
 		}
-		const port_controller& cs = ps->controllers[controller];
+		const portctrl::controller& cs = ps->controllers[controller];
 		L.newtable();
 		L.pushstring("type");
 		L.pushlstring(cs.type);
@@ -459,12 +459,12 @@ namespace
 			L.newtable();
 			L.pushstring("type");
 			switch(cs.buttons[i].type) {
-				case port_controller_button::TYPE_NULL: L.pushstring("null"); break;
-				case port_controller_button::TYPE_BUTTON: L.pushstring("button"); break;
-				case port_controller_button::TYPE_AXIS: L.pushstring("axis"); break;
-				case port_controller_button::TYPE_RAXIS: L.pushstring("raxis"); break;
-				case port_controller_button::TYPE_TAXIS: L.pushstring("axis"); break;
-				case port_controller_button::TYPE_LIGHTGUN: L.pushstring("lightgun"); break;
+				case portctrl::button::TYPE_NULL: L.pushstring("null"); break;
+				case portctrl::button::TYPE_BUTTON: L.pushstring("button"); break;
+				case portctrl::button::TYPE_AXIS: L.pushstring("axis"); break;
+				case portctrl::button::TYPE_RAXIS: L.pushstring("raxis"); break;
+				case portctrl::button::TYPE_TAXIS: L.pushstring("axis"); break;
+				case portctrl::button::TYPE_LIGHTGUN: L.pushstring("lightgun"); break;
 			};
 			L.rawset(-3);
 			if(cs.buttons[i].symbol) {

@@ -683,7 +683,7 @@ struct moviefile& wxwin_project::make_movie()
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
 	auto ctrldata = inst.rom->controllerconfig(f.settings);
-	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
+	portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 	f.create_default_branch(ports);
 	return f;
 }

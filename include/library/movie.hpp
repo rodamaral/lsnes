@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <stdexcept>
-#include "controller-data.hpp"
+#include "portctrl-data.hpp"
 
 /**
  * Movie being played back or recorded
@@ -134,14 +134,14 @@ public:
  *
  * parameter controls: The new controls.
  */
-	void set_controls(controller_frame controls) throw();
+	void set_controls(portctrl::frame controls) throw();
 
 /**
  * Get current control values in effect.
  *
  * returns: Controls
  */
-	controller_frame get_controls() throw();
+	portctrl::frame get_controls() throw();
 
 /**
  * Loads a movie plus some other parameters. The playback pointer is positioned to start of movie and readonly
@@ -153,7 +153,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Bad movie data.
  */
-	void load(const std::string& rerecs, const std::string& project_id, controller_frame_vector& input)
+	void load(const std::string& rerecs, const std::string& project_id, portctrl::frame_vector& input)
 		throw(std::bad_alloc, std::runtime_error);
 
 /**
@@ -182,7 +182,7 @@ public:
  * Throws std::runtime_error: Movie check failure.
  */
 	size_t restore_state(uint64_t curframe, uint64_t lagframe, const std::vector<uint32_t>& pcounters, bool ro,
-		controller_frame_vector* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
+		portctrl::frame_vector* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
 		std::runtime_error);
 /**
  * Reset the state of movie to initial state.
@@ -209,7 +209,7 @@ public:
  * returns: The controls for subframe. If subframe is too great, reads last present subframe. If frame is outside
  *	movie, reads all released.
  */
-	controller_frame read_subframe(uint64_t frame, uint64_t subframe) throw();
+	portctrl::frame read_subframe(uint64_t frame, uint64_t subframe) throw();
 /**
  * Fast save.
  */
@@ -249,7 +249,7 @@ public:
 /**
  * Get pollcounter vector.
  */
-	pollcounter_vector& get_pollcounters() { return pollcounters; }
+	portctrl::counters& get_pollcounters() { return pollcounters; }
 /**
  * Get first subframe of this frame.
  */
@@ -264,12 +264,12 @@ public:
 	void write_subframe_at_index(uint32_t subframe, unsigned port, unsigned controller, unsigned index,
 		int16_t x);
 /**
- * Call controller_frame_vector::compatible() with correct frame and pollcounters.
+ * Call portctrl::frame_vector::compatible() with correct frame and pollcounters.
  *
  * Parameter with: The second vector.
  * Returns: True if compatible, false if not.
  */
-	bool compatible(controller_frame_vector& with)
+	bool compatible(portctrl::frame_vector& with)
 	{
 		return movie_data->compatible(with, current_frame, pollcounters.rawdata());
 	}
@@ -278,14 +278,14 @@ public:
  *
  * Parameter data: New movie data.
  */
-	void set_movie_data(controller_frame_vector* data);
+	void set_movie_data(portctrl::frame_vector* data);
 private:
-	class fchange_listener : public controller_frame_vector::fchange_listener
+	class fchange_listener : public portctrl::frame_vector::fchange_listener
 	{
 	public:
 		fchange_listener(movie& m);
 		~fchange_listener();
-		void notify(controller_frame_vector& src, uint64_t old);
+		void notify(portctrl::frame_vector& src, uint64_t old);
 	private:
 		movie& mov;
 	} _listener;
@@ -304,15 +304,15 @@ private:
 	//Project ID.
 	std::string _project_id;
 	//The actual controller data.
-	controller_frame_vector* movie_data;
+	portctrl::frame_vector* movie_data;
 	//Current frame + 1 (0 before next_frame() has been called.
 	uint64_t current_frame;
 	//First subframe in current frame (movie_data.size() if no subframes have been stored).
 	uint64_t current_frame_first_subframe;
 	//How many times has each control been polled (bit 31 is data ready bit)?
-	pollcounter_vector pollcounters;
+	portctrl::counters pollcounters;
 	//Current state of buttons.
-	controller_frame current_controls;
+	portctrl::frame current_controls;
 	//Number of known lag frames.
 	uint64_t lag_frames;
 	//Cached subframes.

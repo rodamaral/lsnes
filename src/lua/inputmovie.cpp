@@ -17,8 +17,8 @@ namespace
 	{
 		friend class lua_inputmovie;
 	public:
-		lua_inputframe(lua::state& L, controller_frame _f);
-		static size_t overcommit(controller_frame _f) { return 0; }
+		lua_inputframe(lua::state& L, portctrl::frame _f);
+		static size_t overcommit(portctrl::frame _f) { return 0; }
 		int get_button(lua::state& L, lua::parameters& P)
 		{
 			unsigned port, controller, button;
@@ -74,7 +74,7 @@ namespace
 			L.pushnumber(f.size());
 			return 1;
 		}
-		controller_frame& get_frame()
+		portctrl::frame& get_frame()
 		{
 			return f;
 		}
@@ -93,7 +93,7 @@ namespace
 		{
 			return f.axis3(port, controller, index, value);
 		}
-		controller_frame f;
+		portctrl::frame f;
 	};
 
 	int32_t get_pc_for(unsigned port, unsigned controller, unsigned button, bool extra0 = false);
@@ -150,11 +150,11 @@ namespace
 		return 1;
 	}
 
-	controller_frame_vector& framevector(lua::state& L, lua::parameters& P);
+	portctrl::frame_vector& framevector(lua::state& L, lua::parameters& P);
 
 	int _copy_movie(lua::state& L, lua::parameters& P)
 	{
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		lua::_class<lua_inputmovie>::create(L, v);
 		return 1;
@@ -163,13 +163,13 @@ namespace
 	int _get_frame(lua::state& L, lua::parameters& P)
 	{
 		uint64_t n;
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		P(n);
 
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
-		controller_frame _f = v[n];
+		portctrl::frame _f = v[n];
 		lua::_class<lua_inputframe>::create(L, _f);
 		return 1;
 	}
@@ -179,7 +179,7 @@ namespace
 		auto& core = CORE();
 		uint64_t n;
 		lua_inputframe* f;
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		P(n, f);
 
@@ -201,7 +201,7 @@ namespace
 
 	int _get_size(lua::state& L, lua::parameters& P)
 	{
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		L.pushnumber(v.size());
 		return 1;
@@ -209,7 +209,7 @@ namespace
 
 	int _count_frames(lua::state& L, lua::parameters& P)
 	{
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		L.pushnumber(v.count_frames());
 		return 1;
@@ -218,7 +218,7 @@ namespace
 	int _find_frame(lua::state& L, lua::parameters& P)
 	{
 		uint64_t n;
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		P(n);
 
@@ -228,9 +228,9 @@ namespace
 
 	int _blank_frame(lua::state& L, lua::parameters& P)
 	{
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
-		controller_frame _f = v.blank_frame(true);
+		portctrl::frame _f = v.blank_frame(true);
 		lua::_class<lua_inputframe>::create(L, _f);
 		return 1;
 	}
@@ -239,12 +239,12 @@ namespace
 	{
 		auto& core = CORE();
 		uint64_t count;
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		P(count);
 
 		{
-			controller_frame_vector::notify_freeze freeze(v);
+			portctrl::frame_vector::notify_freeze freeze(v);
 			for(uint64_t i = 0; i < count; i++)
 				v.append(v.blank_frame(true));
 		}
@@ -259,7 +259,7 @@ namespace
 	{
 		auto& core = CORE();
 		lua_inputframe* f;
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		P(f);
 
@@ -283,7 +283,7 @@ namespace
 	{
 		auto& core = CORE();
 		uint64_t n;
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		P(n);
 
@@ -305,7 +305,7 @@ namespace
 		uint64_t frame;
 		unsigned port, controller, button;
 		short value;
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		P(frame, port, controller, button);
 		if(P.is_boolean()) value = P.arg<bool>() ? 1 : 0;
@@ -331,9 +331,9 @@ namespace
 		uint64_t dst, src, count;
 		bool backwards = same;
 
-		controller_frame_vector& dstv = framevector(L, P);
+		portctrl::frame_vector& dstv = framevector(L, P);
 		P(dst);
-		controller_frame_vector& srcv = same ? dstv : framevector(L, P);
+		portctrl::frame_vector& srcv = same ? dstv : framevector(L, P);
 		P(src, count);
 		if(same) P(backwards);
 
@@ -346,7 +346,7 @@ namespace
 			check_can_edit(0, 0, 0, dst, true);
 
 		{
-			controller_frame_vector::notify_freeze freeze(dstv);
+			portctrl::frame_vector::notify_freeze freeze(dstv);
 			//Add enough blank frames to make the copy.
 			while(dst + count > dstv.size())
 				dstv.append(dstv.blank_frame(false));
@@ -366,7 +366,7 @@ namespace
 		std::string filename;
 		bool binary;
 
-		controller_frame_vector& v = framevector(L, P);
+		portctrl::frame_vector& v = framevector(L, P);
 
 		P(filename, binary);
 
@@ -398,10 +398,10 @@ namespace
 	class lua_inputmovie
 	{
 	public:
-		lua_inputmovie(lua::state& L, const controller_frame_vector& _v);
-		lua_inputmovie(lua::state& L, controller_frame& _f);
-		static size_t overcommit(const controller_frame_vector& _v) { return 0; }
-		static size_t overcommit(controller_frame& _f) { return 0; }
+		lua_inputmovie(lua::state& L, const portctrl::frame_vector& _v);
+		lua_inputmovie(lua::state& L, portctrl::frame& _f);
+		static size_t overcommit(const portctrl::frame_vector& _v) { return 0; }
+		static size_t overcommit(portctrl::frame& _f) { return 0; }
 		int copy_movie(lua::state& L, lua::parameters& P)
 		{
 			return _copy_movie(L, P);
@@ -463,7 +463,7 @@ namespace
 			}
 			return 0;
 		}
-		controller_frame_vector* get_frame_vector()
+		portctrl::frame_vector* get_frame_vector()
 		{
 			return &v;
 		}
@@ -474,7 +474,7 @@ namespace
 		}
 	private:
 		void common_init(lua::state& L);
-		controller_frame_vector v;
+		portctrl::frame_vector v;
 	};
 
 	int copy_movie(lua::state& L, lua::parameters& P)
@@ -559,8 +559,8 @@ namespace
 		if(!file)
 			throw std::runtime_error("Can't open file to read input from");
 		lua_inputmovie* m = lua::_class<lua_inputmovie>::create(L, f->get_frame());
-		controller_frame_vector& v = *m->get_frame_vector();
-		controller_frame_vector::notify_freeze freeze(v);
+		portctrl::frame_vector& v = *m->get_frame_vector();
+		portctrl::frame_vector::notify_freeze freeze(v);
 		if(binary) {
 			uint64_t stride = v.get_stride();
 			uint64_t pageframes = v.get_frames_per_page();
@@ -576,7 +576,7 @@ namespace
 			v.resize(vsize);
 		} else {
 			std::string line;
-			controller_frame tmpl = v.blank_frame(false);
+			portctrl::frame tmpl = v.blank_frame(false);
 			while(file) {
 				std::getline(file, line);
 				istrip_CR(line);
@@ -603,7 +603,7 @@ namespace
 		return core.mlogic->get_mfile().branches.size();
 	}
 
-	controller_frame_vector& framevector(lua::state& L, lua::parameters& P)
+	portctrl::frame_vector& framevector(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
 		if(P.is_nil()) {
@@ -670,7 +670,7 @@ namespace
 		{"get_branches", get_branches},
 	});
 
-	lua_inputframe::lua_inputframe(lua::state& L, controller_frame _f)
+	lua_inputframe::lua_inputframe(lua::state& L, portctrl::frame _f)
 	{
 		f = _f;
 	}
@@ -679,13 +679,13 @@ namespace
 	{
 	}
 
-	lua_inputmovie::lua_inputmovie(lua::state& L, const controller_frame_vector& _v)
+	lua_inputmovie::lua_inputmovie(lua::state& L, const portctrl::frame_vector& _v)
 	{
 		v = _v;
 		common_init(L);
 	}
 
-	lua_inputmovie::lua_inputmovie(lua::state& L, controller_frame& f)
+	lua_inputmovie::lua_inputmovie(lua::state& L, portctrl::frame& f)
 	{
 		v.clear(f.porttypes());
 		common_init(L);

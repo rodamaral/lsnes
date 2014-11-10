@@ -1,9 +1,11 @@
-#include "controller-data.hpp"
-#include "controller-parse-asmgen.hpp"
+#include "portctrl-data.hpp"
+#include "portctrl-parse-asmgen.hpp"
 #include "assembler-intrinsics-i386.hpp"
 
 using namespace assembler_intrinsics;
 
+namespace portctrl
+{
 namespace codegen
 {
 int calc_mask_bit(uint8_t mask)
@@ -403,5 +405,6 @@ template<> void emit_write_axis(I386& a, assembler::label_list& labels, assemble
 	a.mov_regmem_reg16(I386::reg_si[offset], I386::reg_ax);
 	//Jump to epilogue.
 	a.jmp_long(end);
+}
 }
 }

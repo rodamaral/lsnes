@@ -24,7 +24,7 @@ struct moviefile_branch_extractor_text : public moviefile::branch_extractor
 	moviefile_branch_extractor_text(const std::string& filename);
 	~moviefile_branch_extractor_text();
 	std::set<std::string> enumerate();
-	void read(const std::string& name, controller_frame_vector& v);
+	void read(const std::string& name, portctrl::frame_vector& v);
 private:
 	zip::reader z;
 };
@@ -34,7 +34,7 @@ struct moviefile_branch_extractor_binary : public moviefile::branch_extractor
 	moviefile_branch_extractor_binary(const std::string& filename);
 	~moviefile_branch_extractor_binary();
 	std::set<std::string> enumerate();
-	void read(const std::string& name, controller_frame_vector& v);
+	void read(const std::string& name, portctrl::frame_vector& v);
 private:
 	int s;
 };

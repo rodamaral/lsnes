@@ -20,15 +20,15 @@
 
 namespace
 {
-	std::map<unsigned, const port_controller*> get_controller_set(emulator_instance& inst)
+	std::map<unsigned, const portctrl::controller*> get_controller_set(emulator_instance& inst)
 	{
-		std::map<unsigned, const port_controller*> r;
-		const port_type_set& s = inst.controls->get_blank().porttypes();
+		std::map<unsigned, const portctrl::controller*> r;
+		const portctrl::type_set& s = inst.controls->get_blank().porttypes();
 		for(unsigned i = 0; i < s.number_of_controllers(); i++) {
 			auto g = s.lcid_to_pcid(i);
 			if(g.first < 0)
 				continue;
-			port_controller_set* pcs = s.port_type(g.first).controller_info;
+			portctrl::controller_set* pcs = s.port_type(g.first).controller_info;
 			if(g.second >= pcs->controllers.size())
 				continue;
 			r[i] = &pcs->controllers[g.second];
@@ -68,11 +68,11 @@ namespace
 	{
 	public:
 		wxeditor_macro_1(wxWindow* parent, emulator_instance& _inst, const std::string& title,
-			const controller_macro& m);
+			const portctrl::macro& m);
 		void on_ok(wxCommandEvent& e);
 		void on_cancel(wxCommandEvent& e);
 		void on_macro_edit(wxCommandEvent& e);
-		controller_macro get_macro() { return curmacro; }
+		portctrl::macro get_macro() { return curmacro; }
 	private:
 		emulator_instance& inst;
 		std::vector<wxCheckBox*> enabled;
@@ -82,12 +82,12 @@ namespace
 		wxRadioButton* rb_overwrite;
 		wxRadioButton* rb_or;
 		wxRadioButton* rb_xor;
-		controller_macro curmacro;
+		portctrl::macro curmacro;
 		bool constructing;
 	};
 
 	wxeditor_macro_1::wxeditor_macro_1(wxWindow* parent, emulator_instance& _inst, const std::string& title,
-		const controller_macro& m)
+		const portctrl::macro& m)
 		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 	{
 		constructing = true;
@@ -127,9 +127,9 @@ namespace
 		top_s->Add(tmp2, 0, wxGROW);
 
 		switch(curmacro.amode) {
-		case controller_macro_data::AM_OVERWRITE:	rb_overwrite->SetValue(true); break;
-		case controller_macro_data::AM_OR:		rb_or->SetValue(true); break;
-		case controller_macro_data::AM_XOR:		rb_xor->SetValue(true); break;
+		case portctrl::macro_data::AM_OVERWRITE:	rb_overwrite->SetValue(true); break;
+		case portctrl::macro_data::AM_OR:		rb_or->SetValue(true); break;
+		case portctrl::macro_data::AM_XOR:		rb_xor->SetValue(true); break;
 		};
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
@@ -151,15 +151,15 @@ namespace
 
 	void wxeditor_macro_1::on_ok(wxCommandEvent& e)
 	{
-		controller_macro m;
-		if(rb_overwrite->GetValue()) m.amode = controller_macro_data::AM_OVERWRITE;
-		if(rb_or->GetValue()) m.amode = controller_macro_data::AM_OR;
-		if(rb_xor->GetValue()) m.amode = controller_macro_data::AM_XOR;
+		portctrl::macro m;
+		if(rb_overwrite->GetValue()) m.amode = portctrl::macro_data::AM_OVERWRITE;
+		if(rb_or->GetValue()) m.amode = portctrl::macro_data::AM_OR;
+		if(rb_xor->GetValue()) m.amode = portctrl::macro_data::AM_XOR;
 		try {
 			for(auto i : curmacro.macros) {
 				if(!macros[i.first])
 					continue;
-				m.macros[i.first] = controller_macro_data(tostdstring(macros[i.first]->GetValue()),
+				m.macros[i.first] = portctrl::macro_data(tostdstring(macros[i.first]->GetValue()),
 					curmacro.macros[i.first].get_descriptor(), i.first);
 				m.macros[i.first].enabled = enabled[i.first]->GetValue();
 			}
@@ -184,7 +184,7 @@ namespace
 		bool ret = true;
 		auto c = get_controller_set(inst);
 		for(auto i : curmacro.macros) {
-			if(!controller_macro_data::syntax_check(tostdstring(macros[i.first]->GetValue()).c_str(),
+			if(!portctrl::macro_data::syntax_check(tostdstring(macros[i.first]->GetValue()).c_str(),
 				curmacro.macros[i.first].get_descriptor()))
 				ret = false;
 		}
@@ -206,7 +206,7 @@ public:
 	void on_load(wxCommandEvent& e);
 	void on_save(wxCommandEvent& e);
 private:
-	bool do_edit(const std::string& mname, controller_macro& m);
+	bool do_edit(const std::string& mname, portctrl::macro& m);
 	void update();
 	emulator_instance& inst;
 	wxButton* closebutton;
@@ -328,12 +328,12 @@ void wxeditor_macro::on_add(wxCommandEvent& e)
 		std::string mname = pick_text(this, "Name new macro", "Enter name for the new macro:", "");
 		if(mname == "")
 			return;
-		controller_macro _macro;
-		_macro.amode = controller_macro_data::AM_XOR;
+		portctrl::macro _macro;
+		_macro.amode = portctrl::macro_data::AM_XOR;
 		auto c = get_controller_set(inst);
 		for(auto i : c) {
-			_macro.macros[i.first] = controller_macro_data("",
-				controller_macro_data::make_descriptor(*i.second), i.first);
+			_macro.macros[i.first] = portctrl::macro_data("",
+				portctrl::macro_data::make_descriptor(*i.second), i.first);
 			_macro.macros[i.first].enabled = false;
 		}
 		if(do_edit("", _macro))
@@ -351,7 +351,7 @@ void wxeditor_macro::on_edit(wxCommandEvent& e)
 	if(sel == wxNOT_FOUND)
 		return;
 	std::string macro = macronames[sel];
-	controller_macro _macro;
+	portctrl::macro _macro;
 	try {
 		_macro = inst.controls->get_macro(macro);
 	} catch(...) {
@@ -388,7 +388,7 @@ void wxeditor_macro::on_load(wxCommandEvent& e)
 		std::string file = choose_file_load(this, "Load macro from", UI_get_project_otherpath(inst),
 			filetype_macro);
 		std::vector<char> contents = zip::readrel(file, "");
-		controller_macro m(JSON::node(std::string(contents.begin(), contents.end())));
+		portctrl::macro m(JSON::node(std::string(contents.begin(), contents.end())));
 		inst.controls->set_macro(mname, m);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -403,7 +403,7 @@ void wxeditor_macro::on_save(wxCommandEvent& e)
 	if(sel == wxNOT_FOUND)
 		return;
 	std::string macro = macronames[sel];
-	controller_macro* _macro;
+	portctrl::macro* _macro;
 	try {
 		_macro = &inst.controls->get_macro(macro);
 	} catch(...) {
@@ -422,7 +422,7 @@ void wxeditor_macro::on_save(wxCommandEvent& e)
 	}
 }
 
-bool wxeditor_macro::do_edit(const std::string& mname, controller_macro& m)
+bool wxeditor_macro::do_edit(const std::string& mname, portctrl::macro& m)
 {
 	wxeditor_macro_1* editor;
 	bool ret;

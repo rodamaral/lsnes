@@ -176,7 +176,7 @@ struct loaded_rom
 	std::list<core_vma_info> vma_list() { return rtype->vma_list(); }
 	framebuffer::raw& draw_cover() { return rtype->draw_cover(); }
 	int reset_action(bool hard) { return rtype->reset_action(hard); }
-	void pre_emulate_frame(controller_frame& cf) { return rtype->pre_emulate_frame(cf); }
+	void pre_emulate_frame(portctrl::frame& cf) { return rtype->pre_emulate_frame(cf); }
 	void emulate() { rtype->emulate(); }
 	void runtosave() { rtype->runtosave(); }
 	std::pair<uint32_t, uint32_t> get_audio_rate() { return rtype->get_audio_rate(); }

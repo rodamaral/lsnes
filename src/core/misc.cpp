@@ -251,13 +251,14 @@ command::fnptr<const std::string&> macro_test(lsnes_cmds, "test-macro", "", "",
 			return;
 		}
 		try {
-			const port_controller* _ctrl = core.controls->get_blank().porttypes().port_type(pcid.first).
+			const portctrl::controller* _ctrl = 
+				core.controls->get_blank().porttypes().port_type(pcid.first).
 				controller_info->get(pcid.second);
 			if(!_ctrl) {
 				messages << "No controller data for controller" << std::endl;
 				return;
 			}
-			controller_macro_data mdata(r[2].c_str(), controller_macro_data::make_descriptor(*_ctrl), 0);
+			portctrl::macro_data mdata(r[2].c_str(), portctrl::macro_data::make_descriptor(*_ctrl), 0);
 			messages << "Macro: " << mdata.dump(*_ctrl) << std::endl;
 		} catch(std::exception& e) {
 			messages << "Exception: " << e.what() << std::endl;

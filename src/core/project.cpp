@@ -163,7 +163,7 @@ namespace
 		m.gamename = p.gamename;
 		m.settings = p.settings;
 		auto ctrldata = coretype.controllerconfig(m.settings);
-		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
+		portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 		m.create_default_branch(ports);
 		try {
 			m.gametype = &coretype.lookup_sysregion(p.gametype);

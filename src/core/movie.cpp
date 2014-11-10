@@ -59,7 +59,7 @@ rrdata_set& movie_logic::get_rrdata() throw(std::runtime_error)
 void movie_logic::new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::runtime_error)
 {
 	mov->next_frame();
-	controller_frame c = update_controls(false);
+	portctrl::frame c = update_controls(false);
 	if(!mov->readonly_mode()) {
 		mov->set_controls(c);
 		if(!dont_poll)

@@ -34,7 +34,7 @@
 #include "interface/romtype.hpp"
 #include "library/framebuffer-pixfmt-rgb32.hpp"
 #include "library/string.hpp"
-#include "library/controller-data.hpp"
+#include "library/portctrl-data.hpp"
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
 #include "library/framebuffer.hpp"
@@ -175,7 +175,7 @@ namespace
 			return x;
 		}
 		std::string c_get_core_shortname() { return "test"; }
-		void c_pre_emulate_frame(controller_frame& cf) {}
+		void c_pre_emulate_frame(portctrl::frame& cf) {}
 		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 		{
 			if(id == 0)

@@ -65,7 +65,7 @@ namespace
 		P(frame, subframe);
 
 		auto& m = CORE().mlogic->get_movie();
-		controller_frame r = m.read_subframe(frame, subframe);
+		portctrl::frame r = m.read_subframe(frame, subframe);
 		L.newtable();
 
 		for(size_t i = 0; i < r.get_index_count(); i++) {

@@ -399,13 +399,13 @@ namespace
 			throw std::runtime_error("Incorrect ROM");
 	}
 
-	port_type_set& construct_movie_portset(moviefile& mov, loaded_rom& against)
+	portctrl::type_set& construct_movie_portset(moviefile& mov, loaded_rom& against)
 	{
 		auto ctrldata = against.controllerconfig(mov.settings);
-		return port_type_set::make(ctrldata.ports, ctrldata.portindex());
+		return portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 	}
 
-	void handle_load_core(moviefile& _movie, port_type_set& portset, bool will_load_state)
+	void handle_load_core(moviefile& _movie, portctrl::type_set& portset, bool will_load_state)
 	{
 		auto& core = CORE();
 		core.random_seed_value = _movie.movie_rtc_second;
@@ -444,7 +444,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 	auto& core = CORE();
 	bool load_readwrite = !*core.mlogic || !core.mlogic->get_movie().readonly_mode();
 	if(*core.mlogic) {
-		port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
+		portctrl::type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 		//If portset or gametype changes, force readwrite with new movie.
 		if(core.mlogic->get_mfile().input->get_types() != portset) load_readwrite = true;
 		if(!core.rom->is_of_type(core.mlogic->get_mfile().gametype->get_type())) load_readwrite = true;
@@ -458,7 +458,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 				core.mlogic->get_mfile().projectid), false);
 		core.mlogic->get_rrdata().add((*core.nrrdata)());
 
-		port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
+		portctrl::type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 
 		try {
 			handle_load_core(core.mlogic->get_mfile(), portset, false);
@@ -503,7 +503,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		_movie.get()->movie_rtc_subsecond = _movie.get()->rtc_subsecond = 0;
 		_movie.get()->start_paused = false;
 		_movie.get()->lazy_project_create = true;
-		port_type_set& portset2 = construct_movie_portset(*_movie.get(), *core.rom);
+		portctrl::type_set& portset2 = construct_movie_portset(*_movie.get(), *core.rom);
 		_movie.get()->input = NULL;
 		_movie.get()->create_default_branch(portset2);
 
@@ -551,7 +551,7 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 	if(!*core.mlogic || !core.mlogic->get_mfile().gametype)
 		throw std::runtime_error("Can't rewind movie without existing movie");
 
-	port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
+	portctrl::type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 
 	//Force unlazying of rrdata and count a rerecord.
 	if(core.mlogic->get_rrdata().is_lazy())
@@ -589,7 +589,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 		throw std::runtime_error("Savestate is from different movie");
 
 	bool will_load_state = _movie.is_savestate;
-	port_type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
+	portctrl::type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 
 	//Construct a new movie sharing the input data.
 	temporary_handle<movie> newmovie;
@@ -718,7 +718,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 		newmovie.get()->set_movie_data(_movie.input);
 	}
 
-	port_type_set& portset = construct_movie_portset(_movie, *core.rom);
+	portctrl::type_set& portset = construct_movie_portset(_movie, *core.rom);
 
 	temporary_handle<rrdata_set> rrd;
 	bool new_rrdata = false;

@@ -15,7 +15,7 @@
 #include <vector>
 #include <map>
 #include <list>
-#include "library/controller-data.hpp"
+#include "library/portctrl-data.hpp"
 #include "library/threads.hpp"
 
 class project_state;
@@ -64,29 +64,29 @@ public:
  * Parameter ptype: The new types for ports.
  * Throws std::runtime_error: Illegal port type.
  */
-	void set_ports(const port_type_set& ptype) throw(std::runtime_error);
+	void set_ports(const portctrl::type_set& ptype) throw(std::runtime_error);
 /**
  * Get status of current controls (with autohold/autofire factored in).
  *
  * Parameter framenum: Number of current frame (for evaluating autofire).
  * Returns: The current controls.
  */
-	controller_frame get(uint64_t framenum) throw();
+	portctrl::frame get(uint64_t framenum) throw();
 /**
  * Commit given controls (autohold/autofire is ignored).
  *
  * Parameter controls: The controls to commit
  */
-	void commit(controller_frame controls) throw();
+	void commit(portctrl::frame controls) throw();
 /**
  * Get status of committed controls.
  * Returns: The committed controls.
  */
-	controller_frame get_committed() throw();
+	portctrl::frame get_committed() throw();
 /**
  * Get blank frame.
  */
-	controller_frame get_blank() throw();
+	portctrl::frame get_blank() throw();
 /**
  * Send analog input to given controller.
  *
@@ -201,9 +201,9 @@ public:
 	bool is_present(unsigned port, unsigned controller) throw();
 	void erase_macro(const std::string& macro);
 	std::set<std::string> enumerate_macro();
-	controller_macro& get_macro(const std::string& macro);
-	void set_macro(const std::string& macro, const controller_macro& m);
-	void apply_macro(controller_frame& f);
+	portctrl::macro& get_macro(const std::string& macro);
+	void set_macro(const std::string& macro, const portctrl::macro& m);
+	void apply_macro(portctrl::frame& f);
 	void rename_macro(const std::string& old, const std::string& newn);
 	void do_macro(const std::string& a, int mode);
 	std::set<std::string> active_macro_set();
@@ -223,17 +223,17 @@ private:
 		int mode;
 		int16_t state;
 	};
-	void reread_tasinput_mode(const port_type_set& ptype);
-	const port_type_set* types;
-	controller_frame _input;
-	controller_frame _autohold;
-	controller_frame _framehold;
+	void reread_tasinput_mode(const portctrl::type_set& ptype);
+	const portctrl::type_set* types;
+	portctrl::frame _input;
+	portctrl::frame _autohold;
+	portctrl::frame _framehold;
 	std::map<unsigned, autofire_info> _autofire;
 	std::map<unsigned, tasinput_info> _tasinput;
 	bool tasinput_enaged;
-	controller_frame _committed;
-	std::map<std::string, controller_macro> all_macros;
-	std::list<std::pair<uint64_t, controller_macro*>> active_macros;
+	portctrl::frame _committed;
+	std::map<std::string, portctrl::macro> all_macros;
+	std::list<std::pair<uint64_t, portctrl::macro*>> active_macros;
 	threads::lock macro_lock;
 	project_state& project;
 	movie_logic& mlogic;

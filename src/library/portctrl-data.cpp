@@ -1,5 +1,5 @@
 #include "binarystream.hpp"
-#include "controller-data.hpp"
+#include "portctrl-data.hpp"
 #include "threads.hpp"
 #include "minmax.hpp"
 #include "globalwrap.hpp"
@@ -13,31 +13,33 @@
 #include <deque>
 #include <complex>
 
+namespace portctrl
+{
 namespace
 {
-	port_controller simple_controller = {"(system)", "system", {}};
-	port_controller_set simple_port = {"system", "system", "system", {simple_controller},{0}};
+	controller simple_controller = {"(system)", "system", {}};
+	controller_set simple_port = {"system", "system", "system", {simple_controller},{0}};
 
-	struct porttype_basecontrol : public port_type
+	struct porttype_basecontrol : public type
 	{
-		porttype_basecontrol() : port_type("basecontrol", "basecontrol", 1)
+		porttype_basecontrol() : type("basecontrol", "basecontrol", 1)
 		{
-			write = [](const port_type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl,
+			write = [](const type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl,
 				short x) -> void {
 				if(idx > 0 || ctrl > 0) return;
 				buffer[0] = x ? 1 : 0;
 			};
-			read = [](const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl) ->
+			read = [](const type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl) ->
 				short {
 				if(idx > 0 || ctrl > 0) return 0;
 				return buffer[0] ? 1 : 0;
 			};
-			serialize = [](const port_type* _this, const unsigned char* buffer, char* textbuf) -> size_t {
+			serialize = [](const type* _this, const unsigned char* buffer, char* textbuf) -> size_t {
 				textbuf[0] = buffer[0] ? 'F' : '-';
 				textbuf[1] = '\0';
 				return 1;
 			};
-			deserialize = [](const port_type* _this, unsigned char* buffer, const char* textbuf) ->
+			deserialize = [](const type* _this, unsigned char* buffer, const char* textbuf) ->
 				size_t {
 				size_t ptr = 0;
 				buffer[0] = 0;
@@ -69,22 +71,22 @@ namespace
 	}
 }
 
-port_type& get_default_system_port_type()
+type& get_default_system_port_type()
 {
 	static porttype_basecontrol x;
 	return x;
 }
 
-port_type::port_type(const std::string& iname, const std::string& _hname, size_t ssize) throw(std::bad_alloc)
+type::type(const std::string& iname, const std::string& _hname, size_t ssize) throw(std::bad_alloc)
 	: hname(_hname), storage_size(ssize), name(iname)
 {
 }
 
-port_type::~port_type() throw()
+type::~type() throw()
 {
 }
 
-bool port_type::is_present(unsigned controller) const throw()
+bool type::is_present(unsigned controller) const throw()
 {
 	return controller_info->controllers.size() > controller;
 }
@@ -92,13 +94,13 @@ bool port_type::is_present(unsigned controller) const throw()
 namespace
 {
 	size_t dummy_offset = 0;
-	port_type* dummy_type = &get_default_system_port_type();
+	type* dummy_type = &get_default_system_port_type();
 	unsigned dummy_index = 0;
 	struct binding
 	{
-		std::vector<port_type*> types;
-		port_type_set* stype;
-		bool matches(const std::vector<class port_type*>& x)
+		std::vector<type*> types;
+		type_set* stype;
+		bool matches(const std::vector<class type*>& x)
 		{
 			if(x.size() != types.size())
 				return false;
@@ -115,7 +117,7 @@ namespace
 	}
 }
 
-port_type_set::port_type_set() throw()
+type_set::type_set() throw()
 {
 
 	port_offsets = &dummy_offset;
@@ -134,14 +136,14 @@ port_type_set::port_type_set() throw()
 	indices_tab = &dummy_index;
 }
 
-port_type_set& port_type_set::make(std::vector<class port_type*> types, struct port_index_map control_map)
+type_set& type_set::make(std::vector<class type*> types, struct index_map control_map)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	for(auto i : bindings())
 		if(i.matches(types))
 			return *(i.stype);
 	//Not found, create new.
-	port_type_set& ret = *new port_type_set(types, control_map);
+	type_set& ret = *new type_set(types, control_map);
 	binding b;
 	b.types = types;
 	b.stype = &ret;
@@ -149,7 +151,7 @@ port_type_set& port_type_set::make(std::vector<class port_type*> types, struct p
 	return ret;
 }
 
-port_type_set::port_type_set(std::vector<class port_type*> types, struct port_index_map control_map)
+type_set::type_set(std::vector<class type*> types, struct index_map control_map)
 {
 	port_count = types.size();
 	//Verify legality of port types.
@@ -168,7 +170,7 @@ port_type_set::port_type_set(std::vector<class port_type*> types, struct port_in
 		(size_t)types[i]->controller_info->controllers.size());
 	//Allocate the per-port tables.
 	port_offsets = new size_t[types.size()];
-	port_types = new class port_type*[types.size()];
+	port_types = new class type*[types.size()];
 	//Determine the total size and offsets.
 	size_t offset = 0;
 	for(size_t i = 0; i < port_count; i++) {
@@ -243,9 +245,9 @@ size_t write_axis_value(char* buf, short _v)
 
 namespace
 {
-	port_type_set& dummytypes()
+	type_set& dummytypes()
 	{
-		static port_type_set x;
+		static type_set x;
 		return x;
 	}
 
@@ -259,7 +261,7 @@ namespace
 		return i;
 	}
 
-	uint64_t find_next_sync(controller_frame_vector& movie, uint64_t after)
+	uint64_t find_next_sync(frame_vector& movie, uint64_t after)
 	{
 		if(after >= movie.size())
 			return after;
@@ -270,7 +272,7 @@ namespace
 	}
 }
 
-void controller_frame::display(unsigned port, unsigned controller, char32_t* buf) throw()
+void frame::display(unsigned port, unsigned controller_n, char32_t* buf) throw()
 {
 	if(port >= types->ports()) {
 		//Bad port.
@@ -278,32 +280,32 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 		return;
 	}
 	uint8_t* backingmem = backing + types->port_offset(port);
-	const port_type& ptype = types->port_type(port);
-	if(controller >= ptype.controller_info->controllers.size()) {
+	const type& ptype = types->port_type(port);
+	if(controller_n >= ptype.controller_info->controllers.size()) {
 		//Bad controller.
 		*buf = '\0';
 		return;
 	}
-	const port_controller& pc = ptype.controller_info->controllers[controller];
+	const controller& pc = ptype.controller_info->controllers[controller_n];
 	bool need_space = false;
 	short val;
 	for(unsigned i = 0; i < pc.buttons.size(); i++) {
-		const port_controller_button& pcb = pc.buttons[i];
-		if(need_space && pcb.type != port_controller_button::TYPE_NULL) {
+		const button& pcb = pc.buttons[i];
+		if(need_space && pcb.type != button::TYPE_NULL) {
 			need_space = false;
 			*(buf++) = ' ';
 		}
 		switch(pcb.type) {
-		case port_controller_button::TYPE_NULL:
+		case button::TYPE_NULL:
 			break;
-		case port_controller_button::TYPE_BUTTON:
-			*(buf++) = ptype.read(&ptype, backingmem, controller, i) ? pcb.symbol : U'-';
+		case button::TYPE_BUTTON:
+			*(buf++) = ptype.read(&ptype, backingmem, controller_n, i) ? pcb.symbol : U'-';
 			break;
-		case port_controller_button::TYPE_AXIS:
-		case port_controller_button::TYPE_RAXIS:
-		case port_controller_button::TYPE_TAXIS:
-		case port_controller_button::TYPE_LIGHTGUN:
-			val = ptype.read(&ptype, backingmem, controller, i);
+		case button::TYPE_AXIS:
+		case button::TYPE_RAXIS:
+		case button::TYPE_TAXIS:
+		case button::TYPE_LIGHTGUN:
+			val = ptype.read(&ptype, backingmem, controller_n, i);
 			buf += writeu32val(buf, val);
 			need_space = true;
 			break;
@@ -312,21 +314,21 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 	*buf = '\0';
 }
 
-pollcounter_vector::pollcounter_vector() throw(std::bad_alloc)
+counters::counters() throw(std::bad_alloc)
 {
 	types = &dummytypes();
 	ctrs = new uint32_t[types->indices()];
 	clear();
 }
 
-pollcounter_vector::pollcounter_vector(const port_type_set& p) throw(std::bad_alloc)
+counters::counters(const type_set& p) throw(std::bad_alloc)
 {
 	types = &p;
 	ctrs = new uint32_t[types->indices()];
 	clear();
 }
 
-pollcounter_vector::pollcounter_vector(const pollcounter_vector& p) throw(std::bad_alloc)
+counters::counters(const counters& p) throw(std::bad_alloc)
 {
 	ctrs = new uint32_t[p.types->indices()];
 	types = p.types;
@@ -334,7 +336,7 @@ pollcounter_vector::pollcounter_vector(const pollcounter_vector& p) throw(std::b
 	framepflag = p.framepflag;
 }
 
-pollcounter_vector& pollcounter_vector::operator=(const pollcounter_vector& p) throw(std::bad_alloc)
+counters& counters::operator=(const counters& p) throw(std::bad_alloc)
 {
 	if(this == &p)
 		return *this;
@@ -347,34 +349,34 @@ pollcounter_vector& pollcounter_vector::operator=(const pollcounter_vector& p) t
 	return *this;
 }
 
-pollcounter_vector::~pollcounter_vector() throw()
+counters::~counters() throw()
 {
 	delete[] ctrs;
 }
 
-void pollcounter_vector::clear() throw()
+void counters::clear() throw()
 {
 	memset(ctrs, 0, sizeof(uint32_t) * types->indices());
 	framepflag = false;
 }
 
-void pollcounter_vector::set_all_DRDY() throw()
+void counters::set_all_DRDY() throw()
 {
 	for(size_t i = 0; i < types->indices(); i++)
 		ctrs[i] |= 0x80000000UL;
 }
 
-void pollcounter_vector::clear_DRDY(unsigned idx) throw()
+void counters::clear_DRDY(unsigned idx) throw()
 {
 	ctrs[idx] &= 0x7FFFFFFFUL;
 }
 
-bool pollcounter_vector::get_DRDY(unsigned idx) throw()
+bool counters::get_DRDY(unsigned idx) throw()
 {
 	return ((ctrs[idx] & 0x80000000UL) != 0);
 }
 
-bool pollcounter_vector::has_polled() throw()
+bool counters::has_polled() throw()
 {
 	uint32_t res = 0;
 	for(size_t i = 0; i < types->indices() ; i++)
@@ -382,19 +384,19 @@ bool pollcounter_vector::has_polled() throw()
 	return ((res & 0x7FFFFFFFUL) != 0);
 }
 
-uint32_t pollcounter_vector::get_polls(unsigned idx) throw()
+uint32_t counters::get_polls(unsigned idx) throw()
 {
 	return ctrs[idx] & 0x7FFFFFFFUL;
 }
 
-uint32_t pollcounter_vector::increment_polls(unsigned idx) throw()
+uint32_t counters::increment_polls(unsigned idx) throw()
 {
 	uint32_t x = ctrs[idx] & 0x7FFFFFFFUL;
 	++ctrs[idx];
 	return x;
 }
 
-uint32_t pollcounter_vector::max_polls() throw()
+uint32_t counters::max_polls() throw()
 {
 	uint32_t max = 0;
 	for(unsigned i = 0; i < types->indices(); i++) {
@@ -404,7 +406,7 @@ uint32_t pollcounter_vector::max_polls() throw()
 	return max;
 }
 
-void pollcounter_vector::save_state(std::vector<uint32_t>& mem) throw(std::bad_alloc)
+void counters::save_state(std::vector<uint32_t>& mem) throw(std::bad_alloc)
 {
 	mem.resize(types->indices());
 	//Compatiblity fun.
@@ -412,29 +414,29 @@ void pollcounter_vector::save_state(std::vector<uint32_t>& mem) throw(std::bad_a
 		mem[i] = ctrs[i];
 }
 
-void pollcounter_vector::load_state(const std::vector<uint32_t>& mem) throw()
+void counters::load_state(const std::vector<uint32_t>& mem) throw()
 {
 	for(size_t i = 0; i < types->indices(); i++)
 		ctrs[i] = mem[i];
 }
 
-bool pollcounter_vector::check(const std::vector<uint32_t>& mem) throw()
+bool counters::check(const std::vector<uint32_t>& mem) throw()
 {
 	return (mem.size() == types->indices());
 }
 
 
-void pollcounter_vector::set_framepflag(bool value) throw()
+void counters::set_framepflag(bool value) throw()
 {
 	framepflag = value;
 }
 
-bool pollcounter_vector::get_framepflag() const throw()
+bool counters::get_framepflag() const throw()
 {
 	return framepflag;
 }
 
-controller_frame::controller_frame(const port_type_set& p) throw(std::runtime_error)
+frame::frame(const type_set& p) throw(std::runtime_error)
 {
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
@@ -442,7 +444,7 @@ controller_frame::controller_frame(const port_type_set& p) throw(std::runtime_er
 	host = NULL;
 }
 
-controller_frame::controller_frame(unsigned char* mem, const port_type_set& p, controller_frame_vector* _host)
+frame::frame(unsigned char* mem, const type_set& p, frame_vector* _host)
 	throw(std::runtime_error)
 {
 	if(!mem)
@@ -453,7 +455,7 @@ controller_frame::controller_frame(unsigned char* mem, const port_type_set& p, c
 	host = _host;
 }
 
-controller_frame::controller_frame(const controller_frame& obj) throw()
+frame::frame(const frame& obj) throw()
 {
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
@@ -462,7 +464,7 @@ controller_frame::controller_frame(const controller_frame& obj) throw()
 	host = NULL;
 }
 
-controller_frame& controller_frame::operator=(const controller_frame& obj) throw(std::runtime_error)
+frame& frame::operator=(const frame& obj) throw(std::runtime_error)
 {
 	if(backing != memory && types != obj.types)
 		throw std::runtime_error("Port types do not match");
@@ -473,11 +475,11 @@ controller_frame& controller_frame::operator=(const controller_frame& obj) throw
 	return *this;
 }
 
-controller_frame_vector::fchange_listener::~fchange_listener()
+frame_vector::fchange_listener::~fchange_listener()
 {
 }
 
-size_t controller_frame_vector::walk_helper(size_t frame, bool sflag) throw()
+size_t frame_vector::walk_helper(size_t frame, bool sflag) throw()
 {
 	size_t ret = sflag ? frame : 0;
 	if(frame >= frames)
@@ -499,7 +501,7 @@ size_t controller_frame_vector::walk_helper(size_t frame, bool sflag) throw()
 			index = 0;
 			offset = 0;
 		}
-		if(controller_frame::sync(cache_page->content + offset))
+		if(frame::sync(cache_page->content + offset))
 			break;
 		index++;
 		offset += frame_size;
@@ -509,7 +511,7 @@ size_t controller_frame_vector::walk_helper(size_t frame, bool sflag) throw()
 	return ret;
 }
 
-size_t controller_frame_vector::recount_frames() throw()
+size_t frame_vector::recount_frames() throw()
 {
 	uint64_t old_frame_count = real_frame_count;
 	size_t ret = 0;
@@ -526,7 +528,7 @@ size_t controller_frame_vector::recount_frames() throw()
 			index = 0;
 			offset = 0;
 		}
-		if(controller_frame::sync(cache_page->content + offset))
+		if(frame::sync(cache_page->content + offset))
 			ret++;
 		index++;
 		offset += frame_size;
@@ -537,7 +539,7 @@ size_t controller_frame_vector::recount_frames() throw()
 	return ret;
 }
 
-void controller_frame_vector::clear(const port_type_set& p) throw(std::runtime_error)
+void frame_vector::clear(const type_set& p) throw(std::runtime_error)
 {
 	uint64_t old_frame_count = real_frame_count;
 	frame_size = p.size();
@@ -550,31 +552,31 @@ void controller_frame_vector::clear(const port_type_set& p) throw(std::runtime_e
 	call_framecount_notification(old_frame_count);
 }
 
-controller_frame_vector::~controller_frame_vector() throw()
+frame_vector::~frame_vector() throw()
 {
 	pages.clear();
 	cache_page = NULL;
 }
 
-controller_frame_vector::controller_frame_vector() throw()
+frame_vector::frame_vector() throw()
 {
 	real_frame_count = 0;
 	freeze_count = 0;
 	clear(dummytypes());
 }
 
-controller_frame_vector::controller_frame_vector(const port_type_set& p) throw()
+frame_vector::frame_vector(const type_set& p) throw()
 {
 	real_frame_count = 0;
 	freeze_count = 0;
 	clear(p);
 }
 
-void controller_frame_vector::append(controller_frame frame) throw(std::bad_alloc, std::runtime_error)
+void frame_vector::append(frame cframe) throw(std::bad_alloc, std::runtime_error)
 {
-	controller_frame check(*types);
-	if(!check.types_match(frame))
-		throw std::runtime_error("controller_frame_vector::append: Type mismatch");
+	frame check(*types);
+	if(!check.types_match(cframe))
+		throw std::runtime_error("frame_vector::append: Type mismatch");
 	if(frames % frames_per_page == 0) {
 		//Create new page.
 		pages[frames / frames_per_page];
@@ -586,12 +588,12 @@ void controller_frame_vector::append(controller_frame frame) throw(std::bad_allo
 		cache_page_num = page;
 		cache_page = &pages[page];
 	}
-	controller_frame(cache_page->content + offset, *types) = frame;
-	if(frame.sync()) real_frame_count++;
+	frame(cache_page->content + offset, *types) = cframe;
+	if(cframe.sync()) real_frame_count++;
 	frames++;
 }
 
-controller_frame_vector::controller_frame_vector(const controller_frame_vector& vector) throw(std::bad_alloc)
+frame_vector::frame_vector(const frame_vector& vector) throw(std::bad_alloc)
 {
 	real_frame_count = 0;
 	freeze_count = 0;
@@ -599,7 +601,7 @@ controller_frame_vector::controller_frame_vector(const controller_frame_vector& 
 	*this = vector;
 }
 
-controller_frame_vector& controller_frame_vector::operator=(const controller_frame_vector& v)
+frame_vector& frame_vector::operator=(const frame_vector& v)
 	throw(std::bad_alloc)
 {
 	if(this == &v)
@@ -625,7 +627,7 @@ controller_frame_vector& controller_frame_vector::operator=(const controller_fra
 	return *this;
 }
 
-void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
+void frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 {
 	clear_cache();
 	if(newsize == 0) {
@@ -667,14 +669,14 @@ void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 	}
 }
 
-bool controller_frame_vector::compatible(controller_frame_vector& with, uint64_t frame, const uint32_t* polls)
+bool frame_vector::compatible(frame_vector& with, uint64_t nframe, const uint32_t* polls)
 {
 	//Types have to match.
 	if(get_types() != with.get_types())
 		return false;
-	const port_type_set& pset = with.get_types();
+	const type_set& pset = with.get_types();
 	//If new movie is before first frame, anything with same project_id is compatible.
-	if(frame == 0)
+	if(nframe == 0)
 		return true;
 	//Scan both movies until frame syncs are seen. Out of bounds reads behave as all neutral but frame
 	//sync done.
@@ -686,7 +688,7 @@ bool controller_frame_vector::compatible(controller_frame_vector& with, uint64_t
 	size_t ocomplete_pages = old_size / frames_per_page;  //Round DOWN
 	size_t ncomplete_pages = new_size / frames_per_page;  //Round DOWN
 	size_t complete_pages = min(ocomplete_pages, ncomplete_pages);
-	while(syncs_seen + frames_per_page < frame - 1 && pagenum < complete_pages) {
+	while(syncs_seen + frames_per_page < nframe - 1 && pagenum < complete_pages) {
 		//Fast process page. The above condition guarantees that these pages are completely used.
 		auto opagedata = pages[pagenum].content;
 		auto npagedata = with.pages[pagenum].content;
@@ -698,8 +700,8 @@ bool controller_frame_vector::compatible(controller_frame_vector& with, uint64_t
 		for(size_t i = 0; i < pagedataamt; i += frame_size)
 			if(opagedata[i] & 1) syncs_seen++;
 	}
-	while(syncs_seen < frame - 1) {
-		controller_frame oldc = blank_frame(true), newc = with.blank_frame(true);
+	while(syncs_seen < nframe - 1) {
+		frame oldc = blank_frame(true), newc = with.blank_frame(true);
 		if(frames_read < old_size)
 			oldc = (*this)[frames_read];
 		if(frames_read < new_size)
@@ -736,12 +738,12 @@ bool controller_frame_vector::compatible(controller_frame_vector& with, uint64_t
 	return true;
 }
 
-uint64_t controller_frame_vector::binary_size() const throw()
+uint64_t frame_vector::binary_size() const throw()
 {
 	return size() * get_stride();
 }
 
-void controller_frame_vector::save_binary(binarystream::output& stream) const throw(std::runtime_error)
+void frame_vector::save_binary(binarystream::output& stream) const throw(std::runtime_error)
 {
 	uint64_t stride = get_stride();
 	uint64_t pageframes = get_frames_per_page();
@@ -756,7 +758,7 @@ void controller_frame_vector::save_binary(binarystream::output& stream) const th
 	}
 }
 
-void controller_frame_vector::load_binary(binarystream::input& stream) throw(std::bad_alloc, std::runtime_error)
+void frame_vector::load_binary(binarystream::input& stream) throw(std::bad_alloc, std::runtime_error)
 {
 	uint64_t stride = get_stride();
 	uint64_t pageframes = get_frames_per_page();
@@ -774,7 +776,7 @@ void controller_frame_vector::load_binary(binarystream::input& stream) throw(std
 	recount_frames();
 }
 
-void controller_frame_vector::swap_data(controller_frame_vector& v) throw()
+void frame_vector::swap_data(frame_vector& v) throw()
 {
 	uint64_t toldsize = real_frame_count;
 	uint64_t voldsize = v.real_frame_count;
@@ -792,7 +794,7 @@ void controller_frame_vector::swap_data(controller_frame_vector& v) throw()
 		v.call_framecount_notification(voldsize);
 }
 
-int64_t controller_frame_vector::find_frame(uint64_t n)
+int64_t frame_vector::find_frame(uint64_t n)
 {
 	if(!n) return -1;
 	uint64_t stride = get_stride();
@@ -804,7 +806,7 @@ int64_t controller_frame_vector::find_frame(uint64_t n)
 		const unsigned char* content = get_page_buffer(pagenum++);
 		size_t offset = 0;
 		for(unsigned i = 0; i < count; i++) {
-			if(controller_frame::sync(content + offset)) n--;
+			if(frame::sync(content + offset)) n--;
 			if(n == 0) return (pagenum - 1) * pageframes + i;
 			offset += stride;
 		}
@@ -813,7 +815,7 @@ int64_t controller_frame_vector::find_frame(uint64_t n)
 	return -1;
 }
 
-controller_frame::controller_frame() throw()
+frame::frame() throw()
 {
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
@@ -821,30 +823,30 @@ controller_frame::controller_frame() throw()
 	host = NULL;
 }
 
-unsigned port_controller::analog_actions() const
+unsigned controller::analog_actions() const
 {
 	unsigned r = 0, s = 0;
 	for(unsigned i = 0; i < buttons.size(); i++) {
 		if(buttons[i].shadow)
 			continue;
 		switch(buttons[i].type) {
-		case port_controller_button::TYPE_AXIS:
-		case port_controller_button::TYPE_RAXIS:
-		case port_controller_button::TYPE_LIGHTGUN:
+		case button::TYPE_AXIS:
+		case button::TYPE_RAXIS:
+		case button::TYPE_LIGHTGUN:
 			r++;
 			break;
-		case port_controller_button::TYPE_TAXIS:
+		case button::TYPE_TAXIS:
 			s++;
 			break;
-		case port_controller_button::TYPE_NULL:
-		case port_controller_button::TYPE_BUTTON:
+		case button::TYPE_NULL:
+		case button::TYPE_BUTTON:
 			;
 		};
 	}
 	return (r + 1)/ 2 + s;
 }
 
-std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
+std::pair<unsigned, unsigned> controller::analog_action(unsigned k) const
 {
 	unsigned x1 = std::numeric_limits<unsigned>::max();
 	unsigned x2 = std::numeric_limits<unsigned>::max();
@@ -855,9 +857,9 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 		if(buttons[i].shadow)
 			continue;
 		switch(buttons[i].type) {
-		case port_controller_button::TYPE_AXIS:
-		case port_controller_button::TYPE_RAXIS:
-		case port_controller_button::TYPE_LIGHTGUN:
+		case button::TYPE_AXIS:
+		case button::TYPE_RAXIS:
+		case button::TYPE_LIGHTGUN:
 			if(selecting) {
 				x2 = i;
 				goto out;
@@ -871,7 +873,7 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 				r++;
 			second = !second;
 			break;
-		case port_controller_button::TYPE_TAXIS:
+		case button::TYPE_TAXIS:
 			if(selecting)
 				break;
 			if(r == k) {
@@ -880,8 +882,8 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 			}
 			r++;
 			break;
-		case port_controller_button::TYPE_NULL:
-		case port_controller_button::TYPE_BUTTON:
+		case button::TYPE_NULL:
+		case button::TYPE_BUTTON:
 			;
 		};
 	}
@@ -916,7 +918,7 @@ namespace
 	}
 }
 
-controller_macro_data::controller_macro_data(const std::string& spec, const JSON::node& desc, unsigned inum)
+macro_data::macro_data(const std::string& spec, const JSON::node& desc, unsigned inum)
 {
 	_descriptor = desc;
 	unsigned btnnum = 0;
@@ -1076,7 +1078,7 @@ controller_macro_data::controller_macro_data(const std::string& spec, const JSON
 	}
 }
 
-bool controller_macro_data::syntax_check(const std::string& spec, const JSON::node& desc)
+bool macro_data::syntax_check(const std::string& spec, const JSON::node& desc)
 {
 	unsigned buttons = 0;
 	size_t astride = 0;
@@ -1192,7 +1194,7 @@ bool controller_macro_data::syntax_check(const std::string& spec, const JSON::no
 	return true;
 }
 
-void controller_macro_data::write(controller_frame& frame, unsigned port, unsigned controller, int64_t nframe,
+void macro_data::write(frame& frame, unsigned port, unsigned controller_n, int64_t nframe,
 	apply_mode amode)
 {
 	if(!enabled)
@@ -1211,23 +1213,23 @@ void controller_macro_data::write(controller_frame& frame, unsigned port, unsign
 			switch(amode) {
 			case AM_OVERWRITE:
 			case AM_OR:
-				frame.axis3(port, controller, lb, 1);
+				frame.axis3(port, controller_n, lb, 1);
 				break;
 			case AM_XOR:
-				frame.axis3(port, controller, lb, frame.axis3(port, controller, lb) ^ 1);
+				frame.axis3(port, controller_n, lb, frame.axis3(port, controller_n, lb) ^ 1);
 				break;
 			}
 		else
 			switch(amode) {
 			case AM_OVERWRITE:
-				frame.axis3(port, controller, lb, 0);
+				frame.axis3(port, controller_n, lb, 0);
 				break;
 			case AM_OR:
 			case AM_XOR:
 				;
 			}
 	}
-	const port_controller* _ctrl = frame.porttypes().port_type(port).controller_info->get(controller);
+	const controller* _ctrl = frame.porttypes().port_type(port).controller_info->get(controller_n);
 	if(!_ctrl)
 		return;
 	size_t abuttons = aaxes.size();
@@ -1238,25 +1240,25 @@ void controller_macro_data::write(controller_frame& frame, unsigned port, unsign
 			if(ax > _ctrl->buttons.size()) continue;
 			if(ay > _ctrl->buttons.size()) continue;
 			auto g = adata[nframe * abuttons + i].transform(_ctrl->buttons[ax], _ctrl->buttons[ay],
-				frame.axis3(port, controller, ax), frame.axis3(port, controller, ay));
-			frame.axis3(port, controller, ax, g.first);
-			frame.axis3(port, controller, ay, g.second);
+				frame.axis3(port, controller_n, ax), frame.axis3(port, controller_n, ay));
+			frame.axis3(port, controller_n, ax, g.first);
+			frame.axis3(port, controller_n, ay, g.second);
 		} else {
 			if(ax > _ctrl->buttons.size()) continue;
 			int16_t g = adata[nframe * abuttons + i].transform(_ctrl->buttons[ax],
-				frame.axis3(port, controller, ax));
-			frame.axis3(port, controller, ax, g);
+				frame.axis3(port, controller_n, ax));
+			frame.axis3(port, controller_n, ax, g);
 		}
 	}
 }
 
-std::string controller_macro_data::dump(const port_controller& ctrl)
+std::string macro_data::dump(const controller& ctrl)
 {
 	std::ostringstream o;
 	for(size_t i = 0; i < get_frames(); i++) {
 		o << "[";
 		for(size_t j = 0; j < aaxes.size(); j++) {
-			controller_macro_data::axis_transform& t = adata[i * aaxes.size() + j];
+			macro_data::axis_transform& t = adata[i * aaxes.size() + j];
 			o << j << ":";
 			o << t.coeffs[0] << "," << t.coeffs[1] << "," << t.coeffs[2] << ",";
 			o << t.coeffs[3] << "," << t.coeffs[4] << "," << t.coeffs[5] << "@";
@@ -1277,7 +1279,7 @@ std::string controller_macro_data::dump(const port_controller& ctrl)
 	return o.str();
 }
 
-void controller_macro::write(controller_frame& frame, int64_t nframe)
+void macro::write(frame& frame, int64_t nframe)
 {
 	for(auto& i : macros) {
 		unsigned port;
@@ -1293,13 +1295,13 @@ void controller_macro::write(controller_frame& frame, int64_t nframe)
 	}
 }
 
-int16_t controller_macro_data::axis_transform::transform(const port_controller_button& b, int16_t v)
+int16_t macro_data::axis_transform::transform(const button& b, int16_t v)
 {
 	return scale_axis(b, coeffs[0] * unscale_axis(b, v) + coeffs[4]);
 }
 
-std::pair<int16_t, int16_t> controller_macro_data::axis_transform::transform(const port_controller_button& b1,
-	const port_controller_button& b2, int16_t v1, int16_t v2)
+std::pair<int16_t, int16_t> macro_data::axis_transform::transform(const button& b1,
+	const button& b2, int16_t v1, int16_t v2)
 {
 	double x, y, u, v, au, av, s;
 	x = unscale_axis(b1, v1);
@@ -1318,7 +1320,7 @@ std::pair<int16_t, int16_t> controller_macro_data::axis_transform::transform(con
 	return g;
 }
 
-double controller_macro_data::axis_transform::unscale_axis(const port_controller_button& b, int16_t v)
+double macro_data::axis_transform::unscale_axis(const button& b, int16_t v)
 {
 	if(b.centers) {
 		int32_t center = ((int32_t)b.rmin + (int32_t)b.rmax) / 2;
@@ -1340,7 +1342,7 @@ double controller_macro_data::axis_transform::unscale_axis(const port_controller
 	}
 }
 
-int16_t controller_macro_data::axis_transform::scale_axis(const port_controller_button& b, double v)
+int16_t macro_data::axis_transform::scale_axis(const button& b, double v)
 {
 	if(b.centers) {
 		int32_t center = ((int32_t)b.rmin + (int32_t)b.rmax) / 2;
@@ -1382,7 +1384,7 @@ namespace
 	}
 }
 
-controller_macro_data::axis_transform::axis_transform(const std::string& expr)
+macro_data::axis_transform::axis_transform(const std::string& expr)
 {
 	regex_results r;
 	if(r = regex("\\*(.*)\\+(.*)", expr)) {
@@ -1433,13 +1435,13 @@ controller_macro_data::axis_transform::axis_transform(const std::string& expr)
 	}
 }
 
-JSON::node controller_macro::serialize()
+JSON::node macro::serialize()
 {
 	JSON::node v(JSON::object);
 	switch(amode) {
-	case controller_macro_data::AM_OVERWRITE:	v.insert("mode", JSON::s("overwrite")); break;
-	case controller_macro_data::AM_OR:		v.insert("mode", JSON::s("or")); break;
-	case controller_macro_data::AM_XOR:		v.insert("mode", JSON::s("xor")); break;
+	case macro_data::AM_OVERWRITE:	v.insert("mode", JSON::s("overwrite")); break;
+	case macro_data::AM_OR:		v.insert("mode", JSON::s("or")); break;
+	case macro_data::AM_XOR:		v.insert("mode", JSON::s("xor")); break;
 	};
 	JSON::node& c = v.insert("data", JSON::array());
 	for(auto& i : macros) {
@@ -1450,7 +1452,7 @@ JSON::node controller_macro::serialize()
 	return v;
 }
 
-void controller_macro_data::serialize(JSON::node& v)
+void macro_data::serialize(JSON::node& v)
 {
 	v = JSON::object();
 	v.insert("enable", JSON::b(enabled));
@@ -1458,7 +1460,7 @@ void controller_macro_data::serialize(JSON::node& v)
 	v.insert("desc", _descriptor);
 }
 
-JSON::node controller_macro_data::make_descriptor(const port_controller& ctrl)
+JSON::node macro_data::make_descriptor(const controller& ctrl)
 {
 	JSON::node n(JSON::array);
 	for(size_t i = 0; i < ctrl.buttons.size(); i++) {
@@ -1476,26 +1478,27 @@ JSON::node controller_macro_data::make_descriptor(const port_controller& ctrl)
 	return n;
 }
 
-controller_macro::controller_macro(const JSON::node& v)
+macro::macro(const JSON::node& v)
 {
 	if(v.type() != JSON::object)
 		throw std::runtime_error("Expected macro to be JSON object");
 	std::string mode = macro_field_as_string(v, "mode");
-	if(mode == "overwrite") amode = controller_macro_data::AM_OVERWRITE;
-	else if(mode == "or") amode = controller_macro_data::AM_OR;
-	else if(mode == "xor") amode = controller_macro_data::AM_XOR;
+	if(mode == "overwrite") amode = macro_data::AM_OVERWRITE;
+	else if(mode == "or") amode = macro_data::AM_OR;
+	else if(mode == "xor") amode = macro_data::AM_XOR;
 	else (stringfmt() << "Unknown button mode '" << mode << "'").throwex();
 	const JSON::node& c = macro_field_as_array(v, "data");
 	for(auto i = c.begin(); i != c.end(); ++i) {
 		if(i->type() == JSON::object)
-			macros[i.index()] = controller_macro_data(*i, i.index());
+			macros[i.index()] = macro_data(*i, i.index());
 		else
 			(stringfmt() << "Expected object as field 'data/" << i.index() << "'").throwex();
 	}
 }
 
-controller_macro_data::controller_macro_data(const JSON::node& v, unsigned i)
-	: controller_macro_data(macro_field_as_string(v, "expr"), macro_field_as_array(v, "desc"), i)
+macro_data::macro_data(const JSON::node& v, unsigned i)
+	: macro_data(macro_field_as_string(v, "expr"), macro_field_as_array(v, "desc"), i)
 {
 	enabled = macro_field_as_boolean(v, "enable");
+}
 }

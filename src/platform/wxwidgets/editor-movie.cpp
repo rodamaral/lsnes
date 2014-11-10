@@ -115,7 +115,7 @@ struct control_info
 	std::u32string title;
 	unsigned port;
 	unsigned controller;
-	port_controller_button::_type axistype;
+	portctrl::button::_type axistype;
 	int rmin;
 	int rmax;
 	static control_info portinfo(unsigned& p, unsigned port, unsigned controller);
@@ -123,7 +123,8 @@ struct control_info
 	static control_info buttoninfo(unsigned& p, char32_t character, const std::u32string& title, unsigned idx,
 		unsigned port, unsigned controller);
 	static control_info axisinfo(unsigned& p, const std::u32string& title, unsigned idx,
-		unsigned port, unsigned controller, port_controller_button::_type _axistype, int _rmin, int _rmax);
+		unsigned port, unsigned controller, portctrl::button::_type _axistype, int _rmin,
+		int _rmax);
 };
 
 control_info control_info::portinfo(unsigned& p, unsigned port, unsigned controller)
@@ -173,7 +174,7 @@ control_info control_info::buttoninfo(unsigned& p, char32_t character, const std
 }
 
 control_info control_info::axisinfo(unsigned& p, const std::u32string& title, unsigned idx,
-	unsigned port, unsigned controller, port_controller_button::_type _axistype, int _rmin, int _rmax)
+	unsigned port, unsigned controller, portctrl::button::_type _axistype, int _rmin, int _rmax)
 {
 	control_info i;
 	i.position_left = p;
@@ -197,10 +198,10 @@ class frame_controls
 {
 public:
 	frame_controls();
-	void set_types(controller_frame& f);
-	short read_index(controller_frame& f, unsigned idx);
-	void write_index(controller_frame& f, unsigned idx, short value);
-	uint32_t read_pollcount(pollcounter_vector& v, unsigned idx);
+	void set_types(portctrl::frame& f);
+	short read_index(portctrl::frame& f, unsigned idx);
+	void write_index(portctrl::frame& f, unsigned idx, short value);
+	uint32_t read_pollcount(portctrl::counters& v, unsigned idx);
 	const std::list<control_info>& get_controlinfo() { return controlinfo; }
 	std::u32string line1() { return _line1; }
 	std::u32string line2() { return _line2; }
@@ -210,7 +211,7 @@ private:
 	std::u32string _line1;
 	std::u32string _line2;
 	void format_lines();
-	void add_port(unsigned& c, unsigned pid, const port_type& p, const port_type_set& pts);
+	void add_port(unsigned& c, unsigned pid, const portctrl::type& p, const portctrl::type_set& pts);
 	std::list<control_info> controlinfo;
 };
 
@@ -220,42 +221,42 @@ frame_controls::frame_controls()
 	_width = 0;
 }
 
-void frame_controls::set_types(controller_frame& f)
+void frame_controls::set_types(portctrl::frame& f)
 {
 	unsigned nextp = 0;
 	controlinfo.clear();
-	const port_type_set& pts = f.porttypes();
+	const portctrl::type_set& pts = f.porttypes();
 	unsigned pcnt = pts.ports();
 	for(unsigned i = 0; i < pcnt; i++)
 		add_port(nextp, i, pts.port_type(i), pts);
 	format_lines();
 }
 
-void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, const port_type_set& pts)
+void frame_controls::add_port(unsigned& c, unsigned pid, const portctrl::type& p, const portctrl::type_set& pts)
 {
-	const port_controller_set& pci = *(p.controller_info);
+	const portctrl::controller_set& pci = *(p.controller_info);
 	for(unsigned i = 0; i < pci.controllers.size(); i++) {
-		const port_controller& pc = pci.controllers[i];
+		const portctrl::controller& pc = pci.controllers[i];
 		if(pid || i)
 			controlinfo.push_back(control_info::fixedinfo(c, U"\u2502"));
 		unsigned nextp = c;
 		controlinfo.push_back(control_info::portinfo(nextp, pid, i + 1));
 		bool last_multibyte = false;
 		for(unsigned j = 0; j < pc.buttons.size(); j++) {
-			const port_controller_button& pcb = pc.buttons[j];
+			const portctrl::button& pcb = pc.buttons[j];
 			unsigned idx = pts.triple_to_index(pid, i, j);
 			if(idx == 0xFFFFFFFFUL)
 				continue;
-			if(pcb.type == port_controller_button::TYPE_BUTTON) {
+			if(pcb.type == portctrl::button::TYPE_BUTTON) {
 				if(last_multibyte)
 					c++;
 				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, utf8::to32(pcb.name),
 					idx, pid, i));
 				last_multibyte = false;
-			} else if(pcb.type == port_controller_button::TYPE_AXIS ||
-				pcb.type == port_controller_button::TYPE_RAXIS ||
-				pcb.type == port_controller_button::TYPE_TAXIS ||
-				pcb.type == port_controller_button::TYPE_LIGHTGUN) {
+			} else if(pcb.type == portctrl::button::TYPE_AXIS ||
+				pcb.type == portctrl::button::TYPE_RAXIS ||
+				pcb.type == portctrl::button::TYPE_TAXIS ||
+				pcb.type == portctrl::button::TYPE_LIGHTGUN) {
 				if(j)
 					c++;
 				controlinfo.push_back(control_info::axisinfo(c, utf8::to32(pcb.name), idx, pid, i,
@@ -268,21 +269,21 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 	}
 }
 
-short frame_controls::read_index(controller_frame& f, unsigned idx)
+short frame_controls::read_index(portctrl::frame& f, unsigned idx)
 {
 	if(idx == 0)
 		return f.sync() ? 1 : 0;
 	return f.axis2(idx);
 }
 
-void frame_controls::write_index(controller_frame& f, unsigned idx, short value)
+void frame_controls::write_index(portctrl::frame& f, unsigned idx, short value)
 {
 	if(idx == 0)
 		return f.sync(value);
 	return f.axis2(idx, value);
 }
 
-uint32_t frame_controls::read_pollcount(pollcounter_vector& v, unsigned idx)
+uint32_t frame_controls::read_pollcount(portctrl::counters& v, unsigned idx)
 {
 	if(idx == 0)
 		return max(v.max_polls(), (uint32_t)1);
@@ -351,14 +352,15 @@ namespace
 		return clipboard;
 	}
 
-	std::string encode_line(controller_frame& f)
+	std::string encode_line(portctrl::frame& f)
 	{
 		char buffer[512];
 		f.serialize(buffer);
 		return buffer;
 	}
 
-	std::string encode_line(frame_controls& info, controller_frame& f, unsigned port, unsigned controller)
+	std::string encode_line(frame_controls& info, portctrl::frame& f, unsigned port,
+		unsigned controller)
 	{
 		std::ostringstream x;
 		bool last_axis = false;
@@ -409,7 +411,7 @@ namespace
 		return negative ? -_res : _res;
 	}
 
-	void decode_line(frame_controls& info, controller_frame& f, std::string line, unsigned port,
+	void decode_line(frame_controls& info, portctrl::frame& f, std::string line, unsigned port,
 		unsigned controller)
 	{
 		std::u32string _line = utf8::to32(line);
@@ -454,24 +456,24 @@ namespace
 		}
 	}
 
-	std::string encode_lines(controller_frame_vector& fv, uint64_t start, uint64_t end)
+	std::string encode_lines(portctrl::frame_vector& fv, uint64_t start, uint64_t end)
 	{
 		std::ostringstream x;
 		x << "lsnes-moviedata-whole" << std::endl;
 		for(uint64_t i = start; i < end; i++) {
-			controller_frame tmp = fv[i];
+			portctrl::frame tmp = fv[i];
 			x << encode_line(tmp) << std::endl;
 		}
 		return x.str();
 	}
 
-	std::string encode_lines(frame_controls& info, controller_frame_vector& fv, uint64_t start, uint64_t end,
-		unsigned port, unsigned controller)
+	std::string encode_lines(frame_controls& info, portctrl::frame_vector& fv, uint64_t start,
+		uint64_t end, unsigned port, unsigned controller)
 	{
 		std::ostringstream x;
 		x << "lsnes-moviedata-controller" << std::endl;
 		for(uint64_t i = start; i < end; i++) {
-			controller_frame tmp = fv[i];
+			portctrl::frame tmp = fv[i];
 			x << encode_line(info, tmp, port, controller) << std::endl;
 		}
 		return x.str();
@@ -502,18 +504,18 @@ namespace
 		return r;
 	}
 
-	void move_index_set(frame_controls& info, controller_frame_vector& fv, uint64_t src, uint64_t dst,
+	void move_index_set(frame_controls& info, portctrl::frame_vector& fv, uint64_t src, uint64_t dst,
 		uint64_t len, const std::set<unsigned>& indices)
 	{
 		if(src == dst)
 			return;
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		if(src > dst) {
 			//Copy forwards.
 			uint64_t shift = src - dst;
 			for(uint64_t i = dst; i < dst + len; i++) {
-				controller_frame _src = fv[i + shift];
-				controller_frame _dst = fv[i];
+				portctrl::frame _src = fv[i + shift];
+				portctrl::frame _dst = fv[i];
 				for(auto j : indices)
 					info.write_index(_dst, j, info.read_index(_src, j));
 			}
@@ -521,20 +523,20 @@ namespace
 			//Copy backwards.
 			uint64_t shift = dst - src;
 			for(uint64_t i = src + len - 1; i >= src && i < src + len; i--) {
-				controller_frame _src = fv[i];
-				controller_frame _dst = fv[i + shift];
+				portctrl::frame _src = fv[i];
+				portctrl::frame _dst = fv[i + shift];
 				for(auto j : indices)
 					info.write_index(_dst, j, info.read_index(_src, j));
 			}
 		}
 	}
 
-	void zero_index_set(frame_controls& info, controller_frame_vector& fv, uint64_t dst, uint64_t len,
+	void zero_index_set(frame_controls& info, portctrl::frame_vector& fv, uint64_t dst, uint64_t len,
 		const std::set<unsigned>& indices)
 	{
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = dst; i < dst + len; i++) {
-			controller_frame _dst = fv[i];
+			portctrl::frame _dst = fv[i];
 			for(auto j : indices)
 				info.write_index(_dst, j, 0);
 		}
@@ -542,7 +544,7 @@ namespace
 
 	control_info find_paired(control_info ci, const std::list<control_info>& info)
 	{
-		if(ci.axistype == port_controller_button::TYPE_TAXIS)
+		if(ci.axistype == portctrl::button::TYPE_TAXIS)
 			return ci;
 		bool even = true;
 		bool next_flag = false;
@@ -550,9 +552,9 @@ namespace
 		for(auto i : info) {
 			if(i.port != ci.port || i.controller != ci.controller)
 				continue;
-			if(i.axistype != port_controller_button::TYPE_AXIS &&
-				i.axistype != port_controller_button::TYPE_RAXIS &&
-				i.axistype != port_controller_button::TYPE_LIGHTGUN)
+			if(i.axistype != portctrl::button::TYPE_AXIS &&
+				i.axistype != portctrl::button::TYPE_RAXIS &&
+				i.axistype != portctrl::button::TYPE_LIGHTGUN)
 				continue;
 			if(next_flag)
 				return i;
@@ -788,10 +790,10 @@ private:
 		void do_delete_controller(uint64_t row1, uint64_t row2, unsigned port, unsigned controller);
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
-		int width(controller_frame& f);
-		std::u32string render_line1(controller_frame& f);
-		std::u32string render_line2(controller_frame& f);
-		void render_linen(text_framebuffer& fb, controller_frame& f, uint64_t sfn, int y);
+		int width(portctrl::frame& f);
+		std::u32string render_line1(portctrl::frame& f);
+		std::u32string render_line2(portctrl::frame& f);
+		void render_linen(text_framebuffer& fb, portctrl::frame& f, uint64_t sfn, int y);
 		emulator_instance& inst;
 		unsigned long long spos;
 		void* prev_obj;
@@ -835,8 +837,8 @@ namespace
 	uint64_t real_first_editable(frame_controls& fc, unsigned idx)
 	{
 		uint64_t cffs = CORE().mlogic->get_movie().get_current_frame_first_subframe();
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
-		pollcounter_vector& pv = CORE().mlogic->get_movie().get_pollcounters();
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::counters& pv = CORE().mlogic->get_movie().get_pollcounters();
 		uint64_t vsize = fv.size();
 		uint32_t pc = fc.read_pollcount(pv, idx);
 		for(uint32_t i = 1; i < pc; i++)
@@ -858,7 +860,7 @@ namespace
 	uint64_t real_first_nextframe(frame_controls& fc)
 	{
 		uint64_t base = real_first_editable(fc, 0);
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		for(uint32_t i = 0;; i++)
 			if(base + i >= vsize || fv[base + i].sync())
@@ -904,12 +906,12 @@ wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v, emulator_instance& _
 void wxeditor_movie::_moviepanel::update_cache()
 {
 	movie& m = inst.mlogic->get_movie();
-	controller_frame_vector& fv = *inst.mlogic->get_mfile().input;
+	portctrl::frame_vector& fv = *inst.mlogic->get_mfile().input;
 	if(&m == prev_obj && prev_seqno == m.get_seqno()) {
 		//Just process new subframes if any.
 		for(uint64_t i = max_subframe; i < fv.size(); i++) {
 			uint64_t prev = (i > 0) ? subframe_to_frame[i - 1] : 0;
-			controller_frame f = fv[i];
+			portctrl::frame f = fv[i];
 			if(f.sync())
 				subframe_to_frame[i] = prev + 1;
 			else
@@ -921,38 +923,38 @@ void wxeditor_movie::_moviepanel::update_cache()
 	//Reprocess all subframes.
 	for(uint64_t i = 0; i < fv.size(); i++) {
 		uint64_t prev = (i > 0) ? subframe_to_frame[i - 1] : 0;
-		controller_frame f = fv[i];
+		portctrl::frame f = fv[i];
 		if(f.sync())
 			subframe_to_frame[i] = prev + 1;
 		else
 			subframe_to_frame[i] = prev;
 	}
 	max_subframe = fv.size();
-	controller_frame model = fv.blank_frame(false);
+	portctrl::frame model = fv.blank_frame(false);
 	fcontrols.set_types(model);
 	prev_obj = &m;
 	prev_seqno = m.get_seqno();
 }
 
-int wxeditor_movie::_moviepanel::width(controller_frame& f)
+int wxeditor_movie::_moviepanel::width(portctrl::frame& f)
 {
 	update_cache();
 	return divcnt + 1 + fcontrols.width();
 }
 
-std::u32string wxeditor_movie::_moviepanel::render_line1(controller_frame& f)
+std::u32string wxeditor_movie::_moviepanel::render_line1(portctrl::frame& f)
 {
 	update_cache();
 	return fcontrols.line1();
 }
 
-std::u32string wxeditor_movie::_moviepanel::render_line2(controller_frame& f)
+std::u32string wxeditor_movie::_moviepanel::render_line2(portctrl::frame& f)
 {
 	update_cache();
 	return fcontrols.line2();
 }
 
-void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_frame& f, uint64_t sfn, int y)
+void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, portctrl::frame& f, uint64_t sfn, int y)
 {
 	update_cache();
 	size_t fbstride = fb.get_stride();
@@ -969,7 +971,7 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 	_fb[y * fbstride + divcnt] = e;
 	const std::list<control_info>& ctrlinfo = fcontrols.get_controlinfo();
 	uint64_t curframe = inst.mlogic->get_movie().get_current_frame();
-	pollcounter_vector& pv = inst.mlogic->get_movie().get_pollcounters();
+	portctrl::counters& pv = inst.mlogic->get_movie().get_pollcounters();
 	uint64_t cffs = inst.mlogic->get_movie().get_current_frame_first_subframe();
 	cached_cffs = cffs;
 	int past = -1;
@@ -1023,8 +1025,8 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 void wxeditor_movie::_moviepanel::render(text_framebuffer& fb, unsigned long long pos)
 {
 	spos = pos;
-	controller_frame_vector& fv = *inst.mlogic->get_mfile().input;
-	controller_frame cf = fv.blank_frame(false);
+	portctrl::frame_vector& fv = *inst.mlogic->get_mfile().input;
+	portctrl::frame cf = fv.blank_frame(false);
 	int _width = width(cf);
 	fb.set_size(_width, lines_to_display + 3);
 	size_t fbstride = fb.get_stride();
@@ -1048,7 +1050,7 @@ void wxeditor_movie::_moviepanel::render(text_framebuffer& fb, unsigned long lon
 			for(unsigned k = 0; k < fbsize.first; k++)
 				_fb[j * fbstride + k] = e;
 		} else {
-			controller_frame frame = fv[i];
+			portctrl::frame frame = fv[i];
 			render_linen(fb, frame, i, j);
 		}
 	}
@@ -1067,12 +1069,12 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 		if(!CORE().mlogic->get_movie().readonly_mode())
 			return;
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = _press_line; i <= line; i++) {
 			if(i < fedit || i >= fv.size())
 				continue;
-			controller_frame cf = fv[i];
+			portctrl::frame cf = fv[i];
 			if(!_force_false)
 				_fcontrols->write_index(cf, idx, !_fcontrols->read_index(cf, idx));
 			else
@@ -1098,13 +1100,13 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 			return;
 		}
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		if(line < fedit || line >= fv.size()) {
 			valid = false;
 			return;
 		}
-		controller_frame_vector::notify_freeze freeze(fv);
-		controller_frame cf = fv[line];
+		portctrl::frame_vector::notify_freeze freeze(fv);
+		portctrl::frame cf = fv[line];
 		value = _fcontrols->read_index(cf, idx);
 	});
 	if(!valid)
@@ -1122,12 +1124,12 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 		std::swap(line, line2);
 	inst.iqueue->run([idx, line, line2, value, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = line; i <= line2; i++) {
 			if(i < fedit || i >= fv.size())
 				continue;
-			controller_frame cf = fv[i];
+			portctrl::frame cf = fv[i];
 			_fcontrols->write_index(cf, idx, value);
 		}
 	});
@@ -1150,26 +1152,26 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 			return;
 		}
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		if(line2 < fedit || line2 >= fv.size()) {
 			valid = false;
 			return;
 		}
-		controller_frame cf = fv[line];
+		portctrl::frame cf = fv[line];
 		value = _fcontrols->read_index(cf, idx);
-		controller_frame cf2 = fv[line2];
+		portctrl::frame cf2 = fv[line2];
 		value2 = _fcontrols->read_index(cf2, idx);
 	});
 	if(!valid)
 		return;
 	inst.iqueue->run([idx, line, line2, value, value2, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = line + 1; i <= line2 - 1; i++) {
 			if(i < fedit || i >= fv.size())
 				continue;
-			controller_frame cf = fv[i];
+			portctrl::frame cf = fv[i];
 			auto tmp2 = static_cast<int64_t>(i - line) * (value2 - value) /
 				static_cast<int64_t>(line2 - line);
 			short tmp = value + tmp2;
@@ -1186,8 +1188,8 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 	inst.iqueue->run([_count]() {
 		if(!CORE().mlogic->get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = 0; i < _count; i++)
 			fv.append(fv.blank_frame(true));
 	});
@@ -1231,7 +1233,7 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row, bool multi
 	inst.iqueue->run([_row, _fcontrols, multicount]() {
 		if(!CORE().mlogic->get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t fedit = real_first_editable(*_fcontrols, 0);
 		//Find the start of the next frame.
 		uint64_t nframe = _row + 1;
@@ -1240,7 +1242,7 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row, bool multi
 			nframe++;
 		if(nframe < fedit)
 			return;
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		for(uint64_t k = 0; k < multicount; k++)
 			fv.append(fv.blank_frame(true));
 		if(nframe < vsize) {
@@ -1265,11 +1267,11 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row1, uint64_t row2, 
 	frame_controls* _fcontrols = &fcontrols;
 	if(_row1 > _row2) std::swap(_row1, _row2);
 	inst.iqueue->run([_row1, _row2, _wholeframe, _fcontrols]() {
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(_row1 >= vsize)
 			return;		//Nothing to do.
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		uint64_t row2 = min(_row2, vsize - 1);
 		uint64_t row1 = min(_row1, vsize - 1);
 		row1 = max(row1, real_first_editable(*_fcontrols, 0));
@@ -1334,7 +1336,7 @@ void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
 	uint64_t _row = row;
 	frame_controls* _fcontrols = &fcontrols;
 	inst.iqueue->run([_row, _fcontrols]() {
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(_row >= vsize)
 			return;
@@ -1441,12 +1443,12 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		inst.iqueue->run([ciX, row, c, _fcontrols]() {
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			if(row < fedit) return;
-			controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
-			controller_frame cf = fv[row];
+			portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
+			portctrl::frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 		});
 		signal_repaint();
-	} else if(ci.axistype == port_controller_button::TYPE_LIGHTGUN) {
+	} else if(ci.axistype == portctrl::button::TYPE_LIGHTGUN) {
 		framebuffer::raw& _fb = inst.fbuf->render_get_latest_screen();
 		framebuffer::fb<false> fb;
 		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
@@ -1477,8 +1479,8 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
 			if(row < fedit) return;
-			controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
-			controller_frame cf = fv[row];
+			portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
+			portctrl::frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 			_fcontrols->write_index(cf, ciY.index, c.second);
 		});
@@ -1489,8 +1491,8 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
 			if(row < fedit) return;
-			controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
-			controller_frame cf = fv[row];
+			portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
+			portctrl::frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 			_fcontrols->write_index(cf, ciY.index, c.second);
 		});
@@ -1777,7 +1779,7 @@ uint64_t wxeditor_movie::_moviepanel::first_editable(unsigned index)
 	if(!subframe_to_frame.count(cffs))
 		return cffs;
 	uint64_t f = subframe_to_frame[cffs];
-	pollcounter_vector& pv = inst.mlogic->get_movie().get_pollcounters();
+	portctrl::counters& pv = inst.mlogic->get_movie().get_pollcounters();
 	uint32_t pc = fcontrols.read_pollcount(pv, index);
 	for(uint32_t i = 1; i < pc; i++)
 		if(!subframe_to_frame.count(cffs + i) || subframe_to_frame[cffs + i] > f)
@@ -1991,7 +1993,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 
 int wxeditor_movie::_moviepanel::get_lines()
 {
-	controller_frame_vector& fv = *inst.mlogic->get_mfile().input;
+	portctrl::frame_vector& fv = *inst.mlogic->get_mfile().input;
 	return fv.size();
 }
 
@@ -2099,7 +2101,7 @@ void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2, unsigned
 		std::swap(line, line2);
 	std::string copied;
 	inst.iqueue->run([port, controller, line, line2, _fcontrols, &copied]() {
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(!vsize)
 			return;
@@ -2118,7 +2120,7 @@ void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2)
 		std::swap(line, line2);
 	std::string copied;
 	inst.iqueue->run([line, line2, &copied]() {
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(!vsize)
 			return;
@@ -2165,13 +2167,13 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, bool append)
 			while(std::getline(y, z))
 				gaplen++;
 		}
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, 0))
 			return;
 		if(gapstart > vsize)
 			return;
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		if(append) gapstart = vsize;
 		for(uint64_t i = 0; i < gaplen; i++)
 			fv.append(fv.blank_frame(false));
@@ -2223,13 +2225,13 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 				newframes++;
 			}
 		}
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;
 		if(gapstart > vsize)
 			return;
-		controller_frame_vector::notify_freeze freeze(fv);
+		portctrl::frame_vector::notify_freeze freeze(fv);
 		if(append) gapstart = vsize;
 		for(uint64_t i = 0; i < gaplen; i++)
 			fv.append(fv.blank_frame(true));
@@ -2241,7 +2243,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 			std::getline(y, z);
 			uint64_t idx = gapstart;
 			while(std::getline(y, z)) {
-				controller_frame f = fv[idx++];
+				portctrl::frame f = fv[idx++];
 				decode_line(*_fcontrols, f, z, port, controller);
 			}
 		}
@@ -2262,7 +2264,7 @@ void wxeditor_movie::_moviepanel::do_insert_controller(uint64_t row, unsigned po
 		//Insert enough lines for the pasted content.
 		if(!CORE().mlogic->get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;
@@ -2291,7 +2293,7 @@ void wxeditor_movie::_moviepanel::do_delete_controller(uint64_t row1, uint64_t r
 		//Insert enough lines for the pasted content.
 		if(!CORE().mlogic->get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = *CORE().mlogic->get_mfile().input;
+		portctrl::frame_vector& fv = *CORE().mlogic->get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;

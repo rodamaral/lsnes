@@ -132,10 +132,10 @@ namespace
 		}
 	}
 
-	void read_input(zip::reader& r, const std::string& mname, controller_frame_vector& input)
+	void read_input(zip::reader& r, const std::string& mname, portctrl::frame_vector& input)
 		throw(std::bad_alloc, std::runtime_error)
 	{
-		controller_frame tmp = input.blank_frame(false);
+		portctrl::frame tmp = input.blank_frame(false);
 		std::istream& m = r[mname];
 		try {
 			std::string x;
@@ -240,7 +240,7 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	}
 	settings = read_settings(r);
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
-	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
+	portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	branches.clear();
 	r.read_linefile("gamename", gamename, true);
@@ -356,7 +356,7 @@ std::set<std::string> moviefile_branch_extractor_text::enumerate()
 	return r;
 }
 
-void moviefile_branch_extractor_text::read(const std::string& name, controller_frame_vector& v)
+void moviefile_branch_extractor_text::read(const std::string& name, portctrl::frame_vector& v)
 {
 	std::set<std::string> r;
 	bool done = false;

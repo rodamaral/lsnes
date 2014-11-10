@@ -1,16 +1,16 @@
 #include "arch-detect.hpp"
 #include "assembler.hpp"
-#include "controller-data.hpp"
-#include "controller-parse.hpp"
-#include "controller-parse-asmgen.hpp"
 #include "assembler-intrinsics-dummy.hpp"
 #include "assembler-intrinsics-i386.hpp"
+#include "portctrl-data.hpp"
+#include "portctrl-parse.hpp"
+#include "portctrl-parse-asmgen.hpp"
 #include "json.hpp"
 #include "string.hpp"
 #include <algorithm>
 
-using namespace assembler_intrinsics;
-
+namespace portctrl
+{
 namespace
 {
 	std::string quote(const std::string& s)
@@ -57,11 +57,11 @@ namespace
 	}
 
 
-	port_controller_button pcb_null(const JSON::node& root, const JSON::pointer& ptr)
+	button pcb_null(const JSON::node& root, const JSON::pointer& ptr)
 	{
 		auto pshadow = ptr.field("shadow");
-		struct port_controller_button ret;
-		ret.type = port_controller_button::TYPE_NULL;
+		struct button ret;
+		ret.type = button::TYPE_NULL;
 		ret.name = "";
 		ret.symbol = U'\0';
 		ret.rmin = 0;
@@ -73,15 +73,15 @@ namespace
 		return ret;
 	}
 
-	port_controller_button pcb_button(const JSON::node& root, const JSON::pointer& ptr)
+	button pcb_button(const JSON::node& root, const JSON::pointer& ptr)
 	{
 		auto pshadow = ptr.field("shadow");
 		auto pname = ptr.field("name");
 		auto psymbol = ptr.field("symbol");
 		auto pmacro = ptr.field("macro");
 		auto pmovie = ptr.field("movie");
-		struct port_controller_button ret;
-		ret.type = port_controller_button::TYPE_BUTTON;
+		struct button ret;
+		ret.type = button::TYPE_BUTTON;
 		ret.name = read_str(root, pname);
 		std::u32string symbol = (root.type_of(psymbol) != JSON::none) ? read_str32(root, psymbol) :
 			utf8::to32(ret.name);
@@ -101,16 +101,16 @@ namespace
 		return ret;
 	}
 
-	port_controller_button pcb_axis(const JSON::node& root, const JSON::pointer& ptr, const std::string& type)
+	button pcb_axis(const JSON::node& root, const JSON::pointer& ptr, const std::string& type)
 	{
 		auto pshadow = ptr.field("shadow");
 		auto pname = ptr.field("name");
 		auto pcenters = ptr.field("centers");
-		struct port_controller_button ret;
-		if(type == "axis") ret.type = port_controller_button::TYPE_AXIS;
-		if(type == "raxis") ret.type = port_controller_button::TYPE_RAXIS;
-		if(type == "taxis") ret.type = port_controller_button::TYPE_TAXIS;
-		if(type == "lightgun") ret.type = port_controller_button::TYPE_LIGHTGUN;
+		struct button ret;
+		if(type == "axis") ret.type = button::TYPE_AXIS;
+		if(type == "raxis") ret.type = button::TYPE_RAXIS;
+		if(type == "taxis") ret.type = button::TYPE_TAXIS;
+		if(type == "lightgun") ret.type = button::TYPE_LIGHTGUN;
 		ret.name = read_str(root, pname);
 		ret.symbol = U'\0';
 		ret.shadow = (root.type_of(pshadow) != JSON::none) ? read_bool(root, pshadow) : false;
@@ -122,7 +122,7 @@ namespace
 		return ret;
 	}
 
-	struct port_controller_button pcs_parse_button(const JSON::node& root, JSON::pointer ptr)
+	struct button pcs_parse_button(const JSON::node& root, JSON::pointer ptr)
 	{
 		if(root.type_of_indirect(ptr) != JSON::object)
 			(stringfmt() << "Expected (indirect) object for '" << ptr << "'").throwex();
@@ -139,12 +139,12 @@ namespace
 		return pcb_null(root, ptr); //NOTREACHED.
 	}
 
-	struct port_controller pcs_parse_controller(const JSON::node& root, JSON::pointer ptr)
+	struct controller pcs_parse_controller(const JSON::node& root, JSON::pointer ptr)
 	{
 		if(root.type_of_indirect(ptr) != JSON::object)
 			(stringfmt() << "Expected (indirect) object for '" << ptr << "'").throwex();
 		ptr = root.resolve_indirect(ptr);
-		port_controller ret;
+		controller ret;
 		auto pbuttons = ptr.field("buttons");
 		std::string cclass = read_str(root, ptr.field("class"));
 		std::string type = read_str(root, ptr.field("type"));
@@ -152,7 +152,7 @@ namespace
 			(stringfmt() << "Expected (indirect) array for '" << pbuttons << "'").throwex();
 		JSON::pointer _buttons = root.resolve_indirect(pbuttons);
 		const JSON::node& n_buttons = root.follow(_buttons);
-		std::vector<port_controller_button> buttons;
+		std::vector<button> buttons;
 		for(auto i = n_buttons.begin(); i != n_buttons.end(); i++)
 			buttons.push_back(pcs_parse_button(root, _buttons.index(i.index())));
 		ret.cclass = cclass;
@@ -161,12 +161,12 @@ namespace
 		return ret;
 	}
 
-	struct port_controller_set* pcs_parse_set(const JSON::node& root, JSON::pointer ptr)
+	struct controller_set* pcs_parse_set(const JSON::node& root, JSON::pointer ptr)
 	{
 		if(root.type_of_indirect(ptr) != JSON::object)
 			(stringfmt() << "Expected (indirect) object for '" << ptr << "'").throwex();
 		ptr = root.resolve_indirect(ptr);
-		port_controller_set* ret = NULL;
+		controller_set* ret = NULL;
 		auto pcontrollers = ptr.field("controllers");
 		auto plegal = ptr.field("legal");
 		auto phname = ptr.field("hname");
@@ -175,7 +175,7 @@ namespace
 			(stringfmt() << "Expected (indirect) array for '" << pcontrollers << "'").throwex();
 		JSON::pointer _controllers = root.resolve_indirect(pcontrollers);
 		const JSON::node& n_controllers = root.follow(_controllers);
-		std::vector<port_controller> controllers;
+		std::vector<controller> controllers;
 		for(auto i = n_controllers.begin(); i != n_controllers.end(); i++)
 			controllers.push_back(pcs_parse_controller(root, _controllers.index(i.index())));
 		if(root.type_of_indirect(plegal) != JSON::array)
@@ -188,7 +188,7 @@ namespace
 		std::string iname = read_str(root, ptr.field("name"));
 		std::string hname = (root.type_of(phname) != JSON::none) ? read_str(root, phname) : iname;
 		std::string symbol = (root.type_of(psymbol) != JSON::none) ? read_str(root, psymbol) : iname;
-		ret = new port_controller_set;
+		ret = new controller_set;
 		ret->iname = iname;
 		ret->hname = hname;
 		ret->symbol = symbol;
@@ -197,24 +197,24 @@ namespace
 		return ret;
 	}
 
-	void write_button(std::ostream& s, const port_controller_button& b)
+	void write_button(std::ostream& s, const button& b)
 	{
-		s << "{port_controller_button::TYPE_";
+		s << "{portctrl::button::TYPE_";
 		switch(b.type) {
-		case port_controller_button::TYPE_NULL: s << "NULL"; break;
-		case port_controller_button::TYPE_BUTTON: s << "BUTTON"; break;
-		case port_controller_button::TYPE_AXIS: s << "AXIS"; break;
-		case port_controller_button::TYPE_RAXIS: s << "RAXIS"; break;
-		case port_controller_button::TYPE_TAXIS: s << "TAXIS"; break;
-		case port_controller_button::TYPE_LIGHTGUN: s << "LIGHTGUN"; break;
+		case button::TYPE_NULL: s << "NULL"; break;
+		case button::TYPE_BUTTON: s << "BUTTON"; break;
+		case button::TYPE_AXIS: s << "AXIS"; break;
+		case button::TYPE_RAXIS: s << "RAXIS"; break;
+		case button::TYPE_TAXIS: s << "TAXIS"; break;
+		case button::TYPE_LIGHTGUN: s << "LIGHTGUN"; break;
 		}
 		s << "," << (int)b.symbol << ", " << quote(b.name) << ", " << b.shadow << ", " << b.rmin << ", "
 			<< b.rmax << ", " << b.centers << ", " << quote(b.macro) << ", " << (int)b.msymbol << "}";
 	}
 
-	void write_controller(std::ostream& s, const port_controller& c, unsigned idx)
+	void write_controller(std::ostream& s, const controller& c, unsigned idx)
 	{
-		s << "port_controller port_tmp_" << idx << " = {" << quote(c.cclass) << ", " << quote(c.type)
+		s << "portctrl::controller port_tmp_" << idx << " = {" << quote(c.cclass) << ", " << quote(c.type)
 			<< ", {\n";
 		for(auto i : c.buttons) {
 			s << "\t";
@@ -224,12 +224,12 @@ namespace
 		s << "}};\n";
 	}
 
-	void write_portdata(std::ostream& s, const port_controller_set& cs, unsigned& idx)
+	void write_portdata(std::ostream& s, const controller_set& cs, unsigned& idx)
 	{
 		s << "namespace portdefs {\n";
 		for(unsigned i = 0; i < cs.controllers.size(); i++)
 			write_controller(s, cs.controllers[i], idx + i);
-		s << "port_controller_set port_tmp_" << (idx + cs.controllers.size()) << " = {\n";
+		s << "portctrl::controller_set port_tmp_" << (idx + cs.controllers.size()) << " = {\n";
 		s << "\t" << quote(cs.iname) << ", " << quote(cs.hname) << ", " << quote(cs.symbol) << ",{";
 		for(unsigned i = 0; i < cs.controllers.size(); i++)
 			s << "port_tmp_" << (idx + i) << ", ";
@@ -242,66 +242,66 @@ namespace
 		idx += (cs.controllers.size() + 1);
 	}
 
-	size_t get_ssize(const port_controller_set& cs)
+	size_t get_ssize(const controller_set& cs)
 	{
 		size_t x = 0;
 		for(auto i : cs.controllers)
 			for(auto j : i.buttons) {
 				switch(j.type) {
-				case port_controller_button::TYPE_BUTTON: x++; break;
-				case port_controller_button::TYPE_AXIS: x+=16; break;
-				case port_controller_button::TYPE_LIGHTGUN: x+=16; break;
-				case port_controller_button::TYPE_NULL: break;
-				case port_controller_button::TYPE_RAXIS: x+=16; break;
-				case port_controller_button::TYPE_TAXIS: x+=16; break;
+				case button::TYPE_BUTTON: x++; break;
+				case button::TYPE_AXIS: x+=16; break;
+				case button::TYPE_LIGHTGUN: x+=16; break;
+				case button::TYPE_NULL: break;
+				case button::TYPE_RAXIS: x+=16; break;
+				case button::TYPE_TAXIS: x+=16; break;
 			};
 		}
 		return (x + 7) / 8;
 	}
 
-	size_t get_aoffset(const port_controller_set& cs)
+	size_t get_aoffset(const controller_set& cs)
 	{
 		size_t x = 0;
 		for(auto i : cs.controllers)
 			for(auto j : i.buttons) {
 				switch(j.type) {
-				case port_controller_button::TYPE_BUTTON: x++; break;
-				case port_controller_button::TYPE_AXIS: break;
-				case port_controller_button::TYPE_LIGHTGUN: break;
-				case port_controller_button::TYPE_NULL: break;
-				case port_controller_button::TYPE_RAXIS: break;
-				case port_controller_button::TYPE_TAXIS: break;
+				case button::TYPE_BUTTON: x++; break;
+				case button::TYPE_AXIS: break;
+				case button::TYPE_LIGHTGUN: break;
+				case button::TYPE_NULL: break;
+				case button::TYPE_RAXIS: break;
+				case button::TYPE_TAXIS: break;
 			};
 		}
 		return (x + 7) / 8;
 	}
 
-	std::vector<port_type_generic::idxinfo> get_idx_instructions(const port_controller_set& cs)
+	std::vector<type_generic::idxinfo> get_idx_instructions(const controller_set& cs)
 	{
-		std::vector<port_type_generic::idxinfo> ret;
+		std::vector<type_generic::idxinfo> ret;
 		size_t aoffset = get_aoffset(cs);
 		size_t buttonidx2 = 0;
 		size_t axisidx2 = 0;
 		for(unsigned i = 0; i < cs.controllers.size(); i++) {
 			for(unsigned j = 0; j < cs.controllers[i].buttons.size(); j++) {
-				port_type_generic::idxinfo ii;
+				type_generic::idxinfo ii;
 				ii.controller = i;
 				ii.index = j;
 				switch(cs.controllers[i].buttons[j].type) {
-				case port_controller_button::TYPE_NULL:
+				case button::TYPE_NULL:
 					ii.type = 0;
 					break;
-				case port_controller_button::TYPE_BUTTON:
+				case button::TYPE_BUTTON:
 					ii.type = 1;
 					ii.offset = buttonidx2 / 8;
 					ii.mask = 1 << (buttonidx2 & 7);
 					ii.imask = ~ii.mask;
 					buttonidx2++;
 					break;
-				case port_controller_button::TYPE_AXIS:
-				case port_controller_button::TYPE_RAXIS:
-				case port_controller_button::TYPE_TAXIS:
-				case port_controller_button::TYPE_LIGHTGUN:
+				case button::TYPE_AXIS:
+				case button::TYPE_RAXIS:
+				case button::TYPE_TAXIS:
+				case button::TYPE_LIGHTGUN:
 					ii.type = 2;
 					ii.offset = aoffset + 2 * axisidx2;
 					axisidx2++;
@@ -313,13 +313,13 @@ namespace
 		return ret;
 	}
 
-	std::vector<port_type_generic::ser_instruction> get_ser_instructions(const port_controller_set& cs)
+	std::vector<type_generic::ser_instruction> get_ser_instructions(const controller_set& cs)
 	{
-		std::vector<port_type_generic::ser_instruction> ret;
+		std::vector<type_generic::ser_instruction> ret;
 		size_t aoffset = get_aoffset(cs);
 		size_t buttonidx = 0;
 		size_t axisidx = 0;
-		port_type_generic::ser_instruction ins;
+		type_generic::ser_instruction ins;
 		for(unsigned i = 0; i < cs.controllers.size(); i++) {
 			if(i == 0 && !cs.legal_for.count(0)) {
 				ins.type = 2;
@@ -331,7 +331,7 @@ namespace
 			}
 			for(unsigned j = 0; j < cs.controllers[i].buttons.size(); j++) {
 				switch(cs.controllers[i].buttons[j].type) {
-				case port_controller_button::TYPE_BUTTON:
+				case button::TYPE_BUTTON:
 					ins.type = 0;
 					ins.offset = buttonidx / 8;
 					ins.mask = 1 << (buttonidx & 7);
@@ -344,10 +344,10 @@ namespace
 			}
 			for(unsigned j = 0; j < cs.controllers[i].buttons.size(); j++) {
 				switch(cs.controllers[i].buttons[j].type) {
-				case port_controller_button::TYPE_AXIS:
-				case port_controller_button::TYPE_RAXIS:
-				case port_controller_button::TYPE_TAXIS:
-				case port_controller_button::TYPE_LIGHTGUN:
+				case button::TYPE_AXIS:
+				case button::TYPE_RAXIS:
+				case button::TYPE_TAXIS:
+				case button::TYPE_LIGHTGUN:
 					ins.type = 1;
 					ins.offset = aoffset + 2 * axisidx;
 					ret.push_back(ins);
@@ -363,25 +363,25 @@ namespace
 	}
 }
 
-struct port_controller_set* pcs_from_json(const JSON::node& root, const std::string& ptr)
+struct controller_set* pcs_from_json(const JSON::node& root, const std::string& ptr)
 {
 	return pcs_parse_set(root, ptr);
 }
 
-std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tmp_idx)
+std::string pcs_write_class(const struct controller_set& pset, unsigned& tmp_idx)
 {
 	std::ostringstream s;
 	write_portdata(s, pset, tmp_idx);
 	unsigned pidx = tmp_idx - 1;
 	auto repr = get_ser_instructions(pset);
 	auto idxr = get_idx_instructions(pset);
-	s << "struct _" << pset.symbol << " : public port_type\n";
+	s << "struct _" << pset.symbol << " : public portctrl::type\n";
 	s << "{\n";
-	s << "\t_" << pset.symbol << "() : port_type(" << quote(pset.iname) << ", " << quote(pset.hname)
+	s << "\t_" << pset.symbol << "() : type(" << quote(pset.iname) << ", " << quote(pset.hname)
 		<< ", " << get_ssize(pset) << ")\n";
 	s << "\t{\n";
-	s << "\t\twrite = [](const port_type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x) -> "
-		<< "void {\n";
+	s << "\t\twrite = [](const portctrl::type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, "
+		<< "short x) -> void {\n";
 	s << "\t\t\tswitch(idx) {\n";
 	int last_controller = -1;
 	for(auto i : idxr) {
@@ -418,8 +418,8 @@ std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tm
 	}
 	s << "\t\t\t}\n";
 	s << "\t\t};\n";
-	s << "\t\tread = [](const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl) -> "
-		<< "short {\n";
+	s << "\t\tread = [](const portctrl::type* _this, const unsigned char* buffer, unsigned idx, "
+		<< "unsigned ctrl) -> short {\n";
 	s << "\t\t\tswitch(idx) {\n";
 	last_controller = -1;
 	for(auto i : idxr) {
@@ -453,7 +453,8 @@ std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tm
 	s << "\t\t\t}\n";
 	s << "\t\t\treturn 0;\n";
 	s << "\t\t};\n";
-	s << "\t\tserialize = [](const port_type* _this, const unsigned char* buffer, char* textbuf) -> size_t {\n";
+	s << "\t\tserialize = [](const portctrl::type* _this, const unsigned char* buffer, char* textbuf) -> "
+		<< "size_t {\n";
 	s << "\t\t\tsize_t ptr = 0;\n";
 	s << "\t\t\tshort tmp;\n";
 	for(auto i : repr) {
@@ -482,28 +483,29 @@ std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tm
 		}
 	}
 	s << "\t\t};\n";
-	s << "\t\tdeserialize = [](const port_type* _this, unsigned char* buffer, const char* textbuf) -> size_t {\n";
+	s << "\t\tdeserialize = [](const portctrl::type* _this, unsigned char* buffer, const char* textbuf) -> "
+		<< "size_t {\n";
 	s << "\t\t\tmemset(buffer, 0, " << get_ssize(pset) << ");\n";
 	s << "\t\t\tsize_t ptr = 0;\n";
 	s << "\t\t\tshort tmp;\n";
 	for(auto i : repr) {
 		switch(i.type) {
 		case 0:
-			s << "\t\t\tif(read_button_value(textbuf, ptr)) buffer[" << i.offset << "]|=" << (int)i.mask
-				<< ";\n";
+			s << "\t\t\tif(portctrl::read_button_value(textbuf, ptr)) buffer[" << i.offset << "]|=" 
+				<< (int)i.mask << ";\n";
 			break;
 		case 1:
-			s << "\t\t\ttmp = read_axis_value(textbuf, ptr);\n";
+			s << "\t\t\ttmp = portctrl::read_axis_value(textbuf, ptr);\n";
 			s << "\t\t\tbuffer[" << i.offset << "] = " << "(unsigned short)tmp;\n";
 			s << "\t\t\tbuffer[" << (i.offset + 1) << "] = " << "((unsigned short)tmp >> 8);\n";
 			break;
 		case 2:
 			break;
 		case 3:
-			s << "\t\t\tskip_rest_of_field(textbuf, ptr, true);\n";
+			s << "\t\t\tportctrl::skip_rest_of_field(textbuf, ptr, true);\n";
 			break;
 		case 4:
-			s << "\t\t\tskip_rest_of_field(textbuf, ptr, false);\n";
+			s << "\t\t\tportctrl::skip_rest_of_field(textbuf, ptr, false);\n";
 			s << "\t\t\treturn ptr;\n";
 			break;
 		case 5:
@@ -518,17 +520,17 @@ std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tm
 	return s.str();
 }
 
-std::string pcs_write_trailer(const std::vector<port_controller_set*>& p)
+std::string pcs_write_trailer(const std::vector<controller_set*>& p)
 {
 	std::ostringstream s;
-	s << "std::vector<port_type*> _port_types{";
+	s << "std::vector<portctrl::type*> _port_types{";
 	for(auto i : p)
 		s << "&" << i->symbol << ", ";
 	s << "};\n";
 	return s.str();
 }
 
-std::string pcs_write_classes(const std::vector<port_controller_set*>& p, unsigned& tmp_idx)
+std::string pcs_write_classes(const std::vector<controller_set*>& p, unsigned& tmp_idx)
 {
 	std::string s;
 	for(auto i : p)
@@ -537,14 +539,14 @@ std::string pcs_write_classes(const std::vector<port_controller_set*>& p, unsign
 	return s;
 }
 
-std::vector<port_controller_set*> pcs_from_json_array(const JSON::node& root, const std::string& _ptr)
+std::vector<controller_set*> pcs_from_json_array(const JSON::node& root, const std::string& _ptr)
 {
 	JSON::pointer ptr(_ptr);
 	if(root.type_of_indirect(ptr) != JSON::array)
 		(stringfmt() << "Expected (indirect) array for '" << ptr << "'").throwex();
 	ptr = root.resolve_indirect(ptr);
 	const JSON::node& n = root[ptr];
-	std::vector<port_controller_set*> ret;
+	std::vector<controller_set*> ret;
 	try {
 		for(auto i = n.begin(); i != n.end(); i++)
 			ret.push_back(pcs_parse_set(root, ptr.index(i.index())));
@@ -556,9 +558,9 @@ std::vector<port_controller_set*> pcs_from_json_array(const JSON::node& root, co
 	return ret;
 }
 
-void port_type_generic::_write(const port_type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x)
+void type_generic::_write(const type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x)
 {
-	const port_type_generic* th = dynamic_cast<const port_type_generic*>(_this);
+	const type_generic* th = dynamic_cast<const type_generic*>(_this);
 	if(idx >= th->controller_info->controllers.size())
 		return;
 	if(ctrl >= th->controller_info->controllers[idx].buttons.size())
@@ -575,9 +577,9 @@ void port_type_generic::_write(const port_type* _this, unsigned char* buffer, un
 	}
 }
 
-short port_type_generic::_read(const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl)
+short type_generic::_read(const type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl)
 {
-	const port_type_generic* th = dynamic_cast<const port_type_generic*>(_this);
+	const type_generic* th = dynamic_cast<const type_generic*>(_this);
 	if(idx >= th->controller_info->controllers.size())
 		return 0;
 	if(ctrl >= th->controller_info->controllers[idx].buttons.size())
@@ -594,12 +596,12 @@ short port_type_generic::_read(const port_type* _this, const unsigned char* buff
 	return 0; //NOTREACHED
 }
 
-size_t port_type_generic::_serialize(const port_type* _this, const unsigned char* buffer, char* textbuf)
+size_t type_generic::_serialize(const type* _this, const unsigned char* buffer, char* textbuf)
 {
 	size_t ptr = 0;
 	short tmp;
 	ser_instruction* si;
-	const port_type_generic* th = dynamic_cast<const port_type_generic*>(_this);
+	const type_generic* th = dynamic_cast<const type_generic*>(_this);
 	if(__builtin_expect(!buffer, 0)) {
 		for(auto& i : th->serialize_instructions) {
 			switch(i.type) {
@@ -636,12 +638,12 @@ ser_nothing:
 	return 0;
 }
 
-size_t port_type_generic::_deserialize(const port_type* _this, unsigned char* buffer, const char* textbuf)
+size_t type_generic::_deserialize(const type* _this, unsigned char* buffer, const char* textbuf)
 {
 	size_t ptr = 0;
 	short tmp;
 	ser_instruction* si;
-	const port_type_generic* th = dynamic_cast<const port_type_generic*>(_this);
+	const type_generic* th = dynamic_cast<const type_generic*>(_this);
 	if(__builtin_expect(!buffer, 0)) {
 		for(auto& i : th->serialize_instructions) {
 			switch(i.type) {
@@ -678,8 +680,8 @@ ser_nothing:
 	return DESERIALIZE_SPECIAL_BLANK;
 }
 
-port_type_generic::port_type_generic(const JSON::node& root, const std::string& ptr) throw(std::exception)
-	: port_type(port_iname(root, ptr), port_hname(root, ptr), port_size(root, ptr))
+type_generic::type_generic(const JSON::node& root, const std::string& ptr) throw(std::exception)
+	: type(port_iname(root, ptr), port_hname(root, ptr), port_size(root, ptr))
 {
 	controller_info = pcs_parse_set(root, ptr);
 	write = _write;
@@ -701,12 +703,12 @@ port_type_generic::port_type_generic(const JSON::node& root, const std::string& 
 	make_dynamic_blocks();
 }
 
-port_type_generic::~port_type_generic() throw()
+type_generic::~type_generic() throw()
 {
 	delete reinterpret_cast<assembler::dynamic_code*>(dyncode_block);
 }
 
-std::string port_type_generic::port_iname(const JSON::node& root, const std::string& ptr)
+std::string type_generic::port_iname(const JSON::node& root, const std::string& ptr)
 {
 	auto info = pcs_parse_set(root, ptr);
 	std::string tmp = info->iname;
@@ -714,7 +716,7 @@ std::string port_type_generic::port_iname(const JSON::node& root, const std::str
 	return tmp;
 }
 
-std::string port_type_generic::port_hname(const JSON::node& root, const std::string& ptr)
+std::string type_generic::port_hname(const JSON::node& root, const std::string& ptr)
 {
 	auto info = pcs_parse_set(root, ptr);
 	std::string tmp = info->hname;
@@ -722,7 +724,7 @@ std::string port_type_generic::port_hname(const JSON::node& root, const std::str
 	return tmp;
 }
 
-size_t port_type_generic::port_size(const JSON::node& root, const std::string& ptr)
+size_t type_generic::port_size(const JSON::node& root, const std::string& ptr)
 {
 	auto info = pcs_parse_set(root, ptr);
 	size_t tmp = get_ssize(*info);
@@ -730,7 +732,7 @@ size_t port_type_generic::port_size(const JSON::node& root, const std::string& p
 	return tmp;
 }
 
-void port_type_generic::make_dynamic_blocks()
+void type_generic::make_dynamic_blocks()
 {
 	try {
 		assembler::label_list labels;
@@ -746,13 +748,13 @@ void port_type_generic::make_dynamic_blocks()
 		}
 		c->commit();
 		if(m.count("read"))
-			read = (short(*)(const port_type*, const unsigned char*, unsigned, unsigned))m["read"];
+			read = (short(*)(const type*, const unsigned char*, unsigned, unsigned))m["read"];
 		if(m.count("write"))
-			write = (void(*)(const port_type*, unsigned char*, unsigned, unsigned, short))m["write"];
+			write = (void(*)(const type*, unsigned char*, unsigned, unsigned, short))m["write"];
 		if(m.count("serialize"))
-			serialize = (size_t(*)(const port_type*, const unsigned char*, char*))m["serialize"];
+			serialize = (size_t(*)(const type*, const unsigned char*, char*))m["serialize"];
 		if(m.count("deserialize"))
-			deserialize = (size_t(*)(const port_type*, unsigned char*, const char*))m["deserialize"];
+			deserialize = (size_t(*)(const type*, unsigned char*, const char*))m["deserialize"];
 	} catch(std::exception& e) {
 		std::cerr << "Error assembling block: " << e.what() << std::endl;
 		delete reinterpret_cast<assembler::dynamic_code*>(dyncode_block);
@@ -764,7 +766,7 @@ void port_type_generic::make_dynamic_blocks()
 	}
 }
 
-void port_type_generic::make_routines(assembler::assembler& a, assembler::label_list& labels)
+void type_generic::make_routines(assembler::assembler& a, assembler::label_list& labels)
 {
 	//One can freely return without doing nothing.
 #ifndef NO_ASM_GENERATION
@@ -777,13 +779,13 @@ void port_type_generic::make_routines(assembler::assembler& a, assembler::label_
 		".byte 0xB8, 0, 0, 0, 0\n"
 		".byte 0x90, 0x90, 0x90, 0x90\n"
 		: "=a"(amd64_flag));
-	I386 as(a, amd64_flag != 0);
+	assembler_intrinsics::I386 as(a, amd64_flag != 0);
 #define DEFINED_ASSEBLER
 #endif
 
 	//Backup assembler that causes this to error out.
 #ifndef DEFINED_ASSEBLER
-	dummyarch as(a);
+	assembler_intrinsics::dummyarch as(a);
 #endif
 
 	a._label(labels, "serialize");
@@ -938,4 +940,5 @@ void port_type_generic::make_routines(assembler::assembler& a, assembler::label_
 	a._label(wend);
 	codegen::emit_write_epilogue(as, labels);
 #endif
+}
 }

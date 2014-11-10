@@ -179,23 +179,23 @@ void wxeditor_autohold::update_controls()
 	inst.iqueue->run([&_autoholds, &_controller_labels](){
 		auto& core = CORE();
 		std::map<std::string, unsigned> next_in_class;
-		controller_frame model = core.controls->get_blank();
-		const port_type_set& pts = model.porttypes();
+		portctrl::frame model = core.controls->get_blank();
+		const portctrl::type_set& pts = model.porttypes();
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
 			auto pcid = core.controls->lcid_to_pcid(i);
 			if(pcid.first < 0)
 				break;
-			const port_type& pt = pts.port_type(pcid.first);
-			const port_controller_set& pci = *(pt.controller_info);
+			const portctrl::type& pt = pts.port_type(pcid.first);
+			const portctrl::controller_set& pci = *(pt.controller_info);
 			if((ssize_t)pci.controllers.size() <= pcid.second)
 				continue;
-			const port_controller& pc = pci.controllers[pcid.second];
+			const portctrl::controller& pc = pci.controllers[pcid.second];
 			//First check that this has non-hidden buttons.
 			bool has_buttons = false;
 			for(unsigned k = 0; k < pc.buttons.size(); k++) {
-				const port_controller_button& pcb = pc.buttons[k];
-				if(pcb.type == port_controller_button::TYPE_BUTTON && !pcb.shadow)
+				const portctrl::button& pcb = pc.buttons[k];
+				if(pcb.type == portctrl::button::TYPE_BUTTON && !pcb.shadow)
 					has_buttons = true;
 			}
 			if(!has_buttons)
@@ -206,8 +206,8 @@ void wxeditor_autohold::update_controls()
 			uint32_t cnum = next_in_class[pc.cclass]++;
 			_controller_labels.push_back((stringfmt() << pc.cclass << "-" << cnum).str());
 			for(unsigned k = 0; k < pc.buttons.size(); k++) {
-				const port_controller_button& pcb = pc.buttons[k];
-				if(pcb.type != port_controller_button::TYPE_BUTTON || pcb.shadow)
+				const portctrl::button& pcb = pc.buttons[k];
+				if(pcb.type != portctrl::button::TYPE_BUTTON || pcb.shadow)
 					continue;
 				struct control_triple t;
 				t.port = pcid.first;

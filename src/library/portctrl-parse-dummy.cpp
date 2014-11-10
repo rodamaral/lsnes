@@ -1,8 +1,10 @@
-#include "controller-parse-asmgen.hpp"
+#include "portctrl-parse-asmgen.hpp"
 #include "assembler-intrinsics-dummy.hpp"
 
 using namespace assembler_intrinsics;
 
+namespace portctrl
+{
 namespace codegen
 {
 template<> void emit_serialize_prologue(dummyarch& a, assembler::label_list& labels)
@@ -131,5 +133,6 @@ template<> void emit_write_axis(dummyarch& a, assembler::label_list& labels, ass
 	assembler::label& end, int32_t offset)
 {
 	throw std::runtime_error("ASM on this arch not supported");
+}
 }
 }

@@ -78,7 +78,7 @@ namespace
 		emerg_write_number(handle, str.length());
 		emerg_write_string_implicit(handle, str);
 	}
-	void emerg_write_movie(int handle, const controller_frame_vector& v, uint32_t tag)
+	void emerg_write_movie(int handle, const portctrl::frame_vector& v, uint32_t tag)
 	{
 		uint64_t stride = v.get_stride();
 		uint64_t pageframes = v.get_frames_per_page();

@@ -95,7 +95,7 @@ void multitrack_edit::config_altered()
 	controllerstate.clear();
 }
 
-void multitrack_edit::process_frame(controller_frame& input)
+void multitrack_edit::process_frame(portctrl::frame& input)
 {
 	if(!mlogic || !mlogic.get_movie().readonly_mode())
 		return;
@@ -108,10 +108,10 @@ void multitrack_edit::process_frame(controller_frame& input)
 	if(!any_need)
 		return;	//No need to twiddle.
 	unsigned indices = input.get_index_count();
-	const port_type_set& portset = input.porttypes();
-	pollcounter_vector& p = mlogic.get_movie().get_pollcounters();
+	const portctrl::type_set& portset = input.porttypes();
+	portctrl::counters& p = mlogic.get_movie().get_pollcounters();
 	for(unsigned i = 0; i < indices; i++) {
-		port_index_triple t = portset.index_to_triple(i);
+		portctrl::index_triple t = portset.index_to_triple(i);
 		if(!t.valid)
 			continue;
 		auto key = std::make_pair(t.port, t.controller);
@@ -124,7 +124,7 @@ void multitrack_edit::process_frame(controller_frame& input)
 			int16_t v = mlogic.get_movie().read_subframe_at_index(pc, t.port, t.controller,
 				t.control);
 			controllerstate[key];
-			const port_type& pt = portset.port_type(t.port);
+			const portctrl::type& pt = portset.port_type(t.port);
 			auto pci = pt.controller_info->get(t.controller);
 			auto pb = pci ? pci->get(t.control) : NULL;
 			bool is_axis = (pb && pb->is_analog());

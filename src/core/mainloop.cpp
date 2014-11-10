@@ -84,7 +84,7 @@ void mainloop_signal_need_rewind(void* ptr)
 	unsafe_rewind_obj = ptr;
 }
 
-controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
+portctrl::frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
 	auto& core = CORE();
 	if(core.lua2->requests_subframe_paint)
@@ -158,7 +158,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		core.supdater->update();
 	}
 	platform::flush_command_queue();
-	controller_frame tmp = core.controls->get(core.mlogic->get_movie().get_current_frame());
+	portctrl::frame tmp = core.controls->get(core.mlogic->get_movie().get_current_frame());
 	core.rom->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	core.lua2->callback_do_input(tmp, subframe);
 	core.mteditor->process_frame(tmp);
@@ -224,7 +224,7 @@ public:
 	{
 		auto& core = CORE();
 		if(!core.mlogic->get_movie().readonly_mode()) {
-			controller_frame f = core.mlogic->get_movie().get_controls();
+			portctrl::frame f = core.mlogic->get_movie().get_controls();
 			f.axis3(port, index, control, value);
 			core.mlogic->get_movie().set_controls(f);
 		}

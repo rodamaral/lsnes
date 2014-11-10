@@ -114,7 +114,7 @@ private:
 		unsigned controller;
 		unsigned xindex;
 		unsigned yindex;	//Used for XY.
-		enum port_controller_button::_type type;
+		enum portctrl::button::_type type;
 		short xmin;
 		short ymin;
 		short xmax;
@@ -198,7 +198,7 @@ wxeditor_tasinput::xypanel::xypanel(wxWindow* win, emulator_instance& _inst, wxS
 	s->Add(new wxStaticText(win, wxID_ANY, towxstring(t.name), wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS));
 	s->Add(graphics = new wxPanel(win, wxID_ANY));
 	lightgun = false;
-	if(t.type == port_controller_button::TYPE_LIGHTGUN && t.yindex != std::numeric_limits<unsigned>::max()) {
+	if(t.type == portctrl::button::TYPE_LIGHTGUN && t.yindex != std::numeric_limits<unsigned>::max()) {
 		graphics->SetSize(t.xmax - t.xmin + 1, t.ymax - t.ymin + 1);
 		lightgun = true;
 	} else
@@ -229,7 +229,7 @@ wxeditor_tasinput::xypanel::~xypanel()
 void wxeditor_tasinput::call_screen_update()
 {
 	for(auto i : inputs)
-		if(i.second.type == port_controller_button::TYPE_LIGHTGUN)
+		if(i.second.type == portctrl::button::TYPE_LIGHTGUN)
 			i.second.panel->do_redraw();
 }
 
@@ -413,22 +413,22 @@ void wxeditor_tasinput::update_controls()
 	std::vector<std::string> _controller_labels;
 	inst.iqueue->run([&_inputs, &_controller_labels](){
 		std::map<std::string, unsigned> next_in_class;
-		controller_frame model = CORE().controls->get_blank();
-		const port_type_set& pts = model.porttypes();
+		portctrl::frame model = CORE().controls->get_blank();
+		const portctrl::type_set& pts = model.porttypes();
 		unsigned cnum_g = 0;
 		for(unsigned i = 0;; i++) {
 			auto pcid = CORE().controls->lcid_to_pcid(i);
 			if(pcid.first < 0)
 				break;
-			const port_type& pt = pts.port_type(pcid.first);
-			const port_controller_set& pci = *(pt.controller_info);
+			const portctrl::type& pt = pts.port_type(pcid.first);
+			const portctrl::controller_set& pci = *(pt.controller_info);
 			if((ssize_t)pci.controllers.size() <= pcid.second)
 				continue;
-			const port_controller& pc = pci.controllers[pcid.second];
+			const portctrl::controller& pc = pci.controllers[pcid.second];
 			//First check that this has non-hidden stuff.
 			bool has_buttons = false;
 			for(unsigned k = 0; k < pc.buttons.size(); k++) {
-				const port_controller_button& pcb = pc.buttons[k];
+				const portctrl::button& pcb = pc.buttons[k];
 				if(!pcb.shadow)
 					has_buttons = true;
 			}
@@ -468,8 +468,8 @@ void wxeditor_tasinput::update_controls()
 			}
 			//Go through all buttons.
 			for(unsigned k = 0; k < pc.buttons.size(); k++) {
-				const port_controller_button& pcb = pc.buttons[k];
-				if(pcb.type != port_controller_button::TYPE_BUTTON || pcb.shadow)
+				const portctrl::button& pcb = pc.buttons[k];
+				if(pcb.type != portctrl::button::TYPE_BUTTON || pcb.shadow)
 					continue;
 				struct control_triple t;
 				t.port = pcid.first;
@@ -477,13 +477,13 @@ void wxeditor_tasinput::update_controls()
 				t.xindex = k;
 				t.yindex = std::numeric_limits<unsigned>::max();
 				t.logical = cnum_g;
-				t.type = port_controller_button::TYPE_BUTTON;
+				t.type = portctrl::button::TYPE_BUTTON;
 				t.name = pcb.name;
 				_inputs.push_back(t);
 			}
 			for(unsigned k = 0; k < pc.buttons.size(); k++) {
-				const port_controller_button& pcb = pc.buttons[k];
-				if(pcb.type == port_controller_button::TYPE_BUTTON || pcb.shadow)
+				const portctrl::button& pcb = pc.buttons[k];
+				if(pcb.type == portctrl::button::TYPE_BUTTON || pcb.shadow)
 					continue;
 				CORE().controls->tasinput(pcid.first, pcid.second, k, pcb.centers ? ((int)pcb.rmin +
 					pcb.rmax) / 2 : pcb.rmin);
@@ -516,7 +516,7 @@ void wxeditor_tasinput::update_controls()
 		struct control_triple t = i;
 		t.check = NULL;
 		t.panel = NULL;
-		if(i.type == port_controller_button::TYPE_BUTTON) {
+		if(i.type == portctrl::button::TYPE_BUTTON) {
 			t.check = new wxCheckBox(current_p, next_id, towxstring(i.name + get_shorthand(i.xindex)),
 				wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS);
 			current->Add(t.check);

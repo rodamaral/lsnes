@@ -316,7 +316,7 @@ void lua_state::callback_post_save(const std::string& name, bool is_state) throw
 	run_callback(*on_post_save, lua::state::string_tag(name), lua::state::boolean_tag(is_state));
 }
 
-void lua_state::callback_do_input(controller_frame& data, bool subframe) throw()
+void lua_state::callback_do_input(portctrl::frame& data, bool subframe) throw()
 {
 	run_callback(*on_input, lua::state::store_tag(input_controllerdata, &data),
 		lua::state::boolean_tag(subframe));

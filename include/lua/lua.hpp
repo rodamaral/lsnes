@@ -55,7 +55,7 @@ struct lua_state
 	void callback_do_paint(struct lua::render_context* ctx, bool non_synthethic) throw();
 	void callback_do_video(struct lua::render_context* ctx, bool& kill_frame, uint32_t& hscl, uint32_t& vscl)
 		throw();
-	void callback_do_input(controller_frame& data, bool subframe) throw();
+	void callback_do_input(portctrl::frame& data, bool subframe) throw();
 	void callback_do_reset() throw();
 	void callback_do_frame() throw();
 	void callback_do_frame_emulated() throw();
@@ -90,7 +90,7 @@ struct lua_state
 	bool requests_repaint;
 	bool requests_subframe_paint;
 	lua::render_context* render_ctx;
-	controller_frame* input_controllerdata;
+	portctrl::frame* input_controllerdata;
 	bool* kill_frame;
 	void* synchronous_paint_ctx;
 	uint32_t* hscl;

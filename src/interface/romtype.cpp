@@ -363,7 +363,7 @@ void core_sysregion::fill_framerate_magic(uint64_t* magic)
 	region.fill_framerate_magic(magic);
 }
 
-core_core::core_core(std::initializer_list<port_type*> ports, std::initializer_list<interface_action> x_actions)
+core_core::core_core(std::initializer_list<portctrl::type*> ports, std::initializer_list<interface_action> x_actions)
 {
 	for(auto i : ports)
 		port_types.push_back(i);
@@ -376,7 +376,7 @@ core_core::core_core(std::initializer_list<port_type*> ports, std::initializer_l
 	new_core_flag = true;
 }
 
-core_core::core_core(std::vector<port_type*> ports, std::vector<interface_action> x_actions)
+core_core::core_core(std::vector<portctrl::type*> ports, std::vector<interface_action> x_actions)
 {
 	for(auto i : ports)
 		port_types.push_back(i);
@@ -520,7 +520,7 @@ framebuffer::raw& core_core::draw_cover()
 	return c_draw_cover();
 }
 
-void core_core::pre_emulate_frame(controller_frame& cf)
+void core_core::pre_emulate_frame(portctrl::frame& cf)
 {
 	c_pre_emulate_frame(cf);
 }

@@ -84,7 +84,7 @@ namespace
 		}
 	}
 
-	void write_input(zip::writer& w, const std::string& mname, controller_frame_vector& input)
+	void write_input(zip::writer& w, const std::string& mname, portctrl::frame_vector& input)
 		throw(std::bad_alloc, std::runtime_error)
 	{
 		std::ostream& m = w.create_file(mname);

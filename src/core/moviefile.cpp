@@ -134,7 +134,7 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 	settings = c_settings;
 	input = NULL;
 	auto ctrldata = rom.controllerconfig(settings);
-	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
+	portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 	create_default_branch(ports);
 	if(!rom.isnull()) {
 		//Initialize the remainder.
@@ -238,7 +238,7 @@ void moviefile::save(std::ostream& stream, rrdata_set& rrd) throw(std::bad_alloc
 	save(w, rrd);
 }
 
-void moviefile::create_default_branch(port_type_set& ports)
+void moviefile::create_default_branch(portctrl::type_set& ports)
 {
 	if(input)
 		return;

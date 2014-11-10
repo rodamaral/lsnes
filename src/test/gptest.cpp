@@ -120,7 +120,7 @@ void show_data(unsigned char* buffer, size_t bufsize)
 	std::cout << s.str() << std::endl;
 }
 
-void test_port(port_type* p, unsigned bits)
+void test_port(portctrl::type* p, unsigned bits)
 {
 	char out[512];
 	unsigned char buffer[512];
@@ -150,14 +150,15 @@ void test_port(port_type* p, unsigned bits)
 		short v = 1;
 		if(p->controller_info->controllers[pc].buttons[pi].is_analog())
 			v = rand();
-		if(p->controller_info->controllers[pc].buttons[pi].type == port_controller_button::TYPE_NULL)
+		if(p->controller_info->controllers[pc].buttons[pi].type == portctrl::button::TYPE_NULL)
 			v = 0;
 		p->write(p, buffer3, pc, pi, v);
 		for(int i = 0; i < p->controller_info->controllers.size(); i++) {
 			for(int j = 0; j < p->controller_info->controllers[pc].buttons.size(); j++) {
 				int k2 = p->read(p, buffer3, i, j);
 				if(k2 != v && (i == pc && j == pi)) {
-					std::cerr << "Error (" << i << "," << j << "," << k2 << ")!=" << v << std::endl;
+					std::cerr << "Error (" << i << "," << j << "," << k2 << ")!=" << v
+						<< std::endl;
 					show_data(buffer3, p->storage_size);
 				}
 				if(k2 != 0 && (i != pc || j != pi))
@@ -179,19 +180,19 @@ int main()
 {
 
 	JSON::node portsdata(ports_json);
-	port_type_generic Sgamepad(portsdata, "ports/0");
-	port_type_generic Sgamepad16(portsdata, "ports/1");
-	port_type_generic Sygamepad16(portsdata, "ports/2");
-	port_type_generic Sjustifier(portsdata, "ports/3");
-	port_type_generic Sjustifiers(portsdata, "ports/4");
-	port_type_generic Smouse(portsdata, "ports/5");
-	port_type_generic Smultitap(portsdata, "ports/6");
-	port_type_generic Smultitap16(portsdata, "ports/7");
-	port_type_generic Snone(portsdata, "ports/8");
-	port_type_generic Ssuperscope(portsdata, "ports/9");
-	port_type_generic Spsystem(portsdata, "ports/10");
-	port_type_generic Spsystem_hreset(portsdata, "ports/11");
-	port_type_generic Spsystem_compact(portsdata, "ports/12");
+	portctrl::type_generic Sgamepad(portsdata, "ports/0");
+	portctrl::type_generic Sgamepad16(portsdata, "ports/1");
+	portctrl::type_generic Sygamepad16(portsdata, "ports/2");
+	portctrl::type_generic Sjustifier(portsdata, "ports/3");
+	portctrl::type_generic Sjustifiers(portsdata, "ports/4");
+	portctrl::type_generic Smouse(portsdata, "ports/5");
+	portctrl::type_generic Smultitap(portsdata, "ports/6");
+	portctrl::type_generic Smultitap16(portsdata, "ports/7");
+	portctrl::type_generic Snone(portsdata, "ports/8");
+	portctrl::type_generic Ssuperscope(portsdata, "ports/9");
+	portctrl::type_generic Spsystem(portsdata, "ports/10");
+	portctrl::type_generic Spsystem_hreset(portsdata, "ports/11");
+	portctrl::type_generic Spsystem_compact(portsdata, "ports/12");
 
 	unsigned char buffer[512];
 
@@ -201,8 +202,8 @@ int main()
 	s1.ports.push_back(&multitap16);
 	for(unsigned i = 0; i < 8; i++)
 		s1.logical_map.push_back(std::make_pair(i / 4 + 1, i % 4));
-	port_type_set& _fixed = port_type_set::make(s1.ports, s1.portindex());
-	controller_frame fixed(buffer, _fixed);
+	portctrl::type_set& _fixed = portctrl::type_set::make(s1.ports, s1.portindex());
+	portctrl::frame fixed(buffer, _fixed);
 
 	controller_set s2;
 	s2.ports.push_back(&Spsystem);
@@ -210,8 +211,8 @@ int main()
 	s2.ports.push_back(&Smultitap16);
 	for(unsigned i = 0; i < 8; i++)
 		s2.logical_map.push_back(std::make_pair(i / 4 + 1, i % 4));
-	port_type_set& _variable = port_type_set::make(s2.ports, s2.portindex());
-	controller_frame variable(buffer, _variable);
+	portctrl::type_set& _variable = portctrl::type_set::make(s2.ports, s2.portindex());
+	portctrl::frame variable(buffer, _variable);
 
 	char out[512];
 	srand(time(NULL));

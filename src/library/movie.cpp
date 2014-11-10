@@ -11,7 +11,7 @@
 
 namespace
 {
-	bool movies_compatible(controller_frame_vector& old_movie, controller_frame_vector& new_movie,
+	bool movies_compatible(portctrl::frame_vector& old_movie, portctrl::frame_vector& new_movie,
 		uint64_t frame, const uint32_t* polls, const std::string& old_projectid,
 		const std::string& new_projectid)
 	{
@@ -58,7 +58,7 @@ bool movie::readonly_mode() throw()
 	return readonly;
 }
 
-void movie::set_controls(controller_frame controls) throw()
+void movie::set_controls(portctrl::frame controls) throw()
 {
 	current_controls = controls;
 }
@@ -68,11 +68,11 @@ uint32_t movie::count_changes(uint64_t first_subframe) throw()
 	return movie_data->subframe_count(first_subframe);
 }
 
-controller_frame movie::get_controls() throw()
+portctrl::frame movie::get_controls() throw()
 {
 	if(!readonly)
 		return current_controls;
-	controller_frame c = movie_data->blank_frame(false);
+	portctrl::frame c = movie_data->blank_frame(false);
 	//Before the beginning? Somebody screwed up (but return released / neutral anyway)...
 	if(current_frame == 0)
 		return c;
@@ -207,7 +207,7 @@ movie::movie() throw(std::bad_alloc)
 	clear_caches();
 }
 
-void movie::load(const std::string& rerecs, const std::string& project_id, controller_frame_vector& input)
+void movie::load(const std::string& rerecs, const std::string& project_id, portctrl::frame_vector& input)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	if(input.size() > 0 && !input[0].sync())
@@ -219,7 +219,7 @@ void movie::load(const std::string& rerecs, const std::string& project_id, contr
 	_project_id = project_id;
 	current_frame = 0;
 	current_frame_first_subframe = 0;
-	pollcounters = pollcounter_vector(input.get_types());
+	pollcounters = portctrl::counters(input.get_types());
 	lag_frames = 0;
 	//This is to force internal type of current_controls to become correct.
 	current_controls = input.blank_frame(false);
@@ -284,7 +284,7 @@ void movie::save_state(std::string& proj_id, uint64_t& curframe, uint64_t& lagfr
 
 //Restore state of movie code. Throws if state is invalid. Flag gives new state of readonly flag.
 size_t movie::restore_state(uint64_t curframe, uint64_t lagframe, const std::vector<uint32_t>& pcounters, bool ro,
-	controller_frame_vector* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
+	portctrl::frame_vector* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	if(!pollcounters.check(pcounters))
@@ -323,7 +323,7 @@ void movie::clear_caches() throw()
 	cached_subframe = 0;
 }
 
-controller_frame movie::read_subframe(uint64_t frame, uint64_t subframe) throw()
+portctrl::frame movie::read_subframe(uint64_t frame, uint64_t subframe) throw()
 {
 	if(frame < cached_frame)
 		clear_caches();
@@ -429,9 +429,9 @@ movie::poll_flag::~poll_flag()
 {
 }
 
-void movie::set_movie_data(controller_frame_vector* data)
+void movie::set_movie_data(portctrl::frame_vector* data)
 {
-	controller_frame_vector* old = movie_data;
+	portctrl::frame_vector* old = movie_data;
 	if(data)
 		data->set_framecount_notification(_listener);
 	movie_data = data;
@@ -449,7 +449,7 @@ movie::fchange_listener::~fchange_listener()
 {
 }
 
-void movie::fchange_listener::notify(controller_frame_vector& src, uint64_t old)
+void movie::fchange_listener::notify(portctrl::frame_vector& src, uint64_t old)
 {
 	//Recompute frame_first_subframe.
 	while(mov.current_frame_first_subframe < mov.movie_data->size() && mov.current_frame > old + 1) {

@@ -127,8 +127,8 @@ void button_mapping::reread()
 		auto x = controls.lcid_to_pcid(i);
 		if(x.first < 0)
 			break;
-		const port_type& pt = controls.get_blank().get_port_type(x.first);
-		const port_controller& ctrl = pt.controller_info->controllers[x.second];
+		const portctrl::type& pt = controls.get_blank().get_port_type(x.first);
+		const portctrl::controller& ctrl = pt.controller_info->controllers[x.second];
 		if(!classnum.count(ctrl.cclass))
 			classnum[ctrl.cclass] = 1;
 		else
@@ -191,7 +191,7 @@ void button_mapping::load(controller_state& ctrlstate, project_info& pinfo)
 {
 	for(auto i : pinfo.macros)
 		try {
-			ctrlstate.set_macro(i.first, controller_macro(i.second));
+			ctrlstate.set_macro(i.first, portctrl::macro(i.second));
 		} catch(std::exception& e) {
 			messages << "Unable to load macro " << i.first << ": " << e.what() << std::endl;
 		}
@@ -279,7 +279,7 @@ void button_mapping::add_button(const std::string& name, const button_mapping::c
 }
 
 //Take specified controller info and process it as specified controller of its class.
-void button_mapping::process_controller(port_controller& controller, unsigned number)
+void button_mapping::process_controller(portctrl::controller& controller, unsigned number)
 {
 	unsigned analog_num = 1;
 	bool multi_analog = (controller.analog_actions() > 1);
@@ -287,7 +287,7 @@ void button_mapping::process_controller(port_controller& controller, unsigned nu
 	for(unsigned i = 0; i < controller.buttons.size(); i++) {
 		if(controller.buttons[i].shadow)
 			continue;
-		if(controller.buttons[i].type != port_controller_button::TYPE_BUTTON)
+		if(controller.buttons[i].type != portctrl::button::TYPE_BUTTON)
 			continue;
 		std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
 			<< controller.buttons[i].name).str();
@@ -329,7 +329,7 @@ void button_mapping::process_controller(port_controller& controller, unsigned nu
 	}
 	for(unsigned i = 0; i < controller.analog_actions(); i++) {
 		auto g = controller.analog_action(i);
-		auto raxis = port_controller_button::TYPE_RAXIS;
+		auto raxis = portctrl::button::TYPE_RAXIS;
 		std::string name;
 		button_mapping::controller_bind b;
 		if(multi_analog)
@@ -361,7 +361,7 @@ void button_mapping::process_controller(port_controller& controller, unsigned nu
 //- Different cores allocate numbers independently.
 //- Within the same core, the allocations for higher port start after the previous port ends.
 void button_mapping::process_controller(std::map<std::string, unsigned>& allocated,
-	std::map<controller_triple, unsigned>& assigned,  port_controller& controller, unsigned port,
+	std::map<controller_triple, unsigned>& assigned,  portctrl::controller& controller, unsigned port,
 	unsigned number_in_port)
 {
 	controller_triple key;
@@ -376,7 +376,7 @@ void button_mapping::process_controller(std::map<std::string, unsigned>& allocat
 }
 
 void button_mapping::process_port(std::map<std::string, unsigned>& allocated,
-	std::map<controller_triple, unsigned>& assigned, unsigned port, port_type& ptype)
+	std::map<controller_triple, unsigned>& assigned, unsigned port, portctrl::type& ptype)
 {
 	//What makes this nasty: Separate ports are always processed, but the same controllers can come
 	//multiple times, including with partial reprocessing.
@@ -391,7 +391,7 @@ void button_mapping::process_port(std::map<std::string, unsigned>& allocated,
 
 void button_mapping::init()
 {
-	std::vector<port_type*> ptypes;
+	std::vector<portctrl::type*> ptypes;
 	for(auto k : core_core::all_cores()) {
 		if(cores_done.count(k))
 			continue;

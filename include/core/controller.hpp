@@ -7,8 +7,6 @@
 
 struct project_info;
 struct controller_state;
-struct port_controller;
-struct port_type;
 struct emu_framebuffer;
 struct emulator_dispatch;
 struct lua_state;
@@ -17,6 +15,8 @@ namespace keyboard { class invbind; }
 namespace keyboard { class ctrlrkey; }
 namespace keyboard { class mapper; }
 namespace keyboard { class keyboard; }
+namespace portctrl { struct type; }
+namespace portctrl { struct controller; }
 
 class button_mapping
 {
@@ -107,12 +107,12 @@ public:
 private:
 	void promote_key(keyboard::ctrlrkey& k);
 	void add_button(const std::string& name, const controller_bind& binding);
-	void process_controller(port_controller& controller, unsigned number);
+	void process_controller(portctrl::controller& controller, unsigned number);
 	void process_controller(std::map<std::string, unsigned>& allocated,
-		std::map<controller_triple, unsigned>& assigned,  port_controller& controller, unsigned port,
+		std::map<controller_triple, unsigned>& assigned,  portctrl::controller& controller, unsigned port,
 		unsigned number_in_port);
 	void process_port(std::map<std::string, unsigned>& allocated,
-		std::map<controller_triple, unsigned>& assigned, unsigned port, port_type& ptype);
+		std::map<controller_triple, unsigned>& assigned, unsigned port, portctrl::type& ptype);
 	void init();
 	bool check_button_active(const std::string& name);
 	void do_button_action(const std::string& name, short newstate, int mode);

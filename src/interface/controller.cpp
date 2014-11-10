@@ -3,9 +3,9 @@
 
 namespace
 {
-	port_index_triple t(unsigned p, unsigned c, unsigned i)
+	portctrl::index_triple t(unsigned p, unsigned c, unsigned i)
 	{
-		port_index_triple x;
+		portctrl::index_triple x;
 		x.valid = true;
 		x.port = p;
 		x.controller = c;
@@ -13,7 +13,7 @@ namespace
 		return x;
 	}
 
-	void push_port_indices(std::vector<port_index_triple>& tab, unsigned p, port_type& pt)
+	void push_port_indices(std::vector<portctrl::index_triple>& tab, unsigned p, portctrl::type& pt)
 	{
 		unsigned ctrls = pt.controller_info->controllers.size();
 		for(unsigned i = 0; i < ctrls; i++)
@@ -22,9 +22,9 @@ namespace
 	}
 }
 
-struct port_index_map controller_set::portindex()
+struct portctrl::index_map controller_set::portindex()
 {
-	port_index_map m;
+	portctrl::index_map m;
 	m.logical_map = logical_map;
 	m.pcid_map = logical_map;
 	std::sort(m.pcid_map.begin(), m.pcid_map.end());

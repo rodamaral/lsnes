@@ -310,8 +310,8 @@ struct core_romimage
 
 struct core_core
 {
-	core_core(std::initializer_list<port_type*> ports, std::initializer_list<interface_action> actions);
-	core_core(std::vector<port_type*> ports, std::vector<interface_action> actions);
+	core_core(std::initializer_list<portctrl::type*> ports, std::initializer_list<interface_action> actions);
+	core_core(std::vector<portctrl::type*> ports, std::vector<interface_action> actions);
 	~core_core() throw();
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();
@@ -333,9 +333,9 @@ struct core_core
 	bool get_pflag();
 	void set_pflag(bool pflag);
 	framebuffer::raw& draw_cover();
-	std::vector<port_type*> get_port_types() { return port_types; }
+	std::vector<portctrl::type*> get_port_types() { return port_types; }
 	std::string get_core_shortname();
-	void pre_emulate_frame(controller_frame& cf);
+	void pre_emulate_frame(portctrl::frame& cf);
 	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p);
 	unsigned action_flags(unsigned id);
 	std::pair<uint64_t, uint64_t> get_bus_map();
@@ -459,7 +459,7 @@ protected:
  *
  * E.g. if core supports resetting, set the reset button in the frame to pressed if reset is wanted.
  */
-	virtual void c_pre_emulate_frame(controller_frame& cf) = 0;
+	virtual void c_pre_emulate_frame(portctrl::frame& cf) = 0;
 /**
  * Execute action.
  */
@@ -528,7 +528,7 @@ protected:
  */
 	virtual bool c_isnull();
 private:
-	std::vector<port_type*> port_types;
+	std::vector<portctrl::type*> port_types;
 	bool hidden;
 	std::map<std::string, interface_action> actions;
 	threads::lock actions_lock;
@@ -595,7 +595,7 @@ public:
 	unsigned action_flags(unsigned id) { return core->action_flags(id); }
 	bool is_hidden() { return core->is_hidden(); }
 	double get_PAR() { return core->get_PAR(); }
-	void pre_emulate_frame(controller_frame& cf) { return core->pre_emulate_frame(cf); }
+	void pre_emulate_frame(portctrl::frame& cf) { return core->pre_emulate_frame(cf); }
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }
 	const interface_device_reg* get_registers() { return core->get_registers(); }
 	int reset_action(bool hard) { return core->reset_action(hard); }

@@ -12,7 +12,7 @@
 #include "interface/callbacks.hpp"
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"
-#include "library/controller-data.hpp"
+#include "library/portctrl-data.hpp"
 #include "library/fileimage-patch.hpp"
 #include "library/framebuffer-pixfmt-rgb16.hpp"
 #include "library/sha256.hpp"
@@ -104,7 +104,7 @@ namespace
 			return x;
 		}
 		std::string c_get_core_shortname() { return "null"; }
-		void c_pre_emulate_frame(controller_frame& cf) {}
+		void c_pre_emulate_frame(portctrl::frame& cf) {}
 		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) {}
 		const interface_device_reg* c_get_registers() { return null_registers; }
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
@@ -115,7 +115,7 @@ namespace
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
 		{
 			controller_set x;
-			x.ports.push_back(&get_default_system_port_type());
+			x.ports.push_back(&portctrl::get_default_system_port_type());
 			return x;
 		}
 		std::pair<uint64_t, uint64_t> c_get_bus_map() { return std::make_pair(0ULL, 0ULL); }

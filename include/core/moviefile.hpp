@@ -46,7 +46,7 @@ struct moviefile
 		branch_extractor(const std::string& filename);
 		virtual ~branch_extractor();
 		virtual std::set<std::string> enumerate() { return real->enumerate(); }
-		virtual void read(const std::string& name, controller_frame_vector& v) { real->read(name, v); }
+		virtual void read(const std::string& name, portctrl::frame_vector& v) { real->read(name, v); }
 	protected:
 		branch_extractor() { real = NULL; }
 	private:
@@ -199,11 +199,11 @@ struct moviefile
 /**
  * Input for each (sub)frame (points to active branch).
  */
-	controller_frame_vector* input;
+	portctrl::frame_vector* input;
 /**
  * Branches.
  */
-	std::map<std::string, controller_frame_vector> branches;
+	std::map<std::string, portctrl::frame_vector> branches;
 /**
  * Current RTC second.
  */
@@ -261,7 +261,7 @@ struct moviefile
 /**
  * Create a default branch.
  */
-	void create_default_branch(port_type_set& ports);
+	void create_default_branch(portctrl::type_set& ports);
 /**
  * Get name of current branch.
  */

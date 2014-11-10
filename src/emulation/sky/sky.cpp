@@ -38,58 +38,58 @@ namespace sky
 
 	struct instance corei;
 
-	port_controller X4 = {"(system)", "(system)", {
-		{port_controller_button::TYPE_BUTTON, 'F', "framesync", true}
+	portctrl::controller X4 = {"(system)", "(system)", {
+		{portctrl::button::TYPE_BUTTON, 'F', "framesync", true}
 	}};
-	port_controller X8 = {"sky", "sky", {
-		{port_controller_button::TYPE_BUTTON, 'L', "left", true},
-		{port_controller_button::TYPE_BUTTON, 'R', "right", true},
-		{port_controller_button::TYPE_BUTTON, 'A', "up", true},
-		{port_controller_button::TYPE_BUTTON, 'D', "down", true},
-		{port_controller_button::TYPE_BUTTON, 'J', "A", true},
-		{port_controller_button::TYPE_BUTTON, 'S', "start", true},
-		{port_controller_button::TYPE_BUTTON, 's', "select", true},
-		{port_controller_button::TYPE_NULL, '\0', "", true},
-		{port_controller_button::TYPE_NULL, '\0', "", true},
-	}};
-
-	port_controller A8 = {"gamepad", "sky", {
-		{port_controller_button::TYPE_NULL, '\0', "", false},
-		{port_controller_button::TYPE_NULL, '\0', "", false},
-		{port_controller_button::TYPE_BUTTON, 's', "select", false},
-		{port_controller_button::TYPE_BUTTON, 'S', "start", false},
-		{port_controller_button::TYPE_BUTTON, 'A', "up", false},
-		{port_controller_button::TYPE_BUTTON, 'D', "down", false},
-		{port_controller_button::TYPE_BUTTON, 'L', "left", false},
-		{port_controller_button::TYPE_BUTTON, 'R', "right", false},
-		{port_controller_button::TYPE_BUTTON, 'J', "A", false},
-	}};
-	port_controller B8 = {"gb", "sky", {
-		{port_controller_button::TYPE_BUTTON, 'J', "A", false},
-		{port_controller_button::TYPE_NULL, '\0', "", false},
-		{port_controller_button::TYPE_BUTTON, 's', "select", false},
-		{port_controller_button::TYPE_BUTTON, 'S', "start", false},
-		{port_controller_button::TYPE_BUTTON, 'R', "right", false},
-		{port_controller_button::TYPE_BUTTON, 'L', "left", false},
-		{port_controller_button::TYPE_BUTTON, 'A', "up", false},
-		{port_controller_button::TYPE_BUTTON, 'D', "down", false},
-		{port_controller_button::TYPE_NULL, '\0', "", false},
-	}};
-	port_controller C8 = {"gba", "sky", {
-		{port_controller_button::TYPE_BUTTON, 'J', "A", false},
-		{port_controller_button::TYPE_NULL, '\0', "", false},
-		{port_controller_button::TYPE_BUTTON, 's', "select", false},
-		{port_controller_button::TYPE_BUTTON, 'S', "start", false},
-		{port_controller_button::TYPE_BUTTON, 'R', "right", false},
-		{port_controller_button::TYPE_BUTTON, 'L', "left", false},
-		{port_controller_button::TYPE_BUTTON, 'A', "up", false},
-		{port_controller_button::TYPE_BUTTON, 'D', "down", false},
-		{port_controller_button::TYPE_NULL, '\0', "", false},
+	portctrl::controller X8 = {"sky", "sky", {
+		{portctrl::button::TYPE_BUTTON, 'L', "left", true},
+		{portctrl::button::TYPE_BUTTON, 'R', "right", true},
+		{portctrl::button::TYPE_BUTTON, 'A', "up", true},
+		{portctrl::button::TYPE_BUTTON, 'D', "down", true},
+		{portctrl::button::TYPE_BUTTON, 'J', "A", true},
+		{portctrl::button::TYPE_BUTTON, 'S', "start", true},
+		{portctrl::button::TYPE_BUTTON, 's', "select", true},
+		{portctrl::button::TYPE_NULL, '\0', "", true},
+		{portctrl::button::TYPE_NULL, '\0', "", true},
 	}};
 
-	port_controller_set X2 = {"sky", "sky", "sky", {X4, X8},{0}};
+	portctrl::controller A8 = {"gamepad", "sky", {
+		{portctrl::button::TYPE_NULL, '\0', "", false},
+		{portctrl::button::TYPE_NULL, '\0', "", false},
+		{portctrl::button::TYPE_BUTTON, 's', "select", false},
+		{portctrl::button::TYPE_BUTTON, 'S', "start", false},
+		{portctrl::button::TYPE_BUTTON, 'A', "up", false},
+		{portctrl::button::TYPE_BUTTON, 'D', "down", false},
+		{portctrl::button::TYPE_BUTTON, 'L', "left", false},
+		{portctrl::button::TYPE_BUTTON, 'R', "right", false},
+		{portctrl::button::TYPE_BUTTON, 'J', "A", false},
+	}};
+	portctrl::controller B8 = {"gb", "sky", {
+		{portctrl::button::TYPE_BUTTON, 'J', "A", false},
+		{portctrl::button::TYPE_NULL, '\0', "", false},
+		{portctrl::button::TYPE_BUTTON, 's', "select", false},
+		{portctrl::button::TYPE_BUTTON, 'S', "start", false},
+		{portctrl::button::TYPE_BUTTON, 'R', "right", false},
+		{portctrl::button::TYPE_BUTTON, 'L', "left", false},
+		{portctrl::button::TYPE_BUTTON, 'A', "up", false},
+		{portctrl::button::TYPE_BUTTON, 'D', "down", false},
+		{portctrl::button::TYPE_NULL, '\0', "", false},
+	}};
+	portctrl::controller C8 = {"gba", "sky", {
+		{portctrl::button::TYPE_BUTTON, 'J', "A", false},
+		{portctrl::button::TYPE_NULL, '\0', "", false},
+		{portctrl::button::TYPE_BUTTON, 's', "select", false},
+		{portctrl::button::TYPE_BUTTON, 'S', "start", false},
+		{portctrl::button::TYPE_BUTTON, 'R', "right", false},
+		{portctrl::button::TYPE_BUTTON, 'L', "left", false},
+		{portctrl::button::TYPE_BUTTON, 'A', "up", false},
+		{portctrl::button::TYPE_BUTTON, 'D', "down", false},
+		{portctrl::button::TYPE_NULL, '\0', "", false},
+	}};
 
-	void port_write(const port_type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x)
+	portctrl::controller_set X2 = {"sky", "sky", "sky", {X4, X8},{0}};
+
+	void port_write(const portctrl::type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x)
 	{
 		switch(idx) {
 		case 0:
@@ -126,7 +126,7 @@ namespace sky
 		};
 	}
 
-	short port_read(const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl)
+	short port_read(const portctrl::type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl)
 	{
 		switch(idx) {
 		case 0:
@@ -164,7 +164,7 @@ namespace sky
 		};
 		return 0;
 	}
-	size_t port_serialize(const port_type* _this, const unsigned char* buffer, char* textbuf)
+	size_t port_serialize(const portctrl::type* _this, const unsigned char* buffer, char* textbuf)
 	{
 		size_t ptr = 0;
 		textbuf[ptr++] = (buffer[0] & 1) ? 'F' : '.';
@@ -179,26 +179,26 @@ namespace sky
 		textbuf[ptr] = '\0';
 		return ptr;
 	};
-	size_t port_deserialize(const port_type* _this, unsigned char* buffer, const char* textbuf)
+	size_t port_deserialize(const portctrl::type* _this, unsigned char* buffer, const char* textbuf)
 	{
 		memset(buffer, 0, 2);
 		size_t ptr = 0;
-		if(read_button_value(textbuf, ptr)) buffer[0] |= 1;
-		skip_rest_of_field(textbuf, ptr, true);
-		if(read_button_value(textbuf, ptr)) buffer[0] |= 2;
-		if(read_button_value(textbuf, ptr)) buffer[0] |= 4;
-		if(read_button_value(textbuf, ptr)) buffer[0] |= 8;
-		if(read_button_value(textbuf, ptr)) buffer[0] |= 16;
-		if(read_button_value(textbuf, ptr)) buffer[0] |= 32;
-		if(read_button_value(textbuf, ptr)) buffer[0] |= 64;
-		if(read_button_value(textbuf, ptr)) buffer[0] |= 128;
-		skip_rest_of_field(textbuf, ptr, false);
+		if(portctrl::read_button_value(textbuf, ptr)) buffer[0] |= 1;
+		portctrl::skip_rest_of_field(textbuf, ptr, true);
+		if(portctrl::read_button_value(textbuf, ptr)) buffer[0] |= 2;
+		if(portctrl::read_button_value(textbuf, ptr)) buffer[0] |= 4;
+		if(portctrl::read_button_value(textbuf, ptr)) buffer[0] |= 8;
+		if(portctrl::read_button_value(textbuf, ptr)) buffer[0] |= 16;
+		if(portctrl::read_button_value(textbuf, ptr)) buffer[0] |= 32;
+		if(portctrl::read_button_value(textbuf, ptr)) buffer[0] |= 64;
+		if(portctrl::read_button_value(textbuf, ptr)) buffer[0] |= 128;
+		portctrl::skip_rest_of_field(textbuf, ptr, false);
 		return ptr;
 	};
 
-	struct _psystem : public port_type
+	struct _psystem : public portctrl::type
 	{
-		_psystem() : port_type("system", "system", 1)
+		_psystem() : portctrl::type("system", "system", 1)
 		{
 			write = port_write;
 			read = port_read;
@@ -208,9 +208,9 @@ namespace sky
 		}
 	} psystem;
 
-	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
+	portctrl::index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
 	{
-		port_index_triple x;
+		portctrl::index_triple x;
 		x.valid = true;
 		x.port = p;
 		x.controller = c;
@@ -337,7 +337,7 @@ namespace sky
 			return x;
 		}
 		std::string c_get_core_shortname() { return "sky"; }
-		void c_pre_emulate_frame(controller_frame& cf) {}
+		void c_pre_emulate_frame(portctrl::frame& cf) {}
 		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) {}
 		const interface_device_reg* c_get_registers() { return sky_registers; }
 		int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings,

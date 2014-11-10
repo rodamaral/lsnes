@@ -165,7 +165,7 @@ void status_updater::update()
 		}
 		_status.macros = utf8::to32(mss.str());
 
-		controller_frame c;
+		portctrl::frame c;
 		if(!mteditor.any_records())
 			c = mlogic.get_movie().get_controls();
 		else

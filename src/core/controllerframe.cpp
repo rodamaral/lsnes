@@ -11,7 +11,7 @@
 
 namespace
 {
-	port_type_set dummytypes;
+	portctrl::type_set dummytypes;
 }
 
 controller_state::controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons,
@@ -39,9 +39,9 @@ std::pair<int, int> controller_state::legacy_pcid_to_pair(unsigned pcid) throw()
 }
 
 
-controller_frame controller_state::get(uint64_t framenum) throw()
+portctrl::frame controller_state::get(uint64_t framenum) throw()
 {
-	controller_frame tmp =  _input ^ _framehold ^ _autohold;
+	portctrl::frame tmp =  _input ^ _framehold ^ _autohold;
 	for(auto i : _autofire)
 		if(i.second.eval_at(framenum))
 			tmp.axis2(i.first, tmp.axis2(i.first) ^ 1);
@@ -146,7 +146,7 @@ void controller_state::tasinput_enable(bool enabled)
 	tasinput_enaged = enabled;
 }
 
-void controller_state::reread_tasinput_mode(const port_type_set& ptype)
+void controller_state::reread_tasinput_mode(const portctrl::type_set& ptype)
 {
 	unsigned indices = ptype.indices();
 	_tasinput.clear();
@@ -155,17 +155,17 @@ void controller_state::reread_tasinput_mode(const port_type_set& ptype)
 		if(!t.valid)
 			continue;
 		//See what the heck that is...
-		const port_type& pt = ptype.port_type(t.port);
-		const port_controller_set& pci = *(pt.controller_info);
+		const portctrl::type& pt = ptype.port_type(t.port);
+		const portctrl::controller_set& pci = *(pt.controller_info);
 		if(pci.controllers.size() <= t.controller)
 			continue;
-		const port_controller& pc = pci.controllers[t.controller];
+		const portctrl::controller& pc = pci.controllers[t.controller];
 		if(pc.buttons.size() <= t.control)
 			continue;
-		const port_controller_button& pcb = pc.buttons[t.control];
+		const portctrl::button& pcb = pc.buttons[t.control];
 		if(pcb.shadow)
 			continue;
-		if(pcb.type == port_controller_button::TYPE_BUTTON)
+		if(pcb.type == portctrl::button::TYPE_BUTTON)
 			_tasinput[i].mode = 0;
 		else
 			_tasinput[i].mode = 1;
@@ -173,9 +173,9 @@ void controller_state::reread_tasinput_mode(const port_type_set& ptype)
 	}
 }
 
-void controller_state::set_ports(const port_type_set& ptype) throw(std::runtime_error)
+void controller_state::set_ports(const portctrl::type_set& ptype) throw(std::runtime_error)
 {
-	const port_type_set* oldtype = types;
+	const portctrl::type_set* oldtype = types;
 	types = &ptype;
 	if(oldtype != types) {
 		_input.set_types(ptype);
@@ -191,17 +191,17 @@ void controller_state::set_ports(const port_type_set& ptype) throw(std::runtime_
 	}
 }
 
-controller_frame controller_state::get_blank() throw()
+portctrl::frame controller_state::get_blank() throw()
 {
 	return _input.blank_frame();
 }
 
-controller_frame controller_state::get_committed() throw()
+portctrl::frame controller_state::get_committed() throw()
 {
 	return _committed;
 }
 
-void controller_state::commit(controller_frame controls) throw()
+void controller_state::commit(portctrl::frame controls) throw()
 {
 	_committed = controls;
 }
@@ -243,7 +243,7 @@ std::set<std::string> controller_state::enumerate_macro()
 	return r;
 }
 
-controller_macro& controller_state::get_macro(const std::string& macro)
+portctrl::macro& controller_state::get_macro(const std::string& macro)
 {
 	threads::alock h(macro_lock);
 	if(!all_macros.count(macro))
@@ -251,11 +251,11 @@ controller_macro& controller_state::get_macro(const std::string& macro)
 	return all_macros[macro];
 }
 
-void controller_state::set_macro(const std::string& macro, const controller_macro& m)
+void controller_state::set_macro(const std::string& macro, const portctrl::macro& m)
 {
 	{
 		threads::alock h(macro_lock);
-		controller_macro* old = NULL;
+		portctrl::macro* old = NULL;
 		if(all_macros.count(macro))
 			old = &all_macros[macro];
 		all_macros[macro] = m;
@@ -274,7 +274,7 @@ void controller_state::set_macro(const std::string& macro, const controller_macr
 	buttons.load(*this);
 }
 
-void controller_state::apply_macro(controller_frame& f)
+void controller_state::apply_macro(portctrl::frame& f)
 {
 	threads::alock h(macro_lock);
 	for(auto i : active_macros)
@@ -304,7 +304,7 @@ std::map<std::string, uint64_t> controller_state::get_macro_frames()
 void controller_state::set_macro_frames(const std::map<std::string, uint64_t>& f)
 {
 	threads::alock h(macro_lock);
-	std::list<std::pair<uint64_t, controller_macro*>> new_active_macros;
+	std::list<std::pair<uint64_t, portctrl::macro*>> new_active_macros;
 	for(auto i : f)
 		if(all_macros.count(i.first))
 			new_active_macros.push_back(std::make_pair(i.second, &all_macros[i.first]));
@@ -324,7 +324,7 @@ void controller_state::rename_macro(const std::string& old, const std::string& n
 		if(old == newn)
 			return;
 		all_macros[newn] = all_macros[old];
-		controller_macro* _old = &all_macros[old];
+		portctrl::macro* _old = &all_macros[old];
 		all_macros.erase(old);
 		for(auto i = active_macros.begin(); i != active_macros.end(); i++) {
 			if(i->second == _old) {
@@ -348,7 +348,7 @@ void controller_state::do_macro(const std::string& a, int mode) {
 			if(mode & 1) messages << "No such macro '" << a << "'" << std::endl;
 			return;
 		}
-		controller_macro* m = &all_macros[a];
+		portctrl::macro* m = &all_macros[a];
 		for(auto i = active_macros.begin(); i != active_macros.end(); i++) {
 			if(i->second == m) {
 				if(mode & 2) active_macros.erase(i);

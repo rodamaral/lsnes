@@ -77,7 +77,7 @@ public:
  *
  * parameter subframe: True if this is for subframe update, false if for frame update.
  */
-	controller_frame update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error);
+	portctrl::frame update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Release memory for mov, mf and rrd.

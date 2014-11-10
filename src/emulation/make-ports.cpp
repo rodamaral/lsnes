@@ -1,5 +1,5 @@
-#include "controller-data.hpp"
-#include "controller-parse.hpp"
+#include "portctrl-data.hpp"
+#include "portctrl-parse.hpp"
 #include "json.hpp"
 #include <string>
 
@@ -12,9 +12,9 @@ int main()
 		in_json = in_json + tmp + "\n";
 	}
 	JSON::node n(in_json);
-	auto x = pcs_from_json_array(n, "ports");
+	auto x = portctrl::pcs_from_json_array(n, "ports");
 	unsigned t = 0;
-	std::string out = pcs_write_classes(x, t);
+	std::string out = portctrl::pcs_write_classes(x, t);
 	std::cout << out;
 	return 0;
 }
