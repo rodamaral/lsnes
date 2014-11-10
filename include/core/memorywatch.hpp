@@ -32,8 +32,8 @@ struct memwatch_printer
 /**
  * Get a printer object corresponding to this object.
  */
-	gcroot_pointer<memorywatch::item_printer> get_printer_obj(
-		std::function<gcroot_pointer<mathexpr::mathexpr>(const std::string& n)> vars);
+	GC::pointer<memorywatch::item_printer> get_printer_obj(
+		std::function<GC::pointer<mathexpr::mathexpr>(const std::string& n)> vars);
 	//Fields.
 	enum position_category {
 		PC_DISABLED,

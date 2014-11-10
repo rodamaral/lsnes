@@ -3,11 +3,13 @@
 
 #include <cstdlib>
 
-class garbage_collectable
+namespace GC
+{
+class item
 {
 public:
-	garbage_collectable();
-	virtual ~garbage_collectable();
+	item();
+	virtual ~item();
 	void mark_root();
 	void unmark_root();
 	static void do_gc();
@@ -19,28 +21,28 @@ private:
 	bool reachable;
 };
 
-struct gcroot_pointer_object_tag {};
-template<class T> class gcroot_pointer
+struct obj_tag {};
+template<class T> class pointer
 {
 public:
-	gcroot_pointer()
+	pointer()
 	{
 		ptr = NULL;
 	}
-	gcroot_pointer(T* obj)
+	pointer(T* obj)
 	{
 		ptr = obj;
 	}
-	template<typename... U> gcroot_pointer(gcroot_pointer_object_tag tag, U... args)
+	template<typename... U> pointer(obj_tag tag, U... args)
 	{
 		ptr = new T(args...);
 	}
-	gcroot_pointer(const gcroot_pointer& p)
+	pointer(const pointer& p)
 	{
 		if(p.ptr) p.ptr->mark_root();
 		ptr = p.ptr;
 	}
-	gcroot_pointer& operator=(const gcroot_pointer& p)
+	pointer& operator=(const pointer& p)
 	{
 		if(ptr == p.ptr) return *this;
 		if(ptr) ptr->unmark_root();
@@ -48,7 +50,7 @@ public:
 		ptr = p.ptr;
 		return *this;
 	}
-	~gcroot_pointer()
+	~pointer()
 	{
 		if(ptr) ptr->unmark_root();
 	}
@@ -62,5 +64,6 @@ public:
 private:
 	T* ptr;
 };
+}
 
 #endif

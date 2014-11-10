@@ -16,7 +16,7 @@ struct output_list : public item_printer
 	void show(const std::string& iname, const std::string& val);
 	void reset();
 	bool cond_enable;
-	gcroot_pointer<mathexpr::mathexpr> enabled;
+	GC::pointer<mathexpr::mathexpr> enabled;
 	//State variables.
 	std::function<void(const std::string& n, const std::string& v)> fn;
 };

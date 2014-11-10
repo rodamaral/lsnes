@@ -156,10 +156,10 @@ void memwatch_printer::unserialize(const JSON::node& node)
 	onscreen_halo_color = json_signed_default(node, "onscreen_halo_color", false);
 }
 
-gcroot_pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
-	std::function<gcroot_pointer<mathexpr::mathexpr>(const std::string& n)> vars)
+GC::pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
+	std::function<GC::pointer<mathexpr::mathexpr>(const std::string& n)> vars)
 {
-	gcroot_pointer<memorywatch::item_printer> ptr;
+	GC::pointer<memorywatch::item_printer> ptr;
 	memorywatch::output_list* l;
 	memorywatch::output_fb* f;
 
@@ -167,10 +167,10 @@ gcroot_pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
 
 	switch(position) {
 	case PC_DISABLED:
-		ptr = gcroot_pointer<memorywatch::item_printer>(new memorywatch::output_null);
+		ptr = GC::pointer<memorywatch::item_printer>(new memorywatch::output_null);
 		break;
 	case PC_MEMORYWATCH:
-		ptr = gcroot_pointer<memorywatch::item_printer>(new memorywatch::output_list);
+		ptr = GC::pointer<memorywatch::item_printer>(new memorywatch::output_list);
 		l = dynamic_cast<memorywatch::output_list*>(ptr.as_pointer());
 		l->cond_enable = cond_enable;
 		try {
@@ -184,7 +184,7 @@ gcroot_pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
 		l->set_output(dummy_target_fn);
 		break;
 	case PC_ONSCREEN:
-		ptr = gcroot_pointer<memorywatch::item_printer>(new memorywatch::output_fb);
+		ptr = GC::pointer<memorywatch::item_printer>(new memorywatch::output_fb);
 		f = dynamic_cast<memorywatch::output_fb*>(ptr.as_pointer());
 		f->font = NULL;
 		f->set_dtor_cb([](memorywatch::output_fb& obj) { put_font(obj.font); });
@@ -497,19 +497,19 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 {
 	{
 		memorywatch::set new_set;
-		std::map<std::string, gcroot_pointer<mathexpr::mathexpr>> vars;
-		auto vars_fn = [&vars](const std::string& n) -> gcroot_pointer<mathexpr::mathexpr> {
+		std::map<std::string, GC::pointer<mathexpr::mathexpr>> vars;
+		auto vars_fn = [&vars](const std::string& n) -> GC::pointer<mathexpr::mathexpr> {
 			if(!vars.count(n))
-				vars[n] = gcroot_pointer<mathexpr::mathexpr>(gcroot_pointer_object_tag(),
+				vars[n] = GC::pointer<mathexpr::mathexpr>(GC::obj_tag(),
 					mathexpr::expression_value());
 			return vars[n];
 		};
 		for(auto& i : nitems) {
 			mathexpr::operinfo* memread_oper = i.second.get_memread_oper();
 			try {
-				gcroot_pointer<mathexpr::mathexpr> rt_expr;
-				gcroot_pointer<memorywatch::item_printer> rt_printer;
-				std::vector<gcroot_pointer<mathexpr::mathexpr>> v;
+				GC::pointer<mathexpr::mathexpr> rt_expr;
+				GC::pointer<memorywatch::item_printer> rt_printer;
+				std::vector<GC::pointer<mathexpr::mathexpr>> v;
 				try {
 					rt_expr = mathexpr::mathexpr::parse(*mathexpr::expression_value(),
 						i.second.expr, vars_fn);
@@ -519,7 +519,7 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 				}
 				v.push_back(rt_expr);
 				if(memread_oper) {
-					rt_expr = gcroot_pointer<mathexpr::mathexpr>(gcroot_pointer_object_tag(),
+					rt_expr = GC::pointer<mathexpr::mathexpr>(GC::obj_tag(),
 						mathexpr::expression_value(), memread_oper, v, true);
 					memread_oper = NULL;
 				}
@@ -545,7 +545,7 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 		}
 		watch_set.swap(new_set);
 	}
-	garbage_collectable::do_gc();
+	GC::item::do_gc();
 }
 
 void memwatch_set::watch_output(const std::string& name, const std::string& value)

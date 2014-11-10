@@ -216,7 +216,7 @@ template<class T> struct typeinfo_wrapper : public typeinfo
 	}
 };
 
-class mathexpr : public garbage_collectable
+class mathexpr : public GC::item
 {
 public:
 	enum eval_state
@@ -234,13 +234,13 @@ public:
 	//Undefined value of specified type.
 	mathexpr(typeinfo* _type);
 	//Forward evaluation.
-	mathexpr(typeinfo* _type, gcroot_pointer<mathexpr> fwd);
+	mathexpr(typeinfo* _type, GC::pointer<mathexpr> fwd);
 	//Value of specified type.
 	mathexpr(value value);
 	//Value of specified type.
 	mathexpr(typeinfo* _type, const std::string& value, bool string);
 	//Specified Operator.
-	mathexpr(typeinfo* _type, operinfo* fn, std::vector<gcroot_pointer<mathexpr>> _args,
+	mathexpr(typeinfo* _type, operinfo* fn, std::vector<GC::pointer<mathexpr>> _args,
 		bool _owns_operator = false);
 	//Dtor.
 	~mathexpr();
@@ -254,8 +254,8 @@ public:
 	//Reset.
 	void reset();
 	//Parse an expression.
-	static gcroot_pointer<mathexpr> parse(typeinfo& _type, const std::string& expr,
-		std::function<gcroot_pointer<mathexpr>(const std::string&)> vars);
+	static GC::pointer<mathexpr> parse(typeinfo& _type, const std::string& expr,
+		std::function<GC::pointer<mathexpr>(const std::string&)> vars);
 protected:
 	void trace();
 private:

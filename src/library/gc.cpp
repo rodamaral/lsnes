@@ -3,34 +3,36 @@
 #include <iostream>
 #include <set>
 
+namespace GC
+{
 namespace
 {
-	std::set<garbage_collectable*>* gc_items;
+	std::set<item*>* gc_items;
 }
 
-garbage_collectable::garbage_collectable()
+item::item()
 {
-	if(!gc_items) gc_items = new std::set<garbage_collectable*>;
+	if(!gc_items) gc_items = new std::set<item*>;
 	gc_items->insert(this);
 	root_count = 1;
 }
 
-garbage_collectable::~garbage_collectable()
+item::~item()
 {
 	gc_items->erase(this);
 }
 
-void garbage_collectable::mark_root()
+void item::mark_root()
 {
 	root_count++;
 }
 
-void garbage_collectable::unmark_root()
+void item::unmark_root()
 {
 	if(root_count) root_count--;
 }
 
-void garbage_collectable::do_gc()
+void item::do_gc()
 {
 	if(!gc_items) return;
 	for(auto i : *gc_items)
@@ -50,11 +52,12 @@ void garbage_collectable::do_gc()
 	}
 }
 
-void garbage_collectable::mark()
+void item::mark()
 {
 	bool was_reachable = reachable;
 	reachable = true;
 	if(!was_reachable) {
 		trace();
 	}
+}
 }

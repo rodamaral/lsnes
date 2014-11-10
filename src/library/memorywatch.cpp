@@ -230,7 +230,7 @@ void item::show(const std::string& n)
 set::~set()
 {
 	roots.clear();
-	garbage_collectable::do_gc();
+	GC::item::do_gc();
 }
 
 void set::reset()
@@ -284,7 +284,7 @@ void set::destroy(const std::string& name)
 	if(!roots.count(name))
 		return;
 	roots.erase(name);
-	garbage_collectable::do_gc();
+	GC::item::do_gc();
 }
 
 const std::string& set::get_longest_name(std::function<size_t(const std::string& n)> rate)

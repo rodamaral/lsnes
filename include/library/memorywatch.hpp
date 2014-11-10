@@ -43,7 +43,7 @@ struct memread_oper : public mathexpr::operinfo
 /**
  * Memory watch item printer.
  */
-struct item_printer : public garbage_collectable
+struct item_printer : public GC::item
 {
 /**
  * Dtor.
@@ -72,7 +72,7 @@ struct item
  * Parameter t: The type of the result.
  */
 	item(mathexpr::typeinfo& t)
-		: expr(gcroot_pointer_object_tag(), &t)
+		: expr(GC::obj_tag(), &t)
 	{
 	}
 /**
@@ -86,8 +86,8 @@ struct item
  */
 	void show(const std::string& iname);
 	//Fields.
-	gcroot_pointer<item_printer> printer;		//Printer to use.
-	gcroot_pointer<mathexpr::mathexpr> expr;	//Expression to watch.
+	GC::pointer<item_printer> printer;		//Printer to use.
+	GC::pointer<mathexpr::mathexpr> expr;	//Expression to watch.
 	std::string format;				//Formatting to use.
 };
 

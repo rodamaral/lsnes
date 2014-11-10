@@ -30,7 +30,7 @@ mathexpr::mathexpr(typeinfo* _type)
 	fn = (operinfo*)0xDEADBEEF;
 }
 
-mathexpr::mathexpr(typeinfo* _type, gcroot_pointer<mathexpr> fwd)
+mathexpr::mathexpr(typeinfo* _type, GC::pointer<mathexpr> fwd)
 	: type(*_type)
 {
 	owns_operator = false;
@@ -58,8 +58,7 @@ mathexpr::mathexpr(typeinfo* _type, const std::string& _val, bool string)
 	fn = NULL;
 }
 
-mathexpr::mathexpr(typeinfo* _type, operinfo* _fn, std::vector<gcroot_pointer<mathexpr>> _args,
-	bool _owns_operator)
+mathexpr::mathexpr(typeinfo* _type, operinfo* _fn, std::vector<GC::pointer<mathexpr>> _args, bool _owns_operator)
 	: type(*_type), fn(_fn), owns_operator(_owns_operator)
 {
 	try {
@@ -354,18 +353,18 @@ namespace
 
 	struct expr_or_op
 	{
-		expr_or_op(gcroot_pointer<mathexpr> e) : expr(e), typei(NULL) {}
+		expr_or_op(GC::pointer<mathexpr> e) : expr(e), typei(NULL) {}
 		expr_or_op(std::string o) : op(o), typei(NULL) {}
-		gcroot_pointer<mathexpr> expr;
+		GC::pointer<mathexpr> expr;
 		std::string op;
 		operinfo* typei;
 	};
 
-	gcroot_pointer<mathexpr> parse_rec(typeinfo& _type, std::vector<expr_or_op>& operands,
+	GC::pointer<mathexpr> parse_rec(typeinfo& _type, std::vector<expr_or_op>& operands,
 		size_t first, size_t last)
 	{
 		if(operands.empty())
-			return gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(), &_type);
+			return GC::pointer<mathexpr>(GC::obj_tag(), &_type);
 		if(last - first > 1) {
 			//Find the highest percedence operator.
 			size_t best = last;
@@ -387,29 +386,29 @@ namespace
 				size_t j = first;
 				while(operands[j].typei)
 					j++;
-				std::vector<gcroot_pointer<mathexpr>> args;
+				std::vector<GC::pointer<mathexpr>> args;
 				args.push_back(parse_rec(_type, operands, first + 1, j + 1));
-				return gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(), &_type,
+				return GC::pointer<mathexpr>(GC::obj_tag(), &_type,
 					operands[best].typei, args);
 			} else {
 				//Binary operator.
-				std::vector<gcroot_pointer<mathexpr>> args;
+				std::vector<GC::pointer<mathexpr>> args;
 				args.push_back(parse_rec(_type, operands, first, best));
 				args.push_back(parse_rec(_type, operands, best + 1, last));
-				return gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(), &_type,
+				return GC::pointer<mathexpr>(GC::obj_tag(), &_type,
 					operands[best].typei, args);
 			}
 		}
 		return operands[first].expr;
 	}
 
-	gcroot_pointer<mathexpr> parse_rec(typeinfo& _type, std::vector<subexpression>& ss,
+	GC::pointer<mathexpr> parse_rec(typeinfo& _type, std::vector<subexpression>& ss,
 		std::set<operinfo*>& operations,
-		std::function<gcroot_pointer<mathexpr>(const std::string&)> vars, size_t first, size_t last)
+		std::function<GC::pointer<mathexpr>(const std::string&)> vars, size_t first, size_t last)
 	{
 		operations_set opset(operations);
 		std::vector<expr_or_op> operands;
-		std::vector<gcroot_pointer<mathexpr>> args;
+		std::vector<GC::pointer<mathexpr>> args;
 		operinfo* fn;
 		for(size_t i = first; i < last; i++) {
 			size_t l = find_last_in_sub(ss, i);
@@ -419,16 +418,16 @@ namespace
 				operands.push_back(parse_rec(_type, ss, operations, vars, i + 1, l));
 				break;
 			case TT_VALUE:
-				operands.push_back(gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(), &_type,
+				operands.push_back(GC::pointer<mathexpr>(GC::obj_tag(), &_type,
 					ss[i].string, false));
 				break;
 			case TT_STRING:
-				operands.push_back(gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(), &_type,
+				operands.push_back(GC::pointer<mathexpr>(GC::obj_tag(), &_type,
 					ss[i].string, true));
 				break;
 			case TT_VARIABLE:
 				//We have to warp this is identify transform to make the evaluation lazy.
-				operands.push_back(gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(), &_type,
+				operands.push_back(GC::pointer<mathexpr>(GC::obj_tag(), &_type,
 					vars(ss[i].string)));
 				break;
 			case TT_FUNCTION:
@@ -442,7 +441,7 @@ namespace
 					else
 						i = k;
 				}
-				operands.push_back(gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(), &_type, fn,
+				operands.push_back(GC::pointer<mathexpr>(GC::obj_tag(), &_type, fn,
 					args));
 				args.clear();
 				break;
@@ -462,8 +461,8 @@ namespace
 			if(!(bool)i.expr) {
 				auto fn = opset.find_operator(i.op, 0);
 				if(fn)
-					i.expr = gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(), &_type, fn,
-						std::vector<gcroot_pointer<mathexpr>>());
+					i.expr = GC::pointer<mathexpr>(GC::obj_tag(), &_type, fn,
+						std::vector<GC::pointer<mathexpr>>());
 			}
 		}
 		//Check that there aren't two consequtive subexpressions and mark operators.
@@ -615,8 +614,8 @@ namespace
 	}
 }
 
-gcroot_pointer<mathexpr> mathexpr::parse(typeinfo& _type, const std::string& expr,
-	std::function<gcroot_pointer<mathexpr>(const std::string&)> vars)
+GC::pointer<mathexpr> mathexpr::parse(typeinfo& _type, const std::string& expr,
+	std::function<GC::pointer<mathexpr>(const std::string&)> vars)
 {
 	if(expr == "")
 		throw std::runtime_error("Empty expression");
