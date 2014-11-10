@@ -52,7 +52,7 @@ namespace
 		//Ignore.
 	}
 
-	class iospace_region : public memory_region
+	class iospace_region : public memory_space::region
 	{
 	public:
 		iospace_region(const std::string& _name, uint64_t _base, uint64_t _size, bool _special,
@@ -94,9 +94,9 @@ cart_mappings_refresher::cart_mappings_refresher(memory_space& _mspace, movie_lo
 
 void cart_mappings_refresher::operator()() throw(std::bad_alloc)
 {
-	std::list<memory_region*> cur_regions = mspace.get_regions();
-	std::list<memory_region*> regions;
-	memory_region* tmp = NULL;
+	std::list<memory_space::region*> cur_regions = mspace.get_regions();
+	std::list<memory_space::region*> regions;
+	memory_space::region* tmp = NULL;
 	auto vmalist = rom.vma_list();
 	auto _mlogic = &mlogic;
 	try {
@@ -109,7 +109,7 @@ void cart_mappings_refresher::operator()() throw(std::bad_alloc)
 			if(!i.backing_ram)
 				tmp = new iospace_region(i.name, i.base, i.size, i.special, i.read, i.write);
 			else
-				tmp = new memory_region_direct(i.name, i.base, i.endian,
+				tmp = new memory_space::region_direct(i.name, i.base, i.endian,
 					reinterpret_cast<uint8_t*>(i.backing_ram), i.size, i.readonly);
 			regions.push_back(tmp);
 			tmp = NULL;

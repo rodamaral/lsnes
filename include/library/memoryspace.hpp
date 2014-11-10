@@ -9,51 +9,58 @@
 #include "threads.hpp"
 #include "arch-detect.hpp"
 
+
+/**
+ * A whole memory space.
+ */
+class memory_space
+{
+public:
 /**
  * Information about region of memory.
  */
-struct memory_region
-{
+	struct region
+	{
 /**
  * Destructor.
  */
-	virtual ~memory_region() throw();
+		virtual ~region() throw();
 /**
  * Name of the region (mainly for debugging and showing to user).
  */
-	std::string name;
+		std::string name;
 /**
  * Base address of the region.
  */
-	uint64_t base;
+		uint64_t base;
 /**
  * Size of the region.
  */
-	uint64_t size;
+		uint64_t size;
 /**
  * Last address in region.
  */
-	uint64_t last_address() const throw() { return base + size - 1; }
+		uint64_t last_address() const throw() { return base + size - 1; }
 /**
  * Endianess of region (-1 => little, 0 => host, 1 => big).
  */
-	int endian;
+		int endian;
 /**
  * Read-only flag.
  */
-	bool readonly;
+		bool readonly;
 /**
  * Special flag.
  *
  * Signals that this region is not RAM/ROM-like, but is special I/O region where reads and writes might not be
  * consistent.
  */
-	bool special;
+		bool special;
 /**
  * Direct mapping for the region. If not NULL, read/write will not be used, instead all operations directly
  * manipulate this buffer (faster). Must be NULL for special regions.
  */
-	unsigned char* direct_map;
+		unsigned char* direct_map;
 /**
  * Read from region.
  *
@@ -65,7 +72,7 @@ struct memory_region
  * Note: Needs to be overridden if direct_map is NULL.
  * Note: Must be able to read the whole region at once.
  */
-	virtual void read(uint64_t offset, void* buffer, size_t tsize);
+		virtual void read(uint64_t offset, void* buffer, size_t tsize);
 /**
  * Write to region (writes to readonly regions are ignored).
  *
@@ -77,14 +84,13 @@ struct memory_region
  * Note: The default implementation writes to direct_map if available and readwrite. Otherwise fails.
  * Note: Must be able to write the whole region at once.
  */
-	virtual bool write(uint64_t offset, const void* buffer, size_t tsize);
-};
-
+		virtual bool write(uint64_t offset, const void* buffer, size_t tsize);
+	};
 /**
  * Direct-mapped region.
  */
-struct memory_region_direct : public memory_region
-{
+	struct region_direct : public region
+	{
 /**
  * Create new direct-mapped region.
  *
@@ -95,20 +101,13 @@ struct memory_region_direct : public memory_region
  * Parameter size: Size of the region.
  * Parameter _readonly: If true, region is readonly.
  */
-	memory_region_direct(const std::string& name, uint64_t base, int endian, unsigned char* memory,
-		size_t size, bool _readonly = false);
+		region_direct(const std::string& name, uint64_t base, int endian, unsigned char* memory,
+			size_t size, bool _readonly = false);
 /**
  * Destructor.
  */
-	~memory_region_direct() throw();
-};
-
-/**
- * A whole memory space.
- */
-class memory_space
-{
-public:
+		~region_direct() throw();
+	};
 /**
  * Get system endianess.
  */
@@ -131,21 +130,21 @@ public:
  * Parameter address: The address to look up.
  * Returns: The region/offset pair, or NULL/0 if that address is unmapped.
  */
-	std::pair<memory_region*, uint64_t> lookup(uint64_t address);
+	std::pair<region*, uint64_t> lookup(uint64_t address);
 /**
  * Lookup region covering linear address.
  *
  * Parameter linear: The linear address to look up.
  * Returns: The region/offset pair, or NULL/0 if that address is unmapped.
  */
-	std::pair<memory_region*, uint64_t> lookup_linear(uint64_t linear);
+	std::pair<region*, uint64_t> lookup_linear(uint64_t linear);
 /**
  * Lookup region with specified index..
  *
  * Parameter n: The index to look up.
  * Returns: The region, or NULL if index is invalid.
  */
-	memory_region* lookup_n(size_t n);
+	region* lookup_n(size_t n);
 /**
  * Get number of regions.
  */
@@ -159,11 +158,11 @@ public:
 /**
  * Get list of all regions in memory space.
  */
-	std::list<memory_region*> get_regions();
+	std::list<region*> get_regions();
 /**
  * Set list of all regions in memory space.
  */
-	void set_regions(const std::list<memory_region*>& regions);
+	void set_regions(const std::list<region*>& regions);
 /**
  * Read an element (primitive type) from memory.
  *
@@ -244,8 +243,8 @@ public:
 	void read_all_linear_memory(uint8_t* buffer);
 private:
 	threads::lock mlock;
-	std::vector<memory_region*> u_regions;
-	std::vector<memory_region*> u_lregions;
+	std::vector<region*> u_regions;
+	std::vector<region*> u_lregions;
 	std::vector<uint64_t> linear_bases;
 	uint64_t linear_size;
 	static int _get_system_endian();

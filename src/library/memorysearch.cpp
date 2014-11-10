@@ -178,8 +178,8 @@ namespace
 	}
 
 	template<typename T>
-	void search_block_mapped(uint64_t* still_in, uint64_t& candidates, memory_region& region, uint64_t rbase,
-		uint64_t ibase, T& helper, std::vector<uint8_t>& previous_content)
+	void search_block_mapped(uint64_t* still_in, uint64_t& candidates, memory_space::region& region,
+		uint64_t rbase, uint64_t ibase, T& helper, std::vector<uint8_t>& previous_content)
 	{
 		if(ibase >= previous_content.size())
 			return;
@@ -203,7 +203,7 @@ namespace
 	}
 
 	template<typename T>
-	void search_block_read(uint64_t* still_in, uint64_t& candidates, memory_region& region, uint64_t rbase,
+	void search_block_read(uint64_t* still_in, uint64_t& candidates, memory_space::region& region, uint64_t rbase,
 		uint64_t ibase, T& helper, std::vector<uint8_t>& previous_content)
 	{
 		if(ibase >= previous_content.size())
@@ -252,18 +252,18 @@ namespace
 		}
 	}
 
-	void copy_block_mapped(uint8_t* old, memory_region& region, uint64_t rbase, uint64_t maxr)
+	void copy_block_mapped(uint8_t* old, memory_space::region& region, uint64_t rbase, uint64_t maxr)
 	{
 		memcpy(old, region.direct_map + rbase, min(region.size - rbase, maxr));
 	}
 
-	void copy_block_read(uint8_t* old, memory_region& region, uint64_t rbase, uint64_t maxr)
+	void copy_block_read(uint8_t* old, memory_space::region& region, uint64_t rbase, uint64_t maxr)
 	{
 		region.read(rbase, old, min(region.size - rbase, maxr));
 	}
 
-	void dq_block(uint64_t* still_in, uint64_t& candidates, memory_region& region, uint64_t rbase, uint64_t ibase,
-		uint64_t first, uint64_t last, uint64_t ramsize)
+	void dq_block(uint64_t* still_in, uint64_t& candidates, memory_space::region& region, uint64_t rbase,
+		uint64_t ibase, uint64_t first, uint64_t last, uint64_t ramsize)
 	{
 		if(ibase >= ramsize)
 			return;
@@ -282,7 +282,7 @@ namespace
 		}
 	}
 
-	void candidates_block(std::list<uint64_t>& out, memory_region& region, uint64_t rbase, uint64_t ibase,
+	void candidates_block(std::list<uint64_t>& out, memory_space::region& region, uint64_t rbase, uint64_t ibase,
 		uint64_t* still_in, uint64_t ramsize)
 	{
 		if(ibase >= ramsize)
@@ -342,7 +342,8 @@ template<class T> void memory_search::search(const T& obj) throw()
 			break;
 		}
 		if(t.first->direct_map) {
-			search_block_mapped(&still_in[0], candidates, *t.first, t.second, i, helper, previous_content);
+			search_block_mapped(&still_in[0], candidates, *t.first, t.second, i, helper,
+				previous_content);
 			copy_block_mapped(&previous_content[i], *t.first, t.second,
 				  max((uint64_t)previous_content.size(), i) - i);
 		} else {

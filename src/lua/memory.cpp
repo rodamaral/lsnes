@@ -508,7 +508,7 @@ namespace
 		return 1;
 	}
 
-	int handle_push_vma(lua::state& L, memory_region& r)
+	int handle_push_vma(lua::state& L, memory_space::region& r)
 	{
 		L.newtable();
 		L.pushstring("region_name");
@@ -620,7 +620,7 @@ namespace
 
 		P(num);
 
-		std::list<memory_region*> regions = CORE().memory->get_regions();
+		std::list<memory_space::region*> regions = CORE().memory->get_regions();
 		uint32_t j = 0;
 		for(auto i = regions.begin(); i != regions.end(); i++, j++)
 			if(j == num)

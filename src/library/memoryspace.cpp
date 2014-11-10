@@ -8,7 +8,7 @@ namespace
 {
 	template<typename T, bool linear> inline T internal_read(memory_space& m, uint64_t addr)
 	{
-		std::pair<memory_region*, uint64_t> g;
+		std::pair<memory_space::region*, uint64_t> g;
 		if(linear)
 			g = m.lookup_linear(addr);
 		else
@@ -26,7 +26,7 @@ namespace
 
 	template<typename T, bool linear> inline bool internal_write(memory_space& m, uint64_t addr, T value)
 	{
-		std::pair<memory_region*, uint64_t> g;
+		std::pair<memory_space::region*, uint64_t> g;
 		if(linear)
 			g = m.lookup_linear(addr);
 		else
@@ -43,7 +43,7 @@ namespace
 		return true;
 	}
 
-	void read_range_r(memory_region& r, uint64_t offset, void* buffer, size_t bsize)
+	void read_range_r(memory_space::region& r, uint64_t offset, void* buffer, size_t bsize)
 	{
 		if(r.direct_map) {
 			if(offset >= r.size) {
@@ -58,7 +58,7 @@ namespace
 			r.read(offset, buffer, bsize);
 	}
 
-	bool write_range_r(memory_region& r, uint64_t offset, const void* buffer, size_t bsize)
+	bool write_range_r(memory_space::region& r, uint64_t offset, const void* buffer, size_t bsize)
 	{
 		if(r.readonly)
 			return false;
@@ -73,11 +73,11 @@ namespace
 	}
 }
 
-memory_region::~memory_region() throw()
+memory_space::region::~region() throw()
 {
 }
 
-void memory_region::read(uint64_t offset, void* buffer, size_t tsize)
+void memory_space::region::read(uint64_t offset, void* buffer, size_t tsize)
 {
 	if(!direct_map || offset >= size) {
 		memset(buffer, 0, tsize);
@@ -89,7 +89,7 @@ void memory_region::read(uint64_t offset, void* buffer, size_t tsize)
 		memset(reinterpret_cast<char*>(buffer) + maxcopy, 0, tsize - maxcopy);
 }
 
-bool memory_region::write(uint64_t offset, const void* buffer, size_t tsize)
+bool memory_space::region::write(uint64_t offset, const void* buffer, size_t tsize)
 {
 	if(!direct_map || readonly || offset >= size)
 		return false;
@@ -98,7 +98,7 @@ bool memory_region::write(uint64_t offset, const void* buffer, size_t tsize)
 	return true;
 }
 
-std::pair<memory_region*, uint64_t> memory_space::lookup(uint64_t address)
+std::pair<memory_space::region*, uint64_t> memory_space::lookup(uint64_t address)
 {
 	threads::alock m(mlock);
 	size_t lb = 0;
@@ -115,14 +115,14 @@ std::pair<memory_region*, uint64_t> memory_space::lookup(uint64_t address)
 		}
 		return std::make_pair(u_regions[mb], address - u_regions[mb]->base);
 	}
-	return std::make_pair(reinterpret_cast<memory_region*>(NULL), 0);
+	return std::make_pair(reinterpret_cast<region*>(NULL), 0);
 }
 
-std::pair<memory_region*, uint64_t> memory_space::lookup_linear(uint64_t linear)
+std::pair<memory_space::region*, uint64_t> memory_space::lookup_linear(uint64_t linear)
 {
 	threads::alock m(mlock);
 	if(linear >= linear_size)
-		return std::make_pair(reinterpret_cast<memory_region*>(NULL), 0);
+		return std::make_pair(reinterpret_cast<region*>(NULL), 0);
 	size_t lb = 0;
 	size_t ub = linear_bases.size() - 1;
 	while(lb < ub) {
@@ -137,7 +137,7 @@ std::pair<memory_region*, uint64_t> memory_space::lookup_linear(uint64_t linear)
 		}
 		return std::make_pair(u_lregions[mb], linear - linear_bases[mb]);
 	}
-	return std::make_pair(reinterpret_cast<memory_region*>(NULL), 0);
+	return std::make_pair(reinterpret_cast<region*>(NULL), 0);
 }
 
 void memory_space::read_all_linear_memory(uint8_t* buffer)
@@ -241,7 +241,7 @@ bool memory_space::write_range_linear(uint64_t address, const void* buffer, size
 	return write_range_r(*g.first, g.second, buffer, bsize);
 }
 
-memory_region* memory_space::lookup_n(size_t n)
+memory_space::region* memory_space::lookup_n(size_t n)
 {
 	threads::alock m(mlock);
 	if(n >= u_regions.size())
@@ -250,10 +250,10 @@ memory_region* memory_space::lookup_n(size_t n)
 }
 
 
-std::list<memory_region*> memory_space::get_regions()
+std::list<memory_space::region*> memory_space::get_regions()
 {
 	threads::alock m(mlock);
-	std::list<memory_region*> r;
+	std::list<region*> r;
 	for(auto i : u_regions)
 		r.push_back(i);
 	return r;
@@ -274,11 +274,11 @@ char* memory_space::get_physical_mapping(uint64_t base, uint64_t size)
 	return reinterpret_cast<char*>(g1.first->direct_map + g1.second);
 }
 
-void memory_space::set_regions(const std::list<memory_region*>& regions)
+void memory_space::set_regions(const std::list<memory_space::region*>& regions)
 {
 	threads::alock m(mlock);
-	std::vector<memory_region*> n_regions;
-	std::vector<memory_region*> n_lregions;
+	std::vector<region*> n_regions;
+	std::vector<region*> n_lregions;
 	std::vector<uint64_t> n_linear_bases;
 	//Calculate array sizes.
 	n_regions.resize(regions.size());
@@ -294,7 +294,7 @@ void memory_space::set_regions(const std::list<memory_region*>& regions)
 	for(auto j : regions)
 		n_regions[i++] = j;
 	std::sort(n_regions.begin(), n_regions.end(),
-		[](memory_region* a, memory_region* b) -> bool { return a->base < b->base; });
+		[](region* a, region* b) -> bool { return a->base < b->base; });
 
 	//Fill linear address arrays from the main array.
 	i = 0;
@@ -325,7 +325,7 @@ int memory_space::_get_system_endian()
 
 int memory_space::sysendian = 0;
 
-memory_region_direct::memory_region_direct(const std::string& _name, uint64_t _base, int _endian,
+memory_space::region_direct::region_direct(const std::string& _name, uint64_t _base, int _endian,
 	unsigned char* _memory, size_t _size, bool _readonly)
 {
 	name = _name;
@@ -337,7 +337,7 @@ memory_region_direct::memory_region_direct(const std::string& _name, uint64_t _b
 	special = false;
 }
 
-memory_region_direct::~memory_region_direct() throw() {}
+memory_space::region_direct::~region_direct() throw() {}
 
 namespace
 {

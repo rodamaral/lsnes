@@ -398,13 +398,13 @@ namespace
 	class dialog_breakpoint_add : public wxDialog
 	{
 	public:
-		dialog_breakpoint_add(wxWindow* parent, std::list<memory_region*> regions);
+		dialog_breakpoint_add(wxWindow* parent, std::list<memory_space::region*> regions);
 		std::pair<uint64_t, debug_context::etype> get_result();
 		void on_ok(wxCommandEvent& e) { EndModal(wxID_OK); }
 		void on_cancel(wxCommandEvent& e) { EndModal(wxID_CANCEL); }
 		void on_address_change(wxCommandEvent& e);
 	private:
-		std::list<memory_region*> regions;
+		std::list<memory_space::region*> regions;
 		wxComboBox* vmasel;
 		wxTextCtrl* address;
 		wxComboBox* typesel;
@@ -412,7 +412,7 @@ namespace
 		wxButton* cancel;
 	};
 
-	dialog_breakpoint_add::dialog_breakpoint_add(wxWindow* parent, std::list<memory_region*> _regions)
+	dialog_breakpoint_add::dialog_breakpoint_add(wxWindow* parent, std::list<memory_space::region*> _regions)
 		: wxDialog(parent, wxID_ANY, wxT("Add breakpoint"))
 	{
 		regions = _regions;
@@ -501,7 +501,7 @@ namespace
 		std::string format_line(std::pair<uint64_t, debug_context::etype> entry);
 		size_t get_insert_pos(std::pair<uint64_t, debug_context::etype> entry);
 		void populate_breakpoints();
-		std::list<memory_region*> regions;
+		std::list<memory_space::region*> regions;
 		emulator_instance& inst;
 		wxButton* ok;
 		wxButton* addb;
@@ -1496,7 +1496,7 @@ back:
 		}
 	}
 
-	std::string format_vma_offset(memory_region& region, uint64_t offset)
+	std::string format_vma_offset(memory_space::region& region, uint64_t offset)
 	{
 		std::ostringstream y;
 		y << region.name;

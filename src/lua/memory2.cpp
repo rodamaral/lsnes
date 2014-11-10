@@ -16,7 +16,7 @@
 
 namespace
 {
-	int handle_push_vma(lua::state& L, memory_region& r)
+	int handle_push_vma(lua::state& L, memory_space::region& r)
 	{
 		L.newtable();
 		L.pushstring("name");
@@ -53,8 +53,8 @@ namespace
 	class lua_vma
 	{
 	public:
-		lua_vma(lua::state& L, memory_region* r);
-		static size_t overcommit(memory_region* r) { return 0; }
+		lua_vma(lua::state& L, memory_space::region* r);
+		static size_t overcommit(memory_space::region* r) { return 0; }
 		int info(lua::state& L, lua::parameters& P);
 		template<class T, bool _bswap> int rw(lua::state& L, lua::parameters& P);
 		template<bool write, bool sign> int scattergather(lua::state& L, lua::parameters& P);
@@ -176,7 +176,7 @@ namespace
 		{"__call", &lua_vma_list::call},
 	});
 
-	lua_vma::lua_vma(lua::state& L, memory_region* r)
+	lua_vma::lua_vma(lua::state& L, memory_space::region* r)
 	{
 		vmabase = r->base;
 		vmasize = r->size;
@@ -481,7 +481,7 @@ namespace
 
 		auto l = CORE().memory->get_regions();
 		size_t j;
-		std::list<memory_region*>::iterator i;
+		std::list<memory_space::region*>::iterator i;
 		for(i = l.begin(), j = 0; i != l.end(); i++, j++)
 			if((*i)->name == vma) {
 				lua::_class<lua_vma>::create(L, *i);

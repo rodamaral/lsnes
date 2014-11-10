@@ -80,7 +80,7 @@ public:
 	template<typename T> T v_readold(uint64_t addr) throw();
 	template<typename T> void v_write(uint64_t addr, T val) throw();
 
-	static bool searchable_region(memory_region* r)
+	static bool searchable_region(memory_space::region* r)
 	{
 		return (r && !r->readonly && !r->special);
 	}
