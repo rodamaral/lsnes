@@ -15,6 +15,7 @@
 #include "platform/wxwidgets/menu_projects.hpp"
 
 #include "core/audioapi.hpp"
+#include "core/audioapi-driver.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/controllerframe.hpp"

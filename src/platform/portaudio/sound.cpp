@@ -1,5 +1,6 @@
 #include "lsnes.hpp"
 
+#include "core/audioapi-driver.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"

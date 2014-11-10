@@ -1,4 +1,5 @@
 #include "core/audioapi.hpp"
+#include "core/audioapi-driver.hpp"
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
 #include "core/window.hpp"

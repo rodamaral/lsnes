@@ -1,4 +1,5 @@
 #include "core/audioapi.hpp"
+#include "core/audioapi-driver.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
@@ -338,7 +339,7 @@ void platform::fatal_error() throw()
 	system_log << "-----------------------------------------------------------------------" << std::endl;
 	system_log.close();
 	graphics_driver_fatal_error();
-	audioapi_panicing();	//Don't call update VU, as that crashes.
+	audioapi_instance::disable_vu_updates();	//Don't call update VU, as that crashes.
 	exit(1);
 }
 

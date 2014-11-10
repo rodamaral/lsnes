@@ -15,6 +15,8 @@
 #define MUSIC_BUFFERS 8
 #define MAX_VOICE_ADJUST 200
 
+bool audioapi_instance::vu_disabled = false;
+
 audioapi_instance::dummy_cb_proc::dummy_cb_proc(audioapi_instance& _parent)
 	: parent(_parent)
 {
@@ -42,8 +44,6 @@ int audioapi_instance::dummy_cb_proc::operator()()
 
 namespace
 {
-	bool paniced = false;
-
 //  | -1  1 -1  1 | 1  0  0  0 |
 //  |  0  0  0  1 | 0  1  0  0 |
 //  |  1  1  1  1 | 0  0  1  0 |
@@ -499,7 +499,7 @@ void audioapi_instance::vumeter::operator()(float* asamples, size_t count, bool 
 
 void audioapi_instance::vumeter::update_vu()
 {
-	if(paniced)
+	if(vu_disabled)
 		return;
 	if(!samples) {
 		vu = -999.0;
@@ -517,7 +517,7 @@ void audioapi_instance::vumeter::update_vu()
 	CORE().dispatch->vu_change();
 }
 
-void audioapi_panicing() throw()
+void audioapi_instance::disable_vu_updates()
 {
-	paniced = true;
+	vu_disabled = true;
 }
