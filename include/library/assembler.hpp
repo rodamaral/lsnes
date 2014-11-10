@@ -72,6 +72,17 @@ private:
 	int offset;
 };
 
+class label_list
+{
+public:
+	operator label&();
+	operator label*();
+	label& external(void* addr);
+	
+private:
+	std::list<label> labels;
+};
+
 void i386_reloc_rel8(uint8_t* location, size_t target, size_t source);
 void i386_reloc_rel16(uint8_t* location, size_t target, size_t source);
 void i386_reloc_rel32(uint8_t* location, size_t target, size_t source);
@@ -162,6 +173,7 @@ struct assembler
 	void align(size_t multiple);
 	void pad(size_t amount);
 	size_t size();
+	void dump(const std::string& basename, const std::string& name, void* base, std::map<std::string, void*> map);
 	std::map<std::string, void*> flush(void* base);
 private:
 	struct reloc

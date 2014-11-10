@@ -227,6 +227,20 @@ short read_axis_value(const char* buf, size_t& idx) throw()
 		return static_cast<short>(numval);
 }
 
+size_t write_axis_value(char* buf, short _v)
+{
+	int v = _v;
+	size_t r = 0;
+	buf[r++] = ' ';
+	if(v < 0) { buf[r++] = '-'; v = -v; }
+	if(v >= 10000) buf[r++] = '0' + (v / 10000 % 10);
+	if(v >= 1000) buf[r++] = '0' + (v / 1000 % 10);
+	if(v >= 100) buf[r++] = '0' + (v / 100 % 10);
+	if(v >= 10) buf[r++] = '0' + (v / 10 % 10);
+	buf[r++] = '0' + (v % 10);
+	return r;
+}
+
 namespace
 {
 	port_type_set& dummytypes()

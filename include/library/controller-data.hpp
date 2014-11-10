@@ -82,6 +82,16 @@ inline bool read_button_value(const char* buf, size_t& idx) throw()
 short read_axis_value(const char* buf, size_t& idx) throw();
 
 /**
+ * Write axis value.
+ *
+ * Parameter buf: The buffer to write to.
+ * Parameter _v: The axis value.
+ * Returns: Number of bytes written.
+ */
+size_t write_axis_value(char* buf, short _v);
+
+
+/**
  * Skip whitespace.
  *
  * Parameter buf: Buffer to read from.

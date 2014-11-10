@@ -1,7 +1,10 @@
 #include "assembler.hpp"
 #include "serialization.hpp"
+#include "string.hpp"
+#include "hex.hpp"
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #if !defined(_WIN32) && !defined(_WIN64)
 #define _USE_BSD
 #include <unistd.h>
@@ -18,6 +21,25 @@
 
 namespace assembler
 {
+label_list::operator label&()
+{
+	labels.push_back(label());
+	return labels.back();
+}
+
+label_list::operator label*()
+{
+	labels.push_back(label());
+	return &labels.back();
+}
+
+label& label_list::external(void* addr)
+{
+	labels.push_back(label());
+	labels.back() = label(addr);
+	return labels.back();
+}
+
 assembler::assembler()
 {
 }
@@ -90,6 +112,26 @@ std::map<std::string, void*> assembler::flush(void* base)
 		ret[i.first] = reinterpret_cast<void*>(i.second->resolve((addr_t)base));
 	}
 	return ret;
+}
+
+void assembler::dump(const std::string& basename, const std::string& name, void* base,
+	std::map<std::string, void*> map)
+{
+	static unsigned x = 0;
+	std::string realbase = (stringfmt() << basename << "." << (x++)).str();
+	//Dump symbol map.
+	std::ofstream symbols1(realbase + ".syms");
+	symbols1 << hex::to<size_t>((size_t)base, false) << " __base(" << name << ")" << std::endl;
+	for(auto i : map)
+		symbols1 << hex::to<size_t>((size_t)i.second, false) << " " << i.first << std::endl;
+	symbols1 << hex::to<size_t>((size_t)base + data.size(), false) << " __end" << std::endl;
+	symbols1.close();
+
+	//Dump generated binary.
+	std::ofstream symbols2(realbase + ".bin", std::ios::binary);
+	for(unsigned i = 0; i < data.size(); i++)
+		symbols2 << ((char*)base)[i];
+	symbols2.close();
 }
 
 void i386_reloc_rel8(uint8_t* location, size_t target, size_t source)

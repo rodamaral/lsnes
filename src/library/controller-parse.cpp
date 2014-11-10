@@ -2,9 +2,14 @@
 #include "assembler.hpp"
 #include "controller-data.hpp"
 #include "controller-parse.hpp"
+#include "controller-parse-asmgen.hpp"
+#include "assembler-intrinsics-dummy.hpp"
+#include "assembler-intrinsics-i386.hpp"
 #include "json.hpp"
 #include "string.hpp"
 #include <algorithm>
+
+using namespace assembler_intrinsics;
 
 namespace
 {
@@ -728,13 +733,17 @@ size_t port_type_generic::port_size(const JSON::node& root, const std::string& p
 void port_type_generic::make_dynamic_blocks()
 {
 	try {
-		std::list<assembler::label> labels;
+		assembler::label_list labels;
 		assembler::assembler a;
 		make_routines(a, labels);
 
 		assembler::dynamic_code* c;
 		dyncode_block = c = new assembler::dynamic_code(a.size());
 		auto m = a.flush(c->pointer());
+		if(getenv("PTG_DUMP_DYNAMIC")) {
+			const char* basename = getenv("PTG_DUMP_DYNAMIC");
+			a.dump(basename, controller_info->hname, c->pointer(), m);
+		}
 		c->commit();
 		if(m.count("read"))
 			read = (short(*)(const port_type*, const unsigned char*, unsigned, unsigned))m["read"];
@@ -755,431 +764,178 @@ void port_type_generic::make_dynamic_blocks()
 	}
 }
 
-#ifdef ARCH_IS_I386
-assembler::label& alloc_label(std::list<assembler::label>& v)
+void port_type_generic::make_routines(assembler::assembler& a, assembler::label_list& labels)
 {
-	v.push_back(assembler::label());
-	return v.back();
-}
-
-static bool i386_amd64()
-{
-	size_t r;
+	//One can freely return without doing nothing.
+#ifndef NO_ASM_GENERATION
+#if defined(ARCH_IS_I386)
+	size_t amd64_flag;
 	asm volatile(
 		//On i386, this is DEC EAX, MOV EAX, 0, NOP, NOP, NOP, NOP
 		//On amd64, this is MOV RAX, 0x9090909000000000
 		".byte 0x48\n"
 		".byte 0xB8, 0, 0, 0, 0\n"
 		".byte 0x90, 0x90, 0x90, 0x90\n"
-		: "=a"(r));
-	return (r != 0);
-}
+		: "=a"(amd64_flag));
+	I386 as(a, amd64_flag != 0);
+#define DEFINED_ASSEBLER
+#endif
 
-size_t axis_print(char* buf, short _v)
-{
-	int v = _v;
-	size_t r = 0;
-	buf[r++] = ' ';
-	if(v < 0) { buf[r++] = '-'; v = -v; }
-	if(v >= 10000) buf[r++] = '0' + (v / 10000 % 10);
-	if(v >= 1000) buf[r++] = '0' + (v / 1000 % 10);
-	if(v >= 100) buf[r++] = '0' + (v / 100 % 10);
-	if(v >= 10) buf[r++] = '0' + (v / 10 % 10);
-	buf[r++] = '0' + (v % 10);
-	return r;
-}
+	//Backup assembler that causes this to error out.
+#ifndef DEFINED_ASSEBLER
+	dummyarch as(a);
+#endif
 
-enum regnum { REG_AX, REG_CX, REG_DX, REG_BX, REG_SP, REG_BP, REG_SI, REG_DI };
-enum modval { MOD_NO_OFF, MOD_OFF_1, MOD_OFF_4, MOD_REG };
-enum specials { RM_SIB = 4, INDEX_NONE = 4, SCALE_1 = 0, SCALE_2 = 1, SCALE_4 = 2, SCALE_8 = 3};
-
-void mov_reg_reg(assembler::assembler& a, uint8_t dest, uint8_t src, bool amd64)
-{
-	if(amd64) a(0x48);
-	a(0x8B, assembler::i386_modrm(dest, MOD_REG, src));
-}
-
-void xor_ax_ax(assembler::assembler& a, bool amd64)
-{
-	if(amd64) a(0x48);
-	a(0x31, assembler::i386_modrm(REG_AX, MOD_REG, REG_AX));
-}
-
-void inc_ax(assembler::assembler& a, bool amd64)
-{
-	if(amd64) a(0x48);
-	a(0xFF, assembler::i386_modrm(0, MOD_REG, REG_AX));
-}
-
-void testb_si_offset_imm(assembler::assembler& a, size_t offset, uint8_t mask)
-{
-	if(offset > 127)
-		a(0xF6, assembler::i386_modrm(0, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset), mask);
-	else
-		a(0xF6, assembler::i386_modrm(0, MOD_OFF_1, REG_SI), (uint8_t)offset, mask);
-}
-
-void movb_si_offset(assembler::assembler& a, size_t offset, uint8_t reg)
-{
-	if(offset > 127)
-		a(0x8A, assembler::i386_modrm(reg, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset));
-	else
-		a(0x8A, assembler::i386_modrm(reg, MOD_OFF_1, REG_SI), (uint8_t)offset);
-}
-
-void movzbl_si_offset(assembler::assembler& a, size_t offset, uint8_t reg)
-{
-	if(offset > 127)
-		a(0x0F, 0xB6, assembler::i386_modrm(reg, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset));
-	else
-		a(0x0F, 0xB6, assembler::i386_modrm(reg, MOD_OFF_1, REG_SI), (uint8_t)offset);
-}
-
-void load_cx_imm(assembler::assembler& a, int64_t val, bool amd64)
-{
-	if(amd64) a(0x48);
-	a(0xC7, assembler::i386_modrm(0, MOD_REG, REG_CX), assembler::vle<int32_t>(val));
-}
-
-void orb_si_offset_imm(assembler::assembler& a, size_t offset, uint8_t mask)
-{
-	if(offset > 127)
-		a(0x80, assembler::i386_modrm(1, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset), mask);
-	else
-		a(0x80, assembler::i386_modrm(1, MOD_OFF_1, REG_SI), (uint8_t)offset, mask);
-}
-
-void jnz_near(assembler::assembler& a, assembler::label& l)
-{
-	a(0x75, assembler::relocation_tag(assembler::i386_reloc_rel8, l), 0x00);
-}
-
-void jz_near(assembler::assembler& a, assembler::label& l)
-{
-	a(0x74, assembler::relocation_tag(assembler::i386_reloc_rel8, l), 0x00);
-}
-
-void jmp_near(assembler::assembler& a, assembler::label& l)
-{
-	a(0xEB, assembler::relocation_tag(assembler::i386_reloc_rel8, l), 0x00);
-}
-
-void mov_dxPax_imm(assembler::assembler& a, uint8_t val)
-{
-	a(0xC6, assembler::i386_modrm(0, MOD_NO_OFF, RM_SIB), assembler::i386_sib(REG_DX, REG_AX, SCALE_1), val);
-}
-
-void movb_dxPax_reg(assembler::assembler& a, uint8_t reg)
-{
-	a(0x88, assembler::i386_modrm(reg, MOD_NO_OFF, RM_SIB), assembler::i386_sib(REG_DX, REG_AX, SCALE_1));
-}
-
-void cmp_dxPax_imm(assembler::assembler& a, uint8_t val)
-{
-	a(0x80, assembler::i386_modrm(7, MOD_NO_OFF, RM_SIB), assembler::i386_sib(REG_DX, REG_AX, SCALE_1), val);
-}
-
-void andb_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
-{
-	a(0x80, assembler::i386_modrm(4, MOD_REG, reg), val);
-}
-
-void andd_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
-{
-	a(0x83, assembler::i386_modrm(4, MOD_REG, reg), val);
-}
-
-void cmpb_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
-{
-	a(0x80, assembler::i386_modrm(7, MOD_REG, reg), val);
-}
-
-void cmpd_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
-{
-	a(0x83, assembler::i386_modrm(7, MOD_REG, reg), val);
-}
-
-void addb_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
-{
-	a(0x80, assembler::i386_modrm(0, MOD_REG, reg), val);
-}
-
-void addd_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
-{
-	a(0x83, assembler::i386_modrm(0, MOD_REG, reg), val);
-}
-
-void sbbb_reg_reg(assembler::assembler& a, uint8_t dst, uint8_t src)
-{
-	a(0x18, assembler::i386_modrm(src, MOD_REG, dst));
-}
-
-void sbbd_reg_reg(assembler::assembler& a, uint8_t dst, uint8_t src)
-{
-	a(0x19, assembler::i386_modrm(src, MOD_REG, dst));
-}
-
-void mov_si_offset_si_word(assembler::assembler& a, size_t offset, bool amd64)
-{
-	if(offset > 127)
-		a(0x66, 0x8B, assembler::i386_modrm(REG_SI, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset));
-	else
-		a(0x66, 0x8B, assembler::i386_modrm(REG_SI, MOD_OFF_1, REG_SI), offset);
-	if(amd64) a(0x48);
-	a(0x81, assembler::i386_modrm(4, MOD_REG, REG_SI), assembler::vle<int32_t>(0xFFFF));
-}
-
-void lea_load_out_addr_di(assembler::assembler& a, bool amd64)
-{
-	if(amd64) a(0x48);
-	a(0x8D, assembler::i386_modrm(REG_DI, MOD_NO_OFF, RM_SIB), assembler::i386_sib(REG_DX, REG_AX, SCALE_1));
-}
-
-void add_ax_cx(assembler::assembler& a, bool amd64)
-{
-	if(amd64) a(0x48);
-	a(0x01, assembler::i386_modrm(REG_CX, MOD_REG, REG_AX));
-}
-
-void call_label(assembler::assembler& a, assembler::label& l, uint8_t amd64_tmpreg, bool amd64)
-{
-	if(amd64) {
-		a(0x48 | ((amd64_tmpreg&8) ? 1 : 0), 0xB8 | (amd64_tmpreg&7),
-			assembler::relocation_tag(assembler::i386_reloc_abs64, l), assembler::pad_tag(8),
-			0x40 | ((amd64_tmpreg&8) ? 1 : 0), 0xFF, assembler::i386_modrm(2, MOD_REG, (amd64_tmpreg&7)));
-	} else
-		a(0xE8, assembler::relocation_tag(assembler::i386_reloc_rel32, l), assembler::pad_tag(4));
-}
-
-void push_gp(assembler::assembler& a, uint8_t reg)
-{
-	a(0x50 + (reg&7));
-}
-
-void pop_gp(assembler::assembler& a, uint8_t reg)
-{
-	a(0x58 + (reg&7));
-}
-
-void add_esp_imm(assembler::assembler& a, int8_t val)
-{
-	a(0x83, assembler::i386_modrm(0, MOD_REG, REG_SP), val);
-}
-
-void load_gp_esp_n(assembler::assembler& a, uint8_t reg, int8_t offset)
-{
-	a(0x8B, assembler::i386_modrm(reg, MOD_OFF_1, RM_SIB), assembler::i386_sib(REG_SP, INDEX_NONE, SCALE_1),
-		offset);
-}
-
-void mov_si_offset_imm(assembler::assembler& a, int32_t offset, uint8_t val)
-{
-	if(offset > 127)
-		a(0xC6, assembler::i386_modrm(0, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset), val);
-	else
-		a(0xC6, assembler::i386_modrm(0, MOD_OFF_1, REG_SI), offset, val);
-}
-
-void mov_ax_imm(assembler::assembler& a, size_t val, bool amd64)
-{
-	if(amd64) a(0x48, 0xB8, assembler::vle<uint64_t>(val));
-	else a(0xB8, assembler::vle<uint32_t>(val));
-}
-
-void mov_si_offset_word(assembler::assembler& a, int32_t offset, uint8_t reg)
-{
-	if(offset > 127)
-		a(0x66, 0x89, assembler::i386_modrm(reg, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset));
-	else
-		a(0x66, 0x89, assembler::i386_modrm(reg, MOD_OFF_1, REG_SI), offset);
-}
-
-void ret(assembler::assembler& a)
-{
-	a(0xC3);
-}
-
-void port_type_generic::make_routines(assembler::assembler& a, std::list<assembler::label>& labels)
-{
-	bool amd64 = i386_amd64();
-	assembler::label& axisprint = (alloc_label(labels) = assembler::label((void*)axis_print));
-	assembler::label& axisread = (alloc_label(labels) = assembler::label((void*)read_axis_value));
-	a._label(alloc_label(labels), "serialize");
-	if(!amd64) {
-		//Emit extra prologue for serialize.
-		push_gp(a, REG_SI);
-		push_gp(a, REG_DX);
-		load_gp_esp_n(a, REG_SI, 16);
-		load_gp_esp_n(a, REG_DX, 20);
-	}
-	//SI: State block.
-	//DX: Output buffer.
-	//AX: Counter.
-	xor_ax_ax(a, amd64);
+	a._label(labels, "serialize");
+	codegen::emit_serialize_prologue(as, labels);
 	for(auto& i : serialize_instructions) {
 		switch(i.type) {
-		case 0: { //Button.
-/*
-			This is really bad:
-			movb_si_offset(a, i.offset, REG_CX);
-			andb_reg_imm(a, REG_CX, i.mask);
-			cmpb_reg_imm(a, REG_CX, i.mask);
-			sbbb_reg_reg(a, REG_CX, REG_CX);
-			andb_reg_imm(a, REG_CX, 0x2E - i.character);
-			addb_reg_imm(a, REG_CX, i.character);
-			movb_dxPax_reg(a, REG_CX);
-			//Better but still bad.
-			movzbl_si_offset(a, i.offset, REG_CX);
-			andd_reg_imm(a, REG_CX, i.mask);
-			cmpd_reg_imm(a, REG_CX, i.mask);
-			sbbd_reg_reg(a, REG_CX, REG_CX);
-			andd_reg_imm(a, REG_CX, 0x2E - i.character);
-			addd_reg_imm(a, REG_CX, i.character);
-			movb_dxPax_reg(a, REG_CX);
-*/
-			assembler::label& button_set = alloc_label(labels);
-			assembler::label& end_char = alloc_label(labels);
-			testb_si_offset_imm(a, i.offset, i.mask);
-			jnz_near(a, button_set);
-			mov_dxPax_imm(a, '.');
-			jmp_near(a, end_char);
-			a._label(button_set);
-			mov_dxPax_imm(a, i.character);
-			a._label(end_char);
-
-			inc_ax(a, amd64);
+		case 0: //Button.
+			codegen::emit_serialize_button(as, labels, i.offset, i.mask, i.character);
 			break;
-		}
 		case 1: //Axis
-			if(!amd64) push_gp(a, REG_DI);
-			push_gp(a, REG_SI);
-			push_gp(a, REG_DX);
-			push_gp(a, REG_AX);
-			mov_si_offset_si_word(a, i.offset, amd64);
-			lea_load_out_addr_di(a, amd64);
-			if(!amd64) push_gp(a, REG_SI);
-			if(!amd64) push_gp(a, REG_DI);
-			call_label(a, axisprint, 11, amd64);
-			if(!amd64) add_esp_imm(a, 0x8);
-			pop_gp(a, REG_CX);	//POP CX instead of AX so we can add the return value.
-			pop_gp(a, REG_DX);
-			pop_gp(a, REG_SI);
-			if(!amd64) pop_gp(a, REG_DI);
-			add_ax_cx(a, amd64);
+			codegen::emit_serialize_axis(as, labels, i.offset);
 			break;
 		case 2: //Pipe character
 		case 3:
-			mov_dxPax_imm(a, '|');
-			inc_ax(a, amd64);
+			codegen::emit_serialize_pipe(as, labels);
 			break;
 		case 4: //End or nothing
 		case 5:
-			if(!amd64) pop_gp(a, REG_DX);
-			if(!amd64) pop_gp(a, REG_SI);
-			ret(a);
+			codegen::emit_serialize_epilogue(as, labels);
 			break;
 		}
 	}
-	a._label(alloc_label(labels), "deserialize");
-	if(!amd64) {
-		//Emit extra prologue for deserialize.
-		push_gp(a, REG_SI);
-		push_gp(a, REG_DX);
-		load_gp_esp_n(a, REG_SI, 16);
-		load_gp_esp_n(a, REG_DX, 20);
-	}
-	//SI: State block.
-	//DX: Output buffer.
-	//AX: Counter.
-	xor_ax_ax(a, amd64);
-	for(size_t i = 0; i < storage_size; i++)
-		mov_si_offset_imm(a, i, 0);
+
+	a._label(labels, "deserialize");
+	assembler::label& dend = labels;
+	assembler::label* dpipe = labels;
+	codegen::emit_deserialize_prologue(as, labels);
+	codegen::emit_deserialize_clear_storage(as, labels, storage_size);
 	for(auto& i : serialize_instructions) {
 		switch(i.type) {
-		case 0: { //Button.
-			assembler::label& no_progress = alloc_label(labels);
-			assembler::label& clear_button = alloc_label(labels);
-			cmp_dxPax_imm(a, '|');
-			jz_near(a, no_progress);
-			cmp_dxPax_imm(a, '\r');
-			jz_near(a, no_progress);
-			cmp_dxPax_imm(a, '\n');
-			jz_near(a, no_progress);
-			cmp_dxPax_imm(a, '\0');
-			jz_near(a, no_progress);
-			cmp_dxPax_imm(a, ' ');
-			jz_near(a, clear_button);
-			cmp_dxPax_imm(a, '.');
-			jz_near(a, clear_button);
-			orb_si_offset_imm(a, i.offset, i.mask);
-			a._label(clear_button);
-			inc_ax(a, amd64);
-			a._label(no_progress);
+		case 0: //Button.
+			codegen::emit_deserialize_button(as, labels, i.offset, i.mask, *dpipe, dend);
 			break;
-		}
 		case 1: //Axis
-			if(!amd64) push_gp(a, REG_DI);
-			push_gp(a, REG_SI);
-			push_gp(a, REG_DX);
-			push_gp(a, REG_AX);
-			mov_reg_reg(a, REG_DI, REG_DX, amd64);
-			mov_reg_reg(a, REG_SI, REG_SP, amd64);
-			if(!amd64) push_gp(a, REG_SI);
-			if(!amd64) push_gp(a, REG_DI);
-			call_label(a, axisread, 11, amd64);
-			if(!amd64) add_esp_imm(a, 0x8);
-			mov_reg_reg(a, REG_CX, REG_AX, amd64);
-			pop_gp(a, REG_AX);
-			pop_gp(a, REG_DX);
-			pop_gp(a, REG_SI);
-			if(!amd64) pop_gp(a, REG_DI);
-			mov_si_offset_word(a, i.offset, REG_CX);
+			codegen::emit_deserialize_axis(as, labels, i.offset);
 			break;
 		case 2: //Pipe character 1
 			break;  //Do nothing.
-		case 3: //Pipe character 2
-		case 4: { //Pipe character 3
-			assembler::label& not_last_pipe = alloc_label(labels);
-			assembler::label& goto_out = alloc_label(labels);
-			assembler::label& loop = alloc_label(labels);
-			a._label(loop);
-			cmp_dxPax_imm(a, '|');
-			jz_near(a, goto_out);
-			cmp_dxPax_imm(a, '\r');
-			jz_near(a, goto_out);
-			cmp_dxPax_imm(a, '\n');
-			jz_near(a, goto_out);
-			cmp_dxPax_imm(a, '\0');
-			jz_near(a, goto_out);
-			inc_ax(a, amd64);
-			jmp_near(a, loop);
-			a._label(goto_out);
-			if(i.type == 3) {
-				cmp_dxPax_imm(a, '|');
-				jnz_near(a, not_last_pipe);
-				inc_ax(a, amd64);
-				a._label(not_last_pipe);
-			} else {
-				if(!amd64) pop_gp(a, REG_DX);
-				if(!amd64) pop_gp(a, REG_SI);
-				ret(a);
-			}
+		case 3: //Pipe character 2. We redefine dpipe to point to next pipe or end.
+			codegen::emit_deserialize_skip_until_pipe(as, labels, *dpipe, dend);
+			as.label(*dpipe);
+			dpipe = labels;
+			codegen::emit_deserialize_skip(as, labels);
 			break;
-		}
-		case 5:
-			mov_ax_imm(a, DESERIALIZE_SPECIAL_BLANK, amd64);
-			if(!amd64) pop_gp(a, REG_DX);
-			if(!amd64) pop_gp(a, REG_SI);
-			ret(a);
+		case 4: //Pipe character 3. Also note that we need to place dpipe label here.
+			codegen::emit_deserialize_skip_until_pipe(as, labels, *dpipe, dend);
+			as.label(*dpipe);
+			as.label(dend);
+			codegen::emit_deserialize_epilogue(as, labels);
+			break;
+		case 5:	//Nothing.
+			codegen::emit_deserialize_special_blank(as, labels);
+			as.label(*dpipe);
+			as.label(dend);
+			codegen::emit_deserialize_epilogue(as, labels);
 			break;
 		}
 	}
 
-}
-#else
-void port_type_generic::make_routines(assembler::assembler& a, std::list<assembler::label>& labels)
-{
-	throw std::runtime_error("ASM on this arch not supported");
-}
+	uint32_t ilog2controls = 0;
+	for(size_t i = 0; i < controller_info->controllers.size(); i++) {
+		while((1U << ilog2controls) < controller_info->controllers[i].buttons.size())
+			ilog2controls++;
+	}
+	uint32_t mcontrols = 1 << ilog2controls;
 
+	a._label(labels, "read");
+	codegen::emit_read_prologue(as, labels);
+	assembler::label& rend = labels;
+	codegen::emit_read_dispatch(as, labels, controller_info->controllers.size(), ilog2controls, rend);
+	//Emit the jump table.
+	std::vector<assembler::label*> xlabels;
+	for(size_t i = 0; i < controller_info->controllers.size(); i++) {
+		size_t cnt = controller_info->controllers[i].buttons.size();
+		for(size_t j = 0; j < cnt; j++) {
+			auto& c = indexinfo[indexbase[i] + j];
+			switch(c.type) {
+			case 0:
+				codegen::emit_read_label_bad(as, labels, rend);
+				break;
+			case 1:
+			case 2:
+				xlabels.push_back(&codegen::emit_read_label(as, labels));
+				break;
+			};
+		}
+		for(size_t j = cnt; j < mcontrols; j++)
+			codegen::emit_read_label_bad(as, labels, rend);
+	}
+	//Emit Routines.
+	size_t lidx = 0;
+	for(size_t i = 0; i < controller_info->controllers.size(); i++) {
+		size_t cnt = controller_info->controllers[i].buttons.size();
+		for(size_t j = 0; j < cnt; j++) {
+			auto& c = indexinfo[indexbase[i] + j];
+			switch(c.type) {
+			case 0:
+				break;
+			case 1:
+				codegen::emit_read_button(as, labels, *xlabels[lidx++], rend, c.offset, c.mask);
+				break;
+			case 2:
+				codegen::emit_read_axis(as, labels, *xlabels[lidx++], rend, c.offset);
+				break;
+			};
+		}
+	}
+	a._label(rend);
+	codegen::emit_read_epilogue(as, labels);
+
+	a._label(labels, "write");
+	codegen::emit_write_prologue(as, labels);
+	assembler::label& wend = labels;
+	//Read routines here are the same as write routines.
+	codegen::emit_read_dispatch(as, labels, controller_info->controllers.size(), ilog2controls, wend);
+	xlabels.clear();
+	for(size_t i = 0; i < controller_info->controllers.size(); i++) {
+		size_t cnt = controller_info->controllers[i].buttons.size();
+		for(size_t j = 0; j < cnt; j++) {
+			auto& c = indexinfo[indexbase[i] + j];
+			switch(c.type) {
+			case 0:
+				codegen::emit_read_label_bad(as, labels, wend);
+				break;
+			case 1:
+			case 2:
+				xlabels.push_back(&codegen::emit_read_label(as, labels));
+				break;
+			};
+		}
+		for(size_t j = cnt; j < mcontrols; j++)
+			codegen::emit_read_label_bad(as, labels, wend);
+	}
+	//Emit Routines.
+	lidx = 0;
+	for(size_t i = 0; i < controller_info->controllers.size(); i++) {
+		size_t cnt = controller_info->controllers[i].buttons.size();
+		for(size_t j = 0; j < cnt; j++) {
+			auto& c = indexinfo[indexbase[i] + j];
+			switch(c.type) {
+			case 0:
+				break;
+			case 1:
+				codegen::emit_write_button(as, labels, *xlabels[lidx++], wend, c.offset, c.mask);
+				break;
+			case 2:
+				codegen::emit_write_axis(as, labels, *xlabels[lidx++], wend, c.offset);
+				break;
+			};
+		}
+	}
+	a._label(wend);
+	codegen::emit_write_epilogue(as, labels);
 #endif
+}

@@ -52,7 +52,7 @@ private:
 	static size_t _serialize(const port_type* _this, const unsigned char* buffer, char* textbuf);
 	static size_t _deserialize(const port_type* _this, unsigned char* buffer, const char* textbuf);
 	void make_dynamic_blocks();
-	void make_routines(assembler::assembler& a, std::list<assembler::label>& labels);
+	void make_routines(assembler::assembler& a, assembler::label_list& labels);
 };
 
 #endif
