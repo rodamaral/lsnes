@@ -868,7 +868,7 @@ color::color(const std::string& clr) throw(std::bad_alloc, std::runtime_error)
 	int64_t col = -1;
 	bool first = true;
 	auto& cspecs = colornames();
-	for(auto& t : token_iterator_foreach(clr, {" ","\t"}, true)) {
+	for(auto& t : token_iterator<char>::foreach(clr, {" ","\t"}, true)) {
 		if(t.length() > 0 && t[0] == '#') {
 			if(!first)
 				throw std::runtime_error("Base color (" + t + ") can't be used as modifier");

@@ -148,6 +148,33 @@ public:
  */
 	static void pull_fn();
 private:
+/**
+ * Foreach helper.
+ */
+	template<typename U> class _foreach
+	{
+	public:
+/**
+ * Create helper.
+ */
+		_foreach(const std::basic_string<U>& _s,
+			std::initializer_list<const U*> sep, bool whole_sequence = false)
+			: s(_s, sep, whole_sequence)
+		{
+		}
+/**
+ * Starting iterator.
+ */
+		token_iterator<U> begin() throw() { return s; }
+/**
+ * Ending iterator.
+ */
+		token_iterator<U> end() throw() { return e; }
+	private:
+		token_iterator<U> s;
+		token_iterator<U> e;
+	};
+
 	void ctor_eos();
 	void ctor_itr(std::initializer_list<const T*> sep, bool whole_sequence = false) throw(std::bad_alloc);
 	token_iterator<T> postincrement() throw(std::bad_alloc);
@@ -163,40 +190,17 @@ private:
 	std::set<std::basic_string<T>> spliton;
 	bool is_end_iterator;
 	bool whole_seq;
-};
-
-/**
- * Foreach helper.
- */
-template<typename U> class _token_iterator_foreach
-{
 public:
 /**
- * Create helper.
+ * Return an container referencing tokens of string.
  */
-	_token_iterator_foreach(const std::basic_string<U>& _s,
-		std::initializer_list<const U*> sep, bool whole_sequence = false)
-		: s(_s, sep, whole_sequence)
+	static _foreach<T> foreach(const std::basic_string<T>& _s,
+		std::initializer_list<const T*> sep, bool whole_sequence = false)
 	{
+		return _foreach<T>(_s, sep, whole_sequence);
 	}
-/**
- * Starting iterator.
- */
-	token_iterator<U> begin() throw() { return s; }
-/**
- * Ending iterator.
- */
-	token_iterator<U> end() throw() { return e; }
-private:
-	token_iterator<U> s;
-	token_iterator<U> e;
 };
 
-template<typename T> _token_iterator_foreach<T> token_iterator_foreach(const std::basic_string<T>& _s,
-	std::initializer_list<const T*> sep, bool whole_sequence = false)
-{
-	return _token_iterator_foreach<T>(_s, sep, whole_sequence);
-}
 
 
 class regex_results

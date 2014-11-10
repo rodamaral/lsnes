@@ -133,7 +133,7 @@ core_romimage_info::core_romimage_info(const core_romimage_info_params& params)
 	headersize = params.headersize;
 	if(params.extensions) {
 		std::string tmp = params.extensions;
-		for(auto& ext : token_iterator_foreach(tmp, {";"}))
+		for(auto& ext : token_iterator<char>::foreach(tmp, {";"}))
 			extensions.insert(ext);
 	}
 }

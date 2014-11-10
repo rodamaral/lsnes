@@ -320,7 +320,7 @@ messagebuffer platform::msgbuf(MAXMESSAGES, INIT_WIN_SIZE);
 void platform::message(const std::string& msg) throw(std::bad_alloc)
 {
 	threads::alock h(msgbuf_lock());
-	for(auto& forlog : token_iterator_foreach(msg, {"\n"})) {
+	for(auto& forlog : token_iterator<char>::foreach(msg, {"\n"})) {
 		msgbuf.add_message(forlog);
 		if(system_log)
 			system_log << forlog << std::endl;

@@ -206,7 +206,7 @@ font2::font2(const std::string& file)
 			if(tname == "bad") {
 				//Special, no key.
 			} else if(regex_match("[0-9]+(-[0-9]+)*", tname))
-				for(auto& tmp : token_iterator_foreach(tname, {"-"}))
+				for(auto& tmp : token_iterator<char>::foreach(tname, {"-"}))
 					key.append(1, parse_value<uint32_t>(tmp));
 			else {
 				delete toclose;

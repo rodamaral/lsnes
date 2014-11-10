@@ -378,9 +378,9 @@ std::string clean_keystring(const std::string& in)
 	std::string key = tmp[3];
 	std::set<std::string> _mods, _mask;
 	std::string tmp2;
-	for(auto& tmp2 : token_iterator_foreach(mods, {","}))
+	for(auto& tmp2 : token_iterator<char>::foreach(mods, {","}))
 		_mods.insert(tmp2);
-	for(auto& tmp2 : token_iterator_foreach(mask, {","}))
+	for(auto& tmp2 : token_iterator<char>::foreach(mask, {","}))
 		_mask.insert(tmp2);
 	for(auto i : _mods)
 		if(!_mask.count(i))

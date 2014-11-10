@@ -331,7 +331,7 @@ namespace
 			auto& core = CORE();
 			std::list<std::string> _args;
 			std::string args2 = args;
-			for(auto& sym : token_iterator_foreach(args, {" ", "\t"}))
+			for(auto& sym : token_iterator<char>::foreach(args, {" ", "\t"}))
 				_args.push_back(sym);
 			core.lua2->callback_do_latch(_args);
 		});

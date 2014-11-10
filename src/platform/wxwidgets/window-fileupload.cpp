@@ -60,8 +60,8 @@ bool search_match(const std::string& term, const std::string& name)
 {
 	std::set<std::string> searched;
 	std::vector<std::string> name_words;
-	for(auto i : token_iterator_foreach<char>(name, {" "})) if(i != "") name_words.push_back(str_tolower(i));
-	for(auto i : token_iterator_foreach<char>(term, {" "})) {
+	for(auto i : token_iterator<char>::foreach(name, {" "})) if(i != "") name_words.push_back(str_tolower(i));
+	for(auto i : token_iterator<char>::foreach(term, {" "})) {
 		if(i == "")
 			continue;
 		std::string st = str_tolower(i);
