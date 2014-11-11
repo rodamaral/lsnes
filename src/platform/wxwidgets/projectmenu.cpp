@@ -44,7 +44,7 @@ void projects_menu::on_select(wxCommandEvent& e)
 			wxT("Load project"), b.size(), &b[0]);
 		if(d2->ShowModal() == wxID_CANCEL) {
 			d2->Destroy();
-			throw canceled_exception();
+			return;
 		}
 		std::string _id = a[d2->GetSelection()];
 		selected_cb(_id);
