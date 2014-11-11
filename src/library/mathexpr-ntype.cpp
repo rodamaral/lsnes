@@ -658,9 +658,9 @@ namespace
 
 	class expr_val
 	{
-		struct boolean_tag {};
 		struct number_tag {};
 		struct string_tag {};
+		struct boolean_tag {};
 		enum _type
 		{
 			T_BOOLEAN,
@@ -712,7 +712,7 @@ namespace
 			: type(T_NUMERIC), v_numeric(expr_val_numeric::float_tag(), v)
 		{
 		}
-		expr_val(boolean_tag, bool b)
+		expr_val(typeinfo_wrapper<expr_val>::boolean_tag, bool b)
 			: type(T_BOOLEAN), v_boolean(b)
 		{
 		}
@@ -722,6 +722,10 @@ namespace
 		}
 		expr_val(string_tag, std::string s)
 			: type(T_STRING), v_string(s)
+		{
+		}
+		expr_val(boolean_tag, bool b)
+			: type(T_BOOLEAN), v_boolean(b)
 		{
 		}
 		std::string tostring()

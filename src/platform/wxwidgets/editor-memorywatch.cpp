@@ -214,6 +214,12 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, emulator_instance& 
 		vma->Append(towxstring(j->name));
 		vmas_available[id] = std::make_pair(j->base, j->size);
 	}
+	//Special registers "VMA".
+	{
+		int id = vma->GetCount();
+		vma->Append(towxstring("(registers)"));
+		vmas_available[id] = std::make_pair(0xFFFFFFFFFFFFFFFFULL, 0);
+	}
 	vma->SetSelection(0);
 	vma->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
 		wxCommandEventHandler(wxeditor_memorywatch::on_position_change), NULL, this);
@@ -302,7 +308,7 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, emulator_instance& 
 		this);
 	top_s->Add(s12, 0, wxGROW);
 
-	memwatch_item it(*inst.memory);
+	memwatch_item it;
 	bool had_it = false;
 	try {
 		it = inst.mwatch->get(name);
@@ -454,7 +460,7 @@ void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 
 void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 {
-	memwatch_item it(*inst.memory);
+	memwatch_item it;
 	it.expr = tostdstring(expr->GetValue());
 	it.format = tostdstring(format->GetValue());
 	it.printer.cond_enable = cond_enable->GetValue();

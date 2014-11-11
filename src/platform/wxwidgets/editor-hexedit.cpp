@@ -506,7 +506,7 @@ public:
 				<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 			if(n == "")
 				return;
-			memwatch_item e(*inst.memory);
+			memwatch_item e;
 			e.expr = (stringfmt() << addr).str();
 			e.format = datatypes[curtype].format;
 			e.bytes = datatypes[curtype].len;

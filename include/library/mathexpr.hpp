@@ -59,6 +59,7 @@ struct typeinfo
 	virtual void parse_u(void* obj, uint64_t v) = 0;
 	virtual void parse_s(void* obj, int64_t v) = 0;
 	virtual void parse_f(void* obj, double v) = 0;
+	virtual void parse_b(void* obj, bool v) = 0;
 	virtual void scale(void* val, uint64_t scale) = 0;
 	virtual void deallocate(void* obj) = 0;
 	virtual void copy(void* target, void* source) = 0;
@@ -151,6 +152,7 @@ template<class T> struct typeinfo_wrapper : public typeinfo
 	struct unsigned_tag {};
 	struct signed_tag {};
 	struct float_tag {};
+	struct boolean_tag {};
 	~typeinfo_wrapper()
 	{
 	}
@@ -173,6 +175,10 @@ template<class T> struct typeinfo_wrapper : public typeinfo
 	void parse_f(void* obj, double v)
 	{
 		*(T*)obj = T(float_tag(), v);
+	}
+	void parse_b(void* obj, bool b)
+	{
+		*(T*)obj = T(boolean_tag(), b);
 	}
 	void deallocate(void* obj)
 	{

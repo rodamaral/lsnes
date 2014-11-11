@@ -5,6 +5,7 @@
 #include "core/memorywatch.hpp"
 #include "core/messages.hpp"
 #include "core/project.hpp"
+#include "core/rom.hpp"
 #include "core/window.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/directory.hpp"
@@ -97,6 +98,63 @@ namespace
 	}
 
 	void dummy_target_fn(const std::string& n, const std::string& v) {}
+
+
+	struct regread_oper : public mathexpr::operinfo
+	{
+		regread_oper();
+		~regread_oper();
+		//The first promise is the register name.
+		void evaluate(mathexpr::value target, std::vector<std::function<mathexpr::value()>> promises);
+		//Fields.
+		bool signed_flag;
+		loaded_rom* rom;
+	};
+
+	regread_oper::regread_oper()
+		: operinfo("(readregister)")
+	{
+		signed_flag = false;
+		rom = NULL;
+	}
+	regread_oper::~regread_oper()
+	{
+	}
+	void regread_oper::evaluate(mathexpr::value target, std::vector<std::function<mathexpr::value()>> promises)
+	{
+		if(promises.size() != 1)
+			throw mathexpr::error(mathexpr::error::ARGCOUNT, "register read operator takes 1 argument");
+		std::string rname;
+		try {
+			mathexpr::value val = promises[0]();
+			void* res = val._value;
+			rname = val.type->tostring(res);
+		} catch(std::exception& e) {
+			throw mathexpr::error(mathexpr::error::ADDR, e.what());
+		}
+		const interface_device_reg* regs = rom->get_registers();
+		bool found = false;
+		for(size_t i = 0; regs && regs[i].name; i++) {
+			if(rname != regs[i].name)
+				continue;
+			found = true;
+			if(regs[i].boolean) {
+				bool v = (regs[i].read() != 0);
+				target.type->parse_b(target._value, v);
+			} else if(signed_flag) {
+				int64_t v = regs[i].read();
+				target.type->parse_s(target._value, v);
+			} else {
+				uint64_t v = regs[i].read();
+				target.type->parse_u(target._value, v);
+			}
+			return;
+		}
+		if(!found) {
+			//N/A value.
+			throw mathexpr::error(mathexpr::error::ADDR, "No such register");
+		}
+	}
 }
 
 memwatch_printer::memwatch_printer()
@@ -221,7 +279,7 @@ GC::pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
 	return ptr;
 }
 
-memwatch_item::memwatch_item(memory_space& memory)
+memwatch_item::memwatch_item()
 {
 	bytes = 0;
 	signed_flag = false;
@@ -230,7 +288,6 @@ memwatch_item::memwatch_item(memory_space& memory)
 	scale_div = 1;
 	addr_base = 0;
 	addr_size = 0;
-	mspace = &memory;
 }
 
 JSON::node memwatch_item::serialize()
@@ -266,8 +323,15 @@ void memwatch_item::unserialize(const JSON::node& node)
 	addr_size = json_unsigned_default(node, "addr_size", 0);
 }
 
-memorywatch::memread_oper* memwatch_item::get_memread_oper()
+mathexpr::operinfo* memwatch_item::get_memread_oper(memory_space& memory, loaded_rom& rom)
 {
+	if(addr_base == 0xFFFFFFFFFFFFFFFFULL && addr_size == 0) {
+		//Hack: Registers.
+		regread_oper* o = new regread_oper;
+		o->rom = &rom;
+		o->signed_flag = signed_flag;
+		return o;
+	}
 	if(!bytes)
 		return NULL;
 	memorywatch::memread_oper* o = new memorywatch::memread_oper;
@@ -278,7 +342,7 @@ memorywatch::memread_oper* memwatch_item::get_memread_oper()
 	o->scale_div = scale_div;
 	o->addr_base = addr_base;
 	o->addr_size = addr_size;
-	o->mspace = mspace;
+	o->mspace = &memory;
 	return o;
 }
 
@@ -330,7 +394,6 @@ void memwatch_item::compatiblity_unserialize(memory_space& memory, const std::st
 		format = "";
 	expr = (stringfmt() << "0x" << std::hex << addr).str();
 	scale_div = 1;
-	mspace = &memory;	
 	printer.position = memwatch_printer::PC_MEMORYWATCH;
 	printer.cond_enable = false;
 	printer.enabled = "true";
@@ -346,8 +409,9 @@ void memwatch_item::compatiblity_unserialize(memory_space& memory, const std::st
 	printer.onscreen_halo_color = 0;
 }
 
-memwatch_set::memwatch_set(memory_space& _memory, project_state& _project, emu_framebuffer& _fbuf)
-	: memory(_memory), project(_project), fbuf(_fbuf)
+memwatch_set::memwatch_set(memory_space& _memory, project_state& _project, emu_framebuffer& _fbuf,
+	loaded_rom& _rom)
+	: memory(_memory), project(_project), fbuf(_fbuf), rom(_rom)
 {
 }
 
@@ -375,7 +439,7 @@ void memwatch_set::clear(const std::string& name)
 
 void memwatch_set::set(const std::string& name, const std::string& item)
 {
-	memwatch_item _item(memory);
+	memwatch_item _item;
 	if(item != "" && item[0] != '{') {
 		//Compatiblity.
 		try {
@@ -470,7 +534,7 @@ void memwatch_set::set_multi(std::list<std::pair<std::string, std::string>>& lis
 {
 	std::list<std::pair<std::string, memwatch_item>> _list;
 	for(auto& i: list) {
-		memwatch_item it(memory);
+		memwatch_item it;
 		it.unserialize(JSON::node(i.second));
 		_list.push_back(std::make_pair(i.first, it));
 	}
@@ -505,7 +569,7 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 			return vars[n];
 		};
 		for(auto& i : nitems) {
-			mathexpr::operinfo* memread_oper = i.second.get_memread_oper();
+			mathexpr::operinfo* memread_oper = i.second.get_memread_oper(memory, rom);
 			try {
 				GC::pointer<mathexpr::mathexpr> rt_expr;
 				GC::pointer<memorywatch::item_printer> rt_printer;

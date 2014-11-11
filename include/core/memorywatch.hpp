@@ -9,6 +9,7 @@
 
 class memory_space;
 class project_state;
+class loaded_rom;
 class emu_framebuffer;
 namespace framebuffer { class queue; }
 
@@ -62,7 +63,7 @@ struct memwatch_item
 /**
  * Ctor.
  */
-	memwatch_item(memory_space& memory);
+	memwatch_item();
 /**
  * Serialize the item to JSON value.
  */
@@ -76,7 +77,7 @@ struct memwatch_item
  *
  * If bytes == 0, returns NULL.
  */
-	memorywatch::memread_oper* get_memread_oper();
+	mathexpr::operinfo* get_memread_oper(memory_space& memory, loaded_rom& rom);
 /**
  * Translate compatiblity item.
  */
@@ -92,12 +93,12 @@ struct memwatch_item
 	uint64_t scale_div;			//Scale divisor.
 	uint64_t addr_base;			//Address base.
 	uint64_t addr_size;			//Address size (0 => All).
-	memory_space* mspace;			//Memory space to read.
 };
 
 struct memwatch_set
 {
-	memwatch_set(memory_space& _memory, project_state& _project, emu_framebuffer& _fbuf);
+	memwatch_set(memory_space& _memory, project_state& _project, emu_framebuffer& _fbuf,
+		loaded_rom& rom);
 /**
  * Get the specified memory watch item.
  */
@@ -184,6 +185,7 @@ private:
 	memory_space& memory;
 	project_state& project;
 	emu_framebuffer& fbuf;
+	loaded_rom& rom;
 };
 
 #endif

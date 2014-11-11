@@ -1049,7 +1049,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 					<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 				if(n == "")
 					continue;
-				memwatch_item e(*inst.memory);
+				memwatch_item e;
 				e.expr = (stringfmt() << addr).str();
 				bool is_hex = hexmode2->GetValue();
 				e.bytes = watch_properties[typecode].len;

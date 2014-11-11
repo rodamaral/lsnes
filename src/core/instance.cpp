@@ -73,6 +73,7 @@ emulator_instance::emulator_instance()
 	D.prealloc(buttons);
 	D.prealloc(dispatch);
 	D.prealloc(supdater);
+	D.prealloc(rom);
 
 	D.init(dispatch);
 	D.init(command);
@@ -82,7 +83,7 @@ emulator_instance::emulator_instance()
 	D.init(memory);
 	D.init(lua);
 	D.init(lua2, *lua, *command);
-	D.init(mwatch, *memory, *project, *fbuf);
+	D.init(mwatch, *memory, *project, *fbuf, *rom);
 	D.init(settings);
 	D.init(jukebox, *settings);
 	D.init(setcache, *settings);
