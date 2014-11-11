@@ -11,6 +11,7 @@
 #include "core/moviefile.hpp"
 #include "core/project.hpp"
 #include "core/queue.hpp"
+#include "core/window.hpp"
 #include "library/directory.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
@@ -406,6 +407,7 @@ skip_rom_movie:
 	} catch(std::exception& e) {
 		if(newmovie && !used)
 			delete newmovie;
+		platform::error_message(std::string("Can't switch projects: ") + e.what());
 		messages << "Can't switch projects: " << e.what() << std::endl;
 	}
 	if(switched) {
