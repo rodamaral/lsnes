@@ -334,7 +334,7 @@ public:
 		memptrs_.setRombank(abank & (rombanks(memptrs_) - 1));
 	}
 	void loadOrSave(loadsave& state) {
-		rtc_->loadOrSave(state);
+		if(rtc_) rtc_->loadOrSave(state);
 		state(rombank_);
 		state(rambank_);
 		state(enableRam_);
