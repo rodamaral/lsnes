@@ -1,7 +1,7 @@
 From 84fe61ebd27df485ff894d1d05b8950916c6508c Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 1 Feb 2014 12:56:47 +0200
-Subject: [PATCH 5/8] Crash on illegal instruction, fix MBC3 bank0
+Subject: [PATCH 5/9] Crash on illegal instruction, fix MBC3 bank0
 
 ---
  libgambatte/include/gambatte.h    |  2 ++
@@ -188,5 +188,5 @@ index 1775139..bfec71c 100644
  	void loadOrSave(loadsave& state) {
  		rtc_->loadOrSave(state);
 -- 
-2.0.0.rc2
+2.1.3
 

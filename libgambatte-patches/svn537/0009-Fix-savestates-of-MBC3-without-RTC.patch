@@ -1,0 +1,25 @@
+From a77b5548ae91cf66d1d18d4fbe2aa76eb39c7ea3 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Wed, 12 Nov 2014 10:51:55 +0200
+Subject: [PATCH 9/9] Fix savestates of MBC3 without RTC.
+
+---
+ libgambatte/src/mem/cartridge.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libgambatte/src/mem/cartridge.cpp b/libgambatte/src/mem/cartridge.cpp
+index bfec71c..4773c6b 100644
+--- a/libgambatte/src/mem/cartridge.cpp
++++ b/libgambatte/src/mem/cartridge.cpp
+@@ -334,7 +334,7 @@ public:
+ 		memptrs_.setRombank(abank & (rombanks(memptrs_) - 1));
+ 	}
+ 	void loadOrSave(loadsave& state) {
+-		rtc_->loadOrSave(state);
++		if(rtc_) rtc_->loadOrSave(state);
+ 		state(rombank_);
+ 		state(rambank_);
+ 		state(enableRam_);
+-- 
+2.1.3
+

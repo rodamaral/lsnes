@@ -1,7 +1,7 @@
 From 1bcbfe173abb9650c8ae13677d4dca4f0222ab7e Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 18 Nov 2013 01:53:58 +0200
-Subject: [PATCH 2/8] Expose CPU registers
+Subject: [PATCH 2/9] Expose CPU registers
 
 ---
  libgambatte/include/gambatte.h | 22 +++++++++++++++++++
@@ -120,5 +120,5 @@ index 0204557..a61e177 100644
 +}
  }
 -- 
-2.0.0.rc2
+2.1.3
 

@@ -1,7 +1,7 @@
 From 9e0bab46d119dd97c1069458816a993e05f7e10a Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 19 May 2014 12:20:12 +0300
-Subject: [PATCH 8/8] Fix execute breaks on bus and IOAMHRAM
+Subject: [PATCH 8/9] Fix execute breaks on bus and IOAMHRAM
 
 ---
  libgambatte/src/memory.h | 4 ++--
@@ -30,5 +30,5 @@ index e820776..e838502 100644
  	}
  
 -- 
-2.0.0.rc2
+2.1.3
 

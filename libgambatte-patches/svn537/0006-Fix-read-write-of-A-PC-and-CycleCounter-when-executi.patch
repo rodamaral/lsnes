@@ -1,7 +1,7 @@
 From 24df3ca0d17d37bb3192b0ddf28cc16d9b4f8fa5 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 24 Mar 2014 14:01:29 +0200
-Subject: [PATCH 6/8] Fix read/write of A, PC and CycleCounter when executing
+Subject: [PATCH 6/9] Fix read/write of A, PC and CycleCounter when executing
 
 ---
  libgambatte/src/cpu.cpp      |  9 +++++++++
@@ -105,5 +105,5 @@ index f2310ed..d54f5df 100644
  		case REG_C:		p_->cpu.c = val; break;
  		case REG_D:		p_->cpu.d = val; break;
 -- 
-2.0.0.rc2
+2.1.3
 
