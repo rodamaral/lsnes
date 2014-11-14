@@ -770,16 +770,13 @@ void type_generic::make_routines(assembler::assembler& a, assembler::label_list&
 {
 	//One can freely return without doing nothing.
 #ifndef NO_ASM_GENERATION
-#if defined(ARCH_IS_I386)
-	size_t amd64_flag;
-	asm volatile(
-		//On i386, this is DEC EAX, MOV EAX, 0, NOP, NOP, NOP, NOP
-		//On amd64, this is MOV RAX, 0x9090909000000000
-		".byte 0x48\n"
-		".byte 0xB8, 0, 0, 0, 0\n"
-		".byte 0x90, 0x90, 0x90, 0x90\n"
-		: "=a"(amd64_flag));
-	assembler_intrinsics::I386 as(a, amd64_flag != 0);
+#if defined(__x86_64__) && defined(__LP64__)
+	//The check for __LP64__ is so not to try to use this on x32, as it won't work.
+	assembler_intrinsics::I386 as(a, true);
+#define DEFINED_ASSEBLER
+#endif
+#if defined(__i386__)
+	assembler_intrinsics::I386 as(a, false);
 #define DEFINED_ASSEBLER
 #endif
 

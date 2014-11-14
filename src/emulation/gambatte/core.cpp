@@ -55,7 +55,7 @@ namespace
 	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> output_native(lsnes_setgrp,
 		"gambatte-native-sound", "Gambatte‣Sound Output at native rate", false);
 	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> gbchawk_timings(lsnes_setgrp,
-		"gambatte-gbchawk-fuckup", "Gambatte‣Use Fucked up GBCHawk timings", false);
+		"gambatte-gbchawk-fuckup", "Gambatte‣Use old GBCHawk timings", false);
 
 	bool do_reset_flag = false;
 	core_type* internal_rom = NULL;
