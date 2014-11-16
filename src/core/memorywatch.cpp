@@ -491,6 +491,12 @@ bool memwatch_set::rename(const std::string& oldname, const std::string& newname
 	nitems.erase(oldname);
 	rebuild(nitems);
 	std::swap(items, nitems);
+	auto pr = project.get();
+	if(pr) {
+		pr->watches.erase(oldname);
+		pr->watches[newname] = get_string(newname);
+		pr->flush();
+	}
 	fbuf.redraw_framebuffer();
 	return true;
 }
@@ -498,6 +504,7 @@ bool memwatch_set::rename(const std::string& oldname, const std::string& newname
 void memwatch_set::set(const std::string& name, memwatch_item& item)
 {
 	std::map<std::string, memwatch_item> nitems = items;
+	nitems.erase(name); //Insert does not insert if already existing.
 	nitems.insert(std::make_pair(name, item));
 	rebuild(nitems);
 	std::swap(items, nitems);
