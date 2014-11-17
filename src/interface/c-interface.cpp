@@ -1243,6 +1243,15 @@ no_parameters:
 			delete i;
 		list.erase(handle);
 	}
+
+	template<typename T> void cleanup_entry(std::map<const void*, T*>& list, const void* handle)
+	{
+		if(!list.count(handle))
+			return;
+		delete list[handle];
+		list.erase(handle);
+	}
+
 }
 
 void lsnes_register_builtin_core(lsnes_core_func_t fn)
@@ -1263,13 +1272,14 @@ void try_init_c_module(const loadlib::module& module)
 
 void try_uninit_c_module(const loadlib::module& module)
 {
-	if(bylib_core.count(&module)) for(auto i : bylib_core[&module]) i->uninstall_handler();
+	if(bylib_core.count(&module))
+		for(auto i : bylib_core[&module])
+			i->uninstall_handler();
 	cleanup_list(bylib_sysregion, &module);
 	cleanup_list(bylib_region, &module);
 	cleanup_list(bylib_type, &module);
 	cleanup_list(bylib_core, &module);
-	if(bylib_init.count(&module)) delete bylib_init[&module];
-	bylib_init.erase(&module);
+	cleanup_entry(bylib_init, &module);
 }
 
 bool core_uses_module(core_core* core, const loadlib::module& module)
