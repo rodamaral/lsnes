@@ -312,7 +312,7 @@ struct core_core
 {
 	core_core(std::initializer_list<portctrl::type*> ports, std::initializer_list<interface_action> actions);
 	core_core(std::vector<portctrl::type*> ports, std::vector<interface_action> actions);
-	~core_core() throw();
+	virtual ~core_core() throw();
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();
 	double get_PAR();

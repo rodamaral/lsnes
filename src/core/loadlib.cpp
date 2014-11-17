@@ -1,9 +1,11 @@
+#include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/loadlib.hpp"
 #include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "interface/c-interface.hpp"
 #include "interface/romtype.hpp"
+#include "library/command.hpp"
 #include "library/directory.hpp"
 #include "library/filelist.hpp"
 #include "library/loadlib.hpp"
@@ -16,6 +18,9 @@
 
 namespace
 {
+	std::map<unsigned, loadlib::module*> modules;
+	unsigned next_mod = 0;
+
 	std::string get_name(std::string path)
 	{
 #if defined(_WIN32) || defined(_WIN64)
@@ -91,6 +96,19 @@ void with_loaded_library(const loadlib::module& l)
 		//Ignored.
 	}
 	messages << "Loaded library '" << l.get_libname() << "'" << std::endl;
+	modules[next_mod++] = const_cast<loadlib::module*>(&l);
+}
+
+void with_unloaded_library(loadlib::module& l)
+{
+	try {
+		try_uninit_c_module(l);
+	} catch(...) {
+	}
+	messages << "Unloading library '" << l.get_libname() << "'" << std::endl;
+	//Spot removed cores.
+	notify_new_core();
+	delete &l;
 }
 
 namespace
@@ -138,6 +156,21 @@ namespace
 			}
 		}
 	}
+
+	command::fnptr<const std::string&> CMD_unload_library(lsnes_cmds, "unload-library", "", "",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			unsigned libid = parse_value<unsigned>(args);
+			if(!modules.count(libid))
+				throw std::runtime_error("No such library loaded");
+			with_unloaded_library(*modules[libid]);
+			modules.erase(libid);
+		});
+
+	command::fnptr<> CMD_list_library(lsnes_cmds, "list-libraries", "", "",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			for(auto i : modules)
+				messages << "#" << i.first << " [" << i.second->get_libname() << "]" << std::endl;
+		});
 }
 
 void autoload_libraries(void(*on_error)(const std::string& libname, const std::string& err, bool system))

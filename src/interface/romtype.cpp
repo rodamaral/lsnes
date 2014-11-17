@@ -392,6 +392,7 @@ core_core::core_core(std::vector<portctrl::type*> ports, std::vector<interface_a
 core_core::~core_core() throw()
 {
 	all_cores().erase(this);
+	all_cores_set().erase(this);
 }
 
 void core_core::initialize_new_cores()

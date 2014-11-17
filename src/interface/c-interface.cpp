@@ -1149,9 +1149,15 @@ no_parameters:
 		return new c_core_type(lib, p, cores[_core]->get_ports(), rcount, type);
 	}
 
+	std::map<const void*, std::list<core_sysregion*>> bylib_sysregion;
+	std::map<const void*, std::list<core_region*>> bylib_region;
+	std::map<const void*, std::list<core_type*>> bylib_type;
+	std::map<const void*, std::list<core_core*>> bylib_core;
+	std::map<const void*, c_lib_init*> bylib_init;
+
 	void initialize_core2(entrypoint_fn fn, std::map<unsigned, core_sysregion*>& sysregs,
 		std::map<unsigned, core_region*>& regions, std::map<unsigned, c_core_type*>& types,
-		std::map<unsigned, c_core_core*>& cores)
+		std::map<unsigned, c_core_core*>& cores, const void* mod_id)
 	{
 		c_lib_init& lib = *new c_lib_init(fn);
 		for(auto& i : regions)
@@ -1162,10 +1168,18 @@ no_parameters:
 			i.second = create_type(lib, fn, cores, regions, i.first);
 		for(auto& i : sysregs)
 			i.second = create_sysregion(fn, regions, types, i.first);
+		//Mark the libs.
+		if(mod_id) {
+			for(auto& i : sysregs) bylib_sysregion[mod_id].push_back(i.second);
+			for(auto& i : regions) bylib_region[mod_id].push_back(i.second);
+			for(auto& i : types) bylib_type[mod_id].push_back(i.second);
+			for(auto& i : cores) bylib_core[mod_id].push_back(i.second);
+			bylib_init[mod_id] = &lib;
+		}
 		//We don't call install_handler, because that is done automatically.
 	}
 
-	void initialize_core(lsnes_core_func_t fn)
+	void initialize_core(lsnes_core_func_t fn, const void* mod_id)
 	{
 		//Enumerate what the thing supports.
 		entrypoint_fn entrypoint(fn);
@@ -1218,7 +1232,7 @@ no_parameters:
 			}
 		}
 		//Do the rest.
-		initialize_core2(entrypoint, sysregs, regions, types, cores);
+		initialize_core2(entrypoint, sysregs, regions, types, cores, mod_id);
 	}
 }
 
@@ -1232,10 +1246,35 @@ void try_init_c_module(const loadlib::module& module)
 	try {
 		lsnes_core_func_t fn = module.fn<int, unsigned, unsigned, void*,
 			const char**>("lsnes_core_entrypoint");
-		initialize_core(fn);
+		initialize_core(fn, &module);
 	} catch(std::exception& e) {
 		messages << "Can't initialize core: " << e.what() << std::endl;
 	}
+}
+
+void try_uninit_c_module(const loadlib::module& module)
+{
+	if(bylib_core.count(&module)) for(auto i : bylib_core[&module]) i->uninstall_handler();
+	if(bylib_sysregion.count(&module)) for(auto i : bylib_sysregion[&module]) delete i;
+	if(bylib_region.count(&module)) for(auto i : bylib_region[&module]) delete i;
+	if(bylib_type.count(&module)) for(auto i : bylib_type[&module]) delete i;
+	if(bylib_core.count(&module)) for(auto i : bylib_core[&module]) delete i;
+	if(bylib_init.count(&module)) delete bylib_init[&module];
+	bylib_core.erase(&module);
+	bylib_type.erase(&module);
+	bylib_region.erase(&module);
+	bylib_sysregion.erase(&module);
+	bylib_init.erase(&module);
+}
+
+bool core_uses_module(core_core* core, const loadlib::module& module)
+{
+	if(!bylib_core.count(&module))
+		return false;
+	for(auto i : bylib_core[&module])
+		if(i == core)
+			return true;
+	return false;
 }
 
 void initialize_all_builtin_c_cores()
@@ -1244,7 +1283,7 @@ void initialize_all_builtin_c_cores()
 		lsnes_core_func_t fn = corequeue().front();
 		corequeue().pop_front();
 		try {
-			initialize_core(fn);
+			initialize_core(fn, NULL);
 		} catch(std::exception& e) {
 			messages << "Can't initialize core: " << e.what() << std::endl;
 		}
