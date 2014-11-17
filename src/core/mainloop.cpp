@@ -1035,8 +1035,3 @@ void convert_break_to_pause()
 		core.supdater->update();
 	}
 }
-
-void debug_trash_memory(uint8_t* addr, uint8_t byte)
-{
-	*addr = byte;
-}
