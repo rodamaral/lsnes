@@ -34,6 +34,8 @@ namespace
 
 	struct _joystick_driver drv = {
 		.init = []() -> void {
+			quit_signaled = false;
+			quit_ack = false;
 			unsigned max_joysticks = joyGetNumDevs();
 			if(!max_joysticks)
 				return;		//No joystick support.

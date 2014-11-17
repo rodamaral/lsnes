@@ -127,6 +127,7 @@ public:
 	void set_axismode_cb(std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> fn);
 	void set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int type)> fn);
 	std::string get_summary();
+	void offline_all();
 private:
 	set(const set&);
 	set& operator=(const set&);

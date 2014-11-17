@@ -33,12 +33,6 @@ void joystick_driver_init() throw();
  */
 void joystick_driver_quit() throw();
 /**
- * This thread becomes the joystick polling thread.
- *
- * - Called in joystick polling thread.
- */
-void joystick_driver_thread_fn() throw();
-/**
  * Signal the joystick thread to quit.
  */
 void joystick_driver_signal() throw();

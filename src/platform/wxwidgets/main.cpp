@@ -67,17 +67,10 @@ namespace
 	volatile bool modal_dialog_active;
 	threads::lock ui_mutex;
 	threads::cv ui_condition;
-	threads::thread* joystick_thread_handle;
 	bool if_update_messages = false;
 	bool if_update_screen = false;
 	bool if_update_status = false;
 	threads::lock if_mutex;
-
-	void* joystick_thread(int _args)
-	{
-		joystick_driver_thread_fn();
-		return NULL;
-	}
 
 	struct uiserv_event : public wxEvent
 	{
@@ -516,20 +509,16 @@ bool lsnes_app::OnInit()
 	if(settings_mode) {
 		//We got to boot this up quite a bit to get the joystick driver working.
 		//In practicular, we need joystick thread and emulator thread in pause.
-		joystick_thread_handle = new threads::thread(joystick_thread, 6);
 		threads::thread* dummy_loop = new threads::thread(eloop_helper, 8);
 		display_settings_dialog(NULL, lsnes_instance, NULL);
 		platform::exit_dummy_event_loop();
-		joystick_driver_signal();
-		joystick_thread_handle->join();
+		joystick_driver_quit();
 		dummy_loop->join();
 		save_configuration();
 		return false;
 	}
 	init_lua();
 	lsnes_instance.mdumper->set_output(&messages.getstream());
-
-	joystick_thread_handle = new threads::thread(joystick_thread, 7);
 
 	msg_window = new wxwin_messages(lsnes_instance);
 	msg_window->Show();
@@ -593,8 +582,6 @@ int lsnes_app::OnExit()
 	save_configuration();
 	quit_lua();
 	lsnes_instance.mlogic->release_memory();
-	joystick_driver_signal();
-	joystick_thread_handle->join();
 	platform::quit();
 	lsnes_instance.buttons->cleanup();
 	cleanup_keymapper();

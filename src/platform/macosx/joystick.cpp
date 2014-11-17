@@ -38,6 +38,8 @@ namespace
 
 	struct _joystick_driver drv = {
 		.init = []() -> void {
+			quit_signaled = false;
+			quit_ack = false;
 			int jcnt = SDL_SYS_JoystickInit();
 			if(jcnt < 0)
 				return;

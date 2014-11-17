@@ -724,6 +724,15 @@ unsigned set::add(const std::string& name)
 	}
 }
 
+void set::offline_all()
+{
+	for(size_t i = 0; i < _gamepads.size(); i++) {
+		if(_gamepads[i]->online()) {
+			_gamepads[i]->set_online(false);
+		}
+	}
+}
+
 void set::set_axis_cb(std::function<void(unsigned jnum, unsigned num, int16_t val)> fn)
 {
 	threads::alock h(mlock);

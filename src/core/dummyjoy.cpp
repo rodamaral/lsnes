@@ -3,6 +3,7 @@
 
 namespace
 {
+	threads::thread* joystick_thread_handle;
 	void dummy_init() throw() {}
 	void dummy_quit() throw() {}
 	void dummy_thread_fn() throw() {}
@@ -16,6 +17,12 @@ namespace
 		.signal = dummy_signal,
 		.name = dummy_name
 	};
+
+	void* joystick_thread(int _args)
+	{
+		driver.thread_fn();
+		return NULL;
+	}
 }
 
 joystick_driver::joystick_driver(_joystick_driver drv)
@@ -27,17 +34,15 @@ void joystick_driver_init() throw()
 {
 	lsnes_gamepads_init();
 	driver.init();
+	joystick_thread_handle = new threads::thread(joystick_thread, 6);
 }
 
 void joystick_driver_quit() throw()
 {
 	driver.quit();
+	joystick_thread_handle->join();
+	joystick_thread_handle = NULL;
 	lsnes_gamepads_deinit();
-}
-
-void joystick_driver_thread_fn() throw()
-{
-	driver.thread_fn();
 }
 
 void joystick_driver_signal() throw()

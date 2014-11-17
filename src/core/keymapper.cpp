@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "core/instance.hpp"
+#include "core/joystickapi.hpp"
 #include "core/keymapper.hpp"
 #include "core/memorymanip.hpp"
 #include "core/messages.hpp"
@@ -104,4 +105,14 @@ namespace
 			messages << lsnes_gamepads.get_summary() << std::endl;
 			messages << "--------------------------------------------" << std::endl;
 		});
+
+	command::fnptr<> reset_joysticks(lsnes_cmds, "reset-gamepads", "Reset gamepads",
+		"Syntax: reset-gamepads\nResets gamepads.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			joystick_driver_quit();
+			lsnes_gamepads.offline_all(); //Not supposed to have online gamepads.
+			joystick_driver_init();
+			messages << "Reset gamepads" << std::endl;
+		});
+
 }

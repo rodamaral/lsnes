@@ -169,22 +169,24 @@ namespace
 
 	std::map<int, unsigned> gamepad_map;
 
-	bool read_one_input_event(int fd)
+	int read_one_input_event(int fd)
 	{
 		struct input_event ev;
 		int r = read(fd, &ev, sizeof(ev));
 		if(r < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
-			return false;
+			return 0;
 		if(r < 0) {
+			if(errno == ENODEV)
+				return -1;  //Disconnected.
 			messages << "Error reading from joystick (fd=" << fd << "): " << strerror(errno)
 				<< std::endl;
-			return false;
+			return 0;
 		}
 		if(ev.type == EV_KEY)
 			lsnes_gamepads[gamepad_map[fd]].report_button(ev.code, ev.value != 0);
 		if(ev.type == EV_ABS)
 			lsnes_gamepads[gamepad_map[fd]].report_axis(ev.code, ev.value);
-		return true;
+		return 1;
 	}
 
 	bool probe_joystick(int fd, const std::string& filename)
@@ -283,6 +285,8 @@ namespace
 
 	struct _joystick_driver drv = {
 		.init = []() -> void {
+			quit_signaled = false;
+			quit_ack = false;
 			probe_all_joysticks();
 			quit_ack = quit_signaled = false;
 		},
@@ -309,10 +313,35 @@ namespace
 				int r = select(limit, &rfds, NULL, NULL, &tv);
 				if(r <= 0)
 					continue;
+				std::set<int> cleanup;
 				for(auto fd : gamepad_map)
-					if(FD_ISSET(fd.first, &rfds))
-						while(read_one_input_event(fd.first));
+					if(FD_ISSET(fd.first, &rfds)) {
+						while(true) {
+							int r = read_one_input_event(fd.first);
+							if(!r)
+								break;
+							if(r < 0) {
+								cleanup.insert(fd.first);
+								break;
+							}
+						}
+					}
+				for(auto i : cleanup) {
+					unsigned jid = gamepad_map[i];
+					close(i);
+					gamepad_map.erase(i);
+					lsnes_gamepads[jid].set_online(false);
+					messages << "Gamepad #" << jid << "[" << lsnes_gamepads[jid].name()
+						<< "] disconnected." << std::endl;
+				}
 			}
+			//Get rid of joystick handles.
+			for(auto fd : gamepad_map) {
+				close(fd.first);
+				lsnes_gamepads[fd.second].set_online(false);
+			}
+			gamepad_map.clear();
+			
 			quit_ack = true;
 		},
 		.signal = []() -> void {
