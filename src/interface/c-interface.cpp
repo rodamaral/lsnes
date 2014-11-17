@@ -1234,6 +1234,15 @@ no_parameters:
 		//Do the rest.
 		initialize_core2(entrypoint, sysregs, regions, types, cores, mod_id);
 	}
+
+	template<typename T> void cleanup_list(std::map<const void*, std::list<T*>>& list, const void* handle)
+	{
+		if(!list.count(handle))
+			return;
+		for(auto i : list[handle])
+			delete i;
+		list.erase(handle);
+	}
 }
 
 void lsnes_register_builtin_core(lsnes_core_func_t fn)
@@ -1255,15 +1264,11 @@ void try_init_c_module(const loadlib::module& module)
 void try_uninit_c_module(const loadlib::module& module)
 {
 	if(bylib_core.count(&module)) for(auto i : bylib_core[&module]) i->uninstall_handler();
-	if(bylib_sysregion.count(&module)) for(auto i : bylib_sysregion[&module]) delete i;
-	if(bylib_region.count(&module)) for(auto i : bylib_region[&module]) delete i;
-	if(bylib_type.count(&module)) for(auto i : bylib_type[&module]) delete i;
-	if(bylib_core.count(&module)) for(auto i : bylib_core[&module]) delete i;
+	cleanup_list(bylib_sysregion, &module);
+	cleanup_list(bylib_region, &module);
+	cleanup_list(bylib_type, &module);
+	cleanup_list(bylib_core, &module);
 	if(bylib_init.count(&module)) delete bylib_init[&module];
-	bylib_core.erase(&module);
-	bylib_type.erase(&module);
-	bylib_region.erase(&module);
-	bylib_sysregion.erase(&module);
 	bylib_init.erase(&module);
 }
 
