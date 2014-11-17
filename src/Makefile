@@ -23,7 +23,7 @@ CFLAGS += -DOPUS_SUPPORTS_SURROUND
 endif
 endif
 
-COMMON_LIBRARY=core lua fonts library interface video emulation
+COMMON_LIBRARY=core lua fonts library interface video emulation cmdhelp
 ALLFILES=__all__.files
 ALLFLAGS=__all__.ldflags
 COMMON_LIBRARY_FILES=$(patsubst %,%/$(ALLFILES),$(COMMON_LIBRARY))
@@ -37,7 +37,7 @@ __all_common__.files: $(COMMON_LIBRARY_FILES)
 __all_platform__.files: $(PLATFORM_LIBRARY_FILES)
 	lua genfilelist.lua $^ >$@
 
-core/$(ALLFILES): forcelook
+core/$(ALLFILES): forcelook cmdhelp/$(ALLFILES)
 	$(MAKE) -C core
 
 emulation/$(ALLFILES): forcelook
@@ -57,6 +57,9 @@ lua/$(ALLFILES): forcelook
 
 platform/$(ALLFILES): forcelook
 	$(MAKE) -C platform
+
+cmdhelp/$(ALLFILES): forcelook
+	$(MAKE) -C cmdhelp
 
 util/__all_files__: forcelook
 	$(MAKE) -C util
@@ -85,6 +88,7 @@ precheck:
 	$(MAKE) -C platform precheck
 	$(MAKE) -C util precheck
 	$(MAKE) -C video precheck
+	$(MAKE) -C cmdhelp precheck
 
 platclean:
 	$(MAKE) -C emulation clean
@@ -101,6 +105,7 @@ clean:
 	$(MAKE) -C platform clean
 	$(MAKE) -C util clean
 	$(MAKE) -C video clean
+	$(MAKE) -C cmdhelp clean
 
 forcelook:
 	@true

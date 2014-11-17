@@ -1,0 +1,56 @@
+{
+	"slotselect":{
+		"__class":"jukebox",
+		"__name":"set-jukebox-slot",
+		"__description":"Set jukebox slot",
+		"<slot>":"Set jukebox slot to <slot>\n",
+		"__inverse":{
+			"1":"Slot select‣Slot 1",
+			"2":"Slot select‣Slot 2",
+			"3":"Slot select‣Slot 3",
+			"4":"Slot select‣Slot 4",
+			"5":"Slot select‣Slot 5",
+			"6":"Slot select‣Slot 6",
+			"7":"Slot select‣Slot 7",
+			"8":"Slot select‣Slot 8",
+			"9":"Slot select‣Slot 9",
+			"10":"Slot select‣Slot 10",
+			"11":"Slot select‣Slot 11",
+			"12":"Slot select‣Slot 12",
+			"13":"Slot select‣Slot 13",
+			"14":"Slot select‣Slot 14",
+			"15":"Slot select‣Slot 15",
+			"16":"Slot select‣Slot 16",
+			"17":"Slot select‣Slot 17",
+			"18":"Slot select‣Slot 18",
+			"19":"Slot select‣Slot 19",
+			"20":"Slot select‣Slot 20",
+			"21":"Slot select‣Slot 21",
+			"22":"Slot select‣Slot 22",
+			"23":"Slot select‣Slot 23",
+			"24":"Slot select‣Slot 24",
+			"25":"Slot select‣Slot 25",
+			"26":"Slot select‣Slot 26",
+			"27":"Slot select‣Slot 27",
+			"28":"Slot select‣Slot 28",
+			"29":"Slot select‣Slot 29",
+			"30":"Slot select‣Slot 30",
+			"31":"Slot select‣Slot 31",
+			"32":"Slot select‣Slot 32"
+		}
+	},
+	"slotprev":{
+		"__class":"jukebox",
+		"__name":"cycle-jukebox-backward",
+		"__description":"Cycle save jukebox backwards",
+		"":"Cycle save jukebox backwards",
+		"__inverse":{"":"Slot select‣Cycle backwards"}
+	},
+	"slotnext":{
+		"__class":"jukebox",
+		"__name":"cycle-jukebox-forward",
+		"__description":"Cycle save jukebox forwards",
+		"":"Cycle save jukebox forwards",
+		"__inverse":{"":"Slot select‣Cycle forwards"}
+	}
+}

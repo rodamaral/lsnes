@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "core/framerate.hpp"
+#include "cmdhelp/turbo.hpp"
 #include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/moviedata.hpp"
@@ -16,32 +17,11 @@
 
 bool graphics_driver_is_dummy();
 
-namespace
-{
-	command::fnptr<> CMD_tturbo(lsnes_cmds, "toggle-turbo", "Toggle turbo",
-		"Syntax: toggle-turbo\nToggle turbo mode.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().framerate->turboed = !CORE().framerate->turboed;
-		});
-
-	command::fnptr<> CMD_pturbo(lsnes_cmds, "+turbo", "Activate turbo",
-		"Syntax: +turbo\nActivate turbo mode.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().framerate->turboed = true;
-		});
-
-	command::fnptr<> CMD_nturbo(lsnes_cmds, "-turbo", "Deactivate turbo",
-		"Syntax: -turbo\nDeactivate turbo mode.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().framerate->turboed = false;
-		});
-
-	keyboard::invbind_info IBIND_turboh(lsnes_invbinds, "+turbo", "Speed‣Turbo hold");
-	keyboard::invbind_info IBIND_turbot(lsnes_invbinds, "toggle-turbo", "Speed‣Turbo toggle");
-}
-
-
-framerate_regulator::framerate_regulator()
+framerate_regulator::framerate_regulator(command::group& _cmd)
+	: cmd(_cmd),
+	turbo_p(cmd, STUBS::turbop, [this]() { this->turboed = true; }),
+	turbo_r(cmd, STUBS::turbor, [this]() { this->turboed = false; }),
+	turbo_t(cmd, STUBS::turbot, [this]() { this->turboed = !this->turboed; })
 {
 	last_time_update = 0;
 	time_at_last_update = 0;

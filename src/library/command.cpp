@@ -468,13 +468,13 @@ void group::listener::kill(set& s)
 }
 
 template<>
-void invoke_fn(void (*fn)(const std::string& args), const std::string& args)
+void invoke_fn(std::function<void(const std::string& args)> fn, const std::string& args)
 {
 	fn(args);
 }
 
 template<>
-void invoke_fn(void (*fn)(), const std::string& args)
+void invoke_fn(std::function<void()> fn, const std::string& args)
 {
 	if(args != "")
 		throw std::runtime_error("This command does not take arguments");
@@ -482,7 +482,7 @@ void invoke_fn(void (*fn)(), const std::string& args)
 }
 
 template<>
-void invoke_fn(void (*fn)(struct arg_filename a), const std::string& args)
+void invoke_fn(std::function<void(struct arg_filename a)> fn, const std::string& args)
 {
 	if(args == "")
 		throw std::runtime_error("Filename required");

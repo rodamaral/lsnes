@@ -4,6 +4,7 @@
 #include <functional>
 #include <fstream>
 #include <cstdint>
+#include "library/command.hpp"
 #include "library/dispatch.hpp"
 
 class emulator_dispatch;
@@ -15,7 +16,7 @@ class loaded_rom;
 class debug_context
 {
 public:
-	debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom);
+	debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom, command::group& _cmd);
 /**
  * Type of event.
  */
@@ -154,14 +155,21 @@ public:
 	std::map<uint64_t, cb_list> trace_cb;
 	std::map<uint64_t, cb_list> frame_cb;
 private:
+	void do_showhooks();
+	void do_genevent(const std::string& a);
+	void do_tracecmd(const std::string& a);
 	cb_list dummy_cb;  //Always empty.
 	uint64_t xmask = 1;
 	std::function<void()> tracelog_change_cb;
 	emulator_dispatch& edispatch;
 	loaded_rom& rom;
+	command::group& cmd;
 	struct dispatch::target<> corechange;
 	bool corechange_r = false;
 	bool requesting_break = false;
+	command::_fnptr<> showhooks;
+	command::_fnptr<const std::string&> genevent;
+	command::_fnptr<const std::string&> tracecmd;
 
 	struct tracelog_file : public callback_base
 	{

@@ -1,0 +1,20 @@
+{
+	"macrot":{
+		"__class":"macro",
+		"__name":"macro",
+		"__description":"Toggle a macro",
+		"<macroname>":"Toggle macro <macroname>."
+	},
+	"macrop":{
+		"__class":"macro",
+		"__name":"+macro",
+		"__description":"Enable a macro",
+		"<macroname>":"Enable macro <macroname>."
+	},
+	"macror":{
+		"__class":"macro",
+		"__name":"-macro",
+		"__description":"Disable a macro",
+		"<macroname>":"Disable macro <macroname>."
+	}
+}

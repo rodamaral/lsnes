@@ -1,3 +1,4 @@
+#include "cmdhelp/framebuffer.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/emustatus.hpp"
@@ -77,13 +78,6 @@ namespace
 		draw_special_screen(target, rl_corrupt);
 	}
 
-	command::fnptr<command::arg_filename> CMD_take_screenshot(lsnes_cmds, "take-screenshot", "Takes a screenshot",
-		"Syntax: take-screenshot <file>\nSaves screenshot to PNG file <file>\n",
-		[](command::arg_filename file) throw(std::bad_alloc, std::runtime_error) {
-			CORE().fbuf->take_screenshot(file);
-			messages << "Saved PNG screenshot" << std::endl;
-		});
-
 	settingvar::supervariable<settingvar::model_int<0, 8191>> SET_dtb(lsnes_setgrp, "top-border",
 		"UI‣Top padding", 0);
 	settingvar::supervariable<settingvar::model_int<0, 8191>> SET_dbb(lsnes_setgrp, "bottom-border",
@@ -98,11 +92,19 @@ framebuffer::raw emu_framebuffer::screen_corrupt;
 
 emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
 	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom,
-	status_updater& _supdater)
+	status_updater& _supdater, command::group& _cmd)
 	: buffering(buffer1, buffer2, buffer3), subtitles(_subtitles), settings(_settings), mwatch(_mwatch),
-	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2), rom(_rom), supdater(_supdater)
+	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2), rom(_rom), supdater(_supdater), cmd(_cmd),
+	screenshot(cmd, STUBS::screenshot, [this](command::arg_filename a) { this->do_screenshot(a); })
 {
 	last_redraw_no_lua = false;
+}
+
+void emu_framebuffer::do_screenshot(command::arg_filename file)
+{
+	std::string fn = file;
+	take_screenshot(fn);
+	messages << "Saved PNG screenshot to '" << fn << "'" << std::endl;
 }
 
 void emu_framebuffer::take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)

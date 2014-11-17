@@ -1,5 +1,7 @@
 #include "lsnes.hpp"
 
+#include "cmdhelp/button.hpp"
+#include "cmdhelp/macro.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
@@ -27,84 +29,21 @@ namespace
 		else
 			return ++map[key];
 	}
-
-	command::fnptr<const std::string&> CMD_button_p(lsnes_cmds, "+controller", "Press a button",
-		"Syntax: +controller<button>...\nPress a button\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_action(a, 1, 0);
-		});
-
-	command::fnptr<const std::string&> CMD_button_r(lsnes_cmds, "-controller", "Release a button",
-		"Syntax: -controller<button>...\nRelease a button\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_action(a, 0, 0);
-		});
-
-	command::fnptr<const std::string&> CMD_button_h(lsnes_cmds, "hold-controller", "Autohold a button",
-		"Syntax: hold-controller<button>...\nAutohold a button\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_action(a, 1, 1);
-		});
-
-	command::fnptr<const std::string&> CMD_button_t(lsnes_cmds, "type-controller", "Type a button",
-		"Syntax: type-controller<button>...\nType a button\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_action(a, 1, 2);
-		});
-
-	command::fnptr<const std::string&> CMD_button_d(lsnes_cmds, "designate-position", "Set postion",
-		"Syntax: designate-position <button>...\nDesignate position for an axis\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_action(a, 0, 3);
-		});
-
-	command::fnptr<const std::string&> CMD_button_ap(lsnes_cmds, "+autofire-controller", "Start autofire",
-		"Syntax: +autofire-controller<button> [[<duty> ]<cyclelen>]...\nAutofire a button\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_autofire_action(a, 1);
-		});
-
-	command::fnptr<const std::string&> CMD_button_an(lsnes_cmds, "-autofire-controller", "End autofire",
-		"Syntax: -autofire-controller<button> [[<duty> ]<cyclelen>]...\nEnd Autofire on a button\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_autofire_action(a, 0);
-		});
-
-	command::fnptr<const std::string&> CMD_button_at(lsnes_cmds, "autofire-controller", "Toggle autofire",
-		"Syntax: autofire-controller<button> [[<duty> ]<cyclelen>]...\nToggle Autofire on a button\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_autofire_action(a, -1);
-		});
-
-	command::fnptr<const std::string&> CMD_button_a(lsnes_cmds, "controller-analog", "Analog action",
-		"Syntax: controller-analog <button> <axis>\nAnalog action\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().buttons->do_analog_action(a);
-		});
-
-	command::fnptr<const std::string&> CMD_macro_t(lsnes_cmds, "macro", "Toggle a macro",
-		"Syntax: macro <macroname>\nToggle a macro.\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().controls->do_macro(a, 7);
-		});
-
-	command::fnptr<const std::string&> CMD_macro_e(lsnes_cmds, "+macro", "Enable a macro",
-		"Syntax: +macro <macroname>\nEnable a macro.\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().controls->do_macro(a, 5);
-		});
-
-	command::fnptr<const std::string&> CMD_macro_d(lsnes_cmds, "-macro", "Disable a macro",
-		"Syntax: -macro <macroname>\nDisable a macro.\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			CORE().controls->do_macro(a, 2);
-		});
 }
 
 button_mapping::button_mapping(controller_state& _controls, keyboard::mapper& _mapper, keyboard::keyboard& _keyboard,
-	emu_framebuffer& _fbuf, emulator_dispatch& _dispatch, lua_state& _lua2)
+	emu_framebuffer& _fbuf, emulator_dispatch& _dispatch, lua_state& _lua2, command::group& _cmd)
 	: controls(_controls), mapper(_mapper), keyboard(_keyboard), fbuf(_fbuf), edispatch(_dispatch),
-	lua2(_lua2)
+	lua2(_lua2), cmd(_cmd),
+	button_p(cmd, STUBS::btnp, [this](const std::string& a) { this->do_action(a, 1, 0); }), 
+	button_r(cmd, STUBS::btnr, [this](const std::string& a) { this->do_action(a, 0, 0); }),
+	button_h(cmd, STUBS::btnh, [this](const std::string& a) { this->do_action(a, 1, 1); }), 
+	button_t(cmd, STUBS::btnt, [this](const std::string& a) { this->do_action(a, 1, 2); }),
+	button_d(cmd, STUBS::btnd, [this](const std::string& a) { this->do_action(a, 0, 3); }),
+	button_ap(cmd, STUBS::btnap, [this](const std::string& a) { this->do_autofire_action(a, 1); }),
+	button_ar(cmd, STUBS::btnar, [this](const std::string& a) { this->do_autofire_action(a, 0); }),
+	button_at(cmd, STUBS::btnat, [this](const std::string& a) { this->do_autofire_action(a, -1); }),
+	button_a(cmd, STUBS::btna, [this](const std::string& a) { this->do_analog_action(a); })
 {
 	ncore.set(notify_new_core, [this]() { this->init(); });
 }
@@ -170,10 +109,10 @@ void button_mapping::load(controller_state& ctrlstate)
 	for(auto i : s) {
 		if(!macro_binds.count(i)) {
 			//New macro, create inverse bind.
-			macro_binds[i] = new keyboard::invbind(mapper, "macro " + i , "Macro‣" + i +
+			macro_binds[i] = new keyboard::invbind(mapper, STUBS::macrot.name + (" " + i) , "Macro‣" + i +
 				" (toggle)");
-			macro_binds2[i] = new keyboard::invbind(mapper, "+macro " + i , "Macro‣" + i +
-				" (hold)");
+			macro_binds2[i] = new keyboard::invbind(mapper, STUBS::macrop.name + (" " + i) , "Macro‣" +
+				i + " (hold)");
 		}
 	}
 	for(auto i : macro_binds) {
@@ -245,33 +184,33 @@ void button_mapping::add_button(const std::string& name, const button_mapping::c
 {
 	keyboard::ctrlrkey* k;
 	if(binding.mode == 0) {
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << "+controller "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnp.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name).str());
 		promote_key(*k);
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << "hold-controller "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnh.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << "‣hold").str());
 		promote_key(*k);
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << "type-controller "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnt.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << "‣type").str());
 		promote_key(*k);
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << "+autofire-controller "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnap.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << "‣autofire").str());
 		promote_key(*k);
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << "autofire-controller "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnat.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << "‣autofire toggle").str());
 		promote_key(*k);
 	} else if(binding.mode == 1) {
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << "designate-position "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnd.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name).str());
 		promote_key(*k);
 	} else if(binding.mode == 2) {
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << "controller-analog "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btna.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << " (axis)").str(), true);
 		promote_key(*k);

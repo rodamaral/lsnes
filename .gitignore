@@ -15,3 +15,5 @@ lsnes
 /gambatte
 src/fonts/font.cpp
 src/core/version.cpp
+src/cmdhelp/*.cpp
+include/cmdhelp/*.hpp

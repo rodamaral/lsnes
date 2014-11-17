@@ -1,3 +1,4 @@
+#include "cmdhelp/project.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
@@ -193,7 +194,13 @@ project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatc
 	controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
 	emulator_dispatch& _edispatch, input_queue& _iqueue, loaded_rom& _rom, status_updater& _supdater)
 	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache),
-	buttons(_buttons), edispatch(_edispatch), iqueue(_iqueue), rom(_rom), supdater(_supdater)
+	buttons(_buttons), edispatch(_edispatch), iqueue(_iqueue), rom(_rom), supdater(_supdater),
+	branch_ls(command, STUBS::branch_ls, [this]() { this->do_branch_ls(); }),
+	branch_mk(command, STUBS::branch_mk, [this](const std::string& a) { this->do_branch_mk(a); }),
+	branch_rm(command, STUBS::branch_rm, [this](const std::string& a) { this->do_branch_rm(a); }),
+	branch_set(command, STUBS::branch_set, [this](const std::string& a) { this->do_branch_set(a); }),
+	branch_rp(command, STUBS::branch_rp, [this](const std::string& a) { this->do_branch_rp(a); }),
+	branch_mv(command, STUBS::branch_mv, [this](const std::string& a) { this->do_branch_mv(a); })
 {
 	active_project = NULL;
 }
@@ -700,150 +707,137 @@ void project_info::write(std::ostream& s)
 	s << "branchnext=" << next_branch << std::endl;
 }
 
-namespace
+void project_state::do_branch_mk(const std::string& args)
 {
-	void recursive_list_branch(uint64_t bid, std::set<unsigned>& dset, unsigned depth, bool last_of)
-	{
-		auto prj = CORE().project->get();
-		if(!prj) {
-			messages << "Not in project context." << std::endl;
-			return;
-		}
-		std::set<uint64_t> children = prj->branch_children(bid);
-		std::string prefix;
-		for(unsigned i = 0; i + 1 < depth; i++)
-			prefix += (dset.count(i) ? "\u2502" : " ");
-		prefix += (dset.count(depth - 1) ? (last_of ? "\u2514" : "\u251c") : " ");
-		if(last_of) dset.erase(depth - 1);
-		messages << prefix
-			<< ((bid == prj->get_current_branch()) ? "*" : "")
-			<< bid << ":" << prj->get_branch_name(bid) << std::endl;
-		dset.insert(depth);
-		size_t c = 0;
-		for(auto i : children) {
-			bool last = (++c == children.size());
-			recursive_list_branch(i, dset, depth + 1, last);
-		}
-		dset.erase(depth);
+	regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
+	if(!r) {
+		messages << "Syntax: create-branch <parentid> <name>" << std::endl;
+		return;
 	}
+	try {
+		auto prj = get();
+		uint64_t pbid = parse_value<uint64_t>(r[1]);
+		if(!prj)
+			throw std::runtime_error("Not in project context");
+		uint64_t bid = prj->create_branch(pbid, r[2]);
+		messages << "Created branch #" << bid << std::endl;
+		prj->flush();
+	} catch(std::exception& e) {
+		messages << "Can't create new branch: " << e.what() << std::endl;
+	}
+}
 
-	command::fnptr<> CMD_list_branches(lsnes_cmds, "list-branches", "List all slot branches",
-		"Syntax: list-branches\nList all slot branches.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			std::set<unsigned> dset;
-			recursive_list_branch(0, dset, 0, false);
-		});
+void project_state::do_branch_rm(const std::string& args)
+{
+	regex_results r = regex("([0-9]+)[ \t]*", args);
+	if(!r) {
+		messages << "Syntax: delete-branch <id>" << std::endl;
+		return;
+	}
+	try {
+		auto prj = get();
+		uint64_t bid = parse_value<uint64_t>(r[1]);
+		if(!prj)
+			throw std::runtime_error("Not in project context");
+		prj->delete_branch(bid);
+		messages << "Deleted branch #" << bid << std::endl;
+		prj->flush();
+	} catch(std::exception& e) {
+		messages << "Can't delete branch: " << e.what() << std::endl;
+	}
+}
 
-	command::fnptr<const std::string&> CMD_create_branch(lsnes_cmds, "create-branch", "Create a new slot branch",
-		"Syntax: create-branch <parentid> <name>\nCreate new branch named <name> under <parentid>.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
-			if(!r) {
-				messages << "Syntax: create-branch <parentid> <name>" << std::endl;
-				return;
-			}
-			try {
-				auto prj = CORE().project->get();
-				uint64_t pbid = parse_value<uint64_t>(r[1]);
-				if(!prj)
-					throw std::runtime_error("Not in project context");
-				uint64_t bid = prj->create_branch(pbid, r[2]);
-				messages << "Created branch #" << bid << std::endl;
-				prj->flush();
-			} catch(std::exception& e) {
-				messages << "Can't create new branch: " << e.what() << std::endl;
-			}
-		});
+void project_state::do_branch_set(const std::string& args)
+{
+	regex_results r = regex("([0-9]+)[ \t]*", args);
+	if(!r) {
+		messages << "Syntax: set-branch <id>" << std::endl;
+		return;
+	}
+	try {
+		auto prj = get();
+		uint64_t bid = parse_value<uint64_t>(r[1]);
+		if(!prj)
+			throw std::runtime_error("Not in project context");
+		prj->set_current_branch(bid);
+		messages << "Set current branch to #" << bid << std::endl;
+		prj->flush();
+		supdater.update();
+	} catch(std::exception& e) {
+		messages << "Can't set branch: " << e.what() << std::endl;
+	}
+}
 
-	command::fnptr<const std::string&> CMD_delete_branch(lsnes_cmds, "delete-branch", "Delete a slot branch",
-		"Syntax: delete-branch <id>\nDelete slot branch with id <id>.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			regex_results r = regex("([0-9]+)[ \t]*", args);
-			if(!r) {
-				messages << "Syntax: delete-branch <id>" << std::endl;
-				return;
-			}
-			try {
-				auto prj = CORE().project->get();
-				uint64_t bid = parse_value<uint64_t>(r[1]);
-				if(!prj)
-					throw std::runtime_error("Not in project context");
-				prj->delete_branch(bid);
-				messages << "Deleted branch #" << bid << std::endl;
-				prj->flush();
-			} catch(std::exception& e) {
-				messages << "Can't delete branch: " << e.what() << std::endl;
-			}
-		});
+void project_state::do_branch_rp(const std::string& args)
+{
+	regex_results r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]*", args);
+	if(!r) {
+		messages << "Syntax: reparent-branch <id> <newpid>" << std::endl;
+		return;
+	}
+	try {
+		auto prj = get();
+		uint64_t bid = parse_value<uint64_t>(r[1]);
+		uint64_t pbid = parse_value<uint64_t>(r[2]);
+		if(!prj)
+			throw std::runtime_error("Not in project context");
+		prj->set_parent_branch(bid, pbid);
+		messages << "Reparented branch #" << bid << std::endl;
+		prj->flush();
+		supdater.update();
+	} catch(std::exception& e) {
+		messages << "Can't reparent branch: " << e.what() << std::endl;
+	}
+}
 
-	command::fnptr<const std::string&> CMD_set_branch(lsnes_cmds, "set-branch", "Set current slot branch",
-		"Syntax: set-branch <id>\nSet current branch to <id>.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			regex_results r = regex("([0-9]+)[ \t]*", args);
-			if(!r) {
-				messages << "Syntax: set-branch <id>" << std::endl;
-				return;
-			}
-			try {
-				auto prj = core.project->get();
-				uint64_t bid = parse_value<uint64_t>(r[1]);
-				if(!prj)
-					throw std::runtime_error("Not in project context");
-				prj->set_current_branch(bid);
-				messages << "Set current branch to #" << bid << std::endl;
-				prj->flush();
-				core.supdater->update();
-			} catch(std::exception& e) {
-				messages << "Can't set branch: " << e.what() << std::endl;
-			}
-		});
+void project_state::do_branch_mv(const std::string& args)
+{
+	regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
+	if(!r) {
+		messages << "Syntax: rename-branch <id> <name>" << std::endl;
+		return;
+	}
+	try {
+		auto prj = get();
+		uint64_t bid = parse_value<uint64_t>(r[1]);
+		if(!prj)
+			throw std::runtime_error("Not in project context");
+		prj->set_branch_name(bid, r[2]);
+		messages << "Renamed branch #" << bid << std::endl;
+		prj->flush();
+		supdater.update();
+	} catch(std::exception& e) {
+		messages << "Can't rename branch: " << e.what() << std::endl;
+	}
+}
 
-	command::fnptr<const std::string&> CMD_reparent_branch(lsnes_cmds, "reparent-branch",
-		"Reparent a slot branch",
-		"Syntax: reparent-branch <id> <newpid>\nReparent branch <id> to be child of <newpid>.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			regex_results r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]*", args);
-			if(!r) {
-				messages << "Syntax: reparent-branch <id> <newpid>" << std::endl;
-				return;
-			}
-			try {
-				auto prj = core.project->get();
-				uint64_t bid = parse_value<uint64_t>(r[1]);
-				uint64_t pbid = parse_value<uint64_t>(r[2]);
-				if(!prj)
-					throw std::runtime_error("Not in project context");
-				prj->set_parent_branch(bid, pbid);
-				messages << "Reparented branch #" << bid << std::endl;
-				prj->flush();
-				core.supdater->update();
-			} catch(std::exception& e) {
-				messages << "Can't reparent branch: " << e.what() << std::endl;
-			}
-		});
+void project_state::do_branch_ls()
+{
+	std::set<unsigned> dset;
+	recursive_list_branch(0, dset, 0, false);
+}
 
-	command::fnptr<const std::string&> CMD_rename_branch(lsnes_cmds, "rename-branch", "Rename a slot branch",
-		"Syntax: rename-branch <id> <name>\nRename branch <id> to <name>.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
-			if(!r) {
-				messages << "Syntax: rename-branch <id> <name>" << std::endl;
-				return;
-			}
-			try {
-				auto prj = core.project->get();
-				uint64_t bid = parse_value<uint64_t>(r[1]);
-				if(!prj)
-					throw std::runtime_error("Not in project context");
-				prj->set_branch_name(bid, r[2]);
-				messages << "Renamed branch #" << bid << std::endl;
-				prj->flush();
-				core.supdater->update();
-			} catch(std::exception& e) {
-				messages << "Can't rename branch: " << e.what() << std::endl;
-			}
-		});
+void project_state::recursive_list_branch(uint64_t bid, std::set<unsigned>& dset, unsigned depth, bool last_of)
+{
+	auto prj = get();
+	if(!prj) {
+		messages << "Not in project context." << std::endl;
+		return;
+	}
+	std::set<uint64_t> children = prj->branch_children(bid);
+	std::string prefix;
+	for(unsigned i = 0; i + 1 < depth; i++)
+		prefix += (dset.count(i) ? "\u2502" : " ");
+	prefix += (dset.count(depth - 1) ? (last_of ? "\u2514" : "\u251c") : " ");
+	if(last_of) dset.erase(depth - 1);
+	messages << prefix
+		<< ((bid == prj->get_current_branch()) ? "*" : "")
+		<< bid << ":" << prj->get_branch_name(bid) << std::endl;
+	dset.insert(depth);
+	size_t c = 0;
+	for(auto i : children) {
+		bool last = (++c == children.size());
+		recursive_list_branch(i, dset, depth + 1, last);
+	}
+	dset.erase(depth);
 }

@@ -4,6 +4,7 @@
 #include <list>
 #include <cstdint>
 #include <string>
+#include "library/command.hpp"
 
 class emulator_dispatch;
 
@@ -28,7 +29,8 @@ public:
 		uint64_t length;
 	};
 
-	voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch, audioapi_instance& _audio);
+	voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch, audioapi_instance& _audio,
+		command::group& _cmd);
 	~voice_commentary();
 	void init();
 	void kill();
@@ -53,6 +55,9 @@ private:
 	settingvar::group& settings;
 	emulator_dispatch& edispatch;
 	audioapi_instance& audio;
+	command::group& cmd;
+	command::_fnptr<> tangentp;
+	command::_fnptr<> tangentr;
 };
 
 #endif

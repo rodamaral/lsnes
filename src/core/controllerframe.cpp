@@ -1,3 +1,4 @@
+#include "cmdhelp/macro.hpp"
 #include "core/controllerframe.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
@@ -15,8 +16,12 @@ namespace
 }
 
 controller_state::controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons,
-	emulator_dispatch& _dispatch, status_updater& _supdater) throw()
-	: project(_project), mlogic(_mlogic), buttons(_buttons), edispatch(_dispatch), supdater(_supdater)
+	emulator_dispatch& _dispatch, status_updater& _supdater, command::group& _cmd) throw()
+	: project(_project), mlogic(_mlogic), buttons(_buttons), edispatch(_dispatch), supdater(_supdater),
+	cmd(_cmd),
+	macro_p(cmd, STUBS::macrop, [this](const std::string& a) { this->do_macro(a, 5); }),
+	macro_r(cmd, STUBS::macror, [this](const std::string& a) { this->do_macro(a, 2); }),
+	macro_t(cmd, STUBS::macrot, [this](const std::string& a) { this->do_macro(a, 7); })
 {
 	types = &dummytypes;
 	tasinput_enaged = false;

@@ -18,7 +18,7 @@ public:
 /**
  * Ctor.
  */
-	save_jukebox(settingvar::group& _settings);
+	save_jukebox(settingvar::group& _settings, command::group& _cmd);
 /**
  * Dtor.
  */
@@ -73,11 +73,16 @@ public:
  */
 	void unset_update();
 private:
+	void do_slotsel(const std::string& arg);
 	settingvar::group& settings;
 	size_t current_slot;
 	size_t current_size;
 	std::function<void()> update;
 	save_jukebox_listener* listener;
+	command::group& cmd;
+	command::_fnptr<const std::string&> slotsel;
+	command::_fnptr<> cycleprev;
+	command::_fnptr<> cyclenext;
 };
 
 #endif

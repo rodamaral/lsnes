@@ -1,5 +1,6 @@
 #include "lsnes.hpp"
 
+#include "cmdhelp/commentary.hpp"
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
@@ -1715,24 +1716,13 @@ out:
 		voicesub_state& internal;
 		audioapi_instance& audio;
 	};
-
-	//The tangent function.
-	command::fnptr<> CMD_ptangent(lsnes_cmds, "+tangent", "Voice tangent",
-		"Syntax: +tangent\nVoice tangent.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().commentary->set_active_flag(true);
-		});
-	command::fnptr<> CMD_ntangent(lsnes_cmds, "-tangent", "Voice tangent",
-		"Syntax: -tangent\nVoice tangent.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().commentary->set_active_flag(false);
-		});
-	keyboard::invbind_info IBIND_itangent(lsnes_invbinds, "+tangent", "Movie‣Voice tangent");
 }
 
 voice_commentary::voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch,
-	audioapi_instance& _audio)
-	: settings(_settings), edispatch(_dispatch), audio(_audio)
+	audioapi_instance& _audio, command::group& _cmd)
+	: settings(_settings), edispatch(_dispatch), audio(_audio), cmd(_cmd),
+	tangentp(cmd, STUBS::tangentp, [this]() { this->set_active_flag(true); }),
+	tangentr(cmd, STUBS::tangentr, [this]() { this->set_active_flag(false); })
 {
 	internal = NULL;
 }

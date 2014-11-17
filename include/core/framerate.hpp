@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include "library/threads.hpp"
+#include "library/command.hpp"
 
 #define FRAMERATE_HISTORY_FRAMES 10
 
@@ -12,7 +13,7 @@
 class framerate_regulator
 {
 public:
-	framerate_regulator();
+	framerate_regulator(command::group& _cmd);
 /**
  * Set the target speed multiplier.
  *
@@ -96,7 +97,10 @@ private:
 	double nominal_framerate;
 	double multiplier_framerate;
 	threads::lock framerate_lock;
-
+	command::group& cmd;
+	command::_fnptr<> turbo_p;
+	command::_fnptr<> turbo_r;
+	command::_fnptr<> turbo_t;
 };
 
 #endif

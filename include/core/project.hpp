@@ -6,6 +6,7 @@
 #include <list>
 #include <vector>
 #include "core/rom-small.hpp"
+#include "library/command.hpp"
 #include "library/json.hpp"
 
 class voice_commentary;
@@ -15,14 +16,7 @@ class button_mapping;
 class emulator_dispatch;
 class input_queue;
 class status_updater;
-namespace command
-{
-	class group;
-}
-namespace settingvar
-{
-	class cache;
-}
+namespace settingvar { class cache; }
 
 //A branch.
 struct project_branch_info
@@ -226,6 +220,13 @@ public:
  */
 	void copy_macros(project_info& p, controller_state& s);
 private:
+	void recursive_list_branch(uint64_t bid, std::set<unsigned>& dset, unsigned depth, bool last_of);
+	void do_branch_ls();
+	void do_branch_mk(const std::string& a);
+	void do_branch_rm(const std::string& a);
+	void do_branch_set(const std::string& a);
+	void do_branch_rp(const std::string& a);
+	void do_branch_mv(const std::string& a);
 	project_info* active_project;
 	voice_commentary& commentary;
 	memwatch_set& mwatch;
@@ -237,6 +238,12 @@ private:
 	input_queue& iqueue;
 	loaded_rom& rom;
 	status_updater& supdater;
+	command::_fnptr<> branch_ls;
+	command::_fnptr<const std::string&> branch_mk;
+	command::_fnptr<const std::string&> branch_rm;
+	command::_fnptr<const std::string&> branch_set;
+	command::_fnptr<const std::string&> branch_rp;
+	command::_fnptr<const std::string&> branch_mv;
 };
 
 #endif

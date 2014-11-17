@@ -1,0 +1,7 @@
+{
+	"screenshot":{
+		"__name":"take-screenshot",
+		"__description":"Takes a screenshot",
+		"<file>":"Save a screenshot to PNG file <file>"
+	}
+}

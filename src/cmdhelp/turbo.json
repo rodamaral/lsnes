@@ -1,0 +1,22 @@
+{
+	"turbot":{
+		"__class":"turbo",
+		"__name":"toggle-turbo",
+		"__description":"Toggle turbo",
+		"":"Toggle turbo mode.",
+		"__inverse":{"":"Speed‣Turbo toggle"}
+	},
+	"turbop":{
+		"__class":"turbo",
+		"__name":"+turbo",
+		"__description":"Activate turbo",
+		"":"Activate turbo mode.",
+		"__inverse":{"":"Speed‣Turbo hold"}
+	},
+	"turbor":{
+		"__class":"turbo",
+		"__name":"-turbo",
+		"__description":"Deactivate turbo",
+		"":"Deactivate turbo mode."
+	}
+}

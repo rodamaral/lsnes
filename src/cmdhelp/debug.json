@@ -1,0 +1,21 @@
+{
+	"showhooks":{
+		"__class":"debug",
+		"__name":"show-callbacks",
+		"__description":"Show debug callbacks",
+		"":"Shows debugging callbacks"
+	},
+	"genevent":{
+		"__class":"debug",
+		"__name":"generate-memory-event",
+		"__description":"Inject a debugging event",
+		"<type> <addr> <value>":"Inject a debugging event with given <type>, <addr> and <value>"
+	},
+	"trace":{
+		"__class":"debug",
+		"__name":"tracelog",
+		"__description":"Trace log control",
+		"<cpuid> <file>":"Start tracing <cpuid> to <file>",
+		"<cpuid>":"End tracing <cpuid>"
+	}
+}

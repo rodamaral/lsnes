@@ -1,3 +1,4 @@
+#include "cmdhelp/multitrack.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
@@ -11,8 +12,12 @@
 #include <string>
 
 multitrack_edit::multitrack_edit(movie_logic& _mlogic, controller_state& _controls, emulator_dispatch& _dispatch,
-	status_updater& _supdater)
-	: mlogic(_mlogic), controls(_controls), edispatch(_dispatch), supdater(_supdater)
+	status_updater& _supdater, button_mapping& _buttons, command::group& _cmd)
+	: mlogic(_mlogic), controls(_controls), edispatch(_dispatch), supdater(_supdater), buttons(_buttons),
+	cmd(_cmd),
+	mt_f(cmd, STUBS::multitrackf, [this]() { this->do_mt_fwd(); }),
+	mt_b(cmd, STUBS::multitrackb, [this]() { this->do_mt_bw(); }),
+	mt_s(cmd, STUBS::multitracks, [this](const std::string& a) { this->do_mt_set(a); })
 {
 }
 
@@ -172,51 +177,41 @@ bool multitrack_edit::any_records()
 	return any_need;
 }
 
+void multitrack_edit::do_mt_set(const std::string& args)
+{
+	regex_results r = regex("(.*)[ \t]+(.*)", args);
+	if(!r)
+		throw std::runtime_error("Bad arguments");
+	auto c = buttons.byname(r[1]);
+	if(c.first < 0)
+		throw std::runtime_error("No such controller");
+	if(r[2] == "keep")
+		set_and_notify(c.first, c.second, multitrack_edit::MT_PRESERVE);
+	else if(r[2] == "rewrite")
+		set_and_notify(c.first, c.second, multitrack_edit::MT_OVERWRITE);
+	else if(r[2] == "or")
+		set_and_notify(c.first, c.second, multitrack_edit::MT_OR);
+	else if(r[2] == "xor")
+		set_and_notify(c.first, c.second, multitrack_edit::MT_XOR);
+	else
+		throw std::runtime_error("Invalid mode (keep, rewrite, or, xor)");
+	supdater.update();
+}
+
+void multitrack_edit::do_mt_fwd()
+{
+	rotate(true);
+	supdater.update();
+}
+
+void multitrack_edit::do_mt_bw()
+{
+	rotate(false);
+	supdater.update();
+}
+
 namespace
 {
-	command::fnptr<> CMD_rotate_forward(lsnes_cmds, "rotate-multitrack", "Rotate multitrack",
-		"Syntax: rotate-multitrack\nRotate multitrack\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			core.mteditor->rotate(true);
-			core.supdater->update();
-		});
-
-	command::fnptr<> CMD_rotate_backward(lsnes_cmds, "rotate-multitrack-backwards", "Rotate multitrack backwards",
-		"Syntax: rotate-multitrack-backwards\nRotate multitrack backwards\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			core.mteditor->rotate(false);
-			core.supdater->update();
-		});
-
-	command::fnptr<const std::string&> CMD_set_mt(lsnes_cmds, "set-multitrack", "Set multitrack mode",
-		"Syntax: set-multitrack <controller> <mode>\nSet multitrack mode\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			regex_results r = regex("(.*)[ \t]+(.*)", args);
-			if(!r)
-				throw std::runtime_error("Bad arguments");
-			auto c = core.buttons->byname(r[1]);
-			if(c.first < 0)
-				throw std::runtime_error("No such controller");
-			if(r[2] == "keep")
-				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_PRESERVE);
-			else if(r[2] == "rewrite")
-				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_OVERWRITE);
-			else if(r[2] == "or")
-				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_OR);
-			else if(r[2] == "xor")
-				core.mteditor->set_and_notify(c.first, c.second, multitrack_edit::MT_XOR);
-			else
-				throw std::runtime_error("Invalid mode (keep, rewrite, or, xor)");
-			core.supdater->update();
-		});
-
-	keyboard::invbind_info IBIND_mtback(lsnes_invbinds, "rotate-multitrack-backwards",
-		"Multitrack‣Rotate backwards");
-	keyboard::invbind_info IBIND_mtfwd(lsnes_invbinds, "rotate-multitrack", "Multitrack‣Rotate forward");
-
 	int multitrack_state(lua::state& L, lua::parameters& P)
 	{
 		unsigned port, controller;

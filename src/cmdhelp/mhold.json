@@ -1,0 +1,22 @@
+{
+	"mholdp":{
+		"__class":"mhold",
+		"__name":"+hold-macro",
+		"__description":"Hold macro (hold)",
+		"":"Hold macros enable",
+		"__inverse":{"":"Macro‣Hold all macros"}
+	},
+	"mholdr":{
+		"__class":"mhold",
+		"__name":"-hold-macro",
+		"__description":"Hold macro (hold)",
+		"":"Hold macros disable"
+	},
+	"mholdt":{
+		"__class":"mhold",
+		"__name":"hold-macro",
+		"__description":"Hold macro (typed)",
+		"":"Hold macros typed",
+		"__inverse":{"":"Macro‣Hold all macros (typed)"}
+	}
+}

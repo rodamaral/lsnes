@@ -16,6 +16,7 @@
 #include <map>
 #include <list>
 #include "library/portctrl-data.hpp"
+#include "library/command.hpp"
 #include "library/threads.hpp"
 
 class project_state;
@@ -34,7 +35,7 @@ public:
  * Constructor.
  */
 	controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons,
-		emulator_dispatch& _dispatch, status_updater& _supdater) throw();
+		emulator_dispatch& _dispatch, status_updater& _supdater, command::group& _cmd) throw();
 /**
  * Convert lcid (Logical Controller ID) into pcid (Physical Controler ID).
  *
@@ -205,12 +206,12 @@ public:
 	void set_macro(const std::string& macro, const portctrl::macro& m);
 	void apply_macro(portctrl::frame& f);
 	void rename_macro(const std::string& old, const std::string& newn);
-	void do_macro(const std::string& a, int mode);
 	std::set<std::string> active_macro_set();
 	void advance_macros();
 	std::map<std::string, uint64_t> get_macro_frames();
 	void set_macro_frames(const std::map<std::string, uint64_t>& f);
 private:
+	void do_macro(const std::string& a, int mode);
 	struct autofire_info
 	{
 		uint64_t first_frame;
@@ -240,6 +241,10 @@ private:
 	button_mapping& buttons;
 	emulator_dispatch& edispatch;
 	status_updater& supdater;
+	command::group& cmd;
+	command::_fnptr<const std::string&> macro_p;
+	command::_fnptr<const std::string&> macro_r;
+	command::_fnptr<const std::string&> macro_t;
 };
 
 #endif

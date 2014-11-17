@@ -2,6 +2,7 @@
 #define _framebuffer__hpp__included__
 
 #include "core/window.hpp"
+#include "library/command.hpp"
 #include "library/framebuffer.hpp"
 #include "library/triplebuffer.hpp"
 
@@ -30,7 +31,7 @@ class emu_framebuffer
 public:
 	emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
 		keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom,
-		status_updater& _supdater);
+		status_updater& _supdater, command::group& _cmd);
 /**
  * The main framebuffer.
  */
@@ -83,6 +84,7 @@ public:
 	framebuffer::raw& render_get_latest_screen();
 	void render_get_latest_screen_end();
 private:
+	void do_screenshot(command::arg_filename a);
 	struct render_info
 	{
 		framebuffer::raw fbuf;
@@ -107,6 +109,8 @@ private:
 	lua_state& lua2;
 	loaded_rom& rom;
 	status_updater& supdater;
+	command::group& cmd;
+	command::_fnptr<command::arg_filename> screenshot;
 };
 
 #endif

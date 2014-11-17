@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include "library/dispatch.hpp"
+#include "library/command.hpp"
 
 struct project_info;
 struct controller_state;
@@ -65,7 +66,7 @@ public:
  * Ctor.
  */
 	button_mapping(controller_state& _controls, keyboard::mapper& mapper, keyboard::keyboard& keyboard,
-		emu_framebuffer& fbuf, emulator_dispatch& _dispatch, lua_state& _lua2);
+		emu_framebuffer& fbuf, emulator_dispatch& _dispatch, lua_state& _lua2, command::group& _cmd);
 /**
  * Dtor.
  */
@@ -98,13 +99,10 @@ public:
  * Map of button keys.
  */
 	std::map<std::string, std::string> button_keys;
-/**
- * Do button/axis action.
- */
-	void do_action(const std::string& name, short state, int mode);
+private:
 	void do_analog_action(const std::string& a);
 	void do_autofire_action(const std::string& a, int mode);
-private:
+	void do_action(const std::string& name, short state, int mode);
 	void promote_key(keyboard::ctrlrkey& k);
 	void add_button(const std::string& name, const controller_bind& binding);
 	void process_controller(portctrl::controller& controller, unsigned number);
@@ -129,7 +127,17 @@ private:
 	emu_framebuffer& fbuf;
 	emulator_dispatch& edispatch;
 	lua_state& lua2;
+	command::group& cmd;
 	struct dispatch::target<> ncore;
+	command::_fnptr<const std::string&> button_p;
+	command::_fnptr<const std::string&> button_r;
+	command::_fnptr<const std::string&> button_h;
+	command::_fnptr<const std::string&> button_t;
+	command::_fnptr<const std::string&> button_d;
+	command::_fnptr<const std::string&> button_ap;
+	command::_fnptr<const std::string&> button_ar;
+	command::_fnptr<const std::string&> button_at;
+	command::_fnptr<const std::string&> button_a;
 };
 
 

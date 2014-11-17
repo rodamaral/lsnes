@@ -1,3 +1,4 @@
+#include "cmdhelp/jukebox.hpp"
 #include "core/jukebox.hpp"
 #include "core/settings.hpp"
 #include "library/settingvar.hpp"
@@ -30,8 +31,11 @@ private:
 	save_jukebox& jukebox;
 };
 
-save_jukebox::save_jukebox(settingvar::group& _settings)
-	: settings(_settings)
+save_jukebox::save_jukebox(settingvar::group& _settings, command::group& _cmd)
+	: settings(_settings), cmd(_cmd),
+	slotsel(cmd, STUBS::slotselect, [this](const std::string& a) { this->do_slotsel(a); }),
+	cycleprev(cmd, STUBS::slotprev, [this]() { this->cycle_prev(); }),
+	cyclenext(cmd, STUBS::slotnext, [this]() { this->cycle_next(); })
 {
 	listener = new save_jukebox_listener(_settings, *this);
 }
@@ -103,4 +107,12 @@ void save_jukebox::set_update(std::function<void()> _update)
 void save_jukebox::unset_update()
 {
 	update = std::function<void()>();
+}
+
+void save_jukebox::do_slotsel(const std::string& args)
+{
+	if(!regex_match("[1-9][0-9]{0,8}", args))
+		throw std::runtime_error("Bad slot number");
+	uint32_t slot = parse_value<uint32_t>(args);
+	set_slot(slot - 1);
 }

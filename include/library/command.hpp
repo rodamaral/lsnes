@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <functional>
 #include <set>
 #include <map>
 #include <list>
@@ -246,6 +247,25 @@ private:
 };
 
 /**
+ * Name, Description and help for command.
+ */
+struct stub
+{
+/**
+ * The command name.
+ */
+	const char* name;
+/**
+ * The short description.
+ */
+	const char* desc;
+/**
+ * The long help.
+ */
+	const char* help;
+};
+
+/**
  * Mandatory filename
  */
 struct arg_filename
@@ -269,7 +289,7 @@ struct arg_filename
  * parameter a: The arguments to pass.
  */
 template<typename... args>
-void invoke_fn(void (*fn)(args... arguments), const std::string& a);
+void invoke_fn(std::function<void(args... arguments)> fn, const std::string& a);
 
 /**
  * Warp function pointer as command.
@@ -292,8 +312,23 @@ public:
 		const std::string& _help, void (*_fn)(args... arguments), bool dynamic = false) throw(std::bad_alloc)
 		: base(group, name, dynamic)
 	{
-		description = _description;
+		shorthelp = _description;
 		help = _help;
+		fn = _fn;
+	}
+/**
+ * Create a new command.
+ *
+ * parameter _set: The set command will be part of.
+ * parameter name: Name of the command
+ * parameter fn: Function to call on command.
+ * parameter description Description&Help for the command
+ */
+	_fnptr(group& _group, stub _name, std::function<void(args... arguments)> _fn) throw(std::bad_alloc)
+		: base(_group, _name.name, false)
+	{
+		shorthelp = _name.desc;
+		help = _name.help;
 		fn = _fn;
 	}
 /**
@@ -319,7 +354,7 @@ public:
  */
 	std::string get_short_help() throw(std::bad_alloc)
 	{
-		return description;
+		return shorthelp;
 	}
 /**
  * Get long help.
@@ -332,8 +367,8 @@ public:
 		return help;
 	}
 private:
-	void (*fn)(args... arguments);
-	std::string description;
+	std::function<void(args... arguments)> fn;
+	std::string shorthelp;
 	std::string help;
 };
 
@@ -348,6 +383,21 @@ public:
  * Create a new command.
  *
  * parameter _set: The set command will be part of.
+ * parameter desc: Command descriptor.
+ * parameter fn: Function to call on command.
+ */
+	fnptr(set& _set, stub _name, void (*_fn)(args... arguments)) throw(std::bad_alloc)
+	{
+		shorthelp = _name.desc;
+		name = _name.name;
+		help = _name.help;
+		fn = _fn;
+		_factory_base(_set, name);
+	}
+/**
+ * Create a new command.
+ *
+ * parameter _set: The set command will be part of.
  * parameter name: Name of the command
  * parameter description Description for the command
  * parameter help: Help for the command.
@@ -356,7 +406,7 @@ public:
 	fnptr(set& _set, const std::string& _name, const std::string& _description,
 		const std::string& _help, void (*_fn)(args... arguments)) throw(std::bad_alloc)
 	{
-		description = _description;
+		shorthelp = _description;
 		name = _name;
 		help = _help;
 		fn = _fn;
@@ -373,11 +423,11 @@ public:
  */
 	base* make(group& grp) throw(std::bad_alloc)
 	{
-		return new _fnptr<args...>(grp, name, description, help, fn, true);
+		return new _fnptr<args...>(grp, name, shorthelp, help, fn, true);
 	}
 private:
 	void (*fn)(args... arguments);
-	std::string description;
+	std::string shorthelp;
 	std::string help;
 	std::string name;
 };

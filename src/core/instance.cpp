@@ -85,19 +85,19 @@ emulator_instance::emulator_instance()
 	D.init(lua2, *lua, *command);
 	D.init(mwatch, *memory, *project, *fbuf, *rom);
 	D.init(settings);
-	D.init(jukebox, *settings);
+	D.init(jukebox, *settings, *command);
 	D.init(setcache, *settings);
 	D.init(audio);
-	D.init(commentary, *settings, *dispatch, *audio);
-	D.init(subtitles, *mlogic, *fbuf, *dispatch);
+	D.init(commentary, *settings, *dispatch, *audio, *command);
+	D.init(subtitles, *mlogic, *fbuf, *dispatch, *command);
 	D.init(mbranch, *mlogic, *dispatch, *supdater);
-	D.init(controls, *project, *mlogic, *buttons, *dispatch, *supdater);
+	D.init(controls, *project, *mlogic, *buttons, *dispatch, *supdater, *command);
 	D.init(keyboard);
 	D.init(mapper, *keyboard, *command);
 	D.init(rom);
-	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2, *rom, *supdater);
-	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch, *lua2);
-	D.init(mteditor, *mlogic, *controls, *dispatch, *supdater);
+	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2, *rom, *supdater, *command);
+	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch, *lua2, *command);
+	D.init(mteditor, *mlogic, *controls, *dispatch, *supdater, *buttons, *command);
 	D.init(status_A);
 	D.init(status_B);
 	D.init(status_C);
@@ -107,8 +107,8 @@ emulator_instance::emulator_instance()
 	D.init(cmapper, *memory, *mlogic, *rom);
 	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue, *rom,
 		*supdater);
-	D.init(dbg, *dispatch, *rom);
-	D.init(framerate);
+	D.init(dbg, *dispatch, *rom, *command);
+	D.init(framerate, *command);
 	D.init(mdumper, *lua2);
 	D.init(runmode);
 	D.init(supdater, *project, *mlogic, *commentary, *status, *runmode, *mdumper, *jukebox, *slotcache,

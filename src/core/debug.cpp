@@ -1,3 +1,4 @@
+#include "cmdhelp/debug.hpp"
 #include "core/command.hpp"
 #include "core/debug.hpp"
 #include "core/dispatch.hpp"
@@ -48,8 +49,11 @@ namespace
 	}
 }
 
-debug_context::debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom)
-	: edispatch(_dispatch), rom(_rom)
+debug_context::debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom, command::group& _cmd)
+	: edispatch(_dispatch), rom(_rom), cmd(_cmd),
+	showhooks(cmd, STUBS::showhooks, [this]() { this->do_showhooks(); }),
+	genevent(cmd, STUBS::genevent, [this](const std::string& a) { this->do_genevent(a); }),
+	tracecmd(cmd, STUBS::trace, [this](const std::string& a) { this->do_tracecmd(a); })
 {
 }
 
@@ -286,69 +290,62 @@ void debug_context::tracelog(uint64_t proc, const std::string& filename)
 	if(tracelog_change_cb) tracelog_change_cb();
 }
 
-namespace
+void debug_context::do_showhooks()
 {
-	command::fnptr<> CMD_callbacks_show(lsnes_cmds, "show-callbacks", "", "",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-		auto& core = CORE();
-		for(auto& i : core.dbg->read_cb)
-			for(auto& j : i.second)
-				messages << "READ addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : core.dbg->write_cb)
-			for(auto& j : i.second)
-				messages << "WRITE addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : core.dbg->exec_cb)
-			for(auto& j : i.second)
-				messages << "EXEC addr=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : core.dbg->trace_cb)
-			for(auto& j : i.second)
-				messages << "TRACE proc=" << i.first << " handle=" << &j << std::endl;
-		for(auto& i : core.dbg->frame_cb)
-			for(auto& j : i.second)
-				messages << "FRAME handle=" << &j << std::endl;
-	});
+	for(auto& i : read_cb)
+		for(auto& j : i.second)
+			messages << "READ addr=" << i.first << " handle=" << &j << std::endl;
+	for(auto& i : write_cb)
+		for(auto& j : i.second)
+			messages << "WRITE addr=" << i.first << " handle=" << &j << std::endl;
+	for(auto& i : exec_cb)
+		for(auto& j : i.second)
+			messages << "EXEC addr=" << i.first << " handle=" << &j << std::endl;
+	for(auto& i : trace_cb)
+		for(auto& j : i.second)
+			messages << "TRACE proc=" << i.first << " handle=" << &j << std::endl;
+	for(auto& i : frame_cb)
+		for(auto& j : i.second)
+			messages << "FRAME handle=" << &j << std::endl;
+}
 
-	command::fnptr<const std::string&> CMD_generate_event(lsnes_cmds, "generate-memory-event", "", "",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-		regex_results r = regex("([^ \t]+) ([^ \t]+) (.+)", args);
-		if(!r) throw std::runtime_error("generate-memory-event: Bad arguments");
-		if(r[1] == "r") {
-			uint64_t addr = parse_value<uint64_t>(r[2]);
-			uint64_t val = parse_value<uint64_t>(r[3]);
-			CORE().dbg->do_callback_read(addr, val);
-		} else if(r[1] == "w") {
-			uint64_t addr = parse_value<uint64_t>(r[2]);
-			uint64_t val = parse_value<uint64_t>(r[3]);
-			CORE().dbg->do_callback_write(addr, val);
-		} else if(r[1] == "x") {
-			uint64_t addr = parse_value<uint64_t>(r[2]);
-			uint64_t val = parse_value<uint64_t>(r[3]);
-			CORE().dbg->do_callback_exec(addr, val);
-		} else if(r[1] == "t") {
-			uint64_t proc = parse_value<uint64_t>(r[2]);
-			std::string str = r[3];
-			CORE().dbg->do_callback_trace(proc, str.c_str());
-		} else
-			throw std::runtime_error("Invalid operation");
-	});
+void debug_context::do_genevent(const std::string& args)
+{
+	regex_results r = regex("([^ \t]+) ([^ \t]+) (.+)", args);
+	if(!r) throw std::runtime_error("generate-memory-event: Bad arguments");
+	if(r[1] == "r") {
+		uint64_t addr = parse_value<uint64_t>(r[2]);
+		uint64_t val = parse_value<uint64_t>(r[3]);
+		do_callback_read(addr, val);
+	} else if(r[1] == "w") {
+		uint64_t addr = parse_value<uint64_t>(r[2]);
+		uint64_t val = parse_value<uint64_t>(r[3]);
+		do_callback_write(addr, val);
+	} else if(r[1] == "x") {
+		uint64_t addr = parse_value<uint64_t>(r[2]);
+		uint64_t val = parse_value<uint64_t>(r[3]);
+		do_callback_exec(addr, val);
+	} else if(r[1] == "t") {
+		uint64_t proc = parse_value<uint64_t>(r[2]);
+		std::string str = r[3];
+		do_callback_trace(proc, str.c_str());
+	} else
+		throw std::runtime_error("Invalid operation");
+}
 
-	command::fnptr<const std::string&> CMD_tracelog(lsnes_cmds, "tracelog", "Trace log control",
-		"Trace log control\nSyntax: tracelog <cpuid> <file>  Start tracing\nSyntax: tracelog <cpuid>  "
-		"End tracing", [](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-		regex_results r = regex("([^ \t]+)([ \t]+(.+))?", args);
-		if(!r) throw std::runtime_error("tracelog: Bad arguments");
-		auto& core = CORE();
-		std::string cpu = r[1];
-		std::string filename = r[3];
-		uint64_t _cpu = 0;
-		for(auto i : core.rom->get_trace_cpus()) {
-			if(cpu == i)
-				goto out;
-			_cpu++;
-		}
-		throw std::runtime_error("tracelog: Invalid CPU");
+void debug_context::do_tracecmd(const std::string& args)
+{
+	regex_results r = regex("([^ \t]+)([ \t]+(.+))?", args);
+	if(!r) throw std::runtime_error("tracelog: Bad arguments");
+	std::string cpu = r[1];
+	std::string filename = r[3];
+	uint64_t _cpu = 0;
+	for(auto i : rom.get_trace_cpus()) {
+		if(cpu == i)
+			goto out;
+		_cpu++;
+	}
+	throw std::runtime_error("tracelog: Invalid CPU");
 out:
-		core.dbg->tracelog(_cpu, filename);
-	});
-
+	tracelog(_cpu, filename);
 }

@@ -1,3 +1,4 @@
+#include "cmdhelp/subtitles.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
@@ -99,74 +100,14 @@ namespace
 		framebuffer::color fg;
 		framebuffer::color bg;
 	};
-
-
-	command::fnptr<const std::string&> CMD_edit_subtitle(lsnes_cmds, "edit-subtitle", "Edit a subtitle",
-		"Syntax: edit-subtitle <first> <length> <text>\nAdd/Edit subtitle\n"
-		"Syntax: edit-subtitle <first> <length>\nADelete subtitle\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			auto r = regex("([0-9]+)[ \t]+([0-9]+)([ \t]+(.*))?", args, "Bad syntax");
-			uint64_t frame = parse_value<uint64_t>(r[1]);
-			uint64_t length = parse_value<uint64_t>(r[2]);
-			std::string text = r[4];
-			moviefile_subtiming key(frame, length);
-			if(text == "")
-				core.mlogic->get_mfile().subtitles.erase(key);
-			else
-				core.mlogic->get_mfile().subtitles[key] =
-					subtitle_commentary::s_unescape(text);
-			core.dispatch->subtitle_change();
-			core.fbuf->redraw_framebuffer();
-		});
-
-	command::fnptr<> CMD_list_subtitle(lsnes_cmds, "list-subtitle", "List the subtitles",
-		"Syntax: list-subtitle\nList the subtitles.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			for(auto i = core.mlogic->get_mfile().subtitles.rbegin(); i !=
-				core.mlogic->get_mfile().subtitles.rend();
-				i++) {
-				messages << i->first.get_frame() << " " << i->first.get_length() << " "
-					<< subtitle_commentary::s_escape(i->second) << std::endl;
-			}
-		});
-
-	command::fnptr<command::arg_filename> CMD_save_s(lsnes_cmds, "save-subtitle", "Save subtitles in .sub format",
-		"Syntax: save-subtitle <file>\nSaves subtitles in .sub format to <file>\n",
-		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			if(core.mlogic->get_mfile().subtitles.empty())
-				return;
-			auto i = core.mlogic->get_mfile().subtitles.begin();
-			uint64_t lastframe = i->first.get_frame() + i->first.get_length();
-			std::ofstream y(std::string(args).c_str());
-			if(!y)
-				throw std::runtime_error("Can't open output file");
-			std::string lasttxt = "";
-			uint64_t since = 0;
-			for(uint64_t i = 1; i < lastframe; i++) {
-				moviefile_subtiming posmarker(i);
-				auto j = core.mlogic->get_mfile().subtitles.upper_bound(posmarker);
-				if(j == core.mlogic->get_mfile().subtitles.end())
-					continue;
-				if(lasttxt != j->second || !j->first.inrange(i)) {
-					if(lasttxt != "")
-						y << "{" << since << "}{" << i - 1 << "}" << s_subescape(lasttxt)
-							<< std::endl;
-					since = i;
-					lasttxt = j->first.inrange(i) ? j->second : "";
-				}
-			}
-			if(lasttxt != "")
-				y << "{" << since << "}{" << lastframe - 1 << "}" << s_subescape(lasttxt)
-					<< std::endl;
-			messages << "Saved subtitles to " << std::string(args) << std::endl;
-		});
 }
 
-subtitle_commentary::subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf, emulator_dispatch& _dispatch)
-	: mlogic(_mlogic), fbuf(_fbuf), edispatch(_dispatch)
+subtitle_commentary::subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf, emulator_dispatch& _dispatch,
+	command::group& _cmd)
+	: mlogic(_mlogic), fbuf(_fbuf), edispatch(_dispatch), cmd(_cmd),
+	editsub(cmd, STUBS::editsub, [this](const std::string& a) { this->do_editsub(a); }),
+	listsub(cmd, STUBS::listsub, [this]() { this->do_listsub(); }),
+	savesub(cmd, STUBS::savesub, [this](command::arg_filename a) { this->do_savesub(a); })
 {
 }
 
@@ -256,4 +197,60 @@ void subtitle_commentary::set(uint64_t f, uint64_t l, const std::string& x)
 		mlogic.get_mfile().subtitles[key] = s_unescape(x);
 	edispatch.subtitle_change();
 	fbuf.redraw_framebuffer();
+}
+
+void subtitle_commentary::do_editsub(const std::string& args)
+{
+	auto r = regex("([0-9]+)[ \t]+([0-9]+)([ \t]+(.*))?", args, "Bad syntax");
+	uint64_t frame = parse_value<uint64_t>(r[1]);
+	uint64_t length = parse_value<uint64_t>(r[2]);
+	std::string text = r[4];
+	moviefile_subtiming key(frame, length);
+	if(text == "")
+		mlogic.get_mfile().subtitles.erase(key);
+	else
+		mlogic.get_mfile().subtitles[key] =
+			subtitle_commentary::s_unescape(text);
+	edispatch.subtitle_change();
+	fbuf.redraw_framebuffer();
+}
+
+void subtitle_commentary::do_listsub()
+{
+	for(auto i = mlogic.get_mfile().subtitles.rbegin(); i !=
+		mlogic.get_mfile().subtitles.rend();
+		i++) {
+		messages << i->first.get_frame() << " " << i->first.get_length() << " "
+			<< subtitle_commentary::s_escape(i->second) << std::endl;
+	}
+}
+
+void subtitle_commentary::do_savesub(const std::string& args)
+{
+	if(mlogic.get_mfile().subtitles.empty())
+		return;
+	auto i = mlogic.get_mfile().subtitles.begin();
+	uint64_t lastframe = i->first.get_frame() + i->first.get_length();
+	std::ofstream y(std::string(args).c_str());
+	if(!y)
+		throw std::runtime_error("Can't open output file");
+	std::string lasttxt = "";
+	uint64_t since = 0;
+	for(uint64_t i = 1; i < lastframe; i++) {
+		moviefile_subtiming posmarker(i);
+		auto j = mlogic.get_mfile().subtitles.upper_bound(posmarker);
+		if(j == mlogic.get_mfile().subtitles.end())
+			continue;
+		if(lasttxt != j->second || !j->first.inrange(i)) {
+			if(lasttxt != "")
+				y << "{" << since << "}{" << i - 1 << "}" << s_subescape(lasttxt)
+					<< std::endl;
+			since = i;
+			lasttxt = j->first.inrange(i) ? j->second : "";
+		}
+	}
+	if(lasttxt != "")
+		y << "{" << since << "}{" << lastframe - 1 << "}" << s_subescape(lasttxt)
+			<< std::endl;
+	messages << "Saved subtitles to " << std::string(args) << std::endl;
 }

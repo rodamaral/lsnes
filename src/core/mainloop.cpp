@@ -1,5 +1,7 @@
 #include "lsnes.hpp"
 
+#include "cmdhelp/loadsave.hpp"
+#include "cmdhelp/mhold.hpp"
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -379,30 +381,6 @@ namespace
 			}
 		});
 
-	command::fnptr<> CMD_save_jukebox_prev(lsnes_cmds, "cycle-jukebox-backward", "Cycle save jukebox backwards",
-		"Syntax: cycle-jukebox-backward\nCycle save jukebox backwards\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			core.jukebox->cycle_prev();
-		});
-
-	command::fnptr<> CMD_save_jukebox_next(lsnes_cmds, "cycle-jukebox-forward", "Cycle save jukebox forwards",
-		"Syntax: cycle-jukebox-forward\nCycle save jukebox forwards\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			auto& core = CORE();
-			core.jukebox->cycle_next();
-		});
-
-	command::fnptr<const std::string&> CMD_save_jukebox_set(lsnes_cmds, "set-jukebox-slot", "Set jukebox slot",
-		"Syntax: set-jukebox-slot\nSet jukebox slot\n", [](const std::string& args)
-		throw(std::bad_alloc, std::runtime_error) {
-			if(!regex_match("[1-9][0-9]{0,8}", args))
-				throw std::runtime_error("Bad slot number");
-			uint32_t slot = parse_value<uint32_t>(args);
-			auto& core = CORE();
-			core.jukebox->set_slot(slot - 1);
-		});
-
 	command::fnptr<> CMD_load_jukebox(lsnes_cmds, "load-jukebox", "Load save from jukebox",
 		"Syntax: load-jukebox\nLoad save from jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -519,8 +497,7 @@ namespace
 			core.rom->execute_action(hreset_action, std::vector<interface_action_paramval>());
 		});
 
-	command::fnptr<command::arg_filename> CMD_load_c(lsnes_cmds, "load", "Load savestate (current mode)",
-		"Syntax: load <file>\nLoads SNES state from <file> in current mode\n",
+	command::fnptr<command::arg_filename> CMD_load_c(lsnes_cmds, STUBS::load,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_CURRENT);
 		});
@@ -564,8 +541,7 @@ namespace
 			mark_pending_load(args, LOAD_STATE_ALLBRANCH);
 		});
 
-	command::fnptr<command::arg_filename> CMD_save_state(lsnes_cmds, "save-state", "Save state",
-		"Syntax: save-state <file>\nSaves SNES state to <file>\n",
+	command::fnptr<command::arg_filename> CMD_save_state(lsnes_cmds, STUBS::savestate,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_STATE, -1);
 		});
@@ -679,30 +655,23 @@ namespace
 			CORE().slotcache->flush();
 		});
 
-	command::fnptr<> CMD_mhold1(lsnes_cmds, "+hold-macro", "Hold macro (hold)",
-		"Hold macros enable\n", []() throw(std::bad_alloc, std::runtime_error) {
-			macro_hold_1 = true;
-		});
+	command::fnptr<> CMD_mhold1(lsnes_cmds, STUBS::mholdp, []() throw(std::bad_alloc, std::runtime_error) {
+		macro_hold_1 = true;
+	});
 
-	command::fnptr<> CMD_mhold2(lsnes_cmds, "-hold-macro", "Hold macro (hold)",
-		"Hold macros disable\n", []() throw(std::bad_alloc, std::runtime_error) {
-			macro_hold_1 = false;
-		});
+	command::fnptr<> CMD_mhold2(lsnes_cmds, STUBS::mholdr, []() throw(std::bad_alloc, std::runtime_error) {
+		macro_hold_1 = false;
+	});
 
-	command::fnptr<> CMD_mhold3(lsnes_cmds, "hold-macro", "Hold macro (toggle)",
-		"Hold macros toggle\n", []() throw(std::bad_alloc, std::runtime_error) {
-			macro_hold_2 = !macro_hold_2;
-			if(macro_hold_2)
-				messages << "Macros are held for next frame." << std::endl;
-			else
-				messages << "Macros are not held for next frame." << std::endl;
-		});
+	command::fnptr<> CMD_mhold3(lsnes_cmds, STUBS::mholdt, []() throw(std::bad_alloc, std::runtime_error) {
+		macro_hold_2 = !macro_hold_2;
+		if(macro_hold_2)
+			messages << "Macros are held for next frame." << std::endl;
+		else
+			messages << "Macros are not held for next frame." << std::endl;
+	});
 
-	keyboard::invbind_info IBIND_imhold1(lsnes_invbinds, "+hold-macro", "Macro‣Hold all macros");
-	keyboard::invbind_info IBIND_imhold2(lsnes_invbinds, "hold-macro", "Macro‣Hold all macros (typed)");
 	keyboard::invbind_info IBIND_ipause_emulator(lsnes_invbinds, "pause-emulator", "Speed‣(Un)pause");
-	keyboard::invbind_info IBIND_ijback(lsnes_invbinds, "cycle-jukebox-backward", "Slot select‣Cycle backwards");
-	keyboard::invbind_info IBIND_ijforward(lsnes_invbinds, "cycle-jukebox-forward", "Slot select‣Cycle forwards");
 	keyboard::invbind_info IBIND_iloadj(lsnes_invbinds, "load-jukebox", "Load‣Selected slot");
 	keyboard::invbind_info IBIND_iloadjrw(lsnes_invbinds, "load-jukebox-readwrite",
 		"Load‣Selected slot (recording mode)");
@@ -723,102 +692,6 @@ namespace
 	keyboard::invbind_info IBIND_itogglepause(lsnes_invbinds, "toggle-pause-on-end", "Movie‣Toggle pause-on-end");
 	keyboard::invbind_info IBIND_irewind_movie(lsnes_invbinds, "rewind-movie", "Movie‣Rewind movie");
 	keyboard::invbind_info IBIND_icancel_saves(lsnes_invbinds, "cancel-saves", "Save‣Cancel pending saves");
-	keyboard::invbind_info IBIND_iload1(lsnes_invbinds, "load $SLOT:1", "Load‣Slot 1");
-	keyboard::invbind_info IBIND_iload2(lsnes_invbinds, "load $SLOT:2", "Load‣Slot 2");
-	keyboard::invbind_info IBIND_iload3(lsnes_invbinds, "load $SLOT:3", "Load‣Slot 3");
-	keyboard::invbind_info IBIND_iload4(lsnes_invbinds, "load $SLOT:4", "Load‣Slot 4");
-	keyboard::invbind_info IBIND_iload5(lsnes_invbinds, "load $SLOT:5", "Load‣Slot 5");
-	keyboard::invbind_info IBIND_iload6(lsnes_invbinds, "load $SLOT:6", "Load‣Slot 6");
-	keyboard::invbind_info IBIND_iload7(lsnes_invbinds, "load $SLOT:7", "Load‣Slot 7");
-	keyboard::invbind_info IBIND_iload8(lsnes_invbinds, "load $SLOT:8", "Load‣Slot 8");
-	keyboard::invbind_info IBIND_iload9(lsnes_invbinds, "load $SLOT:9", "Load‣Slot 9");
-	keyboard::invbind_info IBIND_iload10(lsnes_invbinds, "load $SLOT:10", "Load‣Slot 10");
-	keyboard::invbind_info IBIND_iload11(lsnes_invbinds, "load $SLOT:11", "Load‣Slot 11");
-	keyboard::invbind_info IBIND_iload12(lsnes_invbinds, "load $SLOT:12", "Load‣Slot 12");
-	keyboard::invbind_info IBIND_iload13(lsnes_invbinds, "load $SLOT:13", "Load‣Slot 13");
-	keyboard::invbind_info IBIND_iload14(lsnes_invbinds, "load $SLOT:14", "Load‣Slot 14");
-	keyboard::invbind_info IBIND_iload15(lsnes_invbinds, "load $SLOT:15", "Load‣Slot 15");
-	keyboard::invbind_info IBIND_iload16(lsnes_invbinds, "load $SLOT:16", "Load‣Slot 16");
-	keyboard::invbind_info IBIND_iload17(lsnes_invbinds, "load $SLOT:17", "Load‣Slot 17");
-	keyboard::invbind_info IBIND_iload18(lsnes_invbinds, "load $SLOT:18", "Load‣Slot 18");
-	keyboard::invbind_info IBIND_iload19(lsnes_invbinds, "load $SLOT:19", "Load‣Slot 19");
-	keyboard::invbind_info IBIND_iload20(lsnes_invbinds, "load $SLOT:20", "Load‣Slot 20");
-	keyboard::invbind_info IBIND_iload21(lsnes_invbinds, "load $SLOT:21", "Load‣Slot 21");
-	keyboard::invbind_info IBIND_iload22(lsnes_invbinds, "load $SLOT:22", "Load‣Slot 22");
-	keyboard::invbind_info IBIND_iload23(lsnes_invbinds, "load $SLOT:23", "Load‣Slot 23");
-	keyboard::invbind_info IBIND_iload24(lsnes_invbinds, "load $SLOT:24", "Load‣Slot 24");
-	keyboard::invbind_info IBIND_iload25(lsnes_invbinds, "load $SLOT:25", "Load‣Slot 25");
-	keyboard::invbind_info IBIND_iload26(lsnes_invbinds, "load $SLOT:26", "Load‣Slot 26");
-	keyboard::invbind_info IBIND_iload27(lsnes_invbinds, "load $SLOT:27", "Load‣Slot 27");
-	keyboard::invbind_info IBIND_iload28(lsnes_invbinds, "load $SLOT:28", "Load‣Slot 28");
-	keyboard::invbind_info IBIND_iload29(lsnes_invbinds, "load $SLOT:29", "Load‣Slot 29");
-	keyboard::invbind_info IBIND_iload30(lsnes_invbinds, "load $SLOT:30", "Load‣Slot 30");
-	keyboard::invbind_info IBIND_iload31(lsnes_invbinds, "load $SLOT:31", "Load‣Slot 31");
-	keyboard::invbind_info IBIND_iload32(lsnes_invbinds, "load $SLOT:32", "Load‣Slot 32");
-	keyboard::invbind_info IBIND_isave1(lsnes_invbinds, "save-state $SLOT:1", "Save‣Slot 1");
-	keyboard::invbind_info IBIND_isave2(lsnes_invbinds, "save-state $SLOT:2", "Save‣Slot 2");
-	keyboard::invbind_info IBIND_isave3(lsnes_invbinds, "save-state $SLOT:3", "Save‣Slot 3");
-	keyboard::invbind_info IBIND_isave4(lsnes_invbinds, "save-state $SLOT:4", "Save‣Slot 4");
-	keyboard::invbind_info IBIND_isave5(lsnes_invbinds, "save-state $SLOT:5", "Save‣Slot 5");
-	keyboard::invbind_info IBIND_isave6(lsnes_invbinds, "save-state $SLOT:6", "Save‣Slot 6");
-	keyboard::invbind_info IBIND_isave7(lsnes_invbinds, "save-state $SLOT:7", "Save‣Slot 7");
-	keyboard::invbind_info IBIND_isave8(lsnes_invbinds, "save-state $SLOT:8", "Save‣Slot 8");
-	keyboard::invbind_info IBIND_isave9(lsnes_invbinds, "save-state $SLOT:9", "Save‣Slot 9");
-	keyboard::invbind_info IBIND_isave10(lsnes_invbinds, "save-state $SLOT:10", "Save‣Slot 10");
-	keyboard::invbind_info IBIND_isave11(lsnes_invbinds, "save-state $SLOT:11", "Save‣Slot 11");
-	keyboard::invbind_info IBIND_isave12(lsnes_invbinds, "save-state $SLOT:12", "Save‣Slot 12");
-	keyboard::invbind_info IBIND_isave13(lsnes_invbinds, "save-state $SLOT:13", "Save‣Slot 13");
-	keyboard::invbind_info IBIND_isave14(lsnes_invbinds, "save-state $SLOT:14", "Save‣Slot 14");
-	keyboard::invbind_info IBIND_isave15(lsnes_invbinds, "save-state $SLOT:15", "Save‣Slot 15");
-	keyboard::invbind_info IBIND_isave16(lsnes_invbinds, "save-state $SLOT:16", "Save‣Slot 16");
-	keyboard::invbind_info IBIND_isave17(lsnes_invbinds, "save-state $SLOT:17", "Save‣Slot 17");
-	keyboard::invbind_info IBIND_isave18(lsnes_invbinds, "save-state $SLOT:18", "Save‣Slot 18");
-	keyboard::invbind_info IBIND_isave19(lsnes_invbinds, "save-state $SLOT:19", "Save‣Slot 19");
-	keyboard::invbind_info IBIND_isave20(lsnes_invbinds, "save-state $SLOT:20", "Save‣Slot 20");
-	keyboard::invbind_info IBIND_isave21(lsnes_invbinds, "save-state $SLOT:21", "Save‣Slot 21");
-	keyboard::invbind_info IBIND_isave22(lsnes_invbinds, "save-state $SLOT:22", "Save‣Slot 22");
-	keyboard::invbind_info IBIND_isave23(lsnes_invbinds, "save-state $SLOT:23", "Save‣Slot 23");
-	keyboard::invbind_info IBIND_isave24(lsnes_invbinds, "save-state $SLOT:24", "Save‣Slot 24");
-	keyboard::invbind_info IBIND_isave25(lsnes_invbinds, "save-state $SLOT:25", "Save‣Slot 25");
-	keyboard::invbind_info IBIND_isave26(lsnes_invbinds, "save-state $SLOT:26", "Save‣Slot 26");
-	keyboard::invbind_info IBIND_isave27(lsnes_invbinds, "save-state $SLOT:27", "Save‣Slot 27");
-	keyboard::invbind_info IBIND_isave28(lsnes_invbinds, "save-state $SLOT:28", "Save‣Slot 28");
-	keyboard::invbind_info IBIND_isave29(lsnes_invbinds, "save-state $SLOT:29", "Save‣Slot 29");
-	keyboard::invbind_info IBIND_isave30(lsnes_invbinds, "save-state $SLOT:30", "Save‣Slot 30");
-	keyboard::invbind_info IBIND_isave31(lsnes_invbinds, "save-state $SLOT:31", "Save‣Slot 31");
-	keyboard::invbind_info IBIND_isave32(lsnes_invbinds, "save-state $SLOT:32", "Save‣Slot 32");
-	keyboard::invbind_info IBIND_islot1(lsnes_invbinds, "set-jukebox-slot 1", "Slot select‣Slot 1");
-	keyboard::invbind_info IBIND_islot2(lsnes_invbinds, "set-jukebox-slot 2", "Slot select‣Slot 2");
-	keyboard::invbind_info IBIND_islot3(lsnes_invbinds, "set-jukebox-slot 3", "Slot select‣Slot 3");
-	keyboard::invbind_info IBIND_islot4(lsnes_invbinds, "set-jukebox-slot 4", "Slot select‣Slot 4");
-	keyboard::invbind_info IBIND_islot5(lsnes_invbinds, "set-jukebox-slot 5", "Slot select‣Slot 5");
-	keyboard::invbind_info IBIND_islot6(lsnes_invbinds, "set-jukebox-slot 6", "Slot select‣Slot 6");
-	keyboard::invbind_info IBIND_islot7(lsnes_invbinds, "set-jukebox-slot 7", "Slot select‣Slot 7");
-	keyboard::invbind_info IBIND_islot8(lsnes_invbinds, "set-jukebox-slot 8", "Slot select‣Slot 8");
-	keyboard::invbind_info IBIND_islot9(lsnes_invbinds, "set-jukebox-slot 9", "Slot select‣Slot 9");
-	keyboard::invbind_info IBIND_islot10(lsnes_invbinds, "set-jukebox-slot 10", "Slot select‣Slot 10");
-	keyboard::invbind_info IBIND_islot11(lsnes_invbinds, "set-jukebox-slot 11", "Slot select‣Slot 11");
-	keyboard::invbind_info IBIND_islot12(lsnes_invbinds, "set-jukebox-slot 12", "Slot select‣Slot 12");
-	keyboard::invbind_info IBIND_islot13(lsnes_invbinds, "set-jukebox-slot 13", "Slot select‣Slot 13");
-	keyboard::invbind_info IBIND_islot14(lsnes_invbinds, "set-jukebox-slot 14", "Slot select‣Slot 14");
-	keyboard::invbind_info IBIND_islot15(lsnes_invbinds, "set-jukebox-slot 15", "Slot select‣Slot 15");
-	keyboard::invbind_info IBIND_islot16(lsnes_invbinds, "set-jukebox-slot 16", "Slot select‣Slot 16");
-	keyboard::invbind_info IBIND_islot17(lsnes_invbinds, "set-jukebox-slot 17", "Slot select‣Slot 17");
-	keyboard::invbind_info IBIND_islot18(lsnes_invbinds, "set-jukebox-slot 18", "Slot select‣Slot 18");
-	keyboard::invbind_info IBIND_islot19(lsnes_invbinds, "set-jukebox-slot 19", "Slot select‣Slot 19");
-	keyboard::invbind_info IBIND_islot20(lsnes_invbinds, "set-jukebox-slot 20", "Slot select‣Slot 20");
-	keyboard::invbind_info IBIND_islot21(lsnes_invbinds, "set-jukebox-slot 21", "Slot select‣Slot 21");
-	keyboard::invbind_info IBIND_islot22(lsnes_invbinds, "set-jukebox-slot 22", "Slot select‣Slot 22");
-	keyboard::invbind_info IBIND_islot23(lsnes_invbinds, "set-jukebox-slot 23", "Slot select‣Slot 23");
-	keyboard::invbind_info IBIND_islot24(lsnes_invbinds, "set-jukebox-slot 24", "Slot select‣Slot 24");
-	keyboard::invbind_info IBIND_islot25(lsnes_invbinds, "set-jukebox-slot 25", "Slot select‣Slot 25");
-	keyboard::invbind_info IBIND_islot26(lsnes_invbinds, "set-jukebox-slot 26", "Slot select‣Slot 26");
-	keyboard::invbind_info IBIND_islot27(lsnes_invbinds, "set-jukebox-slot 27", "Slot select‣Slot 27");
-	keyboard::invbind_info IBIND_islot28(lsnes_invbinds, "set-jukebox-slot 28", "Slot select‣Slot 28");
-	keyboard::invbind_info IBIND_islot29(lsnes_invbinds, "set-jukebox-slot 29", "Slot select‣Slot 29");
-	keyboard::invbind_info IBIND_islot30(lsnes_invbinds, "set-jukebox-slot 30", "Slot select‣Slot 30");
-	keyboard::invbind_info IBIND_islot31(lsnes_invbinds, "set-jukebox-slot 31", "Slot select‣Slot 31");
-	keyboard::invbind_info IBIND_islot32(lsnes_invbinds, "set-jukebox-slot 32", "Slot select‣Slot 32");
 
 	class mywindowcallbacks : public master_dumper::notifier
 	{
