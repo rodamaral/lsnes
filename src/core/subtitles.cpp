@@ -105,9 +105,9 @@ namespace
 subtitle_commentary::subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf, emulator_dispatch& _dispatch,
 	command::group& _cmd)
 	: mlogic(_mlogic), fbuf(_fbuf), edispatch(_dispatch), cmd(_cmd),
-	editsub(cmd, STUBS::editsub, [this](const std::string& a) { this->do_editsub(a); }),
-	listsub(cmd, STUBS::listsub, [this]() { this->do_listsub(); }),
-	savesub(cmd, STUBS::savesub, [this](command::arg_filename a) { this->do_savesub(a); })
+	editsub(cmd, CSUBTITLE::edit, [this](const std::string& a) { this->do_editsub(a); }),
+	listsub(cmd, CSUBTITLE::list, [this]() { this->do_listsub(); }),
+	savesub(cmd, CSUBTITLE::save, [this](command::arg_filename a) { this->do_savesub(a); })
 {
 }
 

@@ -59,12 +59,6 @@ namespace
 		exit(1);
 	}
 
-	command::fnptr<const std::string&> test4(lsnes_cmds, "panicsave-movie", "", "",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-		auto& core = CORE();
-		if(*core.mlogic) emerg_save_movie(core.mlogic->get_mfile(), core.mlogic->get_rrdata());
-	});
-
 	//% is intentionally missing.
 	const char* allowed_filename_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 		"^&'@{}[],$?!-#().+~_";
@@ -236,31 +230,3 @@ std::string get_temp_file()
 #endif
 }
 
-command::fnptr<const std::string&> macro_test(lsnes_cmds, "test-macro", "", "",
-	[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-		auto& core = CORE();
-		regex_results r = regex("([0-9]+)[ \t](.*)", args);
-		if(!r) {
-			messages << "Bad syntax" << std::endl;
-			return;
-		}
-		unsigned ctrl = parse_value<unsigned>(r[1]);
-		auto pcid = core.controls->lcid_to_pcid(ctrl);
-		if(pcid.first < 0) {
-			messages << "Bad controller" << std::endl;
-			return;
-		}
-		try {
-			const portctrl::controller* _ctrl = 
-				core.controls->get_blank().porttypes().port_type(pcid.first).
-				controller_info->get(pcid.second);
-			if(!_ctrl) {
-				messages << "No controller data for controller" << std::endl;
-				return;
-			}
-			portctrl::macro_data mdata(r[2].c_str(), portctrl::macro_data::make_descriptor(*_ctrl), 0);
-			messages << "Macro: " << mdata.dump(*_ctrl) << std::endl;
-		} catch(std::exception& e) {
-			messages << "Exception: " << e.what() << std::endl;
-		}
-	});

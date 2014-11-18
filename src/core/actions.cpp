@@ -1,3 +1,4 @@
+#include "cmdhelp/action.hpp"
 #include "core/command.hpp"
 #include "core/instance.hpp"
 #include "core/messages.hpp"
@@ -6,8 +7,7 @@
 
 namespace
 {
-	command::fnptr<const std::string&> CMD_action(lsnes_cmds, "action", "Execute core action",
-		"Syntax: action <name> [<params>...]\nExecutes core action.\n",
+	command::fnptr<const std::string&> CMD_action(lsnes_cmds, CACTION::e,
 		[](const std::string& _args) throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			if(_args == "") {

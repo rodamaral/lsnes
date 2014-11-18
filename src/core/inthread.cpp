@@ -1721,8 +1721,8 @@ out:
 voice_commentary::voice_commentary(settingvar::group& _settings, emulator_dispatch& _dispatch,
 	audioapi_instance& _audio, command::group& _cmd)
 	: settings(_settings), edispatch(_dispatch), audio(_audio), cmd(_cmd),
-	tangentp(cmd, STUBS::tangentp, [this]() { this->set_active_flag(true); }),
-	tangentr(cmd, STUBS::tangentr, [this]() { this->set_active_flag(false); })
+	tangentp(cmd, CCOMMENTARY::p, [this]() { this->set_active_flag(true); }),
+	tangentr(cmd, CCOMMENTARY::r, [this]() { this->set_active_flag(false); })
 {
 	internal = NULL;
 }

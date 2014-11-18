@@ -1,0 +1,11 @@
+{
+	"__mod":"CKEYMAPPER",
+	"show-joysticks":[
+		"show", "Show joystick info",
+		{"":"Show joystick info."}
+	],
+	"reset-gamepads":[
+		"reset", "Reset gamepads",
+		{"":"Resets gamepads."}
+	]
+}

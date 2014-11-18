@@ -1,10 +1,9 @@
 {
-	"load":{
-		"__class":"loadsave",
-		"__name":"load",
-		"__description":"Load savestate (current mode)",
-		"<file>":"Loads SNES state from <file> in current mode",
-		"__inverse":{
+	"__mod":"CLOADSAVE",
+	"load":[
+		"ld", "Load savestate (current mode)",
+		{"<file>":"Load state from <file> in current mode"},
+		{
 			"$SLOT:1":"Load‣Slot 1",
 			"$SLOT:2":"Load‣Slot 2",
 			"$SLOT:3":"Load‣Slot 3",
@@ -38,13 +37,11 @@
 			"$SLOT:31":"Load‣Slot 31",
 			"$SLOT:32":"Load‣Slot 32"
 		}
-	},
-	"savestate":{
-		"__class":"loadsave",
-		"__name":"save-state",
-		"__description":"Save state",
-		"<file>":"Saves SNES state to <file>",
-		"__inverse":{
+	],
+	"save-state":[
+		"sa", "Save state",
+		{"<file>":"Save state to <file>"},
+		{
 			"$SLOT:1":"Save‣Slot 1",
 			"$SLOT:2":"Save‣Slot 2",
 			"$SLOT:3":"Save‣Slot 3",
@@ -78,5 +75,93 @@
 			"$SLOT:31":"Save‣Slot 31",
 			"$SLOT:32":"Save‣Slot 32"
 		}
-	}
+	],
+	"load-jukebox":[
+		"ldj", "Load selected slot",
+		{"":"Load selected slot"},
+		{"":"Load‣Selected slot"}
+	],
+	"load-jukebox-readwrite":[
+		"ldjrw", "Load selected slot in recording mode",
+		{"":"Load selected slot in recording mode"},
+		{"":"Load‣Selected slot (recording mode)"}
+	],
+	"load-jukebox-readonly":[
+		"ldjro", "Load current slot in playback mode",
+		{"":"Load current slot in playback mode"},
+		{"":"Load‣Selected slot (playback mode)"}
+	],
+	"load-jukebox-preserve":[
+		"ldjp", "Load current slot, preserving input",
+		{"":"Load current slot, preserving input"},
+		{"":"Load‣Selected slot (preserve input)"}
+	],
+	"load-jukebox-movie":[
+		"ldjm", "Load current slot as movie",
+		{"":"Load current slot as movie"},
+		{"":"Load‣Selected slot (as movie)"}
+	],
+	"save-jukebox":[
+		"saj", "Save current slot",
+		{"":"Save current slot"},
+		{"":"Save‣Selected slot"}
+	],
+	"load-smart":[
+		"ldsm", "Load savestate (heuristic mode)",
+		{"<file>":"Load state from <file> in heuristic mode"}
+	],
+	"load-state":[
+		"ldrw", "Load savestate (R/W)",
+		{"<file>":"Load state from <file> in Read/Write mode"}
+	],
+	"load-readonly":[
+		"ldro", "Load savestate (RO)",
+		{"<file>":"Load state from <file> in playback mode"}
+	],
+	"load-preserve":[
+		"ldp", "Load savestate (preserve input)",
+		{"<file>":"Load state from <file> preserving input"}
+	],
+	"load-movie":[
+		"ldm", "Load movie",
+		{"<file>":"Load movie from <file>"}
+	],
+	"load-allbranches":[
+		"ldab", "Load savestate (all branches)",
+		{"<file>":"Load state from <file> with all branches"}
+	],
+	"save-state-binary":[
+		"sasb",  "Save state (binary)",
+		{"<file>":"Save state to <file> in binary format"}
+	],
+	"save-state-zip":[
+		"sasz", "Save state (zip)",
+		{"<file>":"Save state to <file> in zip format"}
+	],
+	"save-movie":[
+		"sam", "Save movie",
+		{"<file>":"Save movie to <file>"}
+	],
+	"save-movie-binary":[
+		"samb", "Save movie (binary)",
+		{"<file>":"Save movie to <file> in binary format"}
+	],
+	"save-movie-zip":[
+		"samz", "Save movie (zip)",
+		{"<file>":"Save movie to <file> in zip format"}
+	],
+	"rewind-movie":[
+		"rewind", "Rewind movie to the beginning",
+		{"":"Rewind movie to the beginning"},
+		{"":"Movie‣Rewind movie"}
+	],
+	"cancel-saves":[
+		"cancel", "Cancel all pending saves",
+		{"":"Cancel pending saves"},
+		{"":"Save‣Cancel pending saves"}
+	],
+	"flush-slotinfo":[
+		"flushslots", "Flush slotinfo cache",
+		{"":"Flush slotinfo cache"}
+	]
 }

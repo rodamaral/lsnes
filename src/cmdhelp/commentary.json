@@ -1,15 +1,12 @@
 {
-	"tangentp":{
-		"__class":"commentary",
-		"__name":"+tangent",
-		"__description":"Voice tangent",
-		"":"Voice tangent",
-		"__inverse":{"":"Movie‣Voice tangent"}
-	},
-	"tangentr":{
-		"__class":"commentary",
-		"__name":"-tangent",
-		"__description":"Voice tangent",
-		"":"Voice tangent."
-	}
+	"__mod":"CCOMMENTARY",
+	"+tangent":[
+		"p", "Voice tangent enage",
+		{"":"Voice tangent enage"},
+		{"":"Movie‣Voice tangent"}
+	],
+	"-tangent":[
+		"r", "Voice tangent disenage",
+		{"":"Voice tangent disenage."}
+	]
 }

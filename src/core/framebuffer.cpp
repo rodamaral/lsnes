@@ -95,7 +95,7 @@ emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::gr
 	status_updater& _supdater, command::group& _cmd)
 	: buffering(buffer1, buffer2, buffer3), subtitles(_subtitles), settings(_settings), mwatch(_mwatch),
 	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2), rom(_rom), supdater(_supdater), cmd(_cmd),
-	screenshot(cmd, STUBS::screenshot, [this](command::arg_filename a) { this->do_screenshot(a); })
+	screenshot(cmd, CFRAMEBUF::ss, [this](command::arg_filename a) { this->do_screenshot(a); })
 {
 	last_redraw_no_lua = false;
 }

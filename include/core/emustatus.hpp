@@ -5,6 +5,7 @@
 #include <string>
 #include <set>
 #include <map>
+#include "library/command.hpp"
 #include "library/triplebuffer.hpp"
 
 class movie_logic;
@@ -57,13 +58,15 @@ struct _lsnes_status
 
 struct slotinfo_cache
 {
-	slotinfo_cache(movie_logic& _mlogic);
+	slotinfo_cache(movie_logic& _mlogic, command::group& _cmd);
 	std::string get(const std::string& _filename);
 	void flush(const std::string& _filename);
 	void flush();
 private:
 	std::map<std::string, std::string> cache;
 	movie_logic& mlogic;
+	command::group& cmd;
+	command::_fnptr<> flushcmd;
 };
 
 struct status_updater

@@ -1,10 +1,9 @@
 {
-	"slotselect":{
-		"__class":"jukebox",
-		"__name":"set-jukebox-slot",
-		"__description":"Set jukebox slot",
-		"<slot>":"Set jukebox slot to <slot>\n",
-		"__inverse":{
+	"__mod":"CJUKEBOX",
+	"set-jukebox-slot":[
+		"sel", "Set jukebox slot",
+		{"<slot>":"Set jukebox slot to <slot>\n"},
+		{
 			"1":"Slot select‣Slot 1",
 			"2":"Slot select‣Slot 2",
 			"3":"Slot select‣Slot 3",
@@ -38,19 +37,15 @@
 			"31":"Slot select‣Slot 31",
 			"32":"Slot select‣Slot 32"
 		}
-	},
-	"slotprev":{
-		"__class":"jukebox",
-		"__name":"cycle-jukebox-backward",
-		"__description":"Cycle save jukebox backwards",
-		"":"Cycle save jukebox backwards",
-		"__inverse":{"":"Slot select‣Cycle backwards"}
-	},
-	"slotnext":{
-		"__class":"jukebox",
-		"__name":"cycle-jukebox-forward",
-		"__description":"Cycle save jukebox forwards",
-		"":"Cycle save jukebox forwards",
-		"__inverse":{"":"Slot select‣Cycle forwards"}
-	}
+	],
+	"cycle-jukebox-backward":[
+		"prev", "Cycle save jukebox backwards",
+		{"":"Cycle save jukebox backwards"},
+		{"":"Slot select‣Cycle backwards"}
+	],
+	"cycle-jukebox-forward":[
+		"next", "Cycle save jukebox forwards",
+		{"":"Cycle save jukebox forwards"},
+		{"":"Slot select‣Cycle forwards"}
+	]
 }

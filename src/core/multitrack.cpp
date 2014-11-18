@@ -15,9 +15,9 @@ multitrack_edit::multitrack_edit(movie_logic& _mlogic, controller_state& _contro
 	status_updater& _supdater, button_mapping& _buttons, command::group& _cmd)
 	: mlogic(_mlogic), controls(_controls), edispatch(_dispatch), supdater(_supdater), buttons(_buttons),
 	cmd(_cmd),
-	mt_f(cmd, STUBS::multitrackf, [this]() { this->do_mt_fwd(); }),
-	mt_b(cmd, STUBS::multitrackb, [this]() { this->do_mt_bw(); }),
-	mt_s(cmd, STUBS::multitracks, [this](const std::string& a) { this->do_mt_set(a); })
+	mt_f(cmd, CMULTITRACK::f, [this]() { this->do_mt_fwd(); }),
+	mt_b(cmd, CMULTITRACK::b, [this]() { this->do_mt_bw(); }),
+	mt_s(cmd, CMULTITRACK::s, [this](const std::string& a) { this->do_mt_set(a); })
 {
 }
 

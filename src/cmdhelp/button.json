@@ -1,56 +1,39 @@
 {
-	"btnp":{
-		"__class":"button",
-		"__name":"+controller",
-		"__description":"Press a button",
-		"<button>":"Press button <button>"
-	},
-	"btnr":{
-		"__class":"button",
-		"__name":"-controller",
-		"__description":"Release a button",
-		"<button>":"Release button <button>"
-	},
-	"btnh":{
-		"__class":"button",
-		"__name":"hold-controller",
-		"__description":"Autohold a button",
-		"<button>":"Autohold button <button>"
-	},
-	"btnt":{
-		"__class":"button",
-		"__name":"type-controller",
-		"__description":"Type a button",
-		"<button>":"Type button <button>"
-	},
-	"btnd":{
-		"__class":"button",
-		"__name":"designate-position",
-		"__description":"Set postion",
-		"<button>":"Designate position for an axis"
-	},
-	"btnap":{
-		"__class":"button",
-		"__name":"+autofire-controller",
-		"__description":"Start autofire",
-		"<button> [[<duty> ]<cyclelen>]":"Autofire button <button> with duty <duty> out of <cyclelen>"
-	},
-	"btnar":{
-		"__class":"button",
-		"__name":"-autofire-controller",
-		"__description":"End autofire",
-		"<button> [[<duty> ]<cyclelen>]":"End Autofire on button <button>"
-	},
-	"btnat":{
-		"__class":"button",
-		"__name":"autofire-controller",
-		"__description":"Toggle autofire",
-		"<button> [[<duty> ]<cyclelen>]":"Toggle Autofire on button <button> with duty <duty> out of <cyclelen>"
-	},
-	"btna":{
-		"__class":"button",
-		"__name":"controller-analog",
-		"__description":"Analog action",
-		"<button> <axisvalue>":"Analog action on <button> with value <axisvalue>"
-	}
+	"__mod":"CBUTTON",
+	"+controller":[
+		"p", "Press a button",
+		{"<button>":"Press button <button>"}
+	],
+	"-controller":[
+		"r", "Release a button",
+		{"<button>":"Release button <button>"}
+	],
+	"hold-controller":[
+		"h", "Autohold a button",
+		{"<button>":"Autohold button <button>"}
+	],
+	"type-controller":[
+		"t", "Type a button",
+		{"<button>":"Type button <button>"}
+	],
+	"designate-position":[
+		"d", "Set postion",
+		{"<button>":"Designate position for an axis"}
+	],
+	"+autofire-controller":[
+		"ap", "Start autofire",
+		{"<button> [[<duty> ]<cyclelen>]":"Autofire button <button> with duty <duty> out of <cyclelen>"}
+	],
+	"-autofire-controller":[
+		"ar", "End autofire",
+		{"<button> [[<duty> ]<cyclelen>]":"End Autofire on button <button>"}
+	],
+	"autofire-controller":[
+		"at", "Toggle autofire",
+		{"<button> [[<duty> ]<cyclelen>]":"Toggle Autofire on button <button> with duty <duty> out of <cyclelen>"}
+	],
+	"controller-analog":[
+		"a", "Analog action",
+		{"<button> <axisvalue>":"Analog action on <button> with value <axisvalue>"}
+	]
 }

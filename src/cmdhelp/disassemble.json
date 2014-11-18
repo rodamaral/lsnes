@@ -1,0 +1,7 @@
+{
+	"__mod":"CDISASM",
+	"disassemble":[
+		"d", "Disassemble code",
+		{"<kind> <addr> [<count>] [to <filename>]":"Disassemble code"}
+	]
+}

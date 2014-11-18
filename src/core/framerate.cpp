@@ -19,9 +19,9 @@ bool graphics_driver_is_dummy();
 
 framerate_regulator::framerate_regulator(command::group& _cmd)
 	: cmd(_cmd),
-	turbo_p(cmd, STUBS::turbop, [this]() { this->turboed = true; }),
-	turbo_r(cmd, STUBS::turbor, [this]() { this->turboed = false; }),
-	turbo_t(cmd, STUBS::turbot, [this]() { this->turboed = !this->turboed; })
+	turbo_p(cmd, CTURBO::p, [this]() { this->turboed = true; }),
+	turbo_r(cmd, CTURBO::r, [this]() { this->turboed = false; }),
+	turbo_t(cmd, CTURBO::t, [this]() { this->turboed = !this->turboed; })
 {
 	last_time_update = 0;
 	time_at_last_update = 0;

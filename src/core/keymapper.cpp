@@ -1,3 +1,4 @@
+#include "cmdhelp/keymapper.hpp"
 #include "core/command.hpp"
 #include "core/instance.hpp"
 #include "core/joystickapi.hpp"
@@ -98,16 +99,14 @@ void cleanup_keymapper()
 
 namespace
 {
-	command::fnptr<> CMD_show_joysticks(lsnes_cmds, "show-joysticks", "Show joystick info",
-		"Syntax: show-joysticks\nShow joystick info.\n",
+	command::fnptr<> CMD_show_joysticks(lsnes_cmds, CKEYMAPPER::show,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "--------------------------------------------" << std::endl;
 			messages << lsnes_gamepads.get_summary() << std::endl;
 			messages << "--------------------------------------------" << std::endl;
 		});
 
-	command::fnptr<> reset_joysticks(lsnes_cmds, "reset-gamepads", "Reset gamepads",
-		"Syntax: reset-gamepads\nResets gamepads.\n",
+	command::fnptr<> reset_joysticks(lsnes_cmds, CKEYMAPPER::reset,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			joystick_driver_quit();
 			lsnes_gamepads.offline_all(); //Not supposed to have online gamepads.

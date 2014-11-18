@@ -1,7 +1,9 @@
 #include "cmdhelp/macro.hpp"
+#include "core/command.hpp"
 #include "core/controllerframe.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 #include "core/messages.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
@@ -13,15 +15,46 @@
 namespace
 {
 	portctrl::type_set dummytypes;
+
+	command::fnptr<const std::string&> macro_test(lsnes_cmds, CMACRO::test,
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			auto& core = CORE();
+			regex_results r = regex("([0-9]+)[ \t](.*)", args);
+			if(!r) {
+				messages << "Bad syntax" << std::endl;
+				return;
+			}
+			unsigned ctrl = parse_value<unsigned>(r[1]);
+			auto pcid = core.controls->lcid_to_pcid(ctrl);
+			if(pcid.first < 0) {
+				messages << "Bad controller" << std::endl;
+				return;
+			}
+			try {
+				const portctrl::controller* _ctrl = 
+					core.controls->get_blank().porttypes().port_type(pcid.first).
+					controller_info->get(pcid.second);
+				if(!_ctrl) {
+					messages << "No controller data for controller" << std::endl;
+					return;
+				}
+				portctrl::macro_data mdata(r[2].c_str(),
+					portctrl::macro_data::make_descriptor(*_ctrl), 0);
+				messages << "Macro: " << mdata.dump(*_ctrl) << std::endl;
+			} catch(std::exception& e) {
+				messages << "Exception: " << e.what() << std::endl;
+			}
+		});
+
 }
 
 controller_state::controller_state(project_state& _project, movie_logic& _mlogic, button_mapping& _buttons,
 	emulator_dispatch& _dispatch, status_updater& _supdater, command::group& _cmd) throw()
 	: project(_project), mlogic(_mlogic), buttons(_buttons), edispatch(_dispatch), supdater(_supdater),
 	cmd(_cmd),
-	macro_p(cmd, STUBS::macrop, [this](const std::string& a) { this->do_macro(a, 5); }),
-	macro_r(cmd, STUBS::macror, [this](const std::string& a) { this->do_macro(a, 2); }),
-	macro_t(cmd, STUBS::macrot, [this](const std::string& a) { this->do_macro(a, 7); })
+	macro_p(cmd, CMACRO::p, [this](const std::string& a) { this->do_macro(a, 5); }),
+	macro_r(cmd, CMACRO::r, [this](const std::string& a) { this->do_macro(a, 2); }),
+	macro_t(cmd, CMACRO::t, [this](const std::string& a) { this->do_macro(a, 7); })
 {
 	types = &dummytypes;
 	tasinput_enaged = false;

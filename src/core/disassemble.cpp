@@ -1,3 +1,4 @@
+#include "cmdhelp/disassemble.hpp"
 #include "core/command.hpp"
 #include "core/instance.hpp"
 #include "core/memorymanip.hpp"
@@ -21,8 +22,7 @@ namespace
 		std::string disasm;
 	};
 
-	command::fnptr<const std::string&> CMD_disassemble(lsnes_cmds, "disassemble", "Disassemble code",
-		"Syntax: disassemble <kind> <addr> [<count>] [to <filename>]\nDisassemble code\n",
+	command::fnptr<const std::string&> CMD_disassemble(lsnes_cmds, CDISASM::d,
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 		auto& core = CORE();
 		regex_results r = regex("([^ \t]+)[ \t]+([0-9]+|0x[0-9A-Fa-f]+)([ \t]+([0-9]+))?"

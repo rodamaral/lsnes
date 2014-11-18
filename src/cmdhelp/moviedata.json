@@ -1,0 +1,11 @@
+{
+	"__mod":"CMOVIEDATA",
+	"panicsave-movie":[
+		"panic", "Trigger panic movie save",
+		{"":"Panicdumps movie to file like if emulator segfaulted"}
+	],
+	"dump-coresave":[
+		"dumpcore", "Dump core state",
+		{"<name>":"Dumps core save to file <name>"}
+	]
+}

@@ -1,3 +1,4 @@
+#include "cmdhelp/loadlib.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/loadlib.hpp"
@@ -157,7 +158,13 @@ namespace
 		}
 	}
 
-	command::fnptr<const std::string&> CMD_unload_library(lsnes_cmds, "unload-library", "", "",
+	command::fnptr<command::arg_filename> CMD_load_library(lsnes_cmds, CLOADLIB::load,
+		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			with_loaded_library(*new loadlib::module(loadlib::library(args)));
+			handle_post_loadlibrary();
+		});
+
+	command::fnptr<const std::string&> CMD_unload_library(lsnes_cmds, CLOADLIB::unload,
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			unsigned libid = parse_value<unsigned>(args);
 			if(!modules.count(libid))
@@ -166,7 +173,7 @@ namespace
 			modules.erase(libid);
 		});
 
-	command::fnptr<> CMD_list_library(lsnes_cmds, "list-libraries", "", "",
+	command::fnptr<> CMD_list_library(lsnes_cmds, CLOADLIB::list,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			for(auto i : modules)
 				messages << "#" << i.first << " [" << i.second->get_libname() << "]" << std::endl;

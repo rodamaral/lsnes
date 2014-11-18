@@ -1,0 +1,15 @@
+{
+	"__mod":"CLOADLIB",
+	"load-library":[
+		"load", "Load a library",
+		{"<filename>":"Load a shared library from <filename>."}
+	],
+	"unload-library":[
+		"unload", "Unload a library",
+		{"<id>":"Unload shared library with id <id> (DANGEROUS)."}
+	],
+	"list-libraries":[
+		"list", "List loaded shared libraries",
+		{"":"List loaded shared libraries"}
+	]
+}

@@ -35,15 +35,15 @@ button_mapping::button_mapping(controller_state& _controls, keyboard::mapper& _m
 	emu_framebuffer& _fbuf, emulator_dispatch& _dispatch, lua_state& _lua2, command::group& _cmd)
 	: controls(_controls), mapper(_mapper), keyboard(_keyboard), fbuf(_fbuf), edispatch(_dispatch),
 	lua2(_lua2), cmd(_cmd),
-	button_p(cmd, STUBS::btnp, [this](const std::string& a) { this->do_action(a, 1, 0); }), 
-	button_r(cmd, STUBS::btnr, [this](const std::string& a) { this->do_action(a, 0, 0); }),
-	button_h(cmd, STUBS::btnh, [this](const std::string& a) { this->do_action(a, 1, 1); }), 
-	button_t(cmd, STUBS::btnt, [this](const std::string& a) { this->do_action(a, 1, 2); }),
-	button_d(cmd, STUBS::btnd, [this](const std::string& a) { this->do_action(a, 0, 3); }),
-	button_ap(cmd, STUBS::btnap, [this](const std::string& a) { this->do_autofire_action(a, 1); }),
-	button_ar(cmd, STUBS::btnar, [this](const std::string& a) { this->do_autofire_action(a, 0); }),
-	button_at(cmd, STUBS::btnat, [this](const std::string& a) { this->do_autofire_action(a, -1); }),
-	button_a(cmd, STUBS::btna, [this](const std::string& a) { this->do_analog_action(a); })
+	button_p(cmd, CBUTTON::p, [this](const std::string& a) { this->do_action(a, 1, 0); }), 
+	button_r(cmd, CBUTTON::r, [this](const std::string& a) { this->do_action(a, 0, 0); }),
+	button_h(cmd, CBUTTON::h, [this](const std::string& a) { this->do_action(a, 1, 1); }), 
+	button_t(cmd, CBUTTON::t, [this](const std::string& a) { this->do_action(a, 1, 2); }),
+	button_d(cmd, CBUTTON::d, [this](const std::string& a) { this->do_action(a, 0, 3); }),
+	button_ap(cmd, CBUTTON::ap, [this](const std::string& a) { this->do_autofire_action(a, 1); }),
+	button_ar(cmd, CBUTTON::ar, [this](const std::string& a) { this->do_autofire_action(a, 0); }),
+	button_at(cmd, CBUTTON::at, [this](const std::string& a) { this->do_autofire_action(a, -1); }),
+	button_a(cmd, CBUTTON::a, [this](const std::string& a) { this->do_analog_action(a); })
 {
 	ncore.set(notify_new_core, [this]() { this->init(); });
 }
@@ -109,9 +109,9 @@ void button_mapping::load(controller_state& ctrlstate)
 	for(auto i : s) {
 		if(!macro_binds.count(i)) {
 			//New macro, create inverse bind.
-			macro_binds[i] = new keyboard::invbind(mapper, STUBS::macrot.name + (" " + i) , "Macro‣" + i +
+			macro_binds[i] = new keyboard::invbind(mapper, CMACRO::t.name + (" " + i) , "Macro‣" + i +
 				" (toggle)");
-			macro_binds2[i] = new keyboard::invbind(mapper, STUBS::macrop.name + (" " + i) , "Macro‣" +
+			macro_binds2[i] = new keyboard::invbind(mapper, CMACRO::p.name + (" " + i) , "Macro‣" +
 				i + " (hold)");
 		}
 	}
@@ -184,33 +184,33 @@ void button_mapping::add_button(const std::string& name, const button_mapping::c
 {
 	keyboard::ctrlrkey* k;
 	if(binding.mode == 0) {
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnp.name << " "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << CBUTTON::p.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name).str());
 		promote_key(*k);
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnh.name << " "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << CBUTTON::h.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << "‣hold").str());
 		promote_key(*k);
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnt.name << " "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << CBUTTON::t.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << "‣type").str());
 		promote_key(*k);
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnap.name << " "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << CBUTTON::ap.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << "‣autofire").str());
 		promote_key(*k);
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnat.name << " "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << CBUTTON::at.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << "‣autofire toggle").str());
 		promote_key(*k);
 	} else if(binding.mode == 1) {
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btnd.name << " "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << CBUTTON::d.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name).str());
 		promote_key(*k);
 	} else if(binding.mode == 2) {
-		k = new keyboard::ctrlrkey(mapper, (stringfmt() << STUBS::btna.name << " "
+		k = new keyboard::ctrlrkey(mapper, (stringfmt() << CBUTTON::a.name << " "
 			<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
 			<< binding.number << "‣" << binding.name << " (axis)").str(), true);
 		promote_key(*k);

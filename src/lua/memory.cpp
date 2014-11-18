@@ -1,3 +1,4 @@
+#include "cmdhelp/lua.hpp"
 #include "core/command.hpp"
 #include "core/debug.hpp"
 #include "core/instance.hpp"
@@ -467,7 +468,7 @@ namespace
 		}
 	}
 
-	command::fnptr<> CMD_callbacks_show_lua(lsnes_cmds, "show-lua-callbacks", "", "",
+	command::fnptr<> CMD_callbacks_show_lua(lsnes_cmds, CLUA::scb,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 		auto& core = CORE();
 		lua::state& L = *core.lua;

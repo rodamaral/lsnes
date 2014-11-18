@@ -1,3 +1,4 @@
+#include "cmdhelp/lua.hpp"
 #include "cmdhelp/project.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -195,12 +196,12 @@ project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatc
 	emulator_dispatch& _edispatch, input_queue& _iqueue, loaded_rom& _rom, status_updater& _supdater)
 	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache),
 	buttons(_buttons), edispatch(_edispatch), iqueue(_iqueue), rom(_rom), supdater(_supdater),
-	branch_ls(command, STUBS::branch_ls, [this]() { this->do_branch_ls(); }),
-	branch_mk(command, STUBS::branch_mk, [this](const std::string& a) { this->do_branch_mk(a); }),
-	branch_rm(command, STUBS::branch_rm, [this](const std::string& a) { this->do_branch_rm(a); }),
-	branch_set(command, STUBS::branch_set, [this](const std::string& a) { this->do_branch_set(a); }),
-	branch_rp(command, STUBS::branch_rp, [this](const std::string& a) { this->do_branch_rp(a); }),
-	branch_mv(command, STUBS::branch_mv, [this](const std::string& a) { this->do_branch_mv(a); })
+	branch_ls(command, CPROJECT::bls, [this]() { this->do_branch_ls(); }),
+	branch_mk(command, CPROJECT::bmk, [this](const std::string& a) { this->do_branch_mk(a); }),
+	branch_rm(command, CPROJECT::brm, [this](const std::string& a) { this->do_branch_rm(a); }),
+	branch_set(command, CPROJECT::bset, [this](const std::string& a) { this->do_branch_set(a); }),
+	branch_rp(command, CPROJECT::brp, [this](const std::string& a) { this->do_branch_rp(a); }),
+	branch_mv(command, CPROJECT::bmv, [this](const std::string& a) { this->do_branch_mv(a); })
 {
 	active_project = NULL;
 }
@@ -407,9 +408,9 @@ skip_rom_movie:
 				messages << "Can't set/clear watch '" << i << "': " << e.what() << std::endl;
 			}
 		commentary.load_collection(p->directory + "/" + p->prefix + ".lsvs");
-		command.invoke("reset-lua");
+		command.invoke(CLUA::reset.name);
 		for(auto i : p->luascripts)
-			command.invoke("run-lua " + i);
+			command.invoke(CLUA::run.name + (" " + i));
 		buttons.load(controls, *active_project);
 	} catch(std::exception& e) {
 		if(newmovie && !used)

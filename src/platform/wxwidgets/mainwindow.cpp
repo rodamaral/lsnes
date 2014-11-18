@@ -14,6 +14,10 @@
 #include "platform/wxwidgets/menu_branches.hpp"
 #include "platform/wxwidgets/menu_projects.hpp"
 
+#include "cmdhelp/framebuffer.hpp"
+#include "cmdhelp/loadsave.hpp"
+#include "cmdhelp/lua.hpp"
+#include "cmdhelp/subtitles.hpp"
 #include "core/audioapi.hpp"
 #include "core/audioapi-driver.hpp"
 #include "core/command.hpp"
@@ -245,7 +249,7 @@ namespace
 					show_message_ok(w, "Error downloading movie", old->errormsg,
 						wxICON_EXCLAMATION);
 				} else {
-					inst.iqueue->queue("load-movie $MEMORY:wxwidgets_download_tmp");
+					inst.iqueue->queue(CLOADSAVE::ldm.name, "$MEMORY:wxwidgets_download_tmp");
 				}
 				delete old;
 				Stop();
@@ -554,12 +558,12 @@ namespace
 
 	void recent_movie_selected(emulator_instance& inst, const recentfiles::path& file)
 	{
-		inst.iqueue->queue("load-smart " + file.get_path());
+		inst.iqueue->queue(CLOADSAVE::ldsm.name, file.get_path());
 	}
 
 	void recent_script_selected(emulator_instance& inst, const recentfiles::path& file)
 	{
-		inst.iqueue->queue("run-lua " + file.get_path());
+		inst.iqueue->queue(CLUA::run.name, file.get_path());
 	}
 
 	wxString getname(emulator_instance& inst)
@@ -690,7 +694,7 @@ namespace
 					romload_request req;
 					req.packfile = a;
 					load_new_rom(req);
-					CORE().command->invoke("load-smart " + b);
+					CORE().command->invoke(CLOADSAVE::ldsm.name, b);
 				}, [](std::exception& e) {});
 				ret = true;
 			}
@@ -698,7 +702,7 @@ namespace
 				std::string a = tostdstring(filenames[0]);
 				bool amov = is_lsnes_movie(a);
 				if(amov) {
-					inst.iqueue->queue("load-smart " + a);
+					inst.iqueue->queue(CLOADSAVE::ldsm.name, a);
 					pwin->recent_movies->add(a);
 					ret = true;
 				} else {
@@ -1446,7 +1450,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		filename = choose_file_load(this, "Load Movie", UI_get_project_moviepath(inst),
 			filetype_movie).second;
 		recent_movies->add(filename);
-		inst.iqueue->queue("load-movie " + filename);
+		inst.iqueue->queue(CLOADSAVE::ldm.name, filename);
 		return;
 	case wxID_LOAD_STATE:
 		filename2 = choose_file_load(this, "Load State", UI_get_project_moviepath(inst),
@@ -1464,7 +1468,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		inst.iqueue->queue("save-movie" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SUBTITLES:
-		inst.iqueue->queue("save-subtitle " + choose_file_save(this, "Save subtitles",
+		inst.iqueue->queue(CSUBTITLE::save.name, choose_file_save(this, "Save subtitles",
 			UI_get_project_moviepath(inst), filetype_sub, project_prefixname(inst, "sub")));
 		return;
 	case wxID_SAVE_STATE:
@@ -1474,26 +1478,25 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		inst.iqueue->queue("save-state" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SCREENSHOT:
-		inst.iqueue->queue("take-screenshot " + choose_file_save(this, "Save Screenshot",
+		inst.iqueue->queue(CFRAMEBUF::ss.name, choose_file_save(this, "Save Screenshot",
 			UI_get_project_moviepath(inst), filetype_png, get_default_screenshot_name(inst)));
 		return;
 	case wxID_RUN_SCRIPT:
-		inst.iqueue->queue("run-script " + pick_file_member(this, "Select Script",
+		inst.iqueue->queue(CLUA::run.name, pick_file_member(this, "Select Script",
 			UI_get_project_otherpath(inst)));
 		return;
 	case wxID_RUN_LUA: {
 		std::string f = choose_file_load(this, "Select Lua Script", UI_get_project_otherpath(inst),
 			filetype_lua_script);
-		inst.iqueue->queue("run-lua " + f);
+		inst.iqueue->queue(CLUA::run.name, f);
 		recent_scripts->add(f);
 		return;
 	}
 	case wxID_RESET_LUA:
-		inst.iqueue->queue("reset-lua");
+		inst.iqueue->queue(CLUA::reset.name);
 		return;
 	case wxID_EVAL_LUA:
-		inst.iqueue->queue("evaluate-lua " + pick_text(this, "Evaluate Lua",
-			"Enter Lua Statement:"));
+		inst.iqueue->queue(CLUA::eval.name, pick_text(this, "Evaluate Lua", "Enter Lua Statement:"));
 		return;
 	case wxID_READONLY_MODE:
 		s = menu_ischecked(wxID_READONLY_MODE);

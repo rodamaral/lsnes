@@ -5,6 +5,7 @@
 #include <map>
 #include <list>
 #include "core/controllerframe.hpp"
+#include "library/command.hpp"
 #include "library/movie.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-base.hpp"
@@ -106,6 +107,8 @@ struct lua_state
 	std::list<std::string> startup_scripts;
 	std::map<std::string, std::u32string> watch_vars;
 private:
+	void do_reset();
+	void do_evaluate(const std::string& a);
 	bool run_lua_fragment() throw(std::bad_alloc);
 	template<typename... T> bool run_callback(lua::state::callback_list& list, T... args);
 	void run_synchronous_paint(struct lua::render_context* ctx);
@@ -113,6 +116,10 @@ private:
 	command::group& command;
 	bool recursive_flag;
 	const char* luareader_fragment;
+	command::_fnptr<> resetcmd;
+	command::_fnptr<const std::string&> evalcmd;
+	command::_fnptr<const std::string&> evalcmd2;
+	command::_fnptr<command::arg_filename> runcmd;
 };
 
 #endif

@@ -53,9 +53,9 @@ namespace
 debug_context::debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom, memory_space& _mspace,
 	command::group& _cmd)
 	: edispatch(_dispatch), rom(_rom), mspace(_mspace), cmd(_cmd),
-	showhooks(cmd, STUBS::showhooks, [this]() { this->do_showhooks(); }),
-	genevent(cmd, STUBS::genevent, [this](const std::string& a) { this->do_genevent(a); }),
-	tracecmd(cmd, STUBS::trace, [this](const std::string& a) { this->do_tracecmd(a); })
+	showhooks(cmd, CDEBUG::scb, [this]() { this->do_showhooks(); }),
+	genevent(cmd, CDEBUG::genevt, [this](const std::string& a) { this->do_genevent(a); }),
+	tracecmd(cmd, CDEBUG::tr, [this](const std::string& a) { this->do_tracecmd(a); })
 {
 }
 

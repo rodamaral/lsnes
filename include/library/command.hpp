@@ -96,6 +96,13 @@ public:
  */
 	void invoke(const std::string& cmd) throw();
 /**
+ * Look up and invoke a command. No alias expansion is performed, but recursion checking is.
+ *
+ * parameter cmd: Command to execute.
+ * parameter args: The parameters for command.
+ */
+	void invoke(const std::string& cmd, const std::string& args) throw();
+/**
  * Get set of aliases.
  */
 	std::set<std::string> get_aliases() throw(std::bad_alloc);

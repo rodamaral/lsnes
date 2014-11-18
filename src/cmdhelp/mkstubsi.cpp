@@ -7,9 +7,7 @@
 
 const char* hexes = "0123456789abcdef";
 
-std::string quote_c_string(const std::string& raw, bool hiraw = false);
-
-std::string quote_c_string(const std::string& raw, bool hiraw)
+std::string quote_c_string(const std::string& raw)
 {
 	std::ostringstream out;
 	out << "\"";
@@ -21,7 +19,7 @@ std::string quote_c_string(const std::string& raw, bool hiraw)
 			out << "\\\"";
 		else if(ch == '\\')
 			out << "\\\\";
-		else if(ch < 32 || ch == 127 || (ch > 127 && !hiraw))
+		else if(ch < 32 || ch == 127)
 			out << "\\x" << hexes[ch / 16] << hexes[ch % 16];
 		else
 			out << ch;
@@ -30,20 +28,19 @@ std::string quote_c_string(const std::string& raw, bool hiraw)
 	return out.str();
 }
 
-void process_command_inverse(JSON::node& n, std::ostream& imp)
+void process_command_inverse(JSON::node& n, std::string name, std::ostream& imp)
 {
-	if(!n.field_exists("__inverse"))
+	if(name == "__mod" || !n.index_count() < 4)
 		return;
-	auto& inv = n["__inverse"];
-	auto name = n["__name"].as_string8();
+	auto& inv = n.index(3);
 	for(auto i = inv.begin(); i != inv.end(); i++) {
 		std::string args = i.key8();
 		std::string desc = i->as_string8();
 		if(args != "")
-			imp << "\t" << quote_c_string(name + " " + args) << ", " << quote_c_string(desc, true) << ","
+			imp << "\t" << quote_c_string(name + " " + args) << ", " << quote_c_string(desc) << ","
 				<< std::endl;
 		else
-			imp << "\t" << quote_c_string(name) << ", " << quote_c_string(desc, true) << "," << std::endl;
+			imp << "\t" << quote_c_string(name) << ", " << quote_c_string(desc) << "," << std::endl;
 	}
 }
 
@@ -68,7 +65,7 @@ int main(int argc, char** argv)
 		}
 		JSON::node n(in_json);
 		for(auto j = n.begin(); j != n.end(); j++)
-			process_command_inverse(*j, impl);
+			process_command_inverse(*j, j.key8(), impl);
 	}
 
 	impl << "\t0\n};" << std::endl;

@@ -1,18 +1,18 @@
 {
-	"editsub":{
-		"__name":"edit-subtitle",
-		"__description":"Edit a subtitle",
-		"<first> <length> <text>":"Add/Edit subtitle",
-		"<first> <length>":"Delete subtitle"
-	},
-	"listsub":{
-		"__name":"list-subtitle",
-		"__description":"List the subtitles",
-		"":"List the subtitles."
-	},
-	"savesub":{
-		"__name":"save-subtitle",
-		"__description":"Save subtitles in .sub format",
-		"<file>":"Saves subtitles in .sub format to <file>"
-	}
+	"__mod":"CSUBTITLE",
+	"edit-subtitle":[
+		"edit", "Edit a subtitle",
+		{
+			"<first> <length> <text>":"Add/Edit subtitle",
+			"<first> <length>":"Delete subtitle"
+		}
+	],
+	"list-subtitle":[
+		"list", "List the subtitles",
+		{"":"List the subtitles."}
+	],
+	"save-subtitle":[
+		"save", "Save subtitles in .sub format",
+		{"<file>":"Saves subtitles in .sub format to <file>"}
+	]
 }

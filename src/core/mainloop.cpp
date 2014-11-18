@@ -381,43 +381,37 @@ namespace
 			}
 		});
 
-	command::fnptr<> CMD_load_jukebox(lsnes_cmds, "load-jukebox", "Load save from jukebox",
-		"Syntax: load-jukebox\nLoad save from jukebox\n",
+	command::fnptr<> CMD_load_jukebox(lsnes_cmds, CLOADSAVE::ldj,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_CURRENT);
 		});
 
-	command::fnptr<> CMD_load_jukebox_readwrite(lsnes_cmds, "load-jukebox-readwrite", "Load save from jukebox in"
-		" recording mode", "Syntax: load-jukebox-readwrite\nLoad save from jukebox in recording mode\n",
+	command::fnptr<> CMD_load_jukebox_readwrite(lsnes_cmds, CLOADSAVE::ldjrw,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_RW);
 		});
 
-	command::fnptr<> CMD_load_jukebox_readonly(lsnes_cmds, "load-jukebox-readonly", "Load save from jukebox in "
-		"playback mode", "Syntax: load-jukebox-readonly\nLoad save from jukebox in playback mode\n",
+	command::fnptr<> CMD_load_jukebox_readonly(lsnes_cmds, CLOADSAVE::ldjro,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_RO);
 		});
 
-	command::fnptr<> CMD_load_jukebox_preserve(lsnes_cmds, "load-jukebox-preserve", "Load save from jukebox, "
-		"preserving input", "Syntax: load-jukebox-preserve\nLoad save from jukebox, preserving input\n",
+	command::fnptr<> CMD_load_jukebox_preserve(lsnes_cmds, CLOADSAVE::ldjp,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_PRESERVE);
 		});
 
-	command::fnptr<> CMD_load_jukebox_movie(lsnes_cmds, "load-jukebox-movie", "Load save from jukebox as movie",
-		"Syntax: load-jukebox-movie\nLoad save from jukebox as movie\n",
+	command::fnptr<> CMD_load_jukebox_movie(lsnes_cmds, CLOADSAVE::ldjm,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			mark_pending_load(core.jukebox->get_slot_name(), LOAD_STATE_MOVIE);
 		});
 
-	command::fnptr<> CMD_save_jukebox_c(lsnes_cmds, "save-jukebox", "Save save to jukebox",
-		"Syntax: save-jukebox\nSave save to jukebox\n",
+	command::fnptr<> CMD_save_jukebox_c(lsnes_cmds, CLOADSAVE::saj,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			mark_pending_save(core.jukebox->get_slot_name(), SAVE_STATE, -1);
@@ -497,81 +491,67 @@ namespace
 			core.rom->execute_action(hreset_action, std::vector<interface_action_paramval>());
 		});
 
-	command::fnptr<command::arg_filename> CMD_load_c(lsnes_cmds, STUBS::load,
+	command::fnptr<command::arg_filename> CMD_load_c(lsnes_cmds, CLOADSAVE::ld,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_CURRENT);
 		});
 
-	command::fnptr<command::arg_filename> CMD_load_smart_c(lsnes_cmds, "load-smart",
-		"Load savestate (heuristic mode)",
-		"Syntax: load <file>\nLoads SNES state from <file> in heuristic mode\n",
+	command::fnptr<command::arg_filename> CMD_load_smart_c(lsnes_cmds, CLOADSAVE::ldsm,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_DEFAULT);
 		});
 
-	command::fnptr<command::arg_filename> CMD_load_state_c(lsnes_cmds, "load-state", "Load savestate (R/W)",
-		"Syntax: load-state <file>\nLoads SNES state from <file> in Read/Write mode\n",
+	command::fnptr<command::arg_filename> CMD_load_state_c(lsnes_cmds, CLOADSAVE::ldrw,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_RW);
 		});
 
-	command::fnptr<command::arg_filename> CMD_load_readonly(lsnes_cmds, "load-readonly", "Load savestate (RO)",
-		"Syntax: load-readonly <file>\nLoads SNES state from <file> in playback mode\n",
+	command::fnptr<command::arg_filename> CMD_load_readonly(lsnes_cmds, CLOADSAVE::ldro,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_RO);
 		});
 
-	command::fnptr<command::arg_filename> CMD_load_preserve(lsnes_cmds, "load-preserve",
-		"Load savestate (preserve input)",
-		"Syntax: load-preserve <file>\nLoads SNES state from <file> preserving input\n",
+	command::fnptr<command::arg_filename> CMD_load_preserve(lsnes_cmds, CLOADSAVE::ldp,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_PRESERVE);
 		});
 
-	command::fnptr<command::arg_filename> CMD_load_movie_c(lsnes_cmds, "load-movie", "Load movie",
-		"Syntax: load-movie <file>\nLoads SNES movie from <file>\n",
+	command::fnptr<command::arg_filename> CMD_load_movie_c(lsnes_cmds, CLOADSAVE::ldm,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_MOVIE);
 		});
 
-	command::fnptr<command::arg_filename> CMD_load_allbr_c(lsnes_cmds, "load-allbranches", "Load savestate "
-		"(all branches)", "Syntax: load-allbranches <file>\nLoads SNES state from <file> with all "
-		"branches\n",
+	command::fnptr<command::arg_filename> CMD_load_allbr_c(lsnes_cmds, CLOADSAVE::ldab,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_ALLBRANCH);
 		});
 
-	command::fnptr<command::arg_filename> CMD_save_state(lsnes_cmds, STUBS::savestate,
+	command::fnptr<command::arg_filename> CMD_save_state(lsnes_cmds, CLOADSAVE::sa,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_STATE, -1);
 		});
 
-	command::fnptr<command::arg_filename> CMD_save_state2(lsnes_cmds, "save-state-binary", "Save state (binary)",
-		"Syntax: save-state-binary <file>\nSaves binary state to <file>\n",
+	command::fnptr<command::arg_filename> CMD_save_state2(lsnes_cmds, CLOADSAVE::sasb,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_STATE, 1);
 		});
 
-	command::fnptr<command::arg_filename> CMD_save_state3(lsnes_cmds, "save-state-zip", "Save state (zip)",
-		"Syntax: save-state-zip <file>\nSaves zip state to <file>\n",
+	command::fnptr<command::arg_filename> CMD_save_state3(lsnes_cmds, CLOADSAVE::sasz,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_STATE, 0);
 		});
 
-	command::fnptr<command::arg_filename> CMD_save_movie(lsnes_cmds, "save-movie", "Save movie",
-		"Syntax: save-movie <file>\nSaves SNES movie to <file>\n",
+	command::fnptr<command::arg_filename> CMD_save_movie(lsnes_cmds, CLOADSAVE::sam,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_MOVIE, -1);
 		});
 
-	command::fnptr<command::arg_filename> CMD_save_movie2(lsnes_cmds, "save-movie-binary", "Save movie (binary)",
-		"Syntax: save-movie-binary <file>\nSaves binary movie to <file>\n",
+	command::fnptr<command::arg_filename> CMD_save_movie2(lsnes_cmds, CLOADSAVE::samb,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_MOVIE, 1);
 		});
 
-	command::fnptr<command::arg_filename> CMD_save_movie3(lsnes_cmds, "save-movie-zip", "Save movie (zip)",
-		"Syntax: save-movie-zip <file>\nSaves zip movie to <file>\n",
+	command::fnptr<command::arg_filename> CMD_save_movie3(lsnes_cmds, CLOADSAVE::samz,
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_MOVIE, 0);
 		});
@@ -636,34 +616,26 @@ namespace
 			messages << "Pause-on-end is now OFF" << std::endl;
 		});
 
-	command::fnptr<> CMD_rewind_movie(lsnes_cmds, "rewind-movie", "Rewind movie to the beginning",
-		"Syntax: rewind-movie\nRewind movie to the beginning\n",
+	command::fnptr<> CMD_rewind_movie(lsnes_cmds, CLOADSAVE::rewind,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_BEGINNING);
 		});
 
-	command::fnptr<> CMD_cancel_save(lsnes_cmds, "cancel-saves", "Cancel all pending saves", "Syntax: "
-		"cancel-save\nCancel pending saves\n",
+	command::fnptr<> CMD_cancel_save(lsnes_cmds, CLOADSAVE::cancel,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			queued_saves.clear();
 			messages << "Pending saves canceled." << std::endl;
 		});
 
-	command::fnptr<> CMD_flushslots(lsnes_cmds, "flush-slotinfo", "Flush slotinfo cache",
-		"Flush slotinfo cache\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			CORE().slotcache->flush();
-		});
-
-	command::fnptr<> CMD_mhold1(lsnes_cmds, STUBS::mholdp, []() throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<> CMD_mhold1(lsnes_cmds, CMHOLD::p, []() throw(std::bad_alloc, std::runtime_error) {
 		macro_hold_1 = true;
 	});
 
-	command::fnptr<> CMD_mhold2(lsnes_cmds, STUBS::mholdr, []() throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<> CMD_mhold2(lsnes_cmds, CMHOLD::r, []() throw(std::bad_alloc, std::runtime_error) {
 		macro_hold_1 = false;
 	});
 
-	command::fnptr<> CMD_mhold3(lsnes_cmds, STUBS::mholdt, []() throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<> CMD_mhold3(lsnes_cmds, CMHOLD::t, []() throw(std::bad_alloc, std::runtime_error) {
 		macro_hold_2 = !macro_hold_2;
 		if(macro_hold_2)
 			messages << "Macros are held for next frame." << std::endl;
@@ -672,15 +644,6 @@ namespace
 	});
 
 	keyboard::invbind_info IBIND_ipause_emulator(lsnes_invbinds, "pause-emulator", "Speed‣(Un)pause");
-	keyboard::invbind_info IBIND_iloadj(lsnes_invbinds, "load-jukebox", "Load‣Selected slot");
-	keyboard::invbind_info IBIND_iloadjrw(lsnes_invbinds, "load-jukebox-readwrite",
-		"Load‣Selected slot (recording mode)");
-	keyboard::invbind_info IBIND_iloadjro(lsnes_invbinds, "load-jukebox-readonly",
-		"Load‣Selected slot (playback mode)");
-	keyboard::invbind_info IBIND_iloadjp(lsnes_invbinds, "load-jukebox-preserve",
-		"Load‣Selected slot (preserve input)");
-	keyboard::invbind_info IBIND_iloadjm(lsnes_invbinds, "load-jukebox-movie", "Load‣Selected slot (as movie)");
-	keyboard::invbind_info IBIND_isavej(lsnes_invbinds, "save-jukebox", "Save‣Selected slot");
 	keyboard::invbind_info IBIND_iadvframe(lsnes_invbinds, "+advance-frame", "Speed‣Advance frame");
 	keyboard::invbind_info IBIND_iadvsubframe(lsnes_invbinds, "+advance-poll", "Speed‣Advance subframe");
 	keyboard::invbind_info IBIND_iskiplag(lsnes_invbinds, "advance-skiplag", "Speed‣Advance poll");
@@ -690,8 +653,6 @@ namespace
 	keyboard::invbind_info IBIND_itoggle_rwmode(lsnes_invbinds, "toggle-rwmode", "Movie‣Toggle playback");
 	keyboard::invbind_info IBIND_irepaint(lsnes_invbinds, "repaint", "System‣Repaint screen");
 	keyboard::invbind_info IBIND_itogglepause(lsnes_invbinds, "toggle-pause-on-end", "Movie‣Toggle pause-on-end");
-	keyboard::invbind_info IBIND_irewind_movie(lsnes_invbinds, "rewind-movie", "Movie‣Rewind movie");
-	keyboard::invbind_info IBIND_icancel_saves(lsnes_invbinds, "cancel-saves", "Save‣Cancel pending saves");
 
 	class mywindowcallbacks : public master_dumper::notifier
 	{

@@ -1,3 +1,4 @@
+#include "cmdhelp/lua.hpp"
 #include "core/command.hpp"
 #include "library/globalwrap.hpp"
 #include "library/keyboard.hpp"
@@ -155,7 +156,11 @@ namespace
 }
 
 lua_state::lua_state(lua::state& _L, command::group& _command)
-	: L(_L), command(_command)
+	: L(_L), command(_command),
+	resetcmd(command, CLUA::reset, [this]() { this->do_reset(); }),
+	evalcmd(command, CLUA::eval, [this](const std::string& a) { this->do_eval_lua(a); }),
+	evalcmd2(command, CLUA::eval2, [this](const std::string& a) { this->do_eval_lua(a); }),
+	runcmd(command, CLUA::run, [this](command::arg_filename a) { this->do_run_lua(a); })
 {
 	requests_repaint = false;
 	requests_subframe_paint = false;
@@ -341,47 +346,25 @@ bool lua_state::callback_do_button(uint32_t port, uint32_t controller, uint32_t 
 
 namespace
 {
-	command::fnptr<const std::string&> CMD_evaluate_lua(lsnes_cmds, "evaluate-lua", "Evaluate expression in "
-		"Lua VM", "Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Expected expression to evaluate");
-			auto& core = CORE();
-			core.lua2->do_eval_lua(args);
-		});
-
-	command::fnptr<const std::string&> CMD_evaluate_lua2(lsnes_cmds, "L", "Evaluate expression in "
-		"Lua VM", "Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Expected expression to evaluate");
-			auto& core = CORE();
-			core.lua2->do_eval_lua(args);
-		});
-
-	command::fnptr<command::arg_filename> CMD_run_lua(lsnes_cmds, "run-lua", "Run Lua script in Lua VM",
-		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
-		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error)
-		{
-			auto& core = CORE();
-			core.lua2->do_run_lua(args);
-		});
-
-	command::fnptr<> CMD_reset_lua(lsnes_cmds, "reset-lua", "Reset the Lua VM",
-		"Syntax: reset-lua\nReset the Lua VM.\n",
-		[]() throw(std::bad_alloc, std::runtime_error)
-		{
-			auto& core = CORE();
-			core.lua->reset();
-			luaL_openlibs(core.lua->handle());
-
-			core.lua2->run_sysrc_lua(true);
-			copy_system_tables(*core.lua);
-			messages << "Lua VM reset" << std::endl;
-		});
-
 	lua::_class<lua_unsaferewind> LUA_class_unsaferewind(lua_class_movie, "UNSAFEREWIND", {}, {
 	}, &lua_unsaferewind::print);
+}
+
+void lua_state::do_reset()
+{
+	L.reset();
+	luaL_openlibs(L.handle());
+	
+	run_sysrc_lua(true);
+	copy_system_tables(L);
+	messages << "Lua VM reset" << std::endl;
+}
+
+void lua_state::do_evaluate(const std::string& a)
+{
+	if(a == "")
+		throw std::runtime_error("Expected expression to evaluate");
+	do_eval_lua(a);
 }
 
 void lua_state::callback_quit() throw()

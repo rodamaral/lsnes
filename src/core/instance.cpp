@@ -79,7 +79,7 @@ emulator_instance::emulator_instance()
 	D.init(command);
 	D.init(iqueue, *command);
 	D.init(mlogic);
-	D.init(slotcache, *mlogic);
+	D.init(slotcache, *mlogic, *command);
 	D.init(memory);
 	D.init(lua);
 	D.init(lua2, *lua, *command);

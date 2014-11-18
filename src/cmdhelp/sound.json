@@ -1,0 +1,36 @@
+{
+	"__mod":"CSOUND",
+	"show-plugins":[
+		"showdrv", "Show plugins in use",
+		{"":"Shows plugins in use."}
+	],
+	"enable-sound":[
+		"enable", "Enable/Disable sound",
+		{
+			"on":"Enable sound",
+			"off":"Disable sound (does not affect dumping)",
+			"toggle":"Toggle sound (does not affect dumping)"
+		},
+		{
+			"on":"Sound‣Enable",
+			"off":"Sound‣Disable",
+			"toggle":"Sound‣Toggle"
+		}
+	],
+	"change-playback-device":[
+		"chpdev", "Change sound playback device",
+		{"<device>":"Switch to playback device <device>."}
+	],
+	"change-record-device":[
+		"chrdev", "Change sound record device",
+		{"<device>":"Switch to recording device <device>."}
+	],
+	"show-devices":[
+		"showdev", "Show sound devices available",
+		{"":"Shows available sound devices."}
+	],
+	"reset-audio":[
+		"reset", "Reset audio driver",
+		{"":"Resets the audio driver."}
+	]
+}

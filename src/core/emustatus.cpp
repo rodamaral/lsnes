@@ -1,3 +1,4 @@
+#include "cmdhelp/loadsave.hpp"
 #include "core/advdumper.hpp"
 #include "core/audioapi.hpp"
 #include "core/dispatch.hpp"
@@ -23,8 +24,9 @@ const int _lsnes_status::pause_break = 2;
 const uint64_t _lsnes_status::subframe_savepoint = 0xFFFFFFFFFFFFFFFEULL;
 const uint64_t _lsnes_status::subframe_video = 0xFFFFFFFFFFFFFFFFULL;
 
-slotinfo_cache::slotinfo_cache(movie_logic& _mlogic)
-	: mlogic(_mlogic)
+slotinfo_cache::slotinfo_cache(movie_logic& _mlogic, command::group& _cmd)
+	: mlogic(_mlogic), cmd(_cmd),
+	flushcmd(cmd, CLOADSAVE::flushslots, [this]() { this->flush(); })
 {
 }
 

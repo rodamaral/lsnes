@@ -65,7 +65,7 @@ struct input_queue
 	threads::lock queue_lock;
 	threads::cv queue_condition;
 	std::deque<keypress_info> keypresses;
-	std::deque<std::string> commands;
+	std::deque<std::pair<const char*, std::string>> commands;
 	std::deque<function_queue_entry> functions;
 	volatile uint64_t functions_executed;
 	volatile uint64_t next_function;
@@ -91,6 +91,15 @@ struct input_queue
  * Parameter c: The command to queue.
  */
 	void queue(const std::string& c) throw(std::bad_alloc);
+/**
+ * Queue command and arguments.
+ *
+ * - Can be called from any thread.
+ *
+ * Parameter c: The command to queue.
+ * Parameter a: The arguments for function.
+ */
+	void queue(const char* c, const std::string& a) throw(std::bad_alloc);
 /**
  * Queue function to be called in emulation thread.
  *

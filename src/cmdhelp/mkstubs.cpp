@@ -6,9 +6,9 @@
 
 const char* hexes = "0123456789abcdef";
 
-std::string quote_c_string(const std::string& raw, bool hiraw = false);
+std::string quote_c_string(const std::string& raw);
 
-std::string quote_c_string(const std::string& raw, bool hiraw)
+std::string quote_c_string(const std::string& raw)
 {
 	std::ostringstream out;
 	out << "\"";
@@ -20,7 +20,7 @@ std::string quote_c_string(const std::string& raw, bool hiraw)
 			out << "\\\"";
 		else if(ch == '\\')
 			out << "\\\\";
-		else if(ch < 32 || ch == 127 || (ch > 127 && !hiraw))
+		else if(ch < 32 || ch > 126)
 			out << "\\x" << hexes[ch / 16] << hexes[ch % 16];
 		else
 			out << ch;
@@ -82,27 +82,29 @@ std::string quote_help(const std::u32string& raw)
 
 void process_command(const std::string& name, JSON::node& n, std::ostream& hdr, std::ostream& imp)
 {
-	hdr << "extern command::stub " << name << ";" << std::endl;
-	imp << "command::stub " << name << " = {" << std::endl;
-	std::string cmdname = n["__name"].as_string8();
-	std::string desc = n.field_exists("__description") ? n["__description"].as_string8() :
+	if(name == "__mod")
+		return;
+	std::string cmdsym = n.index(0).as_string8();
+	hdr << "extern command::stub " << cmdsym << ";" << std::endl;
+	imp << "command::stub " << cmdsym << " = {" << std::endl;
+	std::string desc = (n.index_count() >= 2) ? n.index(1).as_string8() :
 		"No description available";
-	imp << "\t" << quote_c_string(cmdname) << ", " << quote_c_string(desc) << "," << std::endl;
+	imp << "\t" << quote_c_string(name) << ", " << quote_c_string(desc) << "," << std::endl;
 	bool first = true;
-	for(auto i = n.begin(); i != n.end(); i++) {
-		std::string hleafname = i.key8();
-		if(hleafname == "__name" || hleafname == "__description" || hleafname == "__inverse" ||
-			hleafname == "__class")
-			continue;
-		std::u32string hleafc = i->as_string();
-		if(!first)
-			imp << "\t\"\\n\"" << std::endl;
-		first = false;
-		imp << "\t" << quote_c_string(std::string("Syntax: ") + cmdname + " " + hleafname + "\n")
-			<< std::endl;
-		imp << quote_help(hleafc);
+	if(n.index_count() >= 3) {
+		auto& nc = n.index(2);
+		for(auto i = nc.begin(); i != nc.end(); i++) {
+			std::string hleafname = i.key8();
+			std::u32string hleafc = i->as_string();
+			if(!first)
+				imp << "\t\"\\n\"" << std::endl;
+			first = false;
+			imp << "\t" << quote_c_string(std::string("Syntax: ") + name + " " + hleafname + "\n")
+				<< std::endl;
+			imp << quote_help(hleafc);
+		}
 	}
-	if(first) imp << "\t\"No help available for '" << cmdname << "'\"" << std::endl;
+	if(first) imp << "\t\"No help available for '" << name << "'\"" << std::endl;
 	imp << "};" << std::endl;
 	imp << std::endl;
 }
@@ -127,14 +129,16 @@ int main(int argc, char** argv)
 	}
 	JSON::node n(in_json);
 
+	std::string modname = n["__mod"].as_string8();
+
 	std::ofstream hdr(fname + std::string(".hpp"));
 	std::ofstream impl(fname + std::string(".cpp"));
 	impl << "#include \"cmdhelp/" << fname << ".hpp\"" << std::endl;
-	impl << "namespace STUBS" << std::endl;
+	impl << "namespace " << modname << std::endl;
 	impl << "{" << std::endl;
 	hdr << "#pragma once" << std::endl;
 	hdr << "#include \"library/command.hpp\"" << std::endl;
-	hdr << "namespace STUBS" << std::endl;
+	hdr << "namespace " << modname << std::endl;
 	hdr << "{" << std::endl;
 	for(auto i = n.begin(); i != n.end(); i++)
 		process_command(i.key8(), *i, hdr, impl);

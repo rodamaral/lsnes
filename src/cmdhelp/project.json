@@ -1,38 +1,27 @@
 {
-	"branch_ls":{
-		"__class":"project",
-		"__name":"list-branches",
-		"__description":"List all slot branches",
-		"":"List all slot branches."
-	},
-	"branch_mk":{
-		"__class":"project",
-		"__name":"create-branch",
-		"__description":"Create a new slot branch",
-		"<parentid> <name>":"Create new branch named <name> under <parentid>."
-	},
-	"branch_rm":{
-		"__class":"project",
-		"__name":"delete-branch",
-		"__description":"Delete a slot branch",
-		"<id>":"Delete slot branch with id <id>."
-	},
-	"branch_set":{
-		"__class":"project",
-		"__name":"set-branch",
-		"__description":"Set current slot branch",
-		"<id>":"Set current branch to <id>."
-	},
-	"branch_rp":{
-		"__class":"project",
-		"__name":"reparent-branch",
-		"__description":"Reparent a slot branch",
-		"<id> <newpid>":"Reparent branch <id> to be child of <newpid>."
-	},
-	"branch_mv":{
-		"__class":"project",
-		"__name":"rename-branch",
-		"__description":"Rename a slot branch",
-		"<id> <name>":"Rename branch <id> to <name>."
-	}
+	"__mod":"CPROJECT",
+	"list-branches":[
+		"bls", "List all slot branches",
+		{"":"List all slot branches."}
+	],
+	"create-branch":[
+		"bmk", "Create a new slot branch",
+		{"<parentid> <name>":"Create new branch named <name> under <parentid>."}
+	],
+	"delete-branch":[
+		"brm", "Delete a slot branch",
+		{"<id>":"Delete slot branch with id <id>."}
+	],
+	"set-branch":[
+		"bset", "Set current slot branch",
+		{"<id>":"Set current branch to <id>."}
+	],
+	"reparent-branch":[
+		"brp", "Reparent a slot branch",
+		{"<id> <newpid>":"Reparent branch <id> to be child of <newpid>."}
+	],
+	"rename-branch":[
+		"bmv", "Rename a slot branch",
+		{"<id> <name>":"Rename branch <id> to <name>."}
+	]
 }

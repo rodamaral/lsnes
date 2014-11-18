@@ -303,26 +303,47 @@ not_alias:
 			size_t split = cmd2.find_first_of(" \t");
 			std::string rcmd = cmd2.substr(0, min(split, cmd2.length()));
 			std::string args = cmd2.substr(min(cmd2.find_first_not_of(" \t", split), cmd2.length()));
-			base* cmdh = NULL;
-			{
-				threads::arlock lock(get_cmd_lock());
-				if(!state->commands.count(rcmd)) {
-					(*output) << "Unknown command '" << rcmd << "'" << std::endl;
-					return;
-				}
-				cmdh = state->commands[rcmd];
-			}
-			if(command_stack.count(cmd2))
-				throw std::runtime_error("Recursive command invocation");
-			command_stack.insert(cmd2);
-			cmdh->invoke(args);
-			command_stack.erase(cmd2);
+			invoke(rcmd, args);
 			return;
 		} catch(std::bad_alloc& e) {
 			oom_panic_routine();
 		} catch(std::exception& e) {
 			(*output) << "Error[" << cmd2 << "]: " << e.what() << std::endl;
 			command_stack.erase(cmd2);
+			return;
+		}
+	} catch(std::bad_alloc& e) {
+		oom_panic_routine();
+	}
+}
+
+void group::invoke(const std::string& cmd, const std::string& args) throw()
+{
+	auto state = group_internal_t::get_soft(this);
+	if(!state) return;
+	try {
+		std::string ckey = cmd + " " + args;
+		try {
+			base* cmdh = NULL;
+			{
+				threads::arlock lock(get_cmd_lock());
+				if(!state->commands.count(cmd)) {
+					(*output) << "Unknown command '" << cmd << "'" << std::endl;
+					return;
+				}
+				cmdh = state->commands[cmd];
+			}
+			if(command_stack.count(ckey))
+				throw std::runtime_error("Recursive command invocation");
+			command_stack.insert(ckey);
+			cmdh->invoke(args);
+			command_stack.erase(ckey);
+			return;
+		} catch(std::bad_alloc& e) {
+			oom_panic_routine();
+		} catch(std::exception& e) {
+			(*output) << "Error[" << ckey << "]: " << e.what() << std::endl;
+			command_stack.erase(ckey);
 			return;
 		}
 	} catch(std::bad_alloc& e) {

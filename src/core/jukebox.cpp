@@ -33,9 +33,9 @@ private:
 
 save_jukebox::save_jukebox(settingvar::group& _settings, command::group& _cmd)
 	: settings(_settings), cmd(_cmd),
-	slotsel(cmd, STUBS::slotselect, [this](const std::string& a) { this->do_slotsel(a); }),
-	cycleprev(cmd, STUBS::slotprev, [this]() { this->cycle_prev(); }),
-	cyclenext(cmd, STUBS::slotnext, [this]() { this->cycle_next(); })
+	slotsel(cmd, CJUKEBOX::sel, [this](const std::string& a) { this->do_slotsel(a); }),
+	cycleprev(cmd, CJUKEBOX::prev, [this]() { this->cycle_prev(); }),
+	cyclenext(cmd, CJUKEBOX::next, [this]() { this->cycle_next(); })
 {
 	listener = new save_jukebox_listener(_settings, *this);
 }

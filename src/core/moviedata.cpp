@@ -1,5 +1,6 @@
 #include "lsnes.hpp"
 
+#include "cmdhelp/moviedata.hpp"
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
@@ -46,8 +47,13 @@ namespace
 			return mprefix + "-";
 	}
 
-	command::fnptr<const std::string&> CMD_dump_coresave(lsnes_cmds, "dump-coresave", "Dump bsnes core state",
-		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
+	command::fnptr<const std::string&> test4(lsnes_cmds, CMOVIEDATA::panic,
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+		auto& core = CORE();
+		if(*core.mlogic) emerg_save_movie(core.mlogic->get_mfile(), core.mlogic->get_rrdata());
+	});
+
+	command::fnptr<const std::string&> CMD_dump_coresave(lsnes_cmds, CMOVIEDATA::dumpcore,
 		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			auto x = core.rom->save_core_state();

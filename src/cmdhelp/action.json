@@ -1,0 +1,7 @@
+{
+	"__mod":"CACTION",
+	"action":[
+		"e", "Execute core action",
+		{"<name> [<params>...]":"Executes core action."}
+	]
+}

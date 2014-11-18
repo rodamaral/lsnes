@@ -1,3 +1,4 @@
+#include "cmdhelp/lua.hpp"
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
@@ -175,7 +176,7 @@ void UI_save_author_info(emulator_instance& inst, project_author_info& info)
 		if(proj && info.autorunlua)
 			for(auto i : info.luascripts)
 				if(!oldscripts.count(i))
-					inst.command->invoke("run-lua " + i);
+					inst.command->invoke(CLUA::run.name, i);
 	});
 }
 

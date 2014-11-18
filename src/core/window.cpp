@@ -1,3 +1,4 @@
+#include "cmdhelp/sound.hpp"
 #include "core/audioapi.hpp"
 #include "core/audioapi-driver.hpp"
 #include "core/command.hpp"
@@ -39,16 +40,14 @@ volatile bool platform::do_exit_dummy_event_loop = false;
 
 namespace
 {
-	command::fnptr<> identify_key(lsnes_cmds, "show-plugins", "Show plugins in use",
-		"Syntax: show-plugins\nShows plugins in use.\n",
+	command::fnptr<> identify_key(lsnes_cmds, CSOUND::showdrv,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Graphics:\t" << graphics_driver_name() << std::endl;
 			messages << "Sound:\t" << audioapi_driver_name() << std::endl;
 			messages << "Joystick:\t" << joystick_driver_name() << std::endl;
 		});
 
-	command::fnptr<const std::string&> enable_sound(lsnes_cmds, "enable-sound", "Enable/Disable sound",
-		"Syntax: enable-sound <on/off/toggle>\nEnable or disable sound.\n",
+	command::fnptr<const std::string&> enable_sound(lsnes_cmds, CSOUND::enable,
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "toggle") {
 				if(!audioapi_driver_initialized())
@@ -90,9 +89,7 @@ namespace
 			return true;
 	}
 
-	command::fnptr<const std::string&> change_playback_dev(lsnes_cmds, "change-playback-device",
-		"Change sound playback device",
-		"Syntax: change-playback-device <device>\nSwitch to playback device <device>.\n",
+	command::fnptr<const std::string&> change_playback_dev(lsnes_cmds, CSOUND::chpdev,
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			auto old_rec = audioapi_driver_get_device(true);
 			auto args2 = args;
@@ -103,9 +100,7 @@ namespace
 			platform::set_sound_device(args2, old_rec);
 		});
 
-	command::fnptr<const std::string&> change_record_dev(lsnes_cmds, "change-record-device",
-		"Change sound record device",
-		"Syntax: change-record-device <device>\nSwitch to recording device <device>.\n",
+	command::fnptr<const std::string&> change_record_dev(lsnes_cmds, CSOUND::chrdev,
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			auto old_play = audioapi_driver_get_device(false);
 			auto args2 = args;
@@ -116,8 +111,7 @@ namespace
 			platform::set_sound_device(old_play, args2);
 		});
 
-	command::fnptr<> show_devices(lsnes_cmds, "show-devices", "Show sound devices available",
-		"Syntax: show-devices\nShows available sound devices.\n",
+	command::fnptr<> show_devices(lsnes_cmds, CSOUND::showdev,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Known playback devices:" << std::endl;
 			auto pdevs = audioapi_driver_get_devices(false);
@@ -135,8 +129,7 @@ namespace
 			}
 		});
 
-	command::fnptr<> reset_audio(lsnes_cmds, "reset-audio", "Reset audio driver",
-		"Syntax: reset-audio\nResets the audio driver.\n",
+	command::fnptr<> reset_audio(lsnes_cmds, CSOUND::reset,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			//Save the old devices. We save descriptions if possible, since handles change.
 			auto cpdev = platform::get_sound_device_description(false);
@@ -150,10 +143,6 @@ namespace
 			//Try to change device back.
 			platform::set_sound_device_by_description(cpdev, crdev);
 		});
-
-	keyboard::invbind_info ienable_sound(lsnes_invbinds, "enable-sound on", "Sound‣Enable");
-	keyboard::invbind_info idisable_sound(lsnes_invbinds, "enable-sound off", "Sound‣Disable");
-	keyboard::invbind_info itoggle_sound(lsnes_invbinds, "enable-sound toggle", "Sound‣Toggle");
 
 	class window_output
 	{

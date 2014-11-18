@@ -1,19 +1,17 @@
 {
-	"multitrackf":{
-		"__name":"rotate-multitrack",
-		"__description":"Rotate multitrack",
-		"":"Rotate multitrack state",
-		"__inverse":{"":"Multitrack‣Rotate forward"}
-	},
-	"multitrackb":{
-		"__name":"rotate-multitrack-backwards",
-		"__description":"Rotate multitrack backwards",
-		"":"Rotate multitrack state backwards",
-		"__inverse":{"":"Multitrack‣Rotate backwards"}
-	},
-	"multitracks":{
-		"__name":"set-multitrack",
-		"__description":"Set multitrack mode",
-		"<controller> <mode>":"Set multitrack mode for <controller> to <mode>"
-	}
+	"__mod":"CMULTITRACK",
+	"rotate-multitrack":[
+		"f", "Rotate multitrack",
+		{"":"Rotate multitrack state"},
+		{"":"Multitrack‣Rotate forward"}
+	],
+	"rotate-multitrack-backwards":[
+		"b", "Rotate multitrack backwards",
+		{"":"Rotate multitrack state backwards"},
+		{"":"Multitrack‣Rotate backwards"}
+	],
+	"set-multitrack":[
+		"s", "Set multitrack mode",
+		{"<controller> <mode>":"Set multitrack mode for <controller> to <mode>"}
+	]
 }

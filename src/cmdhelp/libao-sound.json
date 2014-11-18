@@ -1,0 +1,7 @@
+{
+	"__mod":"CLIBAOSND",
+	"libao-set-id":[
+		"setid", "Set sound device id",
+		{"<id>":"Set sound device id to <id>"}
+	]
+}

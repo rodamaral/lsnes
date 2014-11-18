@@ -1,0 +1,23 @@
+{
+	"__mod":"CLUA",
+	"reset-lua":[
+		"reset", "Reset the Lua VM",
+		{"":"Reset the Lua VM."}
+	],
+	"run-lua":[
+		"run", "Run Lua script in Lua VM",
+		{"<file>":"Runs <file> in Lua VM."}
+	],
+	"L":[
+		"eval", "Evaluate expression in Lua VM",
+		{"<expression>":"Evaluates <expression> in Lua VM."}
+	],
+	"evaluate-lua":[
+		"eval2", "Evaluate expression in Lua VM",
+		{"<expression>":"Evaluates <expression> in Lua VM."}
+	],
+	"show-lua-callbacks":[
+		"scb", "Show active Lua debug callbacks",
+		{"":"Show active Lua debug callbacks"}
+	]
+}
