@@ -2,6 +2,7 @@
 #include "minmax.hpp"
 #include "serialization.hpp"
 #include "int24.hpp"
+#include "string.hpp"
 #include <algorithm>
 
 namespace
@@ -324,6 +325,17 @@ int memory_space::_get_system_endian()
 }
 
 int memory_space::sysendian = 0;
+
+std::string memory_space::address_to_textual(uint64_t addr)
+{
+	threads::alock m(mlock);
+	for(auto i : u_regions) {
+		if(addr >= i->base && addr <= i->last_address()) {
+			return (stringfmt() << i->name << "+" << std::hex << (addr - i->base)).str();
+		}
+	}
+	return (stringfmt() << std::hex << addr).str();
+}
 
 memory_space::region_direct::region_direct(const std::string& _name, uint64_t _base, int _endian,
 	unsigned char* _memory, size_t _size, bool _readonly)

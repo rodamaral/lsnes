@@ -469,7 +469,8 @@ namespace
 
 	command::fnptr<> CMD_callbacks_show_lua(lsnes_cmds, "show-lua-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-		lua::state& L = *CORE().lua;
+		auto& core = CORE();
+		lua::state& L = *core.lua;
 		lua_debug_callback2* D;
 		lua_debug_callback_dict* Dx;
 		L.pushlightuserdata(&CONST_lua_cb_list_key);
@@ -479,9 +480,9 @@ namespace
 			for(auto Dy : Dx->cblist) {
 				D = Dy.second;
 				while(D) {
-					messages << "addr=" << D->addr << " type=" << D->type << " handle="
-					<< D << " dead=" << D->dead << " lua_fn="
-						<< D->lua_fn << std::endl;
+					messages << "addr=" << core.memory->address_to_textual(D->addr)
+						<< " type=" << D->type << " handle=" << D << " dead=" << D->dead
+						<< " lua_fn=" << D->lua_fn << std::endl;
 					D = D->next;
 				}
 			}

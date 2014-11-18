@@ -241,6 +241,13 @@ public:
  * Parameter buffer: Buffer to store to (get_linear_size() bytes).
  */
 	void read_all_linear_memory(uint8_t* buffer);
+/**
+ * Get textual identifier for mapped address.
+ *
+ * Parameter addr: The address to get textual form for.
+ * Returns: The textual address.
+ */
+	std::string address_to_textual(uint64_t addr);
 private:
 	threads::lock mlock;
 	std::vector<region*> u_regions;

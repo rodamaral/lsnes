@@ -9,6 +9,7 @@
 
 class emulator_dispatch;
 class loaded_rom;
+class memory_space;
 
 /**
  * Debugging context.
@@ -16,7 +17,7 @@ class loaded_rom;
 class debug_context
 {
 public:
-	debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom, command::group& _cmd);
+	debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom, memory_space& _mspace, command::group& _cmd);
 /**
  * Type of event.
  */
@@ -163,6 +164,7 @@ private:
 	std::function<void()> tracelog_change_cb;
 	emulator_dispatch& edispatch;
 	loaded_rom& rom;
+	memory_space& mspace;
 	command::group& cmd;
 	struct dispatch::target<> corechange;
 	bool corechange_r = false;

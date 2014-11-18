@@ -107,7 +107,7 @@ emulator_instance::emulator_instance()
 	D.init(cmapper, *memory, *mlogic, *rom);
 	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue, *rom,
 		*supdater);
-	D.init(dbg, *dispatch, *rom, *command);
+	D.init(dbg, *dispatch, *rom, *memory, *command);
 	D.init(framerate, *command);
 	D.init(mdumper, *lua2);
 	D.init(runmode);

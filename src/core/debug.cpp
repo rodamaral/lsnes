@@ -8,6 +8,7 @@
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "library/directory.hpp"
+#include "library/memoryspace.hpp"
 
 #include <stdexcept>
 #include <list>
@@ -49,8 +50,9 @@ namespace
 	}
 }
 
-debug_context::debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom, command::group& _cmd)
-	: edispatch(_dispatch), rom(_rom), cmd(_cmd),
+debug_context::debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom, memory_space& _mspace,
+	command::group& _cmd)
+	: edispatch(_dispatch), rom(_rom), mspace(_mspace), cmd(_cmd),
 	showhooks(cmd, STUBS::showhooks, [this]() { this->do_showhooks(); }),
 	genevent(cmd, STUBS::genevent, [this](const std::string& a) { this->do_genevent(a); }),
 	tracecmd(cmd, STUBS::trace, [this](const std::string& a) { this->do_tracecmd(a); })
@@ -294,13 +296,16 @@ void debug_context::do_showhooks()
 {
 	for(auto& i : read_cb)
 		for(auto& j : i.second)
-			messages << "READ addr=" << i.first << " handle=" << &j << std::endl;
+			messages << "READ addr=" << mspace.address_to_textual(i.first) << " handle=" << &j
+				<< std::endl;
 	for(auto& i : write_cb)
 		for(auto& j : i.second)
-			messages << "WRITE addr=" << i.first << " handle=" << &j << std::endl;
+			messages << "WRITE addr=" << mspace.address_to_textual(i.first) << " handle=" << &j
+				<< std::endl;
 	for(auto& i : exec_cb)
 		for(auto& j : i.second)
-			messages << "EXEC addr=" << i.first << " handle=" << &j << std::endl;
+			messages << "EXEC addr=" << mspace.address_to_textual(i.first) << " handle=" << &j
+				<< std::endl;
 	for(auto& i : trace_cb)
 		for(auto& j : i.second)
 			messages << "TRACE proc=" << i.first << " handle=" << &j << std::endl;
