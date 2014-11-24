@@ -149,6 +149,8 @@ namespace
 			true},
 		{"p_c", []() -> uint64_t { return SNES::cpu.regs.p.c; }, [](uint64_t v) { SNES::cpu.regs.p.c = v; },
 			true},
+		{"hcounter", []() -> uint64_t { return SNES::cpu.hcounter(); }, [](uint64_t v) {}, false},
+		{"vcounter", []() -> uint64_t { return SNES::cpu.vcounter(); }, [](uint64_t v) {}, false},
 		{"sa1_pbpc", []() -> uint64_t { return SNES::sa1.regs.pc; },
 			[](uint64_t v) { SNES::sa1.regs.pc = v; }},
 		{"sa1_pb", []() -> uint64_t { return SNES::sa1.regs.pc >> 16; },
