@@ -555,7 +555,7 @@ namespace
 		void callback(const debug_context::params& params);
 		void killed(uint64_t addr, debug_context::etype type);
 		void do_rwx_break(uint64_t addr, uint64_t value, debug_context::etype type);
-		void kill_debug_hooks();
+		void kill_debug_hooks(bool kill_hard = false);
 		scroll_bar* scroll;
 		_panel* panel;
 		bool broken;
@@ -593,15 +593,18 @@ namespace
 		closing = true;
 	}
 
-	void wxwin_tracelog::kill_debug_hooks()
+	void wxwin_tracelog::kill_debug_hooks(bool kill_hard)
 	{
-		CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_TRACE, *this);
-		CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_FRAME, *this);
+		if(!kill_hard)
+			CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_TRACE, *this);
+		if(!kill_hard)
+			CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_FRAME, *this);
 		threads::alock h(buffer_mutex);
 		for(auto& i : rwx_breakpoints) {
 			if(!i.second)
 				continue;
-			CORE().dbg->remove_callback(i.first.first, i.first.second, *this);
+			if(!kill_hard)
+				CORE().dbg->remove_callback(i.first.first, i.first.second, *this);
 			i.second = false;
 		}
 		trace_active = false;
@@ -768,17 +771,14 @@ namespace
 		case debug_context::DEBUG_EXEC: {
 			//We need to kill this hook if still active.
 			auto i2 = std::make_pair(addr, type);
-			auto& h = rwx_breakpoints[i2];
-			if(h)
-				inst.dbg->remove_callback(addr, type, *this);
-			h = false;
+			rwx_breakpoints[i2] = false;
 			break;
 		}
 		case debug_context::DEBUG_TRACE:
 			//Dtor!
 			if(!trace_active)
 				return;
-			kill_debug_hooks();
+			kill_debug_hooks(true);
 			runuifun([this]() {
 				this->enabled->SetValue(false);
 				this->enabled->Enable(false);

@@ -43,8 +43,8 @@ namespace
 			}
 			auto key = cblist.begin()->first;
 			auto tmp = cblist.begin()->second.begin();
-			cblist.begin()->second.erase(cblist.begin()->second.begin());
 			(*tmp)->killed(key, type);
+			cblist.begin()->second.erase(cblist.begin()->second.begin());
 		}
 		cblist.clear();
 	}
