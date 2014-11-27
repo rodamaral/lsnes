@@ -656,9 +656,9 @@ namespace sky
 					i2.decode_packet(song->get_packet(mem.subsong2, mem.pcmpos2));
 			}
 			int32_t cf = 0, icf = 0;
-			if(mem.pcmpos1 == past_end)
+			if(mem.pcmpos1 >= strans1->end_pts)
 				icf = 256;
-			else if(mem.pcmpos2 == past_end)
+			else if(mem.pcmpos2 >= strans2->end_pts)
 				cf = 256;
 			else if(strans1->xfade_pts < mem.pcmpos1) {
 				uint64_t cfstart = strans1->xfade_pts;
