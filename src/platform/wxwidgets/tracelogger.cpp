@@ -595,10 +595,9 @@ namespace
 
 	void wxwin_tracelog::kill_debug_hooks(bool kill_hard)
 	{
+		CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_FRAME, *this);
 		if(!kill_hard)
 			CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_TRACE, *this);
-		if(!kill_hard)
-			CORE().dbg->remove_callback(cpuid, debug_context::DEBUG_FRAME, *this);
 		threads::alock h(buffer_mutex);
 		for(auto& i : rwx_breakpoints) {
 			if(!i.second)
