@@ -71,6 +71,7 @@ namespace
 	bool if_update_screen = false;
 	bool if_update_status = false;
 	threads::lock if_mutex;
+	bool preboot_env = true;
 
 	struct uiserv_event : public wxEvent
 	{
@@ -462,7 +463,11 @@ bool lsnes_app::OnInit()
 			wxeditor_hexeditor_update(CORE());
 		});
 	});
-	actionupdate.set(lsnes_instance.dispatch->action_update, []() { main_window->action_updated(); });
+	actionupdate.set(lsnes_instance.dispatch->action_update, []() {
+		//This can be called early, so check for main_window existing.
+		if(main_window)
+			main_window->action_updated();
+	});
 
 	try {
 		crandom::init();
@@ -524,6 +529,17 @@ bool lsnes_app::OnInit()
 	msg_window->Show();
 
 	init_main_callbacks();
+
+	//Load libraries before trying to load movie, in case there are cores in there.
+	for(auto i : c_library) {
+		try {
+			with_loaded_library(*new loadlib::module(loadlib::library(i)));
+		} catch(std::exception& e) {
+			show_message_ok(NULL, "Error loading library", std::string("Error loading library '") +
+				i + "':\n\n" + e.what(), wxICON_EXCLAMATION);
+		}
+	}
+
 	const std::string movie_file = get_loaded_movie(cmdline);
 	loaded_rom rom;
 	try {
@@ -557,14 +573,7 @@ bool lsnes_app::OnInit()
 	mov->start_paused = start_unpaused ? rom.isnull() : true;
 	for(auto i : c_lua)
 		lsnes_instance.lua2->add_startup_script(i);
-	for(auto i : c_library) {
-		try {
-			with_loaded_library(*new loadlib::module(loadlib::library(i)));
-		} catch(std::exception& e) {
-			show_message_ok(NULL, "Error loading library", std::string("Error loading library '") +
-				i + "':\n\n" + e.what(), wxICON_EXCLAMATION);
-		}
-	}
+	preboot_env = false;
 	boot_emulator(lsnes_instance, rom, *mov, fullscreen_mode);
 	return true;
 }
@@ -637,6 +646,15 @@ namespace
 			threads::lock lock;
 			threads::cv cv;
 			bool done = false;
+			if(preboot_env) {
+				try {
+					//main_window is NULL, hope this does not crash.
+					main_window->request_rom(*_req);
+				} catch(...) {
+					_req->canceled = true;
+				}
+				return;
+			}
 			threads::alock h(lock);
 			runuifun([_req, &lock, &cv, &done]() -> void {
 				try {
