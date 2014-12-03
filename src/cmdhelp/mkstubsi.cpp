@@ -30,7 +30,7 @@ std::string quote_c_string(const std::string& raw)
 
 void process_command_inverse(JSON::node& n, std::string name, std::ostream& imp)
 {
-	if(name == "__mod" || !n.index_count() < 4)
+	if(name == "__mod" || n.index_count() < 4)
 		return;
 	auto& inv = n.index(3);
 	for(auto i = inv.begin(); i != inv.end(); i++) {
