@@ -93,7 +93,9 @@ bool _load_new_rom(const romload_request& req)
 {
 	auto& core = CORE();
 	if(core.project->get()) {
-		std::cerr << "Can't switch ROM with project active." << std::endl;
+		std::string msg = "Can't switch ROM with project active.";
+		platform::error_message(msg);
+		messages << msg << std::endl;
 		return false;
 	}
 	try {
