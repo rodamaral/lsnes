@@ -714,6 +714,9 @@ jumpback:
 					delete old;
 				core.slotcache->flush();		//Wrong movie may be stale.
 				core.runmode->end_load();		//Restore previous mode.
+				if(core.mlogic->get_mfile().is_savestate)
+					core.runmode->set_point(emulator_runmode::P_SAVE);
+				core.supdater->update();
 				return 1;
 			} catch(std::exception& e) {
 				platform::error_message(std::string("Can't switch projects: ") + e.what());
