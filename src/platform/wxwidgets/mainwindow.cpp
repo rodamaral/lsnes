@@ -1773,7 +1773,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 
 void wxwin_mainwindow::action_updated()
 {
-	reinterpret_cast<system_menu*>(sysmenu)->update(true);
+	runuifun([this]() { reinterpret_cast<system_menu*>(sysmenu)->update(true); });
 }
 
 void wxwin_mainwindow::enter_or_leave_fullscreen(bool fs)

@@ -615,8 +615,6 @@ namespace
 		.notify_message = []() -> void
 		{
 			{ threads::alock h(if_mutex); if_update_messages = false; }
-			if(msg_window)
-				msg_window->notify_update();
 			runuifun([]() {
 				{ threads::alock h(if_mutex); if_update_messages = false; }
 				if(msg_window)
