@@ -744,8 +744,8 @@ invalid_bookmark:
 			}
 			if(nsbase != hpanel->vmabase || nssize != hpanel->vmasize)
 				update_vma(nsbase, nssize);
+			hpanel->request_paint();
 		});
-		hpanel->request_paint();
 	}
 	void do_hex(int hex)
 	{
