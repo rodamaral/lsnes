@@ -75,6 +75,7 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent, emulator_instance& _i
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Multitrack recording"), wxDefaultPosition, wxSize(-1, -1)),
 	inst(_inst)
 {
+	CHECK_UI_THREAD;
 	typeset = NULL;
 	closing = false;
 	Centre();
@@ -131,6 +132,7 @@ wxeditor_multitrack::wxeditor_multitrack(wxWindow* parent, emulator_instance& _i
 
 void wxeditor_multitrack::on_control(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(id < wxID_HIGHEST + 1)
 		return;
@@ -153,6 +155,7 @@ void wxeditor_multitrack::on_control(wxCommandEvent& e)
 
 void wxeditor_multitrack::update_controls()
 {
+	CHECK_UI_THREAD;
 	bool readonly = inst.mlogic->get_movie().readonly_mode();
 
 	for(auto i : controllers) {
@@ -231,6 +234,7 @@ bool wxeditor_multitrack::ShouldPreventAppExit() const { return false; }
 
 void wxeditor_multitrack::on_wclose(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	bool wasc = closing;
 	closing = true;
 	multitrack_open = NULL;
@@ -241,6 +245,7 @@ void wxeditor_multitrack::on_wclose(wxCloseEvent& e)
 
 void wxeditor_multitrack_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	if(multitrack_open)
 		return;
 	wxeditor_multitrack* v;

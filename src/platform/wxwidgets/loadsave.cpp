@@ -53,6 +53,7 @@ std::string lua_script_type::output(const filedialog_output_params& p, bool save
 filedialog_output_params show_filedialog(wxWindow* parent, const std::string& title, const std::string& basepath,
 	const filedialog_input_params& p, const std::string& defaultname, bool saving)
 {
+	CHECK_UI_THREAD;
 	wxString _title = towxstring(title);
 	wxString _startdir = towxstring(basepath);
 	std::string filespec;

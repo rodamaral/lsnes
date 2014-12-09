@@ -38,6 +38,7 @@ namespace
 
 void handle_wx_mouse(emulator_instance& inst, wxMouseEvent& e)
 {
+	CHECK_UI_THREAD;
 	auto s = mkeys.lookup(inst);
 	if(!s) return;
 	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, inst.rom->get_PAR());

@@ -16,6 +16,7 @@
 wxwin_messages::panel::panel(wxwin_messages* _parent, emulator_instance& _inst, unsigned lines)
 	: text_framebuffer_panel(_parent, PANELWIDTH, lines, wxID_ANY, NULL), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	parent = _parent;
 	auto pcell = get_cell();
 	line_separation = pcell.second;
@@ -34,6 +35,7 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, emulator_instance& _inst, 
 
 void wxwin_messages::panel::on_mouse(wxMouseEvent& e)
 {
+	CHECK_UI_THREAD;
 	//Handle mouse wheels first.
 	if(e.GetWheelRotation() && e.GetWheelDelta()) {
 		int unit = e.GetWheelDelta();
@@ -78,6 +80,7 @@ void wxwin_messages::panel::on_mouse(wxMouseEvent& e)
 
 void wxwin_messages::panel::on_menu(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::string str;
 	uint64_t m = min(line_clicked, line_declicked);
 	uint64_t M = max(line_clicked, line_declicked);
@@ -130,6 +133,7 @@ wxwin_messages::wxwin_messages(emulator_instance& _inst)
 		wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN |
 		wxRESIZE_BORDER), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
 	top_s->Add(mpanel = new panel(this, inst, MAXMESSAGES), 1, wxEXPAND);
@@ -186,6 +190,7 @@ wxwin_messages::~wxwin_messages()
 
 void wxwin_messages::panel::prepare_paint()
 {
+	CHECK_UI_THREAD;
 	int y = 0;
 	uint64_t lines, first;
 	uint64_t xm = min(line_clicked, line_current);
@@ -213,6 +218,7 @@ void wxwin_messages::panel::prepare_paint()
 
 void wxwin_messages::panel::on_resize(wxSizeEvent& e)
 {
+	CHECK_UI_THREAD;
 	wxSize newsize = e.GetSize();
 	auto tcell = get_cell();
 	size_t lines = newsize.y / tcell.second;
@@ -227,6 +233,7 @@ void wxwin_messages::panel::on_resize(wxSizeEvent& e)
 
 void wxwin_messages::on_close(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(wxwidgets_exiting)
 		return;
 	e.Veto();
@@ -235,47 +242,55 @@ void wxwin_messages::on_close(wxCloseEvent& e)
 
 void wxwin_messages::reshow()
 {
+	CHECK_UI_THREAD;
 	Show();
 }
 
 void wxwin_messages::on_scroll_home(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	threads::alock h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_beginning();
 }
 
 void wxwin_messages::on_scroll_pageup(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	threads::alock h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_up_page();
 }
 
 void wxwin_messages::on_scroll_lineup(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	threads::alock h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_up_line();
 }
 
 void wxwin_messages::on_scroll_linedown(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	threads::alock h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_down_line();
 }
 
 void wxwin_messages::on_scroll_pagedown(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	threads::alock h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_down_page();
 }
 
 void wxwin_messages::on_scroll_end(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	threads::alock h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_end();
 }
 
 void wxwin_messages::on_execute(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::string cmd = tostdstring(command->GetValue());
 	if(cmd == "")
 		return;

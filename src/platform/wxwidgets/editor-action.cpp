@@ -36,6 +36,7 @@ wxeditor_action::wxeditor_action(wxWindow* parent, const std::string& label,
 	: wxDialog(parent, wxID_ANY, towxstring("lsnes: Action " + label), wxDefaultPosition, wxSize(-1, -1))
 
 {
+	CHECK_UI_THREAD;
 	params = _params;
 	Centre();
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -128,6 +129,7 @@ wxeditor_action::wxeditor_action(wxWindow* parent, const std::string& label,
 
 void wxeditor_action::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::list<interface_action_param>::iterator i;
 	std::list<wxWindow*>::iterator j;
 	for(i = params.begin(), j = controls.begin(); i != params.end() && j != controls.end(); i++, j++) {
@@ -192,11 +194,13 @@ void wxeditor_action::on_ok(wxCommandEvent& e)
 
 void wxeditor_action::on_cancel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_CANCEL);
 }
 
 void wxeditor_action::on_change(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::list<interface_action_param>::iterator i;
 	std::list<wxWindow*>::iterator j;
 	for(i = params.begin(), j = controls.begin(); i != params.end() && j != controls.end(); i++, j++) {
@@ -240,6 +244,7 @@ bad:
 std::vector<interface_action_paramval> prompt_action_params(wxWindow* parent, const std::string& label,
 	const std::list<interface_action_param>& params)
 {
+	CHECK_UI_THREAD;
 	//Empty special case.
 	if(params.empty())
 		return std::vector<interface_action_paramval>();

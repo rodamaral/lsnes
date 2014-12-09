@@ -193,6 +193,7 @@ public:
 		: wxFrame(parent, wxID_ANY, wxT("lsnes: Memory editor"), wxDefaultPosition, wxSize(-1, -1),
 			wxCAPTION | wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		Centre();
 		wxBoxSizer* top = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top);
@@ -291,6 +292,7 @@ public:
 	}
 	void set_search_status()
 	{
+		CHECK_UI_THREAD;
 		bool e = wxwindow_memorysearch_active(inst);
 		searchmenu->FindItem(wxID_SEARCH_DISQUALIFY)->Enable(e);
 		searchmenu->FindItem(wxID_SEARCH_PREV)->Enable(e);
@@ -298,6 +300,7 @@ public:
 	}
 	void on_keyboard(wxKeyEvent& e)
 	{
+		CHECK_UI_THREAD;
 		int c = e.GetKeyCode();
 		if(c == WXK_ESCAPE) {
 			hex_input_state = -1;
@@ -352,6 +355,7 @@ public:
 	}
 	void on_mouse(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		auto cell = hpanel->get_cell();
 		if(e.LeftDown())
 			hpanel->on_mouse0(e.GetX() / cell.first, e.GetY() / cell.second, true);
@@ -367,6 +371,7 @@ public:
 	}
 	void on_loadbookmarks(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		try {
 			std::string filename = choose_file_load(this, "Load bookmarks from file",
 				UI_get_project_otherpath(inst), filetype_hexbookmarks);
@@ -404,6 +409,7 @@ public:
 	}
 	void on_savebookmarks(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		JSON::node root(JSON::array);
 		for(auto i : bookmarks) {
 			JSON::node n(JSON::object);
@@ -428,6 +434,7 @@ public:
 	}
 	void on_addbookmark(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(bookmarks.size() <= wxID_BOOKMARKS_LAST - wxID_BOOKMARKS_FIRST) {
 			std::string name = pick_text(this, "Add bookmark", "Enter name for bookmark", "", false);
 			bookmark_entry ent;
@@ -444,6 +451,7 @@ public:
 	}
 	void on_deletebookmark(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(bookmarks.size() > 0) {
 			std::vector<wxString> _choices;
 			for(auto i : bookmarks)
@@ -473,6 +481,7 @@ public:
 	}
 	void rescroll_panel()
 	{
+		CHECK_UI_THREAD;
 		uint64_t vfirst = static_cast<uint64_t>(hpanel->offset) * 16;
 		uint64_t vlast = static_cast<uint64_t>(hpanel->offset + hpanel->lines) * 16;
 		if(hpanel->seloff < vfirst || hpanel->seloff >= vlast) {
@@ -484,6 +493,7 @@ public:
 	}
 	void on_search_discard(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		auto p = wxwindow_memorysearch_active(inst);
 		if(!p)
 			return;
@@ -498,6 +508,7 @@ public:
 	}
 	void on_search_watch(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		try {
 			if(!hpanel->vmasize)
 				return;
@@ -527,6 +538,7 @@ public:
 	}
 	void on_search_prevnext(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		auto p = wxwindow_memorysearch_active(inst);
 		if(!p)
 			return;
@@ -539,6 +551,7 @@ public:
 	}
 	void on_bookmark(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		int id = e.GetId();
 		if(id < wxID_BOOKMARKS_FIRST || id > wxID_BOOKMARKS_LAST)
 			return;
@@ -571,6 +584,7 @@ invalid_bookmark:
 	}
 	void on_vmasel(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(destructing)
 			return;
 		int selected = e.GetId();
@@ -606,6 +620,7 @@ invalid_bookmark:
 	}
 	void update_vma(uint64_t base, uint64_t size)
 	{
+		CHECK_UI_THREAD;
 		hpanel->vmabase = base;
 		hpanel->vmasize = size;
 		hpanel->offset = 0;
@@ -616,6 +631,7 @@ invalid_bookmark:
 	}
 	void on_typechange(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(destructing)
 			return;
 		int id = e.GetId();
@@ -626,6 +642,7 @@ invalid_bookmark:
 	}
 	void on_changeendian(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(destructing)
 			return;
 		littleendian = valuemenu->FindItem(wxID_OPPOSITE_ENDIAN)->IsChecked();
@@ -635,12 +652,14 @@ invalid_bookmark:
 	}
 	void updated()
 	{
+		CHECK_UI_THREAD;
 		if(destructing)
 			return;
 		hpanel->request_paint();
 	}
 	void jumpto(uint64_t addr)
 	{
+		CHECK_UI_THREAD;
 		if(destructing)
 			return;
 		//Switch to correct VMA.
@@ -669,6 +688,7 @@ invalid_bookmark:
 	}
 	void refresh_curvalue()
 	{
+		CHECK_UI_THREAD;
 		uint8_t buf[maxvaluelen];
 		memcpy(buf, hpanel->value, maxvaluelen);
 		val_type vt = datatypes[curtype];
@@ -771,6 +791,7 @@ invalid_bookmark:
 		_panel(wxeditor_hexedit* parent, emulator_instance& _inst)
 			: text_framebuffer_panel(parent, 59, lines = 28, wxID_ANY, NULL), inst(_inst)
 		{
+			CHECK_UI_THREAD;
 			rparent = parent;
 			vmabase = 0;
 			vmasize = 0;
@@ -786,6 +807,7 @@ invalid_bookmark:
 		}
 		void prepare_paint()
 		{
+			CHECK_UI_THREAD;
 			uint64_t paint_offset = static_cast<uint64_t>(offset) * 16;
 			uint64_t _vmabase = vmabase;
 			uint64_t _vmasize = vmasize;
@@ -855,6 +877,7 @@ invalid_bookmark:
 		}
 		void on_mouse0(int x, int y, bool polarity)
 		{
+			CHECK_UI_THREAD;
 			if(!polarity)
 				return;
 			uint64_t rowaddr = 16 * (static_cast<uint64_t>(offset) + y);
@@ -909,6 +932,7 @@ private:
 
 void wxeditor_hexedit_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	auto e = editor.lookup(inst);
 	if(e) {
 		e->Raise();
@@ -922,6 +946,7 @@ void wxeditor_hexedit_display(wxWindow* parent, emulator_instance& inst)
 
 void wxeditor_hexeditor_update(emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	auto e = editor.lookup(inst);
 	if(e) e->updated();
 }
@@ -933,6 +958,7 @@ bool wxeditor_hexeditor_available(emulator_instance& inst)
 
 bool wxeditor_hexeditor_jumpto(emulator_instance& inst, uint64_t addr)
 {
+	CHECK_UI_THREAD;
 	auto e = editor.lookup(inst);
 	if(e) {
 		e->jumpto(addr);

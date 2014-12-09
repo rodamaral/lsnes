@@ -5,6 +5,7 @@
 #include "core/queue.hpp"
 #include "core/window.hpp"
 #include "core/ui-services.hpp"
+#include "platform/wxwidgets/platform.hpp"
 
 #include <cstdint>
 #include <map>
@@ -302,6 +303,7 @@ std::string map_keycode_to_key(int kcode)
 
 void handle_wx_keyboard(emulator_instance& inst, wxKeyEvent& e, bool polarity)
 {
+	CHECK_UI_THREAD;
 	auto s = keyboard_states.lookup(inst);
 	if(!s) return;
 	int mods = e.GetModifiers();

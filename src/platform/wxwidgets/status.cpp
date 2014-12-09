@@ -21,6 +21,7 @@ wxwin_status::wxwin_status(int flag, emulator_instance& _inst, const std::string
 	: wxFrame(NULL, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	top_s->Add(spanel = new wxwin_status::panel(this, inst, NULL, MAXSTATUS), 1, wxGROW);
 	spanel->set_watch_flag(flag);
@@ -66,6 +67,7 @@ namespace
 
 void wxwin_status::panel::prepare_paint()
 {
+	CHECK_UI_THREAD;
 	clear();
 
 	auto& newstatus = inst.status->get_read();
@@ -123,6 +125,7 @@ void wxwin_status::panel::prepare_paint()
 
 void wxwin_status::notify_update() throw()
 {
+	CHECK_UI_THREAD;
 	spanel->request_paint();
 }
 

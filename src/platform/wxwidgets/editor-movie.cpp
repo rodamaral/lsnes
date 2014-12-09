@@ -633,6 +633,7 @@ namespace
 			unsigned _height, control_info X, control_info Y, unsigned posX, unsigned posY)
 			: wxDialog(parent, wxID_ANY, towxstring(windowname(X, Y)), wxPoint(posX, posY))
 		{
+			CHECK_UI_THREAD;
 			dirty = false;
 			bitmap = _bitmap;
 			width = _width;
@@ -660,6 +661,7 @@ namespace
 		}
 		void on_wclose(wxCloseEvent& e)
 		{
+			CHECK_UI_THREAD;
 			EndModal(wxID_CANCEL);
 		}
 		void on_erase(wxEraseEvent& e)
@@ -668,6 +670,7 @@ namespace
 		}
 		void on_paint(wxPaintEvent& e)
 		{
+			CHECK_UI_THREAD;
 			wxPaintDC dc(panel);
 			if(bitmap) {
 				wxBitmap bmp(wxImage(width, height, bitmap, true));
@@ -691,6 +694,7 @@ namespace
 		}
 		void on_mouse(wxMouseEvent& e)
 		{
+			CHECK_UI_THREAD;
 			if(e.LeftDown()) {
 				result.first = coordinate_to_value(cX.rmin, cX.rmax, e.GetX(), width);
 				if(!oneaxis)
@@ -727,6 +731,7 @@ namespace
 	std::pair<int, int> prompt_coodinates_window(wxWindow* parent, uint8_t* bitmap, unsigned width,
 		unsigned height, control_info X, control_info Y, unsigned posX, unsigned posY)
 	{
+		CHECK_UI_THREAD;
 		window_prompt* p = new window_prompt(parent, bitmap, width, height, X, Y, posX, posY);
 		if(p->ShowModal() == wxID_CANCEL) {
 			delete p;
@@ -877,6 +882,7 @@ wxeditor_movie::~wxeditor_movie() throw()
 wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v, emulator_instance& _inst)
 	: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(100, 100), wxWANTS_CHARS), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	m = v;
 	Connect(wxEVT_PAINT, wxPaintEventHandler(_moviepanel::on_paint), NULL, this);
 	Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(_moviepanel::on_erase), NULL, this);
@@ -1089,6 +1095,7 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 
 void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uint64_t row2)
 {
+	CHECK_UI_THREAD;
 	frame_controls* _fcontrols = &fcontrols;
 	uint64_t line = row1;
 	uint64_t line2 = row2;
@@ -1199,6 +1206,7 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 
 void wxeditor_movie::_moviepanel::do_append_frames()
 {
+	CHECK_UI_THREAD;
 	uint64_t value;
 	try {
 		std::string text = pick_text(m, "Append frames", "Enter number of frames to append:", "");
@@ -1215,6 +1223,7 @@ void wxeditor_movie::_moviepanel::do_append_frames()
 
 void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row, bool multi)
 {
+	CHECK_UI_THREAD;
 	uint64_t multicount = 1;
 	if(multi) {
 		try {
@@ -1355,6 +1364,7 @@ void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
 
 void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
 {
+	CHECK_UI_THREAD;
 	uint64_t curframe;
 	uint64_t frame;
 	inst.iqueue->run([&curframe]() {
@@ -1381,6 +1391,7 @@ void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
 
 void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarity, bool shift, unsigned X, unsigned Y)
 {
+	CHECK_UI_THREAD;
 	if(y < 3)
 		return;
 	if(polarity) {
@@ -1425,6 +1436,7 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 
 void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci, unsigned screenX, unsigned screenY)
 {
+	CHECK_UI_THREAD;
 	control_info ciX;
 	control_info ciY;
 	control_info ci2 = find_paired(ci, fcontrols.get_controlinfo());
@@ -1502,6 +1514,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 
 void wxeditor_movie::_moviepanel::do_scroll_to_frame()
 {
+	CHECK_UI_THREAD;
 	uint64_t frame;
 	try {
 		std::string text = pick_text(m, "Frame", (stringfmt() << "Enter frame to scroll to:").str(), "");
@@ -1538,6 +1551,7 @@ void wxeditor_movie::_moviepanel::do_scroll_to_current_frame()
 
 void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	wxMenuItem* tmpitem;
 	int id = e.GetId();
 
@@ -1801,6 +1815,7 @@ uint64_t wxeditor_movie::_moviepanel::first_nextframe()
 void wxeditor_movie::_moviepanel::on_mouse1(unsigned x, unsigned y, bool polarity) {}
 void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarity)
 {
+	CHECK_UI_THREAD;
 	if(polarity) {
 		//Pressing mouse, just record line it was pressed on.
 		rpress_line = spos + y - 3;
@@ -1999,6 +2014,7 @@ int wxeditor_movie::_moviepanel::get_lines()
 
 void wxeditor_movie::_moviepanel::signal_repaint()
 {
+	CHECK_UI_THREAD;
 	if(requested || recursing)
 		return;
 	auto s = m->get_scroll();
@@ -2050,6 +2066,7 @@ do_again:
 
 void wxeditor_movie::_moviepanel::on_mouse(wxMouseEvent& e)
 {
+	CHECK_UI_THREAD;
 	auto cell = fb.get_cell();
 	if(e.LeftDown() && !e.ControlDown())
 		on_mouse0(e.GetX() / cell.first, e.GetY() / cell.second, true, e.ShiftDown(), e.GetX(), e.GetY());
@@ -2079,6 +2096,7 @@ void wxeditor_movie::_moviepanel::on_erase(wxEraseEvent& e)
 
 void wxeditor_movie::_moviepanel::on_paint(wxPaintEvent& e)
 {
+	CHECK_UI_THREAD;
 	auto size = fb.get_pixels();
 	if(!size.first || !size.second) {
 		wxPaintDC dc(this);
@@ -2310,6 +2328,7 @@ void wxeditor_movie::_moviepanel::do_delete_controller(uint64_t row1, uint64_t r
 wxeditor_movie::wxeditor_movie(emulator_instance& _inst, wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit movie"), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	closing = false;
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
@@ -2354,12 +2373,14 @@ bool wxeditor_movie::ShouldPreventAppExit() const { return false; }
 
 void wxeditor_movie::on_close(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	Destroy();
 	closing = true;
 }
 
 void wxeditor_movie::on_wclose(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	bool wasc = closing;
 	closing = true;
 	if(!wasc)
@@ -2378,11 +2399,13 @@ scroll_bar* wxeditor_movie::get_scroll()
 
 void wxeditor_movie::on_focus_wrong(wxFocusEvent& e)
 {
+	CHECK_UI_THREAD;
 	moviepanel->SetFocus();
 }
 
 void wxeditor_movie_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	auto e = movieeditors.lookup(inst);
 	if(e) {
 		e->Raise();
@@ -2393,11 +2416,13 @@ void wxeditor_movie_display(wxWindow* parent, emulator_instance& inst)
 
 void wxeditor_movie::on_keyboard_down(wxKeyEvent& e)
 {
+	CHECK_UI_THREAD;
 	handle_wx_keyboard(inst, e, true);
 }
 
 void wxeditor_movie::on_keyboard_up(wxKeyEvent& e)
 {
+	CHECK_UI_THREAD;
 	handle_wx_keyboard(inst, e, false);
 }
 

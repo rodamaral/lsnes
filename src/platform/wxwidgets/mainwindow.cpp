@@ -212,6 +212,7 @@ namespace
 		}
 		void Notify()
 		{
+			CHECK_UI_THREAD;
 			bool is_focused = (wxWindow::FindFocus() != NULL);
 			if(is_focused && !was_focused) {
 				//Gained focus.
@@ -241,6 +242,7 @@ namespace
 		}
 		void Notify()
 		{
+			CHECK_UI_THREAD;
 			if(w->download_in_progress->finished) {
 				w->update_statusbar();
 				auto old = w->download_in_progress;
@@ -331,6 +333,7 @@ namespace
 
 	wxMenu* system_menu::lookup_menu(const std::string& key)
 	{
+		CHECK_UI_THREAD;
 		if(key == "")
 			return this;
 		if(submenu_by_name.count(key))
@@ -348,6 +351,7 @@ namespace
 
 	void system_menu::insert_act(unsigned id, const std::string& label, bool dots, bool check)
 	{
+		CHECK_UI_THREAD;
 		if(!sep)
 			sep = AppendSeparator();
 
@@ -368,6 +372,7 @@ namespace
 
 	void system_menu::insert_pass(int id, const std::string& label)
 	{
+		CHECK_UI_THREAD;
 		pwin->Connect(id, wxEVT_COMMAND_MENU_SELECTED,
 			wxCommandEventHandler(wxwin_mainwindow::handle_menu_click), NULL, pwin);
 		Append(id, towxstring(label));
@@ -376,6 +381,7 @@ namespace
 	system_menu::system_menu(wxWindow* win, emulator_instance& _inst)
 		: inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		pwin = win;
 		insert_pass(wxID_PAUSE, "Pause/Unpause");
 		insert_pass(wxID_FRAMEADVANCE, "Step frame");
@@ -390,6 +396,7 @@ namespace
 
 	void system_menu::on_select(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(!action_by_id.count(e.GetId()))
 			return;
 		unsigned act_id = action_by_id[e.GetId()];
@@ -412,6 +419,7 @@ namespace
 
 	void system_menu::update(bool light)
 	{
+		CHECK_UI_THREAD;
 		if(!light) {
 			next_id = wxID_ACTIONS_FIRST;
 			if(sep) {
@@ -680,6 +688,7 @@ namespace
 		loadfile(wxwin_mainwindow* win, emulator_instance& _inst) : inst(_inst), pwin(win) {};
 		bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames)
 		{
+			CHECK_UI_THREAD;
 			bool ret = false;
 			if(filenames.Count() == 2) {
 				std::string a = tostdstring(filenames[0]);
@@ -725,6 +734,7 @@ namespace
 
 void boot_emulator(emulator_instance& inst, loaded_rom& rom, moviefile& movie, bool fscreen)
 {
+	CHECK_UI_THREAD;
 	update_preferences();
 	try {
 		struct emu_args* a = new emu_args;
@@ -744,6 +754,7 @@ void boot_emulator(emulator_instance& inst, loaded_rom& rom, moviefile& movie, b
 wxwin_mainwindow::panel::panel(wxWindow* win, emulator_instance& _inst)
 	: wxPanel(win, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(panel::on_paint), NULL, this);
 	this->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(panel::on_erase), NULL, this);
 	this->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(panel::on_keyboard_down), NULL, this);
@@ -762,6 +773,7 @@ wxwin_mainwindow::panel::panel(wxWindow* win, emulator_instance& _inst)
 
 void wxwin_mainwindow::menu_start(wxString name)
 {
+	CHECK_UI_THREAD;
 	while(!upper.empty())
 		upper.pop();
 	current_menu = new wxMenu();
@@ -770,6 +782,7 @@ void wxwin_mainwindow::menu_start(wxString name)
 
 void wxwin_mainwindow::menu_special(wxString name, wxMenu* menu)
 {
+	CHECK_UI_THREAD;
 	while(!upper.empty())
 		upper.pop();
 	menubar->Append(menu, name);
@@ -778,11 +791,13 @@ void wxwin_mainwindow::menu_special(wxString name, wxMenu* menu)
 
 wxMenuItem* wxwin_mainwindow::menu_special_sub(wxString name, wxMenu* menu)
 {
+	CHECK_UI_THREAD;
 	return current_menu->AppendSubMenu(menu, name);
 }
 
 void wxwin_mainwindow::menu_entry(int id, wxString name)
 {
+	CHECK_UI_THREAD;
 	current_menu->Append(id, name);
 	Connect(id, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(wxwin_mainwindow::wxwin_mainwindow::handle_menu_click), NULL, this);
@@ -790,6 +805,7 @@ void wxwin_mainwindow::menu_entry(int id, wxString name)
 
 void wxwin_mainwindow::menu_entry_check(int id, wxString name)
 {
+	CHECK_UI_THREAD;
 	checkitems[id] = current_menu->AppendCheckItem(id, name);
 	Connect(id, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(wxwin_mainwindow::wxwin_mainwindow::handle_menu_click), NULL, this);
@@ -797,6 +813,7 @@ void wxwin_mainwindow::menu_entry_check(int id, wxString name)
 
 void wxwin_mainwindow::menu_start_sub(wxString name)
 {
+	CHECK_UI_THREAD;
 	wxMenu* old = current_menu;
 	upper.push(current_menu);
 	current_menu = new wxMenu();
@@ -811,6 +828,7 @@ void wxwin_mainwindow::menu_end_sub()
 
 bool wxwin_mainwindow::menu_ischecked(int id)
 {
+	CHECK_UI_THREAD;
 	if(checkitems.count(id))
 		return checkitems[id]->IsChecked();
 	else
@@ -819,6 +837,7 @@ bool wxwin_mainwindow::menu_ischecked(int id)
 
 void wxwin_mainwindow::menu_check(int id, bool newstate)
 {
+	CHECK_UI_THREAD;
 	if(checkitems.count(id))
 		return checkitems[id]->Check(newstate);
 	else
@@ -827,6 +846,7 @@ void wxwin_mainwindow::menu_check(int id, bool newstate)
 
 void wxwin_mainwindow::menu_enable(int id, bool newstate)
 {
+	CHECK_UI_THREAD;
 	auto item = menubar->FindItem(id);
 	if(!item)
 		return;
@@ -835,11 +855,13 @@ void wxwin_mainwindow::menu_enable(int id, bool newstate)
 
 void wxwin_mainwindow::menu_separator()
 {
+	CHECK_UI_THREAD;
 	current_menu->AppendSeparator();
 }
 
 void wxwin_mainwindow::panel::request_paint()
 {
+	CHECK_UI_THREAD;
 	Refresh();
 }
 
@@ -858,6 +880,7 @@ std::pair<double, double> calc_scale_factors(double factor, bool ar, double par)
 
 void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(wx_escape_count >= 3 && is_fs) {
 		//Leave fullscreen mode.
 		main_window->enter_or_leave_fullscreen(false);
@@ -979,16 +1002,19 @@ void wxwin_mainwindow::panel::on_erase(wxEraseEvent& e)
 
 void wxwin_mainwindow::panel::on_keyboard_down(wxKeyEvent& e)
 {
+	CHECK_UI_THREAD;
 	handle_wx_keyboard(inst, e, true);
 }
 
 void wxwin_mainwindow::panel::on_keyboard_up(wxKeyEvent& e)
 {
+	CHECK_UI_THREAD;
 	handle_wx_keyboard(inst, e, false);
 }
 
 void wxwin_mainwindow::panel::on_mouse(wxMouseEvent& e)
 {
+	CHECK_UI_THREAD;
 	handle_wx_mouse(inst, e);
 }
 
@@ -996,6 +1022,7 @@ wxwin_mainwindow::wxwin_mainwindow(emulator_instance& _inst, bool fscreen)
 	: wxFrame(NULL, wxID_ANY, getname(_inst), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	download_in_progress = NULL;
 	Centre();
 	mwindow = NULL;
@@ -1173,6 +1200,7 @@ wxwin_mainwindow::wxwin_mainwindow(emulator_instance& _inst, bool fscreen)
 
 wxwin_mainwindow::~wxwin_mainwindow()
 {
+	CHECK_UI_THREAD;
 	if(sws_ctx) sws_freeContext(sws_ctx);
 	if(screen_buffer) delete[] screen_buffer;
 	if(rotate_buffer) delete[] rotate_buffer;
@@ -1184,11 +1212,13 @@ wxwin_mainwindow::~wxwin_mainwindow()
 
 void wxwin_mainwindow::request_paint()
 {
+	CHECK_UI_THREAD;
 	gpanel->Refresh();
 }
 
 void wxwin_mainwindow::on_close(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	//Veto it for now, latter things will delete it.
 	e.Veto();
 	inst.iqueue->queue("quit-emulator");
@@ -1196,6 +1226,7 @@ void wxwin_mainwindow::on_close(wxCloseEvent& e)
 
 void wxwin_mainwindow::notify_update() throw()
 {
+	CHECK_UI_THREAD;
 	if(!main_window_dirty) {
 		main_window_dirty = true;
 		gpanel->Refresh();
@@ -1204,6 +1235,7 @@ void wxwin_mainwindow::notify_update() throw()
 
 void wxwin_mainwindow::notify_resized() throw()
 {
+	CHECK_UI_THREAD;
 	toplevel->Layout();
 	toplevel->SetSizeHints(this);
 	Fit();
@@ -1211,6 +1243,7 @@ void wxwin_mainwindow::notify_resized() throw()
 
 void wxwin_mainwindow::notify_update_status() throw()
 {
+	CHECK_UI_THREAD;
 	spanel->request_paint();
 	if(mwindow)
 		mwindow->notify_update();
@@ -1219,6 +1252,7 @@ void wxwin_mainwindow::notify_update_status() throw()
 
 void wxwin_mainwindow::notify_exit() throw()
 {
+	CHECK_UI_THREAD;
 	wxwidgets_exiting = true;
 	join_emulator_thread();
 	Destroy();
@@ -1233,6 +1267,7 @@ std::string read_variable_map(const std::map<std::string, std::u32string>& vars,
 
 void wxwin_mainwindow::update_statusbar()
 {
+	CHECK_UI_THREAD;
 	if(download_in_progress) {
 		statusbar->SetStatusText(towxstring(download_in_progress->statusmsg()));
 		return;
@@ -1309,6 +1344,7 @@ void wxwin_mainwindow::update_statusbar()
 
 void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		handle_menu_click_cancelable(e);
 	} catch(canceled_exception& e) {
@@ -1322,6 +1358,7 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 
 void wxwin_mainwindow::refresh_title() throw()
 {
+	CHECK_UI_THREAD;
 	SetTitle(getname(inst));
 	auto p = inst.project->get();
 	menu_enable(wxID_RELOAD_ROM_IMAGE, !p);
@@ -1419,6 +1456,7 @@ void wxwin_mainwindow::project_selected(const std::string& id)
 
 void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::string filename;
 	std::pair<std::string, std::string> filename2;
 	bool s;
@@ -1778,6 +1816,7 @@ void wxwin_mainwindow::action_updated()
 
 void wxwin_mainwindow::enter_or_leave_fullscreen(bool fs)
 {
+	CHECK_UI_THREAD;
 	if(fs && !is_fs) {
 		if(spanel_shown)
 			toplevel->Detach(spanel);

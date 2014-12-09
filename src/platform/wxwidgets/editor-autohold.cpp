@@ -77,6 +77,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent, emulator_instance& _inst)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Autohold/Autofire"), wxDefaultPosition, wxSize(-1, -1)),
 	inst(_inst)
 {
+	CHECK_UI_THREAD;
 	closing = false;
 	Centre();
 	hsizer = new wxBoxSizer(wxHORIZONTAL);
@@ -87,9 +88,9 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent, emulator_instance& _inst)
 	Fit();
 
 	ahupdate.set(inst.dispatch->autohold_update, [this](unsigned port, unsigned controller,
-		unsigned ctrlnum,
-		bool newstate) {
+		unsigned ctrlnum, bool newstate) {
 		runuifun([this, port, controller, ctrlnum, newstate]() {
+			CHECK_UI_THREAD;
 			for(auto i : this->autoholds) {
 				if(i.second.port != port) continue;
 				if(i.second.controller != controller) continue;
@@ -101,6 +102,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent, emulator_instance& _inst)
 	afupdate.set(inst.dispatch->autofire_update, [this](unsigned port, unsigned controller,
 		unsigned ctrlnum, unsigned duty, unsigned cyclelen) {
 		runuifun([this, port, controller, ctrlnum, duty]() {
+			CHECK_UI_THREAD;
 			for(auto i : this->autoholds) {
 				if(i.second.port != port) continue;
 				if(i.second.controller != controller) continue;
@@ -111,6 +113,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent, emulator_instance& _inst)
 	});
 	ahreconfigure.set(inst.dispatch->autohold_reconfigure, [this]() {
 		runuifun([this]() {
+			CHECK_UI_THREAD;
 			try {
 				this->update_controls();
 			} catch(std::runtime_error& e) {
@@ -127,6 +130,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent, emulator_instance& _inst)
 
 void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(!autoholds.count(id))
 		return;
@@ -160,6 +164,7 @@ void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
 
 void wxeditor_autohold::update_controls()
 {
+	CHECK_UI_THREAD;
 	for(auto i : autoholds) {
 		if(i.first != i.second.afid)
 			i.second.label->Destroy();
@@ -293,6 +298,7 @@ bool wxeditor_autohold::ShouldPreventAppExit() const { return false; }
 
 void wxeditor_autohold::on_wclose(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	bool wasc = closing;
 	closing = true;
 	autohold_open = NULL;
@@ -302,6 +308,7 @@ void wxeditor_autohold::on_wclose(wxCloseEvent& e)
 
 void wxeditor_autohold_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	if(autohold_open)
 		return;
 	wxeditor_autohold* v;

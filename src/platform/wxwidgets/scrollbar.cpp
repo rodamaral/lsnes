@@ -1,10 +1,12 @@
 #include "platform/wxwidgets/scrollbar.hpp"
+#include "platform/wxwidgets/platform.hpp"
 #include "library/minmax.hpp"
 #include <iostream>
 
 scroll_bar::scroll_bar(wxWindow* parent, wxWindowID id, bool vertical)
 	: wxScrollBar(parent, id, wxDefaultPosition, wxDefaultSize, vertical ? wxSB_VERTICAL : wxSB_HORIZONTAL)
 {
+	CHECK_UI_THREAD;
 	Connect(wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler(scroll_bar::on_scroll), NULL, this);
 	Connect(wxEVT_SCROLL_PAGEDOWN, wxScrollEventHandler(scroll_bar::on_scroll), NULL, this);
 	Connect(wxEVT_SCROLL_PAGEUP, wxScrollEventHandler(scroll_bar::on_scroll), NULL, this);
@@ -24,6 +26,7 @@ scroll_bar::~scroll_bar()
 
 void scroll_bar::set_page_size(unsigned _pagesize)
 {
+	CHECK_UI_THREAD;
 	if(!_pagesize) _pagesize = 1;
 	pagesize = _pagesize;
 	if(range > pagesize)
@@ -34,6 +37,7 @@ void scroll_bar::set_page_size(unsigned _pagesize)
 
 void scroll_bar::set_range(unsigned _range)
 {
+	CHECK_UI_THREAD;
 	if(pagesize >= _range)
 		position = 0;
 	else if(position + pagesize > _range)
@@ -47,6 +51,7 @@ void scroll_bar::set_range(unsigned _range)
 
 void scroll_bar::set_position(unsigned _position)
 {
+	CHECK_UI_THREAD;
 	if(pagesize >= range)
 		_position = 0;
 	else if(_position + pagesize > range)
@@ -60,6 +65,7 @@ void scroll_bar::set_position(unsigned _position)
 
 void scroll_bar::apply_delta(int delta)
 {
+	CHECK_UI_THREAD;
 	unsigned maxscroll = range - pagesize;
 	if(maxscroll > range)
 		maxscroll = 0;
@@ -103,6 +109,7 @@ void scroll_bar::set_handler(std::function<void(scroll_bar&)> cb)
 
 void scroll_bar::on_scroll(wxScrollEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(range)
 		position = GetThumbPosition();
 	if(pagesize >= range)

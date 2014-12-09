@@ -19,6 +19,7 @@ namespace
 		branches_tree(wxWindow* parent, emulator_instance& _inst, int id, bool _nosels)
 			: wxTreeCtrl(parent, id), inst(_inst), nosels(_nosels)
 		{
+			CHECK_UI_THREAD;
 			SetMinSize(wxSize(400, 300));
 			branchchange.set(inst.dispatch->branch_change, [this]() { runuifun([this]() {
 				this->update(); }); });
@@ -35,6 +36,7 @@ namespace
 		};
 		selection get_selection()
 		{
+			CHECK_UI_THREAD;
 			selection s;
 			s.item = GetSelection();
 			for(auto i : ids) {
@@ -54,6 +56,7 @@ namespace
 		}
 		void update()
 		{
+			CHECK_UI_THREAD;
 			std::map<uint64_t, std::string> namemap;
 			std::map<uint64_t, std::set<uint64_t>> childmap;
 			uint64_t cur = 0;
@@ -91,6 +94,7 @@ namespace
 		void build_tree(uint64_t id, wxTreeItemId parent, std::map<uint64_t, std::set<uint64_t>>& childmap,
 			std::map<uint64_t, std::string>& namemap)
 		{
+			CHECK_UI_THREAD;
 			if(!childmap.count(id) || childmap[id].empty())
 				return;
 			for(auto i : childmap[id]) {
@@ -114,6 +118,7 @@ namespace
 		branch_select(wxWindow* parent, emulator_instance& _inst)
 			: wxDialog(parent, wxID_ANY, towxstring("lsnes: Select new parent branch"))
 		{
+			CHECK_UI_THREAD;
 			Centre();
 			wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 			SetSizer(top_s);
@@ -141,10 +146,12 @@ namespace
 		}
 		void on_ok(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			EndModal(wxID_OK);
 		}
 		void on_cancel(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			EndModal(wxID_CANCEL);
 		}
 		uint64_t get_selection()
@@ -153,6 +160,7 @@ namespace
 		}
 		void on_change(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			okbutton->Enable(get_selection() != 0xFFFFFFFFFFFFFFFFULL);
 		}
 	private:
@@ -167,6 +175,7 @@ namespace
 		branch_config(wxWindow* parent, emulator_instance& _inst)
 			: wxDialog(parent, wxID_ANY, towxstring("lsnes: Edit slot branches")), inst(_inst)
 		{
+			CHECK_UI_THREAD;
 			Centre();
 			wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 			SetSizer(top_s);
@@ -205,6 +214,7 @@ namespace
 		}
 		void on_create(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			std::string newname;
@@ -220,6 +230,7 @@ namespace
 		}
 		void on_select(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			UI_switch_branch(inst, id, [this](std::exception& e) {
@@ -228,6 +239,7 @@ namespace
 		}
 		void on_rename(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			std::string newname = branches->get_name(id);
@@ -243,6 +255,7 @@ namespace
 		}
 		void on_reparent(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			uint64_t pid;
@@ -261,6 +274,7 @@ namespace
 		}
 		void on_delete(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			uint64_t id = get_selected_id();
 			if(id == 0xFFFFFFFFFFFFFFFFULL) return;
 			UI_delete_branch(inst, id, [this](std::exception& e) {
@@ -269,6 +283,7 @@ namespace
 		}
 		void on_close(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			EndModal(wxID_OK);
 		}
 		void on_change(wxCommandEvent& e)
@@ -282,6 +297,7 @@ namespace
 		}
 		void set_enabled(branches_tree::selection id)
 		{
+			CHECK_UI_THREAD;
 			createbutton->Enable(id.item.IsOk());
 			selectbutton->Enable(id.item.IsOk());
 			renamebutton->Enable(id.item.IsOk() && !id.isroot);
@@ -303,6 +319,7 @@ namespace
 		std::map<uint64_t, std::set<uint64_t>>& childmap, std::map<int, uint64_t>& branch_ids, int& nextid,
 		uint64_t curbranch)
 	{
+		CHECK_UI_THREAD;
 		auto& children = childmap[id];
 		int mid = nextid++;
 		otheritems.push_back(branches_menu::miteminfo(root->AppendCheckItem(mid, towxstring(namemap[id])),
@@ -336,6 +353,7 @@ namespace
 branches_menu::branches_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
 	: inst(_inst)
 {
+	CHECK_UI_THREAD;
 	pwin = win;
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
@@ -350,6 +368,7 @@ branches_menu::~branches_menu()
 
 void branches_menu::on_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(id < wxid_range_low || id > wxid_range_high) return;
 	if(id == wxid_range_low) {
@@ -369,6 +388,7 @@ void branches_menu::on_select(wxCommandEvent& e)
 
 void branches_menu::update()
 {
+	CHECK_UI_THREAD;
 	std::map<uint64_t, std::string> namemap;
 	std::map<uint64_t, std::set<uint64_t>> childmap;
 	uint64_t cur;

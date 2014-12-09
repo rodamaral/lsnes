@@ -32,6 +32,7 @@ namespace
 	wxeditor_esettings_download::wxeditor_esettings_download(wxWindow* parent, emulator_instance& _inst)
 		: settings_tab(parent, inst)
 	{
+		CHECK_UI_THREAD;
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 
@@ -72,6 +73,7 @@ namespace
 
 	void wxeditor_esettings_download::on_popup_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		if(e.GetId() == wxID_EDIT)
@@ -80,6 +82,7 @@ namespace
 
 	void wxeditor_esettings_download::on_mouse(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
 			return;
 		if(selected() == "")
@@ -93,12 +96,14 @@ namespace
 
 	void wxeditor_esettings_download::on_change2(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		wxCommandEvent e2;
 		on_change(e2);
 	}
 
 	void wxeditor_esettings_download::on_add(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::string name, value;
@@ -131,6 +136,7 @@ namespace
 
 	void wxeditor_esettings_download::on_delete(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::string name = selected();
@@ -142,6 +148,7 @@ namespace
 
 	void wxeditor_esettings_download::on_change(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::string name = selected();
@@ -175,6 +182,7 @@ namespace
 
 	void wxeditor_esettings_download::on_selchange(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::string sel = selected();
@@ -185,6 +193,7 @@ namespace
 
 	void wxeditor_esettings_download::refresh()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		patterns = lsnes_uri_rewrite.get_schemes();
@@ -197,6 +206,7 @@ namespace
 
 	std::string wxeditor_esettings_download::selected()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return "";
 		int x = _settings->GetSelection();
@@ -208,6 +218,7 @@ namespace
 
 	void wxeditor_esettings_download::_refresh()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::vector<wxString> strings;

@@ -14,6 +14,7 @@ wxwindow_romload::wxwindow_romload(const std::string& _path)
 
 bool wxwindow_romload::show(wxWindow* parent)
 {
+	CHECK_UI_THREAD;
 	std::map<int, std::string> cores;
 	std::map<int, std::string> types;
 	std::map<int, std::string> exts;

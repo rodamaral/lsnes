@@ -25,6 +25,7 @@ namespace
 		edit_axis_properties(wxWindow* parent, unsigned _jid, unsigned _num)
 			: wxDialog(parent, -1, towxstring(get_title(_jid, _num))), jid(_jid), num(_num)
 		{
+			CHECK_UI_THREAD;
 			int64_t minus, zero, plus, neutral;
 			double threshold;
 			bool pressure, disabled;
@@ -79,6 +80,7 @@ namespace
 		}
 		void on_ok(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			int64_t minus, zero, plus, neutral;
 			double threshold;
 			bool pressure, disabled;
@@ -143,6 +145,7 @@ namespace
 		joystick_panel(wxWindow* parent, emulator_instance& _inst, unsigned jid, gamepad::pad& gp)
 			: text_framebuffer_panel(parent, 60, 32, -1, NULL), inst(_inst), _jid(jid), _gp(gp)
 		{
+			CHECK_UI_THREAD;
 			const unsigned pwidth = 80;
 			const unsigned b_perrow = 8;
 			const unsigned s_perrow = 16;
@@ -214,6 +217,7 @@ namespace
 		}
 		void prepare_paint()
 		{
+			CHECK_UI_THREAD;
 			for(unsigned i = 0; i < 4; i++)
 				write("", 256, 0, cal_row + i, 0, 0xFFFFFF);
 			for(unsigned i = 0; i < axes_val.size(); i++)
@@ -226,6 +230,7 @@ namespace
 		std::pair<unsigned, unsigned> size_needed() { return std::make_pair(width_need, height_need); }
 		void on_mouse(wxMouseEvent& e)
 		{
+			CHECK_UI_THREAD;
 			auto cell = get_cell();
 			size_t x = e.GetX() / cell.first;
 			size_t y = e.GetY() / cell.second;
@@ -289,6 +294,7 @@ namespace
 		std::vector<std::pair<unsigned, unsigned>> hats_val;
 		void draw_axis(unsigned x, unsigned y, unsigned num, axis_state_info state)
 		{
+			CHECK_UI_THREAD;
 			unsigned stride = get_characters().first;
 			text_framebuffer::element* fb = get_buffer() + (y * stride + x);
 			uint32_t fg, bg;
@@ -420,6 +426,7 @@ namespace
 		joystick_config_window(wxWindow* parent, emulator_instance& _inst)
 			: settings_tab(parent, _inst)
 		{
+			CHECK_UI_THREAD;
 			if(!lsnes_gamepads.gamepads())
 				throw std::runtime_error("No joysticks available");
 			wxSizer* top1_s = new wxBoxSizer(wxVERTICAL);
@@ -442,6 +449,7 @@ namespace
 		}
 		~joystick_config_window()
 		{
+			CHECK_UI_THREAD;
 			if(timer) {
 				timer->Stop();
 				delete timer;
@@ -449,6 +457,7 @@ namespace
 		}
 		void update_all()
 		{
+			CHECK_UI_THREAD;
 			if(closing()) {
 				timer->Stop();
 				delete timer;

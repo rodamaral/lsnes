@@ -72,6 +72,7 @@ namespace
 	wxeditor_subtitles_subtitle::wxeditor_subtitles_subtitle(wxWindow* parent, subdata d)
 		: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit subtitle"), wxDefaultPosition, wxSize(-1, -1))
 	{
+		CHECK_UI_THREAD;
 		Centre();
 		wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 		SetSizer(top_s);
@@ -113,6 +114,7 @@ namespace
 
 	void wxeditor_subtitles_subtitle::on_change(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		bool valid = true;
 		std::string _first = tostdstring(first->GetValue());
 		std::string _last = tostdstring(last->GetValue());
@@ -125,16 +127,19 @@ namespace
 
 	void wxeditor_subtitles_subtitle::on_cancel(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		EndModal(wxID_CANCEL);
 	}
 
 	void wxeditor_subtitles_subtitle::on_ok(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		EndModal(wxID_OK);
 	}
 
 	subdata wxeditor_subtitles_subtitle::get_result()
 	{
+		CHECK_UI_THREAD;
 		subdata d;
 		d.first = parse_value<uint64_t>(tostdstring(first->GetValue()));
 		d.last = parse_value<uint64_t>(tostdstring(last->GetValue()));
@@ -144,6 +149,7 @@ namespace
 
 	bool edit_subtext(wxWindow* w, struct subdata& d)
 	{
+		CHECK_UI_THREAD;
 		bool res = false;
 		wxeditor_subtitles_subtitle* editor = NULL;
 		try {
@@ -166,6 +172,7 @@ namespace
 wxeditor_subtitles::wxeditor_subtitles(wxWindow* parent, emulator_instance& _inst)
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Edit subtitles"), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	closing = false;
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
@@ -209,6 +216,7 @@ bool wxeditor_subtitles::ShouldPreventAppExit() const
 
 void wxeditor_subtitles::on_close(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	closing = true;
 	Destroy();
 }
@@ -220,6 +228,7 @@ void wxeditor_subtitles::on_wclose(wxCloseEvent& e)
 
 void wxeditor_subtitles::refresh()
 {
+	CHECK_UI_THREAD;
 	if(closing)
 		return;
 	std::map<std::pair<uint64_t, uint64_t>, std::string> _subtitles;
@@ -256,6 +265,7 @@ void wxeditor_subtitles::refresh()
 
 void wxeditor_subtitles::on_change(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(closing)
 		return;
 	int sel = subs->GetSelection();
@@ -266,6 +276,7 @@ void wxeditor_subtitles::on_change(wxCommandEvent& e)
 
 void wxeditor_subtitles::on_add(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(closing)
 		return;
 	subdata t;
@@ -278,6 +289,7 @@ void wxeditor_subtitles::on_add(wxCommandEvent& e)
 
 void wxeditor_subtitles::on_edit(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(closing)
 		return;
 	int sel = subs->GetSelection();
@@ -293,6 +305,7 @@ void wxeditor_subtitles::on_edit(wxCommandEvent& e)
 
 void wxeditor_subtitles::on_delete(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(closing)
 		return;
 	int sel = subs->GetSelection();
@@ -304,6 +317,7 @@ void wxeditor_subtitles::on_delete(wxCommandEvent& e)
 
 void wxeditor_subtitles_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	wxFrame* editor;
 	if(!inst.mlogic) {
 		show_message_ok(parent, "No movie", "Can't edit subtitles of nonexistent movie", wxICON_EXCLAMATION);

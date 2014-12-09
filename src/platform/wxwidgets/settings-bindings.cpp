@@ -34,6 +34,7 @@ namespace
 	wxeditor_esettings_bindings::wxeditor_esettings_bindings(wxWindow* parent, emulator_instance& _inst)
 		: settings_tab(parent, _inst)
 	{
+		CHECK_UI_THREAD;
 		wxButton* tmp;
 
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -74,6 +75,7 @@ namespace
 
 	void wxeditor_esettings_bindings::on_popup_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		if(e.GetId() == wxID_EDIT)
@@ -84,6 +86,7 @@ namespace
 
 	void wxeditor_esettings_bindings::on_mouse(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
 			return;
 		if(selected() == "")
@@ -99,6 +102,7 @@ namespace
 
 	void wxeditor_esettings_bindings::on_change(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		bool enable = (selected() != "");
@@ -108,6 +112,7 @@ namespace
 
 	void wxeditor_esettings_bindings::on_add(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		try {
@@ -134,6 +139,7 @@ namespace
 
 	void wxeditor_esettings_bindings::on_edit(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::string name = selected();
@@ -158,6 +164,7 @@ namespace
 
 	void wxeditor_esettings_bindings::on_delete(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::string name = selected();
@@ -171,6 +178,7 @@ namespace
 
 	void wxeditor_esettings_bindings::refresh()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		int n = select->GetSelection();
@@ -199,6 +207,7 @@ namespace
 
 	std::string wxeditor_esettings_bindings::selected()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return "";
 		int x = select->GetSelection();

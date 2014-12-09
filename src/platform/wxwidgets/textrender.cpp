@@ -1,4 +1,5 @@
 #include "platform/wxwidgets/textrender.hpp"
+#include "platform/wxwidgets/platform.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/utf8.hpp"
 #include "library/string.hpp"
@@ -188,6 +189,7 @@ text_framebuffer_panel::text_framebuffer_panel(wxWindow* parent, size_t w, size_
 	wxWindow* _redirect)
 	: wxPanel(parent, id), text_framebuffer(w, h)
 {
+	CHECK_UI_THREAD;
 	redirect = _redirect;
 	auto psize = get_pixels();
 	size_changed = false;
@@ -205,6 +207,7 @@ text_framebuffer_panel::~text_framebuffer_panel()
 
 void text_framebuffer_panel::set_size(size_t _width, size_t _height)
 {
+	CHECK_UI_THREAD;
 	text_framebuffer::set_size(_width, _height);
 	auto psize = get_pixels();
 	buffer.resize(psize.first * psize.second * 3);
@@ -217,6 +220,7 @@ void text_framebuffer_panel::set_size(size_t _width, size_t _height)
 
 void text_framebuffer_panel::request_paint()
 {
+	CHECK_UI_THREAD;
 	if(size_changed) {
 		auto psize = get_pixels();
 		SetMinSize(wxSize(psize.first, psize.second));
@@ -235,6 +239,7 @@ void text_framebuffer_panel::on_erase(wxEraseEvent& e)
 
 void text_framebuffer_panel::on_paint(wxPaintEvent& e)
 {
+	CHECK_UI_THREAD;
 	locked = true;
 	auto size = GetSize();
 	text_framebuffer::set_size((size.x + 7) / 8, (size.y + 15) / 16);
@@ -253,6 +258,7 @@ void text_framebuffer_panel::on_paint(wxPaintEvent& e)
 
 void text_framebuffer_panel::on_focus(wxFocusEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(redirect)
 		redirect->SetFocus();
 }

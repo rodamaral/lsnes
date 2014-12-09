@@ -47,6 +47,7 @@ namespace
 
 		bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames)
 		{
+			CHECK_UI_THREAD;
 			if(filenames.Count() != 1)
 				return false;
 			ctrl->SetValue(filenames[0]);
@@ -74,6 +75,7 @@ namespace
 	setting_select::setting_select(wxWindow* parent, const core_setting& s)
 		: setting(s)
 	{
+		CHECK_UI_THREAD;
 		label = NULL;
 		if(!setting.is_boolean())
 			label = new wxStaticText(parent, wxID_ANY, towxstring(setting.hname));
@@ -111,6 +113,7 @@ namespace
 
 	std::string setting_select::read()
 	{
+		CHECK_UI_THREAD;
 		if(text) return tostdstring(text->GetValue());
 		if(check) return check->GetValue() ? "1" : "0";
 		if(combo) return setting.hvalue_to_ivalue(tostdstring(combo->GetValue()));
@@ -158,6 +161,7 @@ namespace
 		: wxDialog(parent, wxID_ANY, wxT("New Project"), wxDefaultPosition, wxSize(-1, -1),
 			wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		Centre();
 		wxBoxSizer* toplevel = new wxBoxSizer(wxVERTICAL);
 		SetSizer(toplevel);
@@ -241,6 +245,7 @@ namespace
 
 	void wxwin_newproject::on_ok(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(!inst.mlogic) {
 			show_message_ok(this, "Error", "Can't start project without movie", wxICON_EXCLAMATION);
 			return;
@@ -304,11 +309,13 @@ no_watch:
 
 	void wxwin_newproject::on_cancel(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		EndModal(wxID_CANCEL);
 	}
 
 	void wxwin_newproject::on_memorywatch_select(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		try {
 			std::string lwch = choose_file_load(this, "Select memory watch file", ".", filetype_watch);
 			try {
@@ -336,6 +343,7 @@ no_watch:
 
 	void wxwin_newproject::on_add(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		try {
 			std::string luascript = choose_file_load(this, "Pick lua script", ".", filetype_lua_script);
 			try {
@@ -353,6 +361,7 @@ no_watch:
 
 	void wxwin_newproject::on_remove(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		int sel = luascripts->GetSelection();
 		int count = luascripts->GetCount();
 		luascripts->Delete(sel);
@@ -367,6 +376,7 @@ no_watch:
 
 	void wxwin_newproject::reorder_scripts(int delta)
 	{
+		CHECK_UI_THREAD;
 		int sel = luascripts->GetSelection();
 		int count = luascripts->GetCount();
 		if(sel == wxNOT_FOUND || sel + delta >= count || sel + delta < 0)
@@ -380,18 +390,21 @@ no_watch:
 
 	void wxwin_newproject::on_up(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		reorder_scripts(-1);
 		on_luasel(e);
 	}
 
 	void wxwin_newproject::on_down(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		reorder_scripts(1);
 		on_luasel(e);
 	}
 
 	void wxwin_newproject::on_luasel(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		int sel = luascripts->GetSelection();
 		int count = luascripts->GetCount();
 		removebutton->Enable(sel != wxNOT_FOUND);
@@ -401,6 +414,7 @@ no_watch:
 
 	void wxwin_newproject::on_directory_select(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		wxDirDialog* d = new wxDirDialog(this, wxT("Select project directory"), projdir->GetValue(),
 			wxDD_DIR_MUST_EXIST);
 		if(d->ShowModal() == wxID_CANCEL) {
@@ -474,6 +488,7 @@ private:
 
 void show_projectwindow(wxWindow* modwin, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	if(inst.rom->isnull()) {
 		show_message_ok(modwin, "Can't start new movie", "No ROM loaded", wxICON_EXCLAMATION);
 		return;
@@ -489,6 +504,7 @@ wxwin_project::wxwin_project(emulator_instance& _inst)
 	: wxDialog(NULL, wxID_ANY, wxT("Project settings"), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	std::vector<wxString> cchoices;
 
 	std::set<std::string> sram_set = inst.rom->srams();
@@ -592,6 +608,7 @@ wxwin_project::~wxwin_project()
 
 void wxwin_project::on_ask_filename(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	try {
 		if(id >= ASK_SRAMS_BASE && id <= ASK_SRAMS_LAST) {
@@ -605,6 +622,7 @@ void wxwin_project::on_ask_filename(wxCommandEvent& e)
 
 void wxwin_project::on_filename_change(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		boost::lexical_cast<int64_t>(tostdstring(rtc_sec->GetValue()));
 		if(boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue())) < 0)
@@ -628,6 +646,7 @@ void wxwin_project::on_quit(wxCommandEvent& e)
 
 void wxwin_project::on_load(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		moviefile& mov = make_movie();
 		mov.start_paused = false;
@@ -643,6 +662,7 @@ void wxwin_project::on_load(wxCommandEvent& e)
 
 struct moviefile& wxwin_project::make_movie()
 {
+	CHECK_UI_THREAD;
 	moviefile& f = *new moviefile;
 	f.force_corrupt = false;
 	f.gametype = &inst.rom->get_sysregion();
@@ -690,6 +710,7 @@ struct moviefile& wxwin_project::make_movie()
 
 void open_new_project_window(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	if(inst.rom->isnull()) {
 		show_message_ok(parent, "Can't start new project", "No ROM loaded", wxICON_EXCLAMATION);
 		return;

@@ -39,6 +39,7 @@ namespace
 	wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent, emulator_instance& _inst)
 		: settings_tab(parent, _inst)
 	{
+		CHECK_UI_THREAD;
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 
@@ -73,6 +74,7 @@ namespace
 
 	wxTreeItemId wxeditor_esettings_hotkeys::get_item(const string_list<char>& i)
 	{
+		CHECK_UI_THREAD;
 		if(items.count(i) && items[i].IsOk())
 			return items[i];
 		return items[i] = controls->AppendItem(get_item(i.strip_one()), towxstring(i[i.size() - 1]));
@@ -80,6 +82,7 @@ namespace
 
 	string_list<char> wxeditor_esettings_hotkeys::get_selection()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return string_list<char>();
 		string_list<char> sel;
@@ -92,6 +95,7 @@ namespace
 
 	void wxeditor_esettings_hotkeys::on_change(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		string_list<char> sel = get_selection();
@@ -105,6 +109,7 @@ namespace
 
 	void wxeditor_esettings_hotkeys::on_add(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		string_list<char> sel = get_selection();
@@ -135,6 +140,7 @@ namespace
 
 	void wxeditor_esettings_hotkeys::on_drop(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		string_list<char> sel = get_selection();
@@ -175,6 +181,7 @@ namespace
 
 	void wxeditor_esettings_hotkeys::on_popup_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		if(e.GetId() == wxID_ADDKEY)
@@ -193,6 +200,7 @@ namespace
 
 	void wxeditor_esettings_hotkeys::on_mouse(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
 			return;
 		string_list<char> sel = get_selection();
@@ -220,6 +228,7 @@ namespace
 
 	void wxeditor_esettings_hotkeys::refresh()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::map<keyboard::invbind*, std::list<keyboard::keyspec>> data;

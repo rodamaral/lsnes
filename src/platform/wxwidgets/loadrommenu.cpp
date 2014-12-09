@@ -5,6 +5,7 @@
 
 loadrom_menu::loadrom_menu(wxWindow* win, int wxid_low, int wxid_high, std::function<void(core_type* name)> cb)
 {
+	CHECK_UI_THREAD;
 	pwin = win;
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
@@ -17,6 +18,7 @@ loadrom_menu::loadrom_menu(wxWindow* win, int wxid_low, int wxid_high, std::func
 
 void loadrom_menu::on_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(id < wxid_range_low || id > wxid_range_high)
 		return;
@@ -26,6 +28,7 @@ void loadrom_menu::on_select(wxCommandEvent& e)
 
 void loadrom_menu::update()
 {
+	CHECK_UI_THREAD;
 	auto ents = core_type::get_core_types();
 	int id = wxid_range_low;
 	for(auto i : items)

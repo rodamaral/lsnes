@@ -89,6 +89,7 @@ private:
 wxeditor_plugins::wxeditor_plugins(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Plugin manager"), wxDefaultPosition, wxSize(-1, -1))
 {
+	CHECK_UI_THREAD;
 	Center();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 	SetSizer(top_s);
@@ -135,6 +136,7 @@ wxeditor_plugins::wxeditor_plugins(wxWindow* parent)
 
 void wxeditor_plugins::reload_plugins()
 {
+	CHECK_UI_THREAD;
 	int sel = plugins->GetSelection();
 	std::string name;
 	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size())
@@ -175,6 +177,7 @@ void wxeditor_plugins::reload_plugins()
 
 void wxeditor_plugins::on_selection_change(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = plugins->GetSelection();
 	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size()) {
 		renamebutton->Enable(false);
@@ -190,6 +193,7 @@ void wxeditor_plugins::on_selection_change(wxCommandEvent& e)
 
 void wxeditor_plugins::on_add(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		std::string file = choose_file_load(this, "Choose plugin to add", ".",
 			single_type(loadlib::library::extension(), loadlib::library::name()));
@@ -274,6 +278,7 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 
 void wxeditor_plugins::on_rename(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = plugins->GetSelection();
 	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size())
 		return;
@@ -301,6 +306,7 @@ void wxeditor_plugins::on_rename(wxCommandEvent& e)
 
 void wxeditor_plugins::on_enable(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = plugins->GetSelection();
 	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size())
 		return;
@@ -321,6 +327,7 @@ void wxeditor_plugins::on_enable(wxCommandEvent& e)
 
 void wxeditor_plugins::on_delete(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = plugins->GetSelection();
 	if(sel == wxNOT_FOUND || sel >= (ssize_t)pluginstbl.size())
 		return;
@@ -335,11 +342,13 @@ void wxeditor_plugins::on_delete(wxCommandEvent& e)
 
 void wxeditor_plugins::on_start(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_OK);
 }
 
 void wxeditor_plugins::on_close(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_CANCEL);
 }
 
@@ -357,6 +366,7 @@ filelist& wxeditor_plugins::get_killlist()
 
 bool wxeditor_plugin_manager_display(wxWindow* parent)
 {
+	CHECK_UI_THREAD;
 	int r;
 	modal_pause_holder* hld = NULL;
 	try {

@@ -54,6 +54,7 @@ namespace
 	wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent, emulator_instance& _inst)
 		: settings_tab(parent, _inst), _listener(*inst.settings, *this)
 	{
+		CHECK_UI_THREAD;
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 
@@ -95,6 +96,7 @@ namespace
 	std::string change_value_of_enumeration(wxWindow* parent, const std::string& name,
 		const settingvar::description& desc, const std::string& current)
 	{
+		CHECK_UI_THREAD;
 		std::vector<std::string> valset;
 		unsigned dflt = 0;
 		for(unsigned i = 0; i <= desc._enumeration->max_val(); i++) {
@@ -118,6 +120,7 @@ namespace
 			const std::string& val)
 			: wxDialog(parent, wxID_ANY, wxT("Set value to"))
 		{
+			CHECK_UI_THREAD;
 			wxSizer* s1 = new wxBoxSizer(wxVERTICAL);
 			SetSizer(s1);
 			s1->Add(new wxStaticText(this, wxID_ANY, towxstring("Set " + name + " to value:")), 0,
@@ -151,6 +154,7 @@ namespace
 		path_inputbox(wxWindow* parent, const std::string& name, const std::string& val)
 			: wxDialog(parent, wxID_ANY, wxT("Set path to"))
 		{
+			CHECK_UI_THREAD;
 			wxButton* t;
 			wxSizer* s1 = new wxBoxSizer(wxVERTICAL);
 			SetSizer(s1);
@@ -203,6 +207,7 @@ namespace
 	std::string change_value_of_numeric(wxWindow* parent, const std::string& name,
 		const settingvar::description& desc, const std::string& current)
 	{
+		CHECK_UI_THREAD;
 		auto d = new numeric_inputbox(parent, name, desc.min_val, desc.max_val, current);
 		int x = d->ShowModal();
 		if(x == wxID_CANCEL) {
@@ -217,6 +222,7 @@ namespace
 	std::string change_value_of_path(wxWindow* parent, const std::string& name,
 		const settingvar::description& desc, const std::string& current)
 	{
+		CHECK_UI_THREAD;
 		auto d = new path_inputbox(parent, name, current);
 		int x = d->ShowModal();
 		if(x == wxID_CANCEL) {
@@ -230,6 +236,7 @@ namespace
 
 	void wxeditor_esettings_advanced::on_popup_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		if(e.GetId() == wxID_EDIT)
@@ -238,6 +245,7 @@ namespace
 
 	void wxeditor_esettings_advanced::on_mouse(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
 			return;
 		if(selected() == "")
@@ -251,12 +259,14 @@ namespace
 
 	void wxeditor_esettings_advanced::on_change2(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		wxCommandEvent e2;
 		on_change(e2);
 	}
 
 	void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::string name = selected();
@@ -293,6 +303,7 @@ namespace
 
 	void wxeditor_esettings_advanced::on_selchange(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::string sel = selected();
@@ -305,6 +316,7 @@ namespace
 		if(closing())
 			return;
 		runuifun([this, &val]() {
+			CHECK_UI_THREAD;
 			std::string setting = val.get_iname();
 			std::string value = val.str();
 			this->settings.insert(setting);
@@ -315,6 +327,7 @@ namespace
 
 	void wxeditor_esettings_advanced::refresh()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		settings = inst.setcache->get_keys();
@@ -327,6 +340,7 @@ namespace
 
 	std::string wxeditor_esettings_advanced::selected()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return "";
 		int x = _settings->GetSelection();
@@ -338,6 +352,7 @@ namespace
 
 	void wxeditor_esettings_advanced::_refresh()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::vector<wxString> strings;

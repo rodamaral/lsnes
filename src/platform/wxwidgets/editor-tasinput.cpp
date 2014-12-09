@@ -183,6 +183,7 @@ wxeditor_tasinput::xypanel::xypanel(wxWindow* win, emulator_instance& _inst, wxS
 	wxEvtHandler* _obj, wxObjectEventFunction _fun, int _wxid)
 	: inst(_inst)
 {
+	CHECK_UI_THREAD;
 	x = 0;
 	y = 0;
 	xnum = NULL;
@@ -235,6 +236,7 @@ void wxeditor_tasinput::call_screen_update()
 
 void wxeditor_tasinput::xypanel::on_click(wxMouseEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(!e.Dragging() && !e.LeftDown())
 		return;
 	wxCommandEvent e2(0, wxid);
@@ -249,6 +251,7 @@ void wxeditor_tasinput::xypanel::on_click(wxMouseEvent& e)
 
 void wxeditor_tasinput::xypanel::on_numbers_change(wxSpinEvent& e)
 {
+	CHECK_UI_THREAD;
 	wxCommandEvent e2(0, wxid);
 	if(xnum) x = xnum->GetValue();
 	if(ynum) y = ynum->GetValue();
@@ -258,6 +261,7 @@ void wxeditor_tasinput::xypanel::on_numbers_change(wxSpinEvent& e)
 
 void wxeditor_tasinput::xypanel::do_redraw()
 {
+	CHECK_UI_THREAD;
 	if(!dirty) {
 		dirty = true;
 		graphics->Refresh();
@@ -266,6 +270,7 @@ void wxeditor_tasinput::xypanel::do_redraw()
 
 void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 {
+	CHECK_UI_THREAD;
 	wxPaintDC dc(graphics);
 	if(lightgun) {
 		//Draw the current screen.
@@ -321,6 +326,7 @@ void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 
 void wxeditor_tasinput::xypanel::Destroy()
 {
+	CHECK_UI_THREAD;
 	graphics->Destroy();
 	xnum->Destroy();
 	if(ynum) ynum->Destroy();
@@ -335,6 +341,7 @@ wxeditor_tasinput::wxeditor_tasinput(emulator_instance& _inst, wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: TAS input plugin"), wxDefaultPosition, wxSize(-1, -1)),
 	inst(_inst)
 {
+	CHECK_UI_THREAD;
 	current_controller = 0;
 	current_button = 0;
 	closing = false;
@@ -364,6 +371,7 @@ wxeditor_tasinput::wxeditor_tasinput(emulator_instance& _inst, wxWindow* parent)
 
 void wxeditor_tasinput::connect_keyboard_recursive(wxWindow* win)
 {
+	CHECK_UI_THREAD;
 	win->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(wxeditor_tasinput::on_keyboard_down), NULL, this);
 	win->Connect(wxEVT_KEY_UP, wxKeyEventHandler(wxeditor_tasinput::on_keyboard_up), NULL, this);
 	auto i = win->GetChildren().GetFirst();
@@ -375,6 +383,7 @@ void wxeditor_tasinput::connect_keyboard_recursive(wxWindow* win)
 
 void wxeditor_tasinput::on_control(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(!inputs.count(id))
 		return;
@@ -396,6 +405,7 @@ void wxeditor_tasinput::on_control(wxCommandEvent& e)
 
 void wxeditor_tasinput::update_controls()
 {
+	CHECK_UI_THREAD;
 	for(auto i : inputs) {
 		if(i.second.check)
 			i.second.check->Destroy();
@@ -546,6 +556,7 @@ bool wxeditor_tasinput::ShouldPreventAppExit() const { return false; }
 
 void wxeditor_tasinput::on_wclose(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	bool wasc = closing;
 	closing = true;
 	inst.controls->tasinput_enable(false);
@@ -555,6 +566,7 @@ void wxeditor_tasinput::on_wclose(wxCloseEvent& e)
 
 void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
 {
+	CHECK_UI_THREAD;
 	int key = e.GetKeyCode();
 	if(key == WXK_LEFT || key == WXK_RIGHT || key == WXK_UP || key == WXK_DOWN) {
 		//See if this is associated with a panel.
@@ -593,6 +605,7 @@ void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
 
 void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
 {
+	CHECK_UI_THREAD;
 	int key = e.GetKeyCode();
 	if(key == WXK_LEFT || key == WXK_RIGHT) {
 		auto t = find_triple(current_controller, current_button);
@@ -724,6 +737,7 @@ wxeditor_tasinput::control_triple* wxeditor_tasinput::find_triple(unsigned contr
 
 void wxeditor_tasinput_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	auto e = tasinputs.lookup(inst);
 	if(e) {
 		e->Raise();

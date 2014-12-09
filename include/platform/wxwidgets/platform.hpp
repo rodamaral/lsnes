@@ -12,6 +12,9 @@
 #include <wx/string.h>
 #include <wx/event.h>
 
+void _check_ui_thread(const char* file, int line);
+#define CHECK_UI_THREAD _check_ui_thread( __FILE__ , __LINE__ )
+
 class wxwin_mainwindow;
 class wxwin_messages;
 class wxwin_status;

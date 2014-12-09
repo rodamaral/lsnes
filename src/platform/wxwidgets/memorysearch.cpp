@@ -204,6 +204,7 @@ wxwindow_memorysearch_vmasel::wxwindow_memorysearch_vmasel(wxWindow* p, emulator
 	: wxDialog(p, wxID_ANY, towxstring("lsnes: Select enabled regions"), wxDefaultPosition, wxSize(300, -1)),
 	inst(_inst)
 {
+	CHECK_UI_THREAD;
 	auto i = inst.memory->get_regions();
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(i.size() + 1, 1, 0, 0);
@@ -244,6 +245,7 @@ std::set<std::string> wxwindow_memorysearch_vmasel::get_vmas()
 
 void wxwindow_memorysearch_vmasel::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	for(auto i : checkboxes)
 		if(i->GetValue())
 			vmas.insert(tostdstring(i->GetLabel()));
@@ -252,6 +254,7 @@ void wxwindow_memorysearch_vmasel::on_ok(wxCommandEvent& e)
 
 void wxwindow_memorysearch_vmasel::on_cancel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_CANCEL);
 }
 
@@ -623,6 +626,7 @@ wxwindow_memorysearch::wxwindow_memorysearch(emulator_instance& _inst)
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Memory Search"), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	typecode = 0;
 	wxButton* tmp;
 	Centre();
@@ -736,6 +740,7 @@ wxwindow_memorysearch::panel::panel(wxwindow_memorysearch* _parent, emulator_ins
 
 void wxwindow_memorysearch::panel::prepare_paint()
 {
+	CHECK_UI_THREAD;
 	uint64_t first = parent->scroll->get_position();
 	auto ssize = get_characters();
 	uint64_t last = first + ssize.second;
@@ -926,6 +931,7 @@ void wxwindow_memorysearch::push_undo()
 
 void wxwindow_memorysearch::on_mouse(wxMouseEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(e.RightUp() || (e.LeftUp() && e.ControlDown()))
 		on_mouse2(e);
 	else if(e.LeftDown())
@@ -942,6 +948,7 @@ void wxwindow_memorysearch::on_mouse(wxMouseEvent& e)
 
 void wxwindow_memorysearch::on_mouse0(wxMouseEvent& e, bool polarity)
 {
+	CHECK_UI_THREAD;
 	dragging = polarity && !toomany;
 	if(dragging) {
 		mpx = e.GetX();
@@ -955,6 +962,7 @@ void wxwindow_memorysearch::on_mouse0(wxMouseEvent& e, bool polarity)
 
 void wxwindow_memorysearch::on_mousedrag(wxMouseEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(!dragging)
 		return;
 	uint64_t first = scroll->get_position();
@@ -967,6 +975,7 @@ void wxwindow_memorysearch::on_mousedrag(wxMouseEvent& e)
 
 void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 {
+	CHECK_UI_THREAD;
 	wxMenu menu;
 	bool some_selected;
 	uint64_t selcount = 0;
@@ -997,11 +1006,13 @@ void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 
 void wxwindow_memorysearch::on_close(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	Destroy();
 }
 
 void wxwindow_memorysearch::auto_update()
 {
+	CHECK_UI_THREAD;
 	if(autoupdate->GetValue())
 		update();
 }
@@ -1013,6 +1024,7 @@ void wxwindow_memorysearch::update()
 
 void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(id == wxID_RESET) {
 		push_undo();
@@ -1162,6 +1174,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 
 template<typename T> void wxwindow_memorysearch::_do_poke_addr(uint64_t addr)
 {
+	CHECK_UI_THREAD;
 	T val = msearch->v_read<T>(addr);
 	std::string v;
 	try {
@@ -1184,6 +1197,7 @@ template<void(memory_search::*sfn)()> void wxwindow_memorysearch::search_0()
 
 template<typename T, typename T2, void(memory_search::*sfn)(T2 val)> void wxwindow_memorysearch::search_1()
 {
+	CHECK_UI_THREAD;
 	bool bad = false;
 	T val = promptvalue<T>(bad);
 	if(bad)
@@ -1193,6 +1207,7 @@ template<typename T, typename T2, void(memory_search::*sfn)(T2 val)> void wxwind
 
 template<typename T> T wxwindow_memorysearch::promptvalue(bool& bad)
 {
+	CHECK_UI_THREAD;
 	std::string v;
 	wxTextEntryDialog* d = new wxTextEntryDialog(this, wxT("Enter value to search for:"), wxT("Memory search"),
 		wxT(""));
@@ -1215,6 +1230,7 @@ template<typename T> T wxwindow_memorysearch::promptvalue(bool& bad)
 
 void wxwindow_memorysearch_display(emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	auto e = mwatch.lookup(inst);
 	if(e) {
 		e->Raise();

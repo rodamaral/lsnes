@@ -68,6 +68,7 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent, emulator_instance& _inst)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit commentary track"), wxDefaultPosition, wxSize(-1, -1)),
 	inst(_inst)
 {
+	CHECK_UI_THREAD;
 	closing = false;
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(6, 1, 0, 0);
@@ -155,6 +156,7 @@ wxeditor_voicesub::~wxeditor_voicesub() throw()
 
 void wxeditor_voicesub::on_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(closing)
 		return;
 	uint64_t id = get_id();
@@ -168,6 +170,7 @@ void wxeditor_voicesub::on_select(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_play(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	uint64_t id = get_id();
 	if(id == NOTHING)
 		return;
@@ -180,6 +183,7 @@ void wxeditor_voicesub::on_play(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_delete(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	uint64_t id = get_id();
 	if(id == NOTHING)
 		return;
@@ -216,6 +220,7 @@ namespace
 
 void wxeditor_voicesub::on_export(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	uint64_t id = get_id();
 	if(id == NOTHING)
 		return;
@@ -231,6 +236,7 @@ void wxeditor_voicesub::on_export(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		std::string filename;
 		filename = choose_file_save(this, "Select file to export superstream",
@@ -244,6 +250,7 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_import(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		uint64_t ts;
 		ts = inst.commentary->parse_timebase(pick_text(this, "Enter timebase",
@@ -259,6 +266,7 @@ void wxeditor_voicesub::on_import(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_change_ts(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	uint64_t id = get_id();
 	if(id == NOTHING)
 		return;
@@ -275,6 +283,7 @@ void wxeditor_voicesub::on_change_ts(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	uint64_t id = get_id();
 	if(id == NOTHING)
 		return;
@@ -291,6 +300,7 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_load(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(UI_in_project_context(inst))
 		return;
 	try {
@@ -310,6 +320,7 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_unload(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(UI_in_project_context(inst))
 		return;
 	inst.commentary->unload_collection();
@@ -322,12 +333,14 @@ void wxeditor_voicesub::on_refresh(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_close(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	voicesub_open.erase(&inst);
 	Destroy();
 }
 
 void wxeditor_voicesub::refresh()
 {
+	CHECK_UI_THREAD;
 	if(closing)
 		return;
 	bool cflag = inst.commentary->collection_loaded();
@@ -361,12 +374,14 @@ void wxeditor_voicesub::refresh()
 
 uint64_t wxeditor_voicesub::get_id()
 {
+	CHECK_UI_THREAD;
 	int id = subtitles->GetSelection();
 	return smap.count(id) ? smap[id] : NOTHING;
 }
 
 void wxeditor_voicesub::on_wclose(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	bool wasc = closing;
 	closing = true;
 	if(!wasc)
@@ -378,6 +393,7 @@ bool wxeditor_voicesub::ShouldPreventAppExit() const { return false; }
 
 void show_wxeditor_voicesub(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	if(voicesub_open.count(&inst))
 		return;
 	wxeditor_voicesub* v = new wxeditor_voicesub(parent, inst);

@@ -37,6 +37,7 @@ namespace
 	wxeditor_esettings_controllers::wxeditor_esettings_controllers(wxWindow* parent, emulator_instance& _inst)
 		: settings_tab(parent, _inst)
 	{
+		CHECK_UI_THREAD;
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 
@@ -72,6 +73,7 @@ namespace
 
 	wxTreeItemId wxeditor_esettings_controllers::get_item(const string_list<char>& i)
 	{
+		CHECK_UI_THREAD;
 		if(i.size() == 1)
 			return items[string_list<char>()];
 		if(items.count(i) && items[i].IsOk())
@@ -81,6 +83,7 @@ namespace
 
 	string_list<char> wxeditor_esettings_controllers::get_selection()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return string_list<char>();
 		string_list<char> sel;
@@ -93,6 +96,7 @@ namespace
 
 	void wxeditor_esettings_controllers::on_change(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		string_list<char> sel = get_selection();
@@ -106,6 +110,7 @@ namespace
 
 	void wxeditor_esettings_controllers::on_setkey(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		string_list<char> sel = get_selection();
@@ -135,6 +140,7 @@ namespace
 
 	void wxeditor_esettings_controllers::on_clearkey(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		string_list<char> sel = get_selection();
@@ -180,6 +186,7 @@ namespace
 
 	void wxeditor_esettings_controllers::on_popup_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		if(e.GetId() == wxID_ADDKEY)
@@ -199,6 +206,7 @@ namespace
 
 	void wxeditor_esettings_controllers::on_mouse(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
 			return;
 		string_list<char> sel = get_selection();
@@ -226,6 +234,7 @@ namespace
 
 	void wxeditor_esettings_controllers::refresh()
 	{
+		CHECK_UI_THREAD;
 		if(closing())
 			return;
 		std::map<keyboard::ctrlrkey*, std::string> data;

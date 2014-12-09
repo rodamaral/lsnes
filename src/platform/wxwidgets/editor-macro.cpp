@@ -90,6 +90,7 @@ namespace
 		const portctrl::macro& m)
 		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		constructing = true;
 		curmacro = m;
 		Centre();
@@ -151,6 +152,7 @@ namespace
 
 	void wxeditor_macro_1::on_ok(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		portctrl::macro m;
 		if(rb_overwrite->GetValue()) m.amode = portctrl::macro_data::AM_OVERWRITE;
 		if(rb_or->GetValue()) m.amode = portctrl::macro_data::AM_OR;
@@ -174,11 +176,13 @@ namespace
 
 	void wxeditor_macro_1::on_cancel(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		EndModal(wxID_CANCEL);
 	}
 
 	void wxeditor_macro_1::on_macro_edit(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(constructing)
 			return;
 		bool ret = true;
@@ -228,6 +232,7 @@ bool wxeditor_macro::ShouldPreventAppExit() const
 wxeditor_macro::wxeditor_macro(wxWindow* parent, emulator_instance& _inst)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit macros"), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	Centre();
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
@@ -271,6 +276,7 @@ wxeditor_macro::wxeditor_macro(wxWindow* parent, emulator_instance& _inst)
 
 void wxeditor_macro::update()
 {
+	CHECK_UI_THREAD;
 	std::set<std::string> macro_list = inst.controls->enumerate_macro();
 	std::string current;
 	int sel = macros->GetSelection();
@@ -301,11 +307,13 @@ void wxeditor_macro::update()
 
 void wxeditor_macro::on_close(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_OK);
 }
 
 void wxeditor_macro::on_change(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = macros->GetSelection();
 	editbutton->Enable(sel != wxNOT_FOUND);
 	deletebutton->Enable(sel != wxNOT_FOUND);
@@ -314,6 +322,7 @@ void wxeditor_macro::on_change(wxCommandEvent& e)
 
 void wxeditor_macro::on_delete(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = macros->GetSelection();
 	if(sel == wxNOT_FOUND)
 		return;
@@ -324,6 +333,7 @@ void wxeditor_macro::on_delete(wxCommandEvent& e)
 
 void wxeditor_macro::on_add(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		std::string mname = pick_text(this, "Name new macro", "Enter name for the new macro:", "");
 		if(mname == "")
@@ -347,6 +357,7 @@ void wxeditor_macro::on_add(wxCommandEvent& e)
 
 void wxeditor_macro::on_edit(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = macros->GetSelection();
 	if(sel == wxNOT_FOUND)
 		return;
@@ -363,6 +374,7 @@ void wxeditor_macro::on_edit(wxCommandEvent& e)
 
 void wxeditor_macro::on_rename(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = macros->GetSelection();
 	if(sel == wxNOT_FOUND)
 		return;
@@ -381,6 +393,7 @@ void wxeditor_macro::on_rename(wxCommandEvent& e)
 
 void wxeditor_macro::on_load(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		std::string mname = pick_text(this, "Name new macro", "Enter name for the new macro:", "");
 		if(mname == "")
@@ -399,6 +412,7 @@ void wxeditor_macro::on_load(wxCommandEvent& e)
 
 void wxeditor_macro::on_save(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = macros->GetSelection();
 	if(sel == wxNOT_FOUND)
 		return;
@@ -424,6 +438,7 @@ void wxeditor_macro::on_save(wxCommandEvent& e)
 
 bool wxeditor_macro::do_edit(const std::string& mname, portctrl::macro& m)
 {
+	CHECK_UI_THREAD;
 	wxeditor_macro_1* editor;
 	bool ret;
 
@@ -446,6 +461,7 @@ bool wxeditor_macro::do_edit(const std::string& mname, portctrl::macro& m)
 
 void wxeditor_macro_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {

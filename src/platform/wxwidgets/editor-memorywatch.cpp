@@ -74,21 +74,25 @@ namespace
 		}
 		template<typename... U> label_control(wxWindow* parent, const std::string& label, U... args)
 		{
+			CHECK_UI_THREAD;
 			lbl = new wxStaticText(parent, wxID_ANY, towxstring(label));
 			ctrl = new T(parent, args...);
 		}
 		void show(bool state)
 		{
+			CHECK_UI_THREAD;
 			lbl->Show(state);
 			ctrl->Show(state);
 		}
 		void enable(bool state)
 		{
+			CHECK_UI_THREAD;
 			lbl->Enable(state);
 			ctrl->Enable(state);
 		}
 		void add(wxSizer* s, bool prop = false)
 		{
+			CHECK_UI_THREAD;
 			s->Add(lbl, 0, wxALIGN_CENTER_VERTICAL);
 			s->Add(ctrl, prop ? 1 : 0, wxGROW);
 		}
@@ -165,6 +169,7 @@ private:
 wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, emulator_instance& _inst, const std::string& _name)
 	: wxDialog(parent, wxID_ANY, towxstring("Edit memory watch '" + _name + "'")), inst(_inst), name(_name)
 {
+	CHECK_UI_THREAD;
 	Center();
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
@@ -372,6 +377,7 @@ memwatch_printer::position_category wxeditor_memorywatch::get_poscategory()
 
 void wxeditor_memorywatch::enable_for_pos(memwatch_printer::position_category p)
 {
+	CHECK_UI_THREAD;
 	bool full_disable = (p == memwatch_printer::PC_DISABLED);
 	cond_enable->Enable(!full_disable);
 	enabled->Enable(cond_enable->GetValue() && !full_disable);
@@ -390,6 +396,7 @@ void wxeditor_memorywatch::enable_for_pos(memwatch_printer::position_category p)
 
 void wxeditor_memorywatch::enable_condenable()
 {
+	CHECK_UI_THREAD;
 	memwatch_printer::position_category p = get_poscategory();
 	bool full_disable = (p == memwatch_printer::PC_DISABLED);
 	enabled->Enable(cond_enable->GetValue() && !full_disable);
@@ -402,6 +409,7 @@ void wxeditor_memorywatch::enable_condenable2(wxCommandEvent& e)
 
 void wxeditor_memorywatch::enable_for_addr(bool is_addr)
 {
+	CHECK_UI_THREAD;
 	expr.label()->SetLabel(towxstring(is_addr ? "Address:" : "Expr:"));
 	endianess.enable(is_addr);
 	scale.enable(is_addr);
@@ -413,6 +421,7 @@ void wxeditor_memorywatch::enable_for_addr(bool is_addr)
 
 void wxeditor_memorywatch::enable_for_vma(bool free, uint64_t _base, uint64_t _size)
 {
+	CHECK_UI_THREAD;
 	//TODO: Set default endian.
 	if(!free && !was_free) {
 		addrbase->SetValue(towxstring((stringfmt() << std::hex << _base).str()));
@@ -435,6 +444,7 @@ void wxeditor_memorywatch::enable_for_vma(bool free, uint64_t _base, uint64_t _s
 
 void wxeditor_memorywatch::on_position_change(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	enable_for_pos(get_poscategory());
 	int vmasel = vma->GetSelection();
 	if(vmasel == 0)
@@ -450,6 +460,7 @@ void wxeditor_memorywatch::on_position_change(wxCommandEvent& e)
 
 void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		std::string filename = choose_file_load(this, "Choose font file", UI_get_project_otherpath(inst),
 			filetype_font);
@@ -460,6 +471,7 @@ void wxeditor_memorywatch::on_fontsel(wxCommandEvent& e)
 
 void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	memwatch_item it;
 	it.expr = tostdstring(expr->GetValue());
 	it.format = tostdstring(format->GetValue());
@@ -525,6 +537,7 @@ void wxeditor_memorywatch::on_ok(wxCommandEvent& e)
 
 void wxeditor_memorywatch::on_cancel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_CANCEL);
 }
 
@@ -556,6 +569,7 @@ wxeditor_memorywatches::wxeditor_memorywatches(wxWindow* parent, emulator_instan
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit memory watches"), wxDefaultPosition, wxSize(-1, -1)),
 	inst(_inst)
 {
+	CHECK_UI_THREAD;
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 	SetSizer(top_s);
@@ -597,6 +611,7 @@ bool wxeditor_memorywatches::ShouldPreventAppExit() const
 
 void wxeditor_memorywatches::on_memorywatch_change(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::string watch = tostdstring(watches->GetStringSelection());
 	editbutton->Enable(watch != "");
 	deletebutton->Enable(watch != "");
@@ -605,6 +620,7 @@ void wxeditor_memorywatches::on_memorywatch_change(wxCommandEvent& e)
 
 void wxeditor_memorywatches::on_new(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		std::string newname = pick_text(this, "New watch", "Enter name for watch:");
 		if(newname == "")
@@ -621,6 +637,7 @@ void wxeditor_memorywatches::on_new(wxCommandEvent& e)
 
 void wxeditor_memorywatches::on_rename(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::string watch = tostdstring(watches->GetStringSelection());
 	if(watch == "")
 		return;
@@ -641,6 +658,7 @@ void wxeditor_memorywatches::on_rename(wxCommandEvent& e)
 
 void wxeditor_memorywatches::on_delete(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::string watch = tostdstring(watches->GetStringSelection());
 	if(watch != "")
 		inst.iqueue->run([watch]() { CORE().mwatch->clear(watch); });
@@ -650,6 +668,7 @@ void wxeditor_memorywatches::on_delete(wxCommandEvent& e)
 
 void wxeditor_memorywatches::on_edit(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		std::string watch = tostdstring(watches->GetStringSelection());
 		if(watch == "")
@@ -667,11 +686,13 @@ void wxeditor_memorywatches::on_edit(wxCommandEvent& e)
 
 void wxeditor_memorywatches::on_close(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_OK);
 }
 
 void wxeditor_memorywatches::refresh()
 {
+	CHECK_UI_THREAD;
 	std::set<std::string> bind;
 	inst.iqueue->run([&bind]() {
 		bind = CORE().mwatch->enumerate();
@@ -687,6 +708,7 @@ void wxeditor_memorywatches::refresh()
 
 void wxeditor_memorywatches_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {

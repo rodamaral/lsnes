@@ -48,6 +48,7 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent, emulator_instance& _inst)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit game name & authors"), wxDefaultPosition, wxSize(-1, -1)),
 	inst(_inst)
 {
+	CHECK_UI_THREAD;
 	project_author_info ainfo = UI_load_author_info(inst);
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(ainfo.is_project ? 12 : 5, 1, 0, 0);
@@ -161,6 +162,7 @@ bool wxeditor_authors::ShouldPreventAppExit() const
 
 void wxeditor_authors::on_authors_change(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		size_t lines = authors->GetNumberOfLines();
 		for(size_t i = 0; i < lines; i++) {
@@ -176,11 +178,13 @@ void wxeditor_authors::on_authors_change(wxCommandEvent& e)
 
 void wxeditor_authors::on_cancel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_CANCEL);
 }
 
 void wxeditor_authors::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	project_author_info ainfo;
 	ainfo.gamename = tostdstring(gamename->GetValue());
 	ainfo.prefix = tostdstring(projectpfx->GetValue());
@@ -205,6 +209,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 
 void wxeditor_authors::on_dir_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	wxDirDialog* d = new wxDirDialog(this, wxT("Select project directory"), directory->GetValue(),
 		wxDD_DIR_MUST_EXIST);
 	if(d->ShowModal() == wxID_CANCEL) {
@@ -217,6 +222,7 @@ void wxeditor_authors::on_dir_select(wxCommandEvent& e)
 
 void wxeditor_authors::on_add(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	try {
 		std::string luascript = choose_file_load(this, "Pick lua script", ".", filetype_lua_script);
 		try {
@@ -234,6 +240,7 @@ void wxeditor_authors::on_add(wxCommandEvent& e)
 
 void wxeditor_authors::on_remove(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = luascripts->GetSelection();
 	int count = luascripts->GetCount();
 	luascripts->Delete(sel);
@@ -248,6 +255,7 @@ void wxeditor_authors::on_remove(wxCommandEvent& e)
 
 void wxeditor_authors::reorder_scripts(int delta)
 {
+	CHECK_UI_THREAD;
 	int sel = luascripts->GetSelection();
 	int count = luascripts->GetCount();
 	if(sel == wxNOT_FOUND || sel + delta >= count || sel + delta < 0)
@@ -273,6 +281,7 @@ void wxeditor_authors::on_down(wxCommandEvent& e)
 
 void wxeditor_authors::on_luasel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int sel = luascripts->GetSelection();
 	int count = luascripts->GetCount();
 	removebutton->Enable(sel != wxNOT_FOUND);
@@ -282,6 +291,7 @@ void wxeditor_authors::on_luasel(wxCommandEvent& e)
 
 void wxeditor_authors_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	modal_pause_holder hld;
 	if(!*inst.mlogic) {
 		show_message_ok(parent, "No movie", "Can't edit authors of nonexistent movie", wxICON_EXCLAMATION);

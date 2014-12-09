@@ -110,6 +110,7 @@ namespace
 
 	bool ui_services_type::ProcessEvent(wxEvent& event)
 	{
+		CHECK_UI_THREAD;
 		int c = event.GetId();
 		if(c == UISERV_PANIC) {
 			//We need to panic.
@@ -314,6 +315,7 @@ std::u32string tou32string(const wxString& str) throw(std::bad_alloc)
 
 std::string pick_archive_member(wxWindow* parent, const std::string& filename) throw(std::bad_alloc)
 {
+	CHECK_UI_THREAD;
 	//Did we pick a .zip file?
 	std::string f;
 	try {
@@ -691,6 +693,7 @@ canceled_exception::canceled_exception() : std::runtime_error("Dialog canceled")
 
 std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir)
 {
+	CHECK_UI_THREAD;
 	wxString _title = towxstring(title);
 	wxString _startdir = towxstring(startdir);
 	std::string filespec;
@@ -707,6 +710,7 @@ std::string pick_file(wxWindow* parent, const std::string& title, const std::str
 
 std::string pick_file_member(wxWindow* parent, const std::string& title, const std::string& startdir)
 {
+	CHECK_UI_THREAD;
 	std::string filename = pick_file(parent, title, startdir);
 	//Did we pick a .zip file?
 	if(!regex_match(".*\\.[zZ][iI][pP]", filename))
@@ -729,6 +733,7 @@ std::string pick_file_member(wxWindow* parent, const std::string& title, const s
 std::string pick_among(wxWindow* parent, const std::string& title, const std::string& prompt,
 	const std::vector<std::string>& choices, unsigned defaultchoice)
 {
+	CHECK_UI_THREAD;
 	std::vector<wxString> _choices;
 	for(auto i : choices)
 		_choices.push_back(towxstring(i));
@@ -747,6 +752,7 @@ std::string pick_among(wxWindow* parent, const std::string& title, const std::st
 std::string pick_text(wxWindow* parent, const std::string& title, const std::string& prompt, const std::string& dflt,
 	bool multiline)
 {
+	CHECK_UI_THREAD;
 	wxTextEntryDialog* d2 = new wxTextEntryDialog(parent, towxstring(prompt), towxstring(title), towxstring(dflt),
 		wxOK | wxCANCEL | wxCENTRE | (multiline ? wxTE_MULTILINE : 0));
 	if(d2->ShowModal() == wxID_CANCEL) {
@@ -760,6 +766,7 @@ std::string pick_text(wxWindow* parent, const std::string& title, const std::str
 
 void show_message_ok(wxWindow* parent, const std::string& title, const std::string& text, int icon)
 {
+	CHECK_UI_THREAD;
 	wxMessageDialog* d3 = new wxMessageDialog(parent, towxstring(text), towxstring(title), wxOK | icon);
 	d3->ShowModal();
 	d3->Destroy();
@@ -783,6 +790,7 @@ bool run_show_error(wxWindow* parent, const std::string& title, const std::strin
 
 void show_exception(wxWindow* parent, const std::string& title, const std::string& text, std::exception& e)
 {
+	CHECK_UI_THREAD;
 	std::string err = e.what();
 	std::string _title = title;
 	std::string _text = (text == "") ? err : (text + ": " + err);
@@ -797,4 +805,11 @@ void show_exception_any(wxWindow* parent, const std::string& title, const std::s
 	runuifun([parent, _title, _text]() {
 		show_message_ok(parent, _title, _text, wxICON_EXCLAMATION);
 	});
+}
+
+void _check_ui_thread(const char* file, int line)
+{
+	if(ui_thread == threads::this_id())
+		return;
+	std::cerr << "UI routine running in wrong thread at " << file << ":" << line << std::endl;
 }

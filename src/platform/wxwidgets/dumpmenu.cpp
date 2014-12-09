@@ -58,6 +58,7 @@ private:
 dumper_menu::dumper_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
 	: inst(_inst)
 {
+	CHECK_UI_THREAD;
 	pwin = win;
 	win->Connect(wxid_low, wxid_high, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(dumper_menu::on_select), NULL, this);
@@ -76,6 +77,7 @@ dumper_menu::~dumper_menu()
 
 void dumper_menu::on_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(id < wxid_range_low || id > wxid_range_high)
 		return;
@@ -139,6 +141,7 @@ void dumper_menu::on_select(wxCommandEvent& e)
 
 void dumper_menu::update()
 {
+	CHECK_UI_THREAD;
 	dumper_information dinfo = UI_get_dumpers(inst);
 	//Destroy all old entries.
 	for(auto i : menustructure) {

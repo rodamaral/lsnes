@@ -86,6 +86,7 @@ public:
 		: wxDialog(parent, wxID_ANY, wxT("lsnes: Pick a game"), wxPoint(x, y)),
 		chosen(dflt), choices(_choices)
 	{
+		CHECK_UI_THREAD;
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 
@@ -128,6 +129,7 @@ public:
 	}
 	void on_search_type(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		std::string current;
 		if(games->GetSelection() != wxNOT_FOUND)
 			current = games->GetStringSelection();
@@ -148,6 +150,7 @@ public:
 	}
 	void on_list_select(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(games->GetSelection() != wxNOT_FOUND) {
 			chosen = tostdstring(games->GetStringSelection());
 			ok->Enable(true);
@@ -157,10 +160,12 @@ public:
 	}
 	void on_ok(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		EndModal(wxID_OK);
 	}
 	void on_cancel(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		EndModal(wxID_CANCEL);
 	}
 private:
@@ -215,6 +220,7 @@ private:
 wxeditor_uploadtarget::wxeditor_uploadtarget(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, towxstring("lsnes: New upload target"))
 {
+	CHECK_UI_THREAD;
 	ctor_common();
 	wxCommandEvent e;
 	on_auth_sel(e);
@@ -223,6 +229,7 @@ wxeditor_uploadtarget::wxeditor_uploadtarget(wxWindow* parent)
 wxeditor_uploadtarget::wxeditor_uploadtarget(wxWindow* parent, upload_menu::upload_entry entry)
 	: wxDialog(parent, wxID_ANY, towxstring("lsnes: Edit upload target: " + entry.name))
 {
+	CHECK_UI_THREAD;
 	ctor_common();
 	name->SetValue(towxstring(entry.name));
 	url->SetValue(towxstring(entry.url));
@@ -237,6 +244,7 @@ wxeditor_uploadtarget::wxeditor_uploadtarget(wxWindow* parent, upload_menu::uplo
 
 void wxeditor_uploadtarget::dh25519_fill_box()
 {
+	CHECK_UI_THREAD;
 	try {
 		uint8_t rbuf[32];
 		get_dh25519_pubkey(rbuf);
@@ -256,6 +264,7 @@ void wxeditor_uploadtarget::dh25519_fill_box()
 
 void wxeditor_uploadtarget::ctor_common()
 {
+	CHECK_UI_THREAD;
 	ok = NULL;
 	std::vector<wxString> auth_choices;
 	Center();
@@ -311,16 +320,19 @@ void wxeditor_uploadtarget::ctor_common()
 
 void wxeditor_uploadtarget::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_OK);
 }
 
 void wxeditor_uploadtarget::on_cancel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_CANCEL);
 }
 
 void wxeditor_uploadtarget::generate_dh25519(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	uint8_t rbuf[192];
 	try {
 		std::string entropy = pick_text(this, "Enter garbage", "Mash some garbage from keyboard to derive\n"
@@ -357,6 +369,7 @@ void wxeditor_uploadtarget::generate_dh25519(wxCommandEvent& e)
 
 void wxeditor_uploadtarget::on_auth_sel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	dh25519_p->Show(false);
 	switch(auth->GetSelection()) {
 	case 0:
@@ -369,6 +382,7 @@ void wxeditor_uploadtarget::on_auth_sel(wxCommandEvent& e)
 
 upload_menu::upload_entry wxeditor_uploadtarget::get_entry()
 {
+	CHECK_UI_THREAD;
 	upload_menu::upload_entry ent;
 	ent.name = tostdstring(name->GetValue());
 	ent.url = tostdstring(url->GetValue());
@@ -383,6 +397,7 @@ upload_menu::upload_entry wxeditor_uploadtarget::get_entry()
 
 void wxeditor_uploadtarget::revalidate(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	bool valid = true;
 	if(!name || (name->GetValue().Length() == 0)) valid = false;
 	std::string URL = url ? tostdstring(url->GetValue()) : "";
@@ -417,6 +432,7 @@ wxeditor_uploadtargets::wxeditor_uploadtargets(wxWindow* parent, upload_menu* me
 	: wxDialog(parent, wxID_ANY, towxstring("lsnes: Configure upload targets"), wxDefaultPosition,
 	wxSize(400, 500))
 {
+	CHECK_UI_THREAD;
 	umenu = menu;
 	Center();
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -451,11 +467,13 @@ wxeditor_uploadtargets::wxeditor_uploadtargets(wxWindow* parent, upload_menu* me
 
 void wxeditor_uploadtargets::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_OK);
 }
 
 void wxeditor_uploadtargets::on_add(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	auto f = new wxeditor_uploadtarget(this);
 	int r = f->ShowModal();
 	if(r == wxID_OK) {
@@ -470,6 +488,7 @@ void wxeditor_uploadtargets::on_add(wxCommandEvent& e)
 
 void wxeditor_uploadtargets::on_modify(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	auto s = list->GetSelection();
 	if(s == wxNOT_FOUND) return;
 	if(!id_map.count(s)) return;
@@ -483,6 +502,7 @@ void wxeditor_uploadtargets::on_modify(wxCommandEvent& e)
 
 void wxeditor_uploadtargets::on_remove(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	auto s = list->GetSelection();
 	if(s == wxNOT_FOUND) return;
 	if(!id_map.count(s)) return;
@@ -493,6 +513,7 @@ void wxeditor_uploadtargets::on_remove(wxCommandEvent& e)
 
 void wxeditor_uploadtargets::on_list_sel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	auto s = list->GetSelection();
 	modify->Enable(s != wxNOT_FOUND);
 	_delete->Enable(s != wxNOT_FOUND);
@@ -500,6 +521,7 @@ void wxeditor_uploadtargets::on_list_sel(wxCommandEvent& e)
 
 void wxeditor_uploadtargets::refresh()
 {
+	CHECK_UI_THREAD;
 	auto ents = umenu->entries();
 	auto sel = list->GetSelection();
 	auto sel_id = id_map.count(sel) ? id_map[sel] : 0xFFFFFFFFU;
@@ -605,6 +627,7 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, emulator_instance
 	: wxDialog(parent, wxID_ANY, towxstring("lsnes: Upload file: " + entry.name), wxDefaultPosition,
 		wxSize(-1, -1)), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	_entry = entry;
 	upload = NULL;
 	Centre();
@@ -683,6 +706,7 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, emulator_instance
 
 void wxeditor_uploaddialog::timer_tick()
 {
+	CHECK_UI_THREAD;
 	if(upload) {
 		for(auto i : upload->get_messages()) {
 			status->AppendText(towxstring(i + "\n"));
@@ -732,6 +756,7 @@ void wxeditor_uploaddialog::timer_tick()
 
 void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(file->GetValue() && ufilename->GetValue().Length() == 0) return;
 	std::string fn = tostdstring(filename->GetValue());
 	std::vector<char> content;
@@ -771,6 +796,7 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 
 void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	ufilename->Enable(file->GetValue());
 	file_select->Enable(file->GetValue());
 	if(!games_req) {
@@ -805,6 +831,7 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 
 void wxeditor_uploaddialog::on_file_sel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::string f;
 	try {
 		f = pick_file(this, "Pick file to send", ".");
@@ -816,6 +843,7 @@ void wxeditor_uploaddialog::on_file_sel(wxCommandEvent& e)
 
 void wxeditor_uploaddialog::on_game_sel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	auto pos = game_sel_button->GetScreenPosition();
 	std::string system;
 	if(current->GetValue()) {
@@ -833,6 +861,7 @@ void wxeditor_uploaddialog::on_game_sel(wxCommandEvent& e)
 
 void wxeditor_uploaddialog::on_cancel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	if(games_req) {
 		games_req->cancel();
 		while(!games_req->finished)
@@ -852,6 +881,7 @@ void wxeditor_uploaddialog::on_cancel(wxCommandEvent& e)
 
 void wxeditor_uploaddialog::on_wclose(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	wxCommandEvent e2;
 	on_cancel(e2);
 }
@@ -861,6 +891,7 @@ void wxeditor_uploaddialog::on_wclose(wxCloseEvent& e)
 upload_menu::upload_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
 	: inst(_inst)
 {
+	CHECK_UI_THREAD;
 	pwin = win;
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
@@ -931,6 +962,7 @@ void upload_menu::save()
 
 void upload_menu::configure_entry(unsigned num, struct upload_entry entry)
 {
+	CHECK_UI_THREAD;
 	if(destinations.count(wxid_range_low + num)) {
 		//Reconfigure.
 		auto tmp = destinations[wxid_range_low + num].item;
@@ -965,6 +997,7 @@ upload_menu::upload_entry upload_menu::get_entry(unsigned num)
 
 void upload_menu::delete_entry(unsigned num)
 {
+	CHECK_UI_THREAD;
 	if(destinations.count(wxid_range_low + num)) {
 		Delete(destinations[wxid_range_low + num].item);
 		destinations.erase(wxid_range_low + num);
@@ -974,6 +1007,7 @@ void upload_menu::delete_entry(unsigned num)
 
 void upload_menu::on_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	modal_pause_holder hld;
 	try {

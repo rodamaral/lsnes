@@ -13,6 +13,7 @@
 tracelog_menu::tracelog_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high)
 	: inst(_inst)
 {
+	CHECK_UI_THREAD;
 	pwin = win;
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
@@ -28,6 +29,7 @@ tracelog_menu::~tracelog_menu()
 
 void tracelog_menu::on_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId() - wxid_range_low;
 	if(id < 0 || id > wxid_range_high - wxid_range_low) return;
 	int rid = id / 2;
@@ -53,6 +55,7 @@ void tracelog_menu::on_select(wxCommandEvent& e)
 
 void tracelog_menu::update()
 {
+	CHECK_UI_THREAD;
 	auto _items = inst.rom->get_trace_cpus();
 	for(auto i : items)
 		Delete(i);

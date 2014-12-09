@@ -49,6 +49,7 @@ namespace
 
 	int prompt_for_save(wxWindow* parent, const std::string& what)
 	{
+		CHECK_UI_THREAD;
 		wxMessageDialog* d = new wxMessageDialog(parent, towxstring(what + " has unsaved changes, "
 			"save before closing?"), towxstring("Save on exit?"), wxCENTER | wxYES_NO | wxCANCEL |
 			wxYES_DEFAULT);
@@ -78,6 +79,7 @@ namespace
 	dialog_find::dialog_find(wxWindow* parent)
 		: wxDialog(parent, wxID_ANY, wxT("Find"))
 	{
+		CHECK_UI_THREAD;
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 		wxBoxSizer* t_s = new wxBoxSizer(wxHORIZONTAL);
@@ -105,6 +107,7 @@ namespace
 
 	std::string dialog_find::get_pattern()
 	{
+		CHECK_UI_THREAD;
 		if(tostdstring(text->GetValue()) == "")
 			return "";
 		if(type->GetSelection() == 2)
@@ -149,6 +152,7 @@ namespace
 	dialog_disassemble::dialog_disassemble(wxWindow* parent, emulator_instance& _inst)
 		: wxDialog(parent, wxID_ANY, wxT("Disassemble region")), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		init(false, 0, "");
 	}
 
@@ -156,11 +160,13 @@ namespace
 		const std::string& dflt_lang)
 		: wxDialog(parent, wxID_ANY, wxT("Disassemble region")), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		init(true, dflt_base, dflt_lang);
 	}
 
 	void dialog_disassemble::init(bool spec, uint64_t dflt_base, std::string dflt_lang)
 	{
+		CHECK_UI_THREAD;
 		std::map<std::string, std::pair<uint64_t, uint64_t>> regions;
 		std::set<std::string> disasms;
 		inst.iqueue->run([&regions, &disasms]() {
@@ -314,11 +320,13 @@ namespace
 
 	void dialog_disassemble::on_ok(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		EndModal(wxID_OK);
 	}
 
 	std::string dialog_disassemble::get_disassembler()
 	{
+		CHECK_UI_THREAD;
 		if(type->GetSelection() >= (ssize_t)code_types && type->GetSelection() < (ssize_t)type->GetCount()) {
 			int _endian = endian->GetSelection();
 			int dtsel = type->GetSelection() - code_types;
@@ -352,6 +360,7 @@ namespace
 
 	uint64_t dialog_disassemble::get_address()
 	{
+		CHECK_UI_THREAD;
 		uint64_t base = 0;
 		if(vma->GetSelection() && vma->GetSelection() != wxNOT_FOUND) {
 			std::string _vma = tostdstring(vma->GetStringSelection());
@@ -372,11 +381,13 @@ namespace
 
 	uint64_t dialog_disassemble::get_count()
 	{
+		CHECK_UI_THREAD;
 		return count->GetValue();
 	}
 
 	void dialog_disassemble::on_change(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		bool is_ok = true;
 		try {
 			hex::from<uint64_t>(tostdstring(address->GetValue()));
@@ -415,6 +426,7 @@ namespace
 	dialog_breakpoint_add::dialog_breakpoint_add(wxWindow* parent, std::list<memory_space::region*> _regions)
 		: wxDialog(parent, wxID_ANY, wxT("Add breakpoint"))
 	{
+		CHECK_UI_THREAD;
 		regions = _regions;
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
@@ -454,6 +466,7 @@ namespace
 
 	void dialog_breakpoint_add::on_address_change(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		try {
 			hex::from<uint64_t>(tostdstring(address->GetValue()));
 			ok->Enable(true);
@@ -464,6 +477,7 @@ namespace
 
 	std::pair<uint64_t, debug_context::etype> dialog_breakpoint_add::get_result()
 	{
+		CHECK_UI_THREAD;
 		std::string vmaname = tostdstring(vmasel->GetStringSelection());
 		std::string addrtext = tostdstring(address->GetValue());
 		uint64_t base = 0;
@@ -580,6 +594,7 @@ namespace
 
 	void wxwin_tracelog::on_wclose(wxCloseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(dirty && !wxwidgets_exiting) {
 			int r = prompt_for_save(this, "Trace log");
 			if(r < 0 || (r > 0 && !do_exit_save()))
@@ -613,6 +628,7 @@ namespace
 	wxwin_tracelog::_panel::_panel(wxwin_tracelog* parent, emulator_instance& _inst)
 		: text_framebuffer_panel(parent, 20, 5, wxID_ANY, NULL), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		p = parent;
 		pos = 0;
 		pressed_row = 0;
@@ -642,6 +658,7 @@ namespace
 
 	void wxwin_tracelog::_panel::on_mouse(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		uint64_t local_line = pos + e.GetY() / get_cell().second;
 		if(e.RightDown()) {
 			if(local_line < rows.size()) {
@@ -698,6 +715,7 @@ namespace
 
 	void wxwin_tracelog::process_lines()
 	{
+		CHECK_UI_THREAD;
 		threads::alock h(this->buffer_mutex);
 		size_t osize = panel->rows.size();
 		if(broken) {
@@ -792,6 +810,7 @@ namespace
 
 	void wxwin_tracelog::on_enabled(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		bool enable = enabled->GetValue();
 		inst.iqueue->run([this, enable]() {
 			if(enable) {
@@ -867,6 +886,7 @@ namespace
 
 	void wxwin_tracelog::on_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(e.GetId() == wxID_EXIT) {
 			if(dirty) {
 				int r = prompt_for_save(this, "Trace log");
@@ -978,6 +998,7 @@ namespace
 
 	void wxwin_tracelog::_panel::on_popup_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		std::string str;
 		uint64_t m = min(pressed_row, current_row);
 		uint64_t M = max(pressed_row, current_row) + 1;
@@ -1042,6 +1063,7 @@ namespace
 
 	bool wxwin_tracelog::do_exit_save()
 	{
+		CHECK_UI_THREAD;
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save tracelog to",
@@ -1099,6 +1121,7 @@ back:
 			wxDefaultSize, wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX |
 			wxCLIP_CHILDREN), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		cpuid = _cpuid;
 		singlestepping = false;
 		find_active = false;
@@ -1212,6 +1235,7 @@ back:
 	wxwin_disassembler::_panel::_panel(wxwin_disassembler* parent, emulator_instance& _inst)
 		: text_framebuffer_panel(parent, 20, 5, wxID_ANY, NULL), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		p = parent;
 		pos = 0;
 		pressed_row = 0;
@@ -1242,6 +1266,7 @@ back:
 
 	void wxwin_disassembler::_panel::on_mouse(wxMouseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		uint64_t local_line = pos + e.GetY() / get_cell().second;
 		if(e.RightDown()) {
 			if(local_line < rows.size()) {
@@ -1295,6 +1320,7 @@ back:
 
 	void wxwin_disassembler::on_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(e.GetId() == wxID_EXIT) {
 			if(dirty) {
 				int r = prompt_for_save(this, "Disassembly");
@@ -1412,6 +1438,7 @@ back:
 
 	void wxwin_disassembler::_panel::on_popup_menu(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(e.GetId() == wxID_DISASM_MORE)
 		{
 			if(current_row >= rows.size())
@@ -1654,6 +1681,7 @@ back:
 
 	void wxwin_disassembler::on_wclose(wxCloseEvent& e)
 	{
+		CHECK_UI_THREAD;
 		if(dirty && !wxwidgets_exiting) {
 			int r = prompt_for_save(this, "Disassembly");
 			if(r < 0 || (r > 0 && !do_exit_save()))
@@ -1701,6 +1729,7 @@ back:
 
 	bool wxwin_disassembler::do_exit_save()
 	{
+		CHECK_UI_THREAD;
 back:
 		try {
 			std::string filename = choose_file_save(this, "Save disassembly to",
@@ -1726,6 +1755,7 @@ back:
 			wxDefaultSize, wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX |
 			wxCLIP_CHILDREN), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		closing = false;
 		dirty = false;
 		wxBoxSizer* top_s = new wxBoxSizer(wxHORIZONTAL);
@@ -1769,6 +1799,7 @@ back:
 	dialog_breakpoints::dialog_breakpoints(wxwin_tracelog* parent, emulator_instance& _inst)
 		: wxDialog(parent, wxID_ANY, wxT("Breakpoints")), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		pwin = parent;
 		regions = inst.memory->get_regions();
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -1796,6 +1827,7 @@ back:
 
 	void dialog_breakpoints::populate_breakpoints()
 	{
+		CHECK_UI_THREAD;
 		auto t = pwin->get_breakpoints();
 		for(auto i : t) {
 			std::string line = format_line(i);
@@ -1807,6 +1839,7 @@ back:
 
 	void dialog_breakpoints::on_add(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		uint64_t addr;
 		debug_context::etype dtype;
 		dialog_breakpoint_add* d = new dialog_breakpoint_add(this, regions);
@@ -1828,6 +1861,7 @@ back:
 
 	void dialog_breakpoints::on_delete(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		int idx = brklist->GetSelection();
 		if(idx == wxNOT_FOUND)
 			return;
@@ -1873,12 +1907,14 @@ back:
 
 	void dialog_breakpoints::on_selchange(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		delb->Enable(brklist->GetSelection() != wxNOT_FOUND);
 	}
 }
 
 void wxeditor_tracelog_display(wxWindow* parent, emulator_instance& inst, int cpuid, const std::string& cpuname)
 {
+	CHECK_UI_THREAD;
 	try {
 		wxwin_tracelog* d = new wxwin_tracelog(parent, inst, cpuid, cpuname);
 		d->Show();
@@ -1889,6 +1925,7 @@ void wxeditor_tracelog_display(wxWindow* parent, emulator_instance& inst, int cp
 
 void wxeditor_disassembler_display(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	wxwin_disassembler* d = new wxwin_disassembler(parent, inst);
 	d->Show();
 }

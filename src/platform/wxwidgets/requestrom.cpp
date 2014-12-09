@@ -36,6 +36,7 @@ namespace
 
 	int resolve_core(std::map<unsigned, core_type*> coreid, const std::string& filename, int findex)
 	{
+		CHECK_UI_THREAD;
 		if(coreid.count(findex))
 			return findex;	//Already resolved.
 		if(loaded_rom::is_gamepak(filename))
@@ -87,6 +88,7 @@ namespace
 
 	void do_load_rom_image_single(wxwin_mainwindow* parent, emulator_instance& inst)
 	{
+		CHECK_UI_THREAD;
 		std::map<std::string, core_type*> cores;
 		std::map<unsigned, core_type*> coreid;
 		std::string filter;
@@ -153,11 +155,13 @@ namespace
 	public:
 		void on_wclose(wxCloseEvent& e)
 		{
+			CHECK_UI_THREAD;
 			EndModal(wxID_CANCEL);
 		}
 		multirom_dialog(wxWindow* parent, emulator_instance& _inst, std::string rtype, core_type& _t)
 			: wxDialog(parent, wxID_ANY, towxstring("lsnes: Load " + rtype + " ROM")), inst(_inst), t(_t)
 		{
+			CHECK_UI_THREAD;
 			Centre();
 			wxSizer* vsizer = new wxBoxSizer(wxVERTICAL);
 			SetSizer(vsizer);
@@ -219,6 +223,7 @@ namespace
 		}
 		~multirom_dialog()
 		{
+			CHECK_UI_THREAD;
 			if(timer) {
 				timer->Stop();
 				delete timer;
@@ -226,6 +231,7 @@ namespace
 		}
 		void timer_update_hashes()
 		{
+			CHECK_UI_THREAD;
 			for(auto i = 0; i < ROM_SLOT_COUNT && filenames[i]; i++) {
 				if(hash_ready[i])
 					continue;
@@ -241,6 +247,7 @@ namespace
 		}
 		void do_command_event(wxCommandEvent& e)
 		{
+			CHECK_UI_THREAD;
 			int id = e.GetId();
 			if(id == wxID_HIGHEST + 1) {
 				if(!check_requirements()) {
@@ -259,12 +266,14 @@ namespace
 		}
 		std::string getfilename(unsigned i)
 		{
+			CHECK_UI_THREAD;
 			if(i >= ROM_SLOT_COUNT || !filenames[i])
 				return "";
 			return tostdstring(filenames[i]->GetValue());
 		}
 		std::string getregion()
 		{
+			CHECK_UI_THREAD;
 			int i = regions->GetSelection();
 			if(i == wxNOT_FOUND)
 				return t.get_preferred_region().get_iname();
@@ -273,6 +282,7 @@ namespace
 	private:
 		bool check_requirements()
 		{
+			CHECK_UI_THREAD;
 			unsigned pm = 0, tm = 0;
 			for(unsigned i = 0; i < t.get_image_count(); i++) {
 				core_romimage_info iinfo = t.get_image_info(i);
@@ -284,6 +294,7 @@ namespace
 		}
 		void do_fileselect(unsigned i)
 		{
+			CHECK_UI_THREAD;
 			if(i >= ROM_SLOT_COUNT || !fileselect[i])
 				return;
 			std::string filter;
@@ -309,6 +320,7 @@ namespace
 		}
 		void filename_updated(unsigned i)
 		{
+			CHECK_UI_THREAD;
 			if(i >= t.get_image_count() || !filenames[i])
 				return;
 			uint64_t header = t.get_image_info(i).headersize;
@@ -362,6 +374,7 @@ namespace
 
 	void do_load_rom_image_multiple(wxwin_mainwindow* parent, emulator_instance& inst, core_type& t)
 	{
+		CHECK_UI_THREAD;
 		multirom_dialog* d = new multirom_dialog(parent, inst, t.get_hname(), t);
 		if(d->ShowModal() == wxID_CANCEL) {
 			delete d;
@@ -395,6 +408,7 @@ namespace
 
 void wxwin_mainwindow::request_rom(rom_request& req)
 {
+	CHECK_UI_THREAD;
 	std::vector<std::string> choices;
 	for(auto i : req.cores)
 		choices.push_back(i->get_core_identifier());

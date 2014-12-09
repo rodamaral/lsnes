@@ -31,6 +31,7 @@ private:
 wxeditor_conflict::wxeditor_conflict(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit conflicts"), wxDefaultPosition, wxSize(-1, -1))
 {
+	CHECK_UI_THREAD;
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 	SetSizer(top_s);
@@ -77,6 +78,7 @@ void wxeditor_conflict::add_options(wxWindow* win, wxSizer* sizer)
 
 void wxeditor_conflict::add_option(wxWindow* win, wxSizer* sizer, const std::string& key, const std::string& name)
 {
+	CHECK_UI_THREAD;
 	sizer->Add(new wxStaticText(win, wxID_ANY, towxstring(name)));
 	std::vector<wxString> v;
 	size_t dfltidx = 0;
@@ -122,6 +124,7 @@ bool wxeditor_conflict::ShouldPreventAppExit() const { return false; }
 
 void wxeditor_conflict::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	for(auto i : choices) {
 		if(i.second->GetSelection() == 0) {
 			//Reset to unspecified.
@@ -143,11 +146,13 @@ void wxeditor_conflict::on_ok(wxCommandEvent& e)
 
 void wxeditor_conflict::on_cancel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_CANCEL);
 }
 
 void show_conflictwindow(wxWindow* parent)
 {
+	CHECK_UI_THREAD;
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {

@@ -39,6 +39,7 @@ std::list<settings_tab_factory*> settings_tab_factory::factories()
 settings_menu::settings_menu(wxWindow* win, emulator_instance& _inst, int id)
 	: inst(_inst)
 {
+	CHECK_UI_THREAD;
 	parent = win;
 	items[id] = NULL;
 	Append(id, towxstring("All as tabs..."));
@@ -55,6 +56,7 @@ settings_menu::settings_menu(wxWindow* win, emulator_instance& _inst, int id)
 
 void settings_menu::on_selected(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(!items.count(id))
 		return;
@@ -133,6 +135,7 @@ namespace
 		: wxDialog(parent, wxID_ANY, towxstring(get_title(singletab)), wxDefaultPosition, wxSize(-1, -1),
 			wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxRESIZE_BORDER), inst(_inst)
 	{
+		CHECK_UI_THREAD;
 		//Grab keys to prevent the joystick driver from running who knows what commands.
 		inst.keyboard->set_exclusive(&keygrab);
 
@@ -179,6 +182,7 @@ namespace
 
 	wxeditor_esettings2::~wxeditor_esettings2()
 	{
+		CHECK_UI_THREAD;
 		for(auto i : tabs)
 			i->notify_close();
 		inst.keyboard->set_exclusive(NULL);
@@ -192,6 +196,7 @@ namespace
 
 	void wxeditor_esettings2::on_close(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		for(auto i : tabs)
 			i->on_close();
 		EndModal(wxID_OK);
@@ -199,6 +204,7 @@ namespace
 
 	void wxeditor_esettings2::on_notify()
 	{
+		CHECK_UI_THREAD;
 		for(auto i : tabs)
 			i->on_notify();
 	}
@@ -206,6 +212,7 @@ namespace
 
 void display_settings_dialog(wxWindow* parent, emulator_instance& inst, settings_tab_factory* singletab)
 {
+	CHECK_UI_THREAD;
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {

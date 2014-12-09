@@ -13,6 +13,7 @@ press_button_dialog::press_button_dialog(wxWindow* parent, emulator_instance& _i
 	bool _axis)
 	: wxDialog(parent, wxID_ANY, towxstring(title)), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	axis = _axis;
 	wxStaticText* t;
 	wxBoxSizer* s2 = new wxBoxSizer(wxVERTICAL);
@@ -59,6 +60,7 @@ press_button_dialog::press_button_dialog(wxWindow* parent, emulator_instance& _i
 bool press_button_dialog::handle_mousebtn(wxMouseEvent& e, bool(wxMouseEvent::*down)()const,
 	bool(wxMouseEvent::*up)()const, const std::string& k, int flag)
 {
+	CHECK_UI_THREAD;
 	if((e.*down)())
 		mouseflag = flag;
 	if((e.*up)()) {
@@ -80,12 +82,14 @@ void press_button_dialog::on_mouse(wxMouseEvent& e)
 
 void press_button_dialog::on_keyboard_down(wxKeyEvent& e)
 {
+	CHECK_UI_THREAD;
 	lastkbdkey = e.GetKeyCode();
 	mouseflag = 0;
 }
 
 void press_button_dialog::on_keyboard_up(wxKeyEvent& e)
 {
+	CHECK_UI_THREAD;
 	int kcode = e.GetKeyCode();
 	if(lastkbdkey == kcode) {
 		dismiss_with(map_keycode_to_key(kcode));
@@ -97,6 +101,7 @@ void press_button_dialog::on_keyboard_up(wxKeyEvent& e)
 
 void press_button_dialog::dismiss_with(const std::string& _k)
 {
+	CHECK_UI_THREAD;
 	std::string k = _k;
 	if(k == "")
 		return;
@@ -127,6 +132,7 @@ key_entry_dialog::key_entry_dialog(wxWindow* parent, emulator_instance& _inst, c
 	const std::string& spec, bool clearable)
 	: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	wxString boxchoices[] = { wxT("Released"), wxT("Don't care"), wxT("Pressed") };
 	std::vector<wxString> classeslist;
 	wxString emptystring;
@@ -219,6 +225,7 @@ key_entry_dialog::key_entry_dialog(wxWindow* parent, emulator_instance& _inst, c
 
 void key_entry_dialog::set_mask(const std::string& mod)
 {
+	CHECK_UI_THREAD;
 	if(!modifiers.count(mod))
 		return;
 	if(modifiers[mod].pressed->GetSelection() == 1) {
@@ -230,6 +237,7 @@ void key_entry_dialog::set_mask(const std::string& mod)
 
 void key_entry_dialog::set_mod(const std::string& mod)
 {
+	CHECK_UI_THREAD;
 	if(!modifiers.count(mod))
 		return;
 	if(modifiers[mod].pressed->GetSelection() != 1) {
@@ -242,6 +250,7 @@ void key_entry_dialog::set_mod(const std::string& mod)
 void key_entry_dialog::set_set(const std::string& mset,
 	void (key_entry_dialog::*fn)(const std::string& mod))
 {
+	CHECK_UI_THREAD;
 	std::string rem = mset;
 	while(rem != "") {
 		size_t s = rem.find_first_of(",");
@@ -257,6 +266,7 @@ void key_entry_dialog::set_set(const std::string& mset,
 
 void key_entry_dialog::load_spec(const std::string& spec)
 {
+	CHECK_UI_THREAD;
 	std::string _spec = spec;
 	size_t s1 = _spec.find_first_of("/");
 	size_t s2 = _spec.find_first_of("|");
@@ -287,6 +297,7 @@ void key_entry_dialog::on_change_setting(wxCommandEvent& e)
 
 void key_entry_dialog::on_pressbutton(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	press_button_dialog* p = new press_button_dialog(this, inst, wtitle, false);
 	p->ShowModal();
 	std::string key = p->getkey();
@@ -304,22 +315,26 @@ void key_entry_dialog::on_pressbutton(wxCommandEvent& e)
 
 void key_entry_dialog::on_ok(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_OK);
 }
 
 void key_entry_dialog::on_clear(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	cleared = true;
 	EndModal(wxID_OK);
 }
 
 void key_entry_dialog::on_cancel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	EndModal(wxID_CANCEL);
 }
 
 void key_entry_dialog::set_class(const std::string& _class)
 {
+	CHECK_UI_THREAD;
 	if(!mainkey)
 		return;
 	if(currentclass == _class)
@@ -336,11 +351,13 @@ void key_entry_dialog::set_class(const std::string& _class)
 
 void key_entry_dialog::on_classchange(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	set_class(tostdstring(mainclass->GetValue()));
 }
 
 std::string key_entry_dialog::getkey()
 {
+	CHECK_UI_THREAD;
 	if(cleared)
 		return "";
 	std::string x;

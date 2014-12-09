@@ -7,6 +7,7 @@ recent_menu<T>::recent_menu(wxWindow* win, emulator_instance& _inst, int wxid_lo
 	const std::string& cfg, void (*cb)(emulator_instance& inst, const T& name))
 	: inst(_inst), hook(*this), rfiles(cfg, wxid_high - wxid_low)	//Reserve wxid_high for refresh.
 {
+	CHECK_UI_THREAD;
 	pwin = win;
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
@@ -19,6 +20,7 @@ recent_menu<T>::recent_menu(wxWindow* win, emulator_instance& _inst, int wxid_lo
 
 template<class T> void recent_menu<T>::on_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(id < wxid_range_low || id > wxid_range_high)
 		return;
@@ -36,6 +38,7 @@ template<class T> void recent_menu<T>::on_select(wxCommandEvent& e)
 
 template<class T> void recent_menu<T>::update()
 {
+	CHECK_UI_THREAD;
 	auto ents = rfiles.get();
 	int id = wxid_range_low;
 	for(auto i : items)

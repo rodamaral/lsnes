@@ -54,6 +54,7 @@ namespace
 	wxeditor_esettings_video::wxeditor_esettings_video(wxWindow* parent, emulator_instance& _inst)
 		: settings_tab(parent, _inst)
 	{
+		CHECK_UI_THREAD;
 		std::vector<wxString> scales;
 		std::vector<wxString> orients;
 		for(size_t i = 0; i < sizeof(scalealgo_choices)/sizeof(scalealgo_choices[0]); i++)
@@ -95,6 +96,7 @@ namespace
 
 	void wxeditor_esettings_video::on_configure(wxCommandEvent& e)
 	{
+		CHECK_UI_THREAD;
 		std::vector<std::string> sa_choices;
 		std::string v;
 		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
@@ -127,6 +129,7 @@ namespace
 
 	void wxeditor_esettings_video::refresh()
 	{
+		CHECK_UI_THREAD;
 		scalefact->SetValue(video_scale_factor * 100.0 + 0.5);
 		arcorrect->SetValue(arcorrect_enabled);
 		orient->SetSelection(get_orientation());

@@ -8,6 +8,7 @@ projects_menu::projects_menu(wxWindow* win, emulator_instance& _inst, int wxid_l
 	const std::string& cfg, std::function<void(const std::string& id)> cb)
 	: inst(_inst), hook(*this), rfiles(cfg, wxid_high - wxid_low - 1)	//Reserve wxid_low and wxid_high.
 {
+	CHECK_UI_THREAD;
 	pwin = win;
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
@@ -24,6 +25,7 @@ projects_menu::~projects_menu()
 
 void projects_menu::on_select(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	int id = e.GetId();
 	if(id < wxid_range_low || id > wxid_range_high)
 		return;
@@ -60,6 +62,7 @@ void projects_menu::on_select(wxCommandEvent& e)
 
 void projects_menu::update()
 {
+	CHECK_UI_THREAD;
 	auto ents = rfiles.get();
 	int id = wxid_range_low + 1; //wxid_range_low is reserved for other.
 	for(auto i : items)

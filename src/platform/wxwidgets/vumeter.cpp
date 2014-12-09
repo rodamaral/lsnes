@@ -42,6 +42,7 @@ namespace
 
 	void connect_events(wxSlider* s, wxObjectEventFunction fun, wxEvtHandler* obj)
 	{
+		CHECK_UI_THREAD;
 		s->Connect(wxEVT_SCROLL_THUMBTRACK, fun, NULL, obj);
 		s->Connect(wxEVT_SCROLL_PAGEDOWN, fun, NULL, obj);
 		s->Connect(wxEVT_SCROLL_PAGEUP, fun, NULL, obj);
@@ -109,6 +110,7 @@ private:
 		_vupanel(wxwin_vumeter* v, audioapi_instance& _audio)
 			: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(320, 64)), audio(_audio)
 		{
+			CHECK_UI_THREAD;
 			obj = v;
 			buffer.resize(61440);
 			bufferstride = 960;
@@ -128,6 +130,7 @@ private:
 
 		void signal_repaint()
 		{
+			CHECK_UI_THREAD;
 			mleft = vu_to_pixels(audio.vu_mleft);
 			mright = vu_to_pixels(audio.vu_mright);
 			vout = vu_to_pixels(audio.vu_vout);
@@ -138,6 +141,7 @@ private:
 
 		void on_paint(wxPaintEvent& e)
 		{
+			CHECK_UI_THREAD;
 			wxPaintDC dc(this);
 			dc.Clear();
 			memset(&buffer[0], 255, buffer.size());
@@ -225,6 +229,7 @@ private:
 wxwin_vumeter::wxwin_vumeter(wxWindow* parent, emulator_instance& _inst)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: VU meter"), wxDefaultPosition, wxSize(-1, -1)), inst(_inst)
 {
+	CHECK_UI_THREAD;
 	update_sent = false;
 	closing = false;
 	Centre();
@@ -334,6 +339,7 @@ wxwin_vumeter::~wxwin_vumeter() throw()
 
 void wxwin_vumeter::on_devsel(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	std::string newpdev = tostdstring(pdev->GetValue());
 	std::string newrdev = tostdstring(rdev->GetValue());
 	std::string _newpdev = "null";
@@ -349,44 +355,52 @@ void wxwin_vumeter::on_devsel(wxCommandEvent& e)
 
 void wxwin_vumeter::on_game_change(wxScrollEvent& e)
 {
+	CHECK_UI_THREAD;
 	inst.audio->music_volume(pow(10, gamevol->GetValue() / 20.0));
 }
 
 void wxwin_vumeter::on_vout_change(wxScrollEvent& e)
 {
+	CHECK_UI_THREAD;
 	inst.audio->voicep_volume(pow(10, voutvol->GetValue() / 20.0));
 }
 
 void wxwin_vumeter::on_vin_change(wxScrollEvent& e)
 {
+	CHECK_UI_THREAD;
 	inst.audio->voicer_volume(pow(10, vinvol->GetValue() / 20.0));
 }
 
 void wxwin_vumeter::on_game_reset(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	inst.audio->music_volume(1);
 	gamevol->SetValue(0);
 }
 
 void wxwin_vumeter::on_vout_reset(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	inst.audio->voicep_volume(1);
 	voutvol->SetValue(0);
 }
 
 void wxwin_vumeter::on_vin_reset(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	inst.audio->voicer_volume(1);
 	vinvol->SetValue(0);
 }
 
 void wxwin_vumeter::on_mute(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	platform::sound_enable(!mute->GetValue());
 }
 
 void wxwin_vumeter::refresh()
 {
+	CHECK_UI_THREAD;
 	auto rate_cur = inst.audio->voice_rate();
 	unsigned rate_nom = inst.audio->orig_voice_rate();
 	rate->SetLabel(towxstring((stringfmt() << "Current: " << rate_cur.second << "Hz (nominal " << rate_nom
@@ -396,6 +410,7 @@ void wxwin_vumeter::refresh()
 
 void wxwin_vumeter::on_close(wxCommandEvent& e)
 {
+	CHECK_UI_THREAD;
 	closing = true;
 	Destroy();
 	vumeter_open.erase(&inst);
@@ -403,6 +418,7 @@ void wxwin_vumeter::on_close(wxCommandEvent& e)
 
 void wxwin_vumeter::on_wclose(wxCloseEvent& e)
 {
+	CHECK_UI_THREAD;
 	bool wasc = closing;
 	closing = true;
 	if(!wasc)
@@ -414,6 +430,7 @@ bool wxwin_vumeter::ShouldPreventAppExit() const { return false; }
 
 void open_vumeter_window(wxWindow* parent, emulator_instance& inst)
 {
+	CHECK_UI_THREAD;
 	if(vumeter_open.count(&inst))
 		return;
 	wxwin_vumeter* v = new wxwin_vumeter(parent, inst);
