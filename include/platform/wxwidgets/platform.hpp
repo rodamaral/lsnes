@@ -4,6 +4,7 @@
 #include "core/queue.hpp"
 #include "core/moviefile.hpp"
 #include "core/window.hpp"
+#include "library/threads.hpp"
 
 #include <cstdlib>
 #include <cstdint>
@@ -14,6 +15,29 @@
 
 void _check_ui_thread(const char* file, int line);
 #define CHECK_UI_THREAD _check_ui_thread( __FILE__ , __LINE__ )
+
+struct runuifun_once_ctx
+{
+	runuifun_once_ctx()
+	{
+		flag = false;
+	}
+	bool set_flag()
+	{
+		threads::alock h(m);
+		if(flag) return false;
+		flag = true;
+		return true;
+	}
+	void clear_flag()
+	{
+		threads::alock h(m);
+		flag = false;
+	}
+private:
+	threads::lock m;
+	bool flag;
+};
 
 class wxwin_mainwindow;
 class wxwin_messages;
@@ -47,7 +71,7 @@ void initialize_wx_mouse(emulator_instance& inst);
 void deinitialize_wx_mouse(emulator_instance& inst);
 void signal_program_exit();
 void signal_resize_needed();
-void _runuifun_async(void (*fn)(void*), void* arg);
+void _runuifun_async(runuifun_once_ctx* octx, void (*fn)(void*), void* arg);
 void show_projectwindow(wxWindow* modwin, emulator_instance& inst);
 void signal_core_change();
 void do_save_configuration();
@@ -89,10 +113,12 @@ bool wxeditor_hexeditor_available(emulator_instance& inst);
 bool wxeditor_hexeditor_jumpto(emulator_instance& inst, uint64_t addr);
 void wxwindow_tasinput_update(emulator_instance& inst);
 
-template<typename T>
-void runuifun(T fn)
+template<typename T> void runuifun(T fn) {
+	_runuifun_async(nullptr, functor_call_helper2<T>, new T(fn));
+}
+template<typename T> void runuifun(runuifun_once_ctx& octx, T fn)
 {
-	_runuifun_async(functor_call_helper2<T>, new T(fn));
+	_runuifun_async(&octx, functor_call_helper2<T>, new T(fn));
 }
 
 //Thrown by various dialog functions if canceled.

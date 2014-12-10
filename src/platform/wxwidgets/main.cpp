@@ -67,11 +67,10 @@ namespace
 	volatile bool modal_dialog_active;
 	threads::lock ui_mutex;
 	threads::cv ui_condition;
-	bool if_update_messages = false;
-	bool if_update_screen = false;
-	bool if_update_status = false;
-	threads::lock if_mutex;
 	bool preboot_env = true;
+	runuifun_once_ctx screenupdate_once;
+	runuifun_once_ctx statusupdate_once;
+	runuifun_once_ctx message_once;
 
 	struct uiserv_event : public wxEvent
 	{
@@ -95,6 +94,7 @@ namespace
 	{
 		void(*fn)(void*);
 		void* arg;
+		runuifun_once_ctx* ctx;
 	};
 
 	std::list<ui_queue_entry> ui_queue;
@@ -141,6 +141,7 @@ back:
 				e = *i;
 				ui_queue.erase(i);
 			}
+			if(e.ctx) e.ctx->clear_flag();
 			e.fn(e.arg);
 			goto back;
 end:
@@ -442,11 +443,7 @@ bool lsnes_app::OnInit()
 		return false;
 
 	screenupdate.set(lsnes_instance.dispatch->screen_update, []() {
-		threads::alock h(if_mutex);
-		if(if_update_screen) return;
-		if_update_screen = true;
-		runuifun([]() {
-			{ threads::alock h(if_mutex); if_update_screen = false; }
+		runuifun(screenupdate_once, []() {
 			if(main_window)
 				main_window->notify_update();
 			wxwindow_memorysearch_update(CORE());
@@ -454,11 +451,7 @@ bool lsnes_app::OnInit()
 		});
 	});
 	statusupdate.set(lsnes_instance.dispatch->status_update, []() {
-		threads::alock h(if_mutex);
-		if(if_update_status) return;
-		if_update_status = true;
-		runuifun([]() {
-			{ threads::alock h(if_mutex); if_update_status = false; }
+		runuifun(statusupdate_once, []() {
 			if(main_window)
 				main_window->notify_update_status();
 			wxeditor_movie_update(CORE());
@@ -616,9 +609,7 @@ namespace
 		.quit = []() -> void {},
 		.notify_message = []() -> void
 		{
-			{ threads::alock h(if_mutex); if_update_messages = false; }
-			runuifun([]() {
-				{ threads::alock h(if_mutex); if_update_messages = false; }
+			runuifun(message_once, []() {
 				if(msg_window)
 					msg_window->notify_update();
 			});
@@ -678,12 +669,14 @@ void signal_core_change()
 	post_ui_event(UISERV_REFRESH_TITLE);
 }
 
-void _runuifun_async(void (*fn)(void*), void* arg)
+void _runuifun_async(runuifun_once_ctx* ctx, void (*fn)(void*), void* arg)
 {
+	if(ctx && !ctx->set_flag()) return;
 	threads::alock h(ui_mutex);
 	ui_queue_entry e;
 	e.fn = fn;
 	e.arg = arg;
+	e.ctx = ctx;
 	ui_queue.push_back(e);
 	post_ui_event(UISERV_UIFUN);
 }
