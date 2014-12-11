@@ -114,11 +114,6 @@ namespace
 		const PaDeviceInfo* inf = Pa_GetDeviceInfo(idx_in);
 		if(!inf || !inf->maxInputChannels)
 			return NULL;
-		const PaHostApiInfo* host = Pa_GetHostApiInfo(inf->hostApi);
-		if(idx_in == idx_out && host && host->type == paALSA && (!strcmp(inf->name, "default") ||
-			!strcmp(inf->name, "sysdefault")))
-			//These things are blacklisted for full-duplex because Portaudio is buggy with these.
-			return NULL;
 		memset(&input, 0, sizeof(input));
 		input.device = idx_in;
 		input.channelCount = (inf->maxInputChannels > 1) ? 2 : 1;
