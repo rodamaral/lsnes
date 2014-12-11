@@ -350,7 +350,7 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, emulator_instance& 
 			if(j.second.first == it.addr_base && j.second.second == it.addr_size)
 				vma->SetSelection(j.first);
 		}
-		font->SetValue(towxstring(it.printer.onscreen_font)));
+		font->SetValue(towxstring(it.printer.onscreen_font));
 		fg_color->SetValue(towxstring(format_color(it.printer.onscreen_fg_color)));
 		bg_color->SetValue(towxstring(format_color(it.printer.onscreen_bg_color)));
 		halo_color->SetValue(towxstring(format_color(it.printer.onscreen_halo_color)));
