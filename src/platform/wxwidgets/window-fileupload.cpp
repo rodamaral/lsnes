@@ -121,7 +121,7 @@ public:
 		}
 		wxCommandEvent e;
 		on_search_type(e);
-		games->SetStringSelection(dflt);
+		games->SetStringSelection(towxstring(dflt));
 	}
 	std::string get()
 	{
