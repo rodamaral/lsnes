@@ -985,6 +985,7 @@ void do_break_pause()
 	auto& core = CORE();
 	core.runmode->set_break();
 	core.supdater->update();
+	core.fbuf->redraw_framebuffer();
 	while(core.runmode->is_paused_break()) {
 		platform::set_paused(true);
 		platform::flush_command_queue();
