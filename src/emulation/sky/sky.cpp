@@ -353,6 +353,8 @@ namespace sky
 				messages << e.what();
 				return -1;
 			}
+			//Clear the RAM.
+			memset(corei.state.as_ram().first, 0, corei.state.as_ram().second);
 			rom_boot_vector(corei);
 			return 0;
 		}
