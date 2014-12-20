@@ -30,6 +30,7 @@ struct lua_palette
 	static int load(lua::state& L, lua::parameters& P);
 	static int load_str(lua::state& L, lua::parameters& P);
 	int set(lua::state& L, lua::parameters& P);
+	int get(lua::state& L, lua::parameters& P);
 	int hash(lua::state& L, lua::parameters& P);
 	int debug(lua::state& L, lua::parameters& P);
 	int adjust_transparency(lua::state& L, lua::parameters& P);

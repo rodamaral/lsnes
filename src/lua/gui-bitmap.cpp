@@ -749,6 +749,7 @@ namespace
 		{"load_str", lua_palette::load_str},
 	}, {
 		{"set", &lua_palette::set},
+		{"get", &lua_palette::get},
 		{"hash", &lua_palette::hash},
 		{"debug", &lua_palette::debug},
 		{"adjust_transparency", &lua_palette::adjust_transparency},
@@ -858,6 +859,28 @@ int lua_palette::set(lua::state& L, lua::parameters& P)
 	}
 	this->colors[c] = nc;
 	return 0;
+}
+
+int lua_palette::get(lua::state& L, lua::parameters& P)
+{
+	framebuffer::color nc;
+	uint16_t c;
+	int64_t _nc;
+
+	P(P.skipped(), c);
+
+	if(this->color_count <= c) {
+		return 0;
+	}
+	nc = this->colors[c];
+	uint32_t rgb = nc.orig;
+	uint32_t a = nc.origa;
+	if(a == 0)
+		_nc = -1;
+	else
+		_nc = ((256 - a) << 24) | rgb;
+	L.pushnumber(_nc);
+	return 1;
 }
 
 int lua_palette::hash(lua::state& L, lua::parameters& P)
