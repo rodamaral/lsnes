@@ -40,9 +40,16 @@
 namespace
 {
 	bool reached_main_flag;
+	bool crashing = false;
 
 	void fatal_signal_handler(int sig)
 	{
+		if(crashing) {
+			write(2, "Double fault, exiting!\n", 23);
+			signal(sig, SIG_DFL);
+			raise(sig);
+		}
+		crashing = true;
 		write(2, "Caught fatal signal!\n", 21);
 		if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic->get_mfile(),
 			lsnes_instance.mlogic->get_rrdata());
@@ -52,6 +59,11 @@ namespace
 
 	void terminate_handler()
 	{
+		if(crashing) {
+			write(2, "Double fault, exiting!\n", 23);
+			exit(1);
+		}
+		crashing = true;
 		write(2, "Terminating abnormally!\n", 24);
 		if(lsnes_instance.mlogic) emerg_save_movie(lsnes_instance.mlogic->get_mfile(),
 			lsnes_instance.mlogic->get_rrdata());
