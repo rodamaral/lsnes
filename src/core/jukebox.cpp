@@ -38,6 +38,7 @@ save_jukebox::save_jukebox(settingvar::group& _settings, command::group& _cmd)
 	cyclenext(cmd, CJUKEBOX::next, [this]() { this->cycle_next(); })
 {
 	listener = new save_jukebox_listener(_settings, *this);
+	current_slot = 0;
 }
 
 save_jukebox::~save_jukebox()

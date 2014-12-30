@@ -29,6 +29,7 @@ emulator_runmode::emulator_runmode()
 {
 	mode = PAUSE;
 	saved_mode = PAUSE;
+	point = 0;
 	magic = 0;
 	advanced = false;
 	cancel = false;

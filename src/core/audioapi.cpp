@@ -109,6 +109,11 @@ audioapi_instance::audioapi_instance()
 	music_ptr = 0;
 	last_complete_music_seen = MUSIC_BUFFERS + 1;
 	last_complete_music = MUSIC_BUFFERS;
+	for(unsigned i = 0; i < MUSIC_BUFFERS; i++) {
+		music_size[i] = 0;
+		music_rate[i] = 48000;
+		music_stereo[i] = false;
+	}
 	voicep_get = 0;
 	voicep_put = 0;
 	voicer_get = 0;
