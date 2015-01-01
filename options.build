@@ -62,7 +62,7 @@ USER_PLATFORM_LDFLAGS=
 FONT_SRC=unifontfull-5.1.20080820.hex
 
 # Lua package to use.
-# - Usually either 'lua' or 'lua5.1'.
+# - Usually either 'lua' or 'lua5.2'.
 # - Default value is 'lua'.
 LUA=lua
 
@@ -70,18 +70,16 @@ LUA=lua
 # Currently supported:
 # - NATIVE: std::thread
 # - BOOST: boost_thread
-THREADS=BOOST
+THREADS=NATIVE
 
 # Graphics library to use.
 # Currently supported:
-# - SDL: Simple Directmedia Layer.
 # - WXWIDGETS: wxWidgets
 GRAPHICS=WXWIDGETS
 
 # Sound library to use.
 # Currently supported:
 # - DUMMY: No sound.
-# - SDL: Simple Directmedia Layer (GRAPHICS=SDL only).
 # - PORTAUDIO: Portaudio.
 # - LIBAO: Libao.
 SOUND=PORTAUDIO
@@ -91,7 +89,6 @@ SOUND=PORTAUDIO
 # - DUMMY: No joystick.
 # - EVDEV: EVDEV (Linux only)
 # - WIN32MM: Windows Multimedia (Win32 only).
-# - SDL: Simple Directmedia Layer (GRAPHICS=SDL only).
 # - WXWIDGETS: wxWidgets (GRAPHICS=WXWIDGETS only)
 # - MACOSX: Mac OS X (Mac OS X only).
 JOYSTICK=DUMMY
@@ -107,7 +104,7 @@ BUILD_GAMBATTE=
 BUILD_BSNES=yes
 
 # Set to non-empty value (e.g. 'yes') if bsnes build uses compatiblity core, not accuracy core.
-BSNES_IS_COMPAT=
+BSNES_IS_COMPAT=yes
 
 # Set to non-empty value (e.g. 'yes') if boost libraries need the '-mt' prefix.
 # Useful on Win32 and Mac OS X.
