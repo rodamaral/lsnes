@@ -17,3 +17,7 @@ src/fonts/font.cpp
 src/core/version.cpp
 src/cmdhelp/*.cpp
 include/cmdhelp/*.hpp
+src/emulation/make-ports
+src/cmdhelp/mkstubs
+src/cmdhelp/mkstubsi
+buildaux/mkdeps
