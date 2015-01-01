@@ -38,6 +38,8 @@ namespace
 	ao_device* volatile cdev = NULL;
 	bool init_flag = false;
 	bool was_enabled = false;
+	volatile bool do_quit_flag = false;
+	volatile bool do_quit_ack = false;
 	int driver_id = 0;
 
 	class cb_thread : public workthread
@@ -47,7 +49,7 @@ namespace
 		void entry()
 		{
 			int16_t buffer[1024];
-			while(true) {
+			while(!do_quit_flag) {
 				lsnes_instance.audio->get_mixed(buffer, 512, true);
 				if(!was_enabled)
 					memset(buffer, 0, sizeof(buffer));
@@ -57,8 +59,11 @@ namespace
 				else
 					usleep(10000);
 			}
+			do_quit_ack = true;
 		}
 	};
+
+	cb_thread* thread = NULL;
 
 	bool switch_devices(int newdevice, std::string name)
 	{
@@ -138,7 +143,7 @@ namespace
 				if(j == defaultid)
 					dname = drvs[j]->short_name;
 			}
-			new cb_thread;
+			thread = new cb_thread;
 			was_enabled = true;
 			try {
 				switch_devices(defaultid, dname);
@@ -151,6 +156,13 @@ namespace
 				return;
 			switch_devices(-1, "");
 			ao_shutdown();
+			do_quit_flag = true;
+			while(!do_quit_ack)
+				usleep(10000);
+			do_quit_flag = false;
+			do_quit_ack = false;
+			//Threads are detecthed by default.
+			thread = NULL;
 			init_flag = false;
 		},
 		.enable = [](bool enable) -> void { was_enabled = enable; },
