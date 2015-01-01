@@ -6,8 +6,8 @@ __all__.files: $(OBJECTS)
 	lua ../../genfilelist.lua $^ >$@
 	echo  >__all__.ldflags
 
-ports.inc: ports.json ../make-ports.exe
-	../make-ports.exe <$< >$@
+ports.inc: ports.json ../make-ports$(DOT_EXECUTABLE_SUFFIX)
+	../make-ports$(DOT_EXECUTABLE_SUFFIX) <$< >$@
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include $(CFLAGS)
@@ -16,7 +16,7 @@ forcelook:
 	@true
 
 precheck:
-	../../../buildaux/mkdeps.exe ../../../include -- *.cpp
+	../../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../../include -- *.cpp
 	@true
 
 clean:

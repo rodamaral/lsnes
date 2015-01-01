@@ -19,7 +19,7 @@ font.cpp font.cpp.dep: $(FONT_SRC)
 	touch font.cpp.dep
 
 precheck:
-	../../buildaux/mkdeps.exe ../../include -- *.cpp
+	../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../include -- *.cpp
 	@true
 
 forcelook:

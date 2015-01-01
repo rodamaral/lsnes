@@ -17,7 +17,7 @@ __all__.files: $(OBJECTS)
 	$(REALCC) -DSDL_JOYSTICK_IOKIT -x c --std=gnu99 -c -o $@ $< $(CSTDFLAGS)
 
 precheck:
-	../../../buildaux/mkdeps.exe ../../../include -- *.cpp *.c
+	../../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../../include -- *.cpp *.c
 	@true
 
 forcelook:

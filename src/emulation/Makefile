@@ -8,19 +8,19 @@ __all__.files: $(CORES_FILES)
 	lua ../genfilelist.lua $^ >$@
 	cat $(CORES_FLAGS) >$(ALLFLAGS)
 
-make-ports.exe: make-ports.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/portctrl-parse.cpp ../library/portctrl-data.cpp ../library/sha256.cpp ../library/assembler.cpp  ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp ../library/binarystream.cpp ../library/integer-pool.cpp
+make-ports$(DOT_EXECUTABLE_SUFFIX): make-ports.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/portctrl-parse.cpp ../library/portctrl-data.cpp ../library/sha256.cpp ../library/assembler.cpp  ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp ../library/binarystream.cpp ../library/integer-pool.cpp
 	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  -lboost_regex$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX) -Wall -DNO_ASM_GENERATION
 
-bsnes-legacy/$(ALLFILES): forcelook make-ports.exe
+bsnes-legacy/$(ALLFILES): forcelook make-ports$(DOT_EXECUTABLE_SUFFIX)
 	$(MAKE) -C bsnes-legacy
 
-gambatte/$(ALLFILES): forcelook make-ports.exe
+gambatte/$(ALLFILES): forcelook make-ports$(DOT_EXECUTABLE_SUFFIX)
 	$(MAKE) -C gambatte
 
-sky/$(ALLFILES): forcelook make-ports.exe
+sky/$(ALLFILES): forcelook make-ports$(DOT_EXECUTABLE_SUFFIX)
 	$(MAKE) -C sky
 
-test/$(ALLFILES): forcelook make-ports.exe
+test/$(ALLFILES): forcelook make-ports$(DOT_EXECUTABLE_SUFFIX)
 	$(MAKE) -C test
 
 .PRECIOUS: %.$(OBJECT_SUFFIX) %.files
@@ -37,7 +37,7 @@ clean:
 	$(MAKE) -C gambatte clean
 	$(MAKE) -C sky clean
 	$(MAKE) -C test clean
-	rm -f make-ports.exe
+	rm -f make-ports$(DOT_EXECUTABLE_SUFFIX)
 
 forcelook:
 	@true

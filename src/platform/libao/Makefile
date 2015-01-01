@@ -16,7 +16,7 @@ __all__.files: $(OBJECTS)
 	$(REALCC) -c -o $@ $< -I../../../include $(CFLAGS) $(PA_CFLAGS)
 
 precheck:
-	../../../buildaux/mkdeps.exe ../../../include -- *.cpp
+	../../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../../include -- *.cpp
 	@true
 
 forcelook:

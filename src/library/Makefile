@@ -10,7 +10,7 @@ __all__.files: $(OBJECTS)
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include/library -Wall
 
 precheck: forcelook
-	../../buildaux/mkdeps.exe ../../include/library -- *.cpp
+	../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../include/library -- *.cpp
 	@true
 
 forcelook:

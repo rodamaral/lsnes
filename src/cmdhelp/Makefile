@@ -9,17 +9,17 @@ __all__.files: $(JSON_OBJECTS)  inverselist.$(OBJECT_SUFFIX)
 	lua ../genfilelist.lua $^ >$@
 	touch $(ALLFLAGS)
 
-mkstubs.exe: mkstubs.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp
+mkstubs$(DOT_EXECUTABLE_SUFFIX): mkstubs.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp
 	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  -lboost_regex$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX) -Wall
 
-mkstubsi.exe: mkstubsi.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp
+mkstubsi$(DOT_EXECUTABLE_SUFFIX): mkstubsi.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp
 	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  -lboost_regex$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX) -Wall
 
-inverselist.cpp: $(JSON_FILES) mkstubsi.exe
-	./mkstubsi.exe $^
+inverselist.cpp: $(JSON_FILES) mkstubsi$(DOT_EXECUTABLE_SUFFIX)
+	./mkstubsi$(DOT_EXECUTABLE_SUFFIX) $^
 
-%.cpp: %.json mkstubs.exe
-	./mkstubs.exe $<
+%.cpp: %.json mkstubs$(DOT_EXECUTABLE_SUFFIX)
+	./mkstubs$(DOT_EXECUTABLE_SUFFIX) $<
 	mv *.hpp ../../include/cmdhelp
 
 %.$(OBJECT_SUFFIX): %.cpp
@@ -33,7 +33,7 @@ precheck:
 
 clean:
 	rm -f *.$(OBJECT_SUFFIX) $(JSON_SRC) inverselist.cpp __all__.ldflags __all__.files
-	rm -f mkstubs.exe
+	rm -f mkstubs$(DOT_EXECUTABLE_SUFFIX)
 
 forcelook:
 	@true

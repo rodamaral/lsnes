@@ -8,7 +8,7 @@ __all__.files: $(OBJECTS)
 
 sysrc.cpp: sysrc.lua
 	luac -p $<
-	../../buildaux/txt2cstr.exe lua_sysrc_script $< >$@
+	../../buildaux/txt2cstr$(DOT_EXECUTABLE_SUFFIX) lua_sysrc_script $< >$@
 
 sysrc.cpp.dep: sysrc.cpp
 	touch sysrc.cpp.dep
@@ -17,7 +17,7 @@ sysrc.cpp.dep: sysrc.cpp
 	$(REALCC) -c -o $@ $< -I../../include $(CFLAGS) -Wall
 
 precheck:
-	../../buildaux/mkdeps.exe ../../include -- *.cpp
+	../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../include -- *.cpp
 	@true
 
 forcelook:

@@ -9,7 +9,7 @@ __all_files__: $(OBJECTS)
 	$(REALCC) -c -o $@ $< -I../../include $(CFLAGS)
 
 precheck:
-	../../buildaux/mkdeps.exe ../../include -- *.cpp
+	../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../include -- *.cpp
 	@true
 
 forcelook:

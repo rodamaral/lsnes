@@ -37,8 +37,8 @@ __all__.files: $(OBJECTS) ../../../$(BSNES_LIBRARY)
 	$(MAKE) -C ../../../bsnes $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING)
 	$(REALRANLIB) $@
 
-ports.inc: ports.json ../make-ports.exe
-	../make-ports.exe <$< >$@
+ports.inc: ports.json ../make-ports$(DOT_EXECUTABLE_SUFFIX)
+	../make-ports$(DOT_EXECUTABLE_SUFFIX) <$< >$@
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../bsnes $(CFLAGS) $(BSNES_CFLAGS) -Wreturn-type
@@ -55,7 +55,7 @@ forcelook:
 	@true
 
 precheck:
-	../../../buildaux/mkdeps.exe ../../../include -- *.cpp
+	../../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../../include -- *.cpp
 	@true
 
 clean:

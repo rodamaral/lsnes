@@ -70,26 +70,26 @@ bsnes/out/libsnes.$(ARCHIVE_SUFFIX): forcelook
 	$(REALRANLIB) bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
 
 
-src/__all_files__: src/core/version.cpp buildaux/mkdeps.exe buildaux/txt2cstr.exe forcelook
+src/__all_files__: src/core/version.cpp buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) buildaux/txt2cstr$(DOT_EXECUTABLE_SUFFIX) forcelook
 	$(MAKE) -C src precheck
 	$(MAKE) -C src
 	cp src/lsnes$(DOT_EXECUTABLE_SUFFIX) .
 
-buildaux/txt2cstr.exe: buildaux/txt2cstr.cpp
+buildaux/txt2cstr$(DOT_EXECUTABLE_SUFFIX): buildaux/txt2cstr.cpp
 	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $<
-buildaux/version.exe: buildaux/version.cpp VERSION
+buildaux/version$(DOT_EXECUTABLE_SUFFIX): buildaux/version.cpp VERSION
 	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $<
-buildaux/mkdeps.exe: buildaux/mkdeps.cpp VERSION
+buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX): buildaux/mkdeps.cpp VERSION
 	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $< -lboost_filesystem$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX)
-src/core/version.cpp: buildaux/version.exe forcelook
-	buildaux/version.exe >$@
+src/core/version.cpp: buildaux/version$(DOT_EXECUTABLE_SUFFIX) forcelook
+	buildaux/version$(DOT_EXECUTABLE_SUFFIX) >$@
 
 platclean:
 	$(MAKE) -C src platclean
 
 clean:
 	$(MAKE) -C src clean
-	rm -f buildaux/version.exe
+	rm -f buildaux/version$(DOT_EXECUTABLE_SUFFIX)
 
 forcelook:
 	@true

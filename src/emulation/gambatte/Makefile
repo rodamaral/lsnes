@@ -15,8 +15,8 @@ __all__.files: $(OBJECTS) ../../../$(GAMBATTE_LIBRARY)
 	$(MAKE) -C ../../../gambatte
 	$(REALRANLIB) $@
 
-ports.inc: ports.json ../make-ports.exe
-	../make-ports.exe <$< >$@
+ports.inc: ports.json ../make-ports$(DOT_EXECUTABLE_SUFFIX)
+	../make-ports$(DOT_EXECUTABLE_SUFFIX) <$< >$@
 
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS) -Wreturn-type
@@ -34,7 +34,7 @@ forcelook:
 	@true
 
 precheck:
-	../../../buildaux/mkdeps.exe ../../../include ../../../gambatte -- *.cpp
+	../../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../../include ../../../gambatte -- *.cpp
 	@true
 
 clean:

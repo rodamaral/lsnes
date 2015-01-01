@@ -44,6 +44,14 @@ void process_command_inverse(JSON::node& n, std::string name, std::ostream& imp)
 	}
 }
 
+bool is_crap_filename(const std::string& arg)
+{
+	if(arg.length() >= 4 && arg.substr(arg.length() - 4) == ".exe") return true;
+	if(arg.length() >= 9 && arg.substr(arg.length() - 9) == "/mkstubsi") return true;
+	if(arg == "mkstubsi") return true;
+	return false;
+}
+
 int main(int argc, char** argv)
 {
 	std::ofstream impl("inverselist.cpp");
@@ -54,7 +62,7 @@ int main(int argc, char** argv)
 
 	for(int i = 1; i < argc; i++) {
 		//Hack, skip crap.
-		if(argv[i][0] == 0 || argv[i][strlen(argv[i])-1] == 'e')
+		if(argv[i][0] == 0 || is_crap_filename(argv[i]))
 			continue;
 		std::ifstream infile(argv[i]);
 		std::string in_json;
