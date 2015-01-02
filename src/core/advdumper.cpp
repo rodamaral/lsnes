@@ -169,6 +169,7 @@ dumper_base::dumper_base(master_dumper& _mdumper, dumper_factory_base& _fbase)
 {
 	threads::arlock h(mdumper->lock);
 	mdumper->dumpers[fbase] = this;
+	samples_killed = 0;
 }
 
 dumper_base::~dumper_base() throw()
