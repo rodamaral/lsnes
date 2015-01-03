@@ -114,10 +114,10 @@ namespace
 
 #define TEMPORARY "LUAINTERP_INTERNAL_COMMAND_TEMPORARY"
 
-	const char* CONST_eval_sysrc_lua = "local fn = loadstring(" TEMPORARY ", \"<built-in>\"); "
-		"if fn then fn(); else print2(\"Parse error in sysrc.lua script\"); end;";
-	const char* CONST_eval_lua_lua = "local fn = loadstring(" TEMPORARY "); if fn then fn(); else print("
-		"\"Parse error in Lua statement\"); end;";
+	const char* CONST_eval_sysrc_lua = "local fn, err = loadstring(" TEMPORARY ", \"<built-in>\"); "
+		"if fn then fn(); else print2(\"Parse error in sysrc.lua script: \"..err); end;";
+	const char* CONST_eval_lua_lua = "local fn, err = loadstring(" TEMPORARY "); if fn then fn(); else print("
+		"\"Parse error in Lua statement: \"..err); end;";
 	const char* CONST_run_lua_lua = "dofile(" TEMPORARY ");";
 
 	int system_write_error(lua_State* L)
