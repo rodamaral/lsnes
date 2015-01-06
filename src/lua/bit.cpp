@@ -3,88 +3,122 @@
 #include "library/int24.hpp"
 #include "library/serialization.hpp"
 
-#define BITWISE_BITS 48
-#define BITWISE_MASK ((1ULL << (BITWISE_BITS)) - 1)
-
 namespace
 {
+	template<unsigned nbits>
+	uint64_t maskn()
+	{
+		if(nbits > 63)
+			return 0xFFFFFFFFFFFFFFFFULL;
+		else
+			return (1ULL << (nbits&63)) - 1;
+	}
+
+	uint64_t maskx(unsigned nbits)
+	{
+		if(nbits > 63)
+			return 0xFFFFFFFFFFFFFFFFULL;
+		else
+			return (1ULL << (nbits&63)) - 1;
+	}
+
+	template<unsigned nbits>
 	uint64_t combine_none(uint64_t chain, uint64_t arg)
 	{
-		return (chain & ~arg) & BITWISE_MASK;
+		return (chain & ~arg) & maskn<nbits>();
 	}
 
+	template<unsigned nbits>
 	uint64_t combine_any(uint64_t chain, uint64_t arg)
 	{
-		return (chain | arg) & BITWISE_MASK;
+		return (chain | arg) & maskn<nbits>();
 	}
 
+	template<unsigned nbits>
 	uint64_t combine_all(uint64_t chain, uint64_t arg)
 	{
-		return (chain & arg) & BITWISE_MASK;
+		return (chain & arg) & maskn<nbits>();
 	}
 
+	template<unsigned nbits>
 	uint64_t combine_parity(uint64_t chain, uint64_t arg)
 	{
-		return (chain ^ arg) & BITWISE_MASK;
+		return (chain ^ arg) & maskn<nbits>();
 	}
 
+	template<unsigned nbits>
 	uint64_t shift_lrotate(uint64_t base, uint64_t amount, uint64_t bits)
 	{
-		uint64_t mask = ((1ULL << bits) - 1);
+		uint64_t mask = maskx(bits);
 		base &= mask;
 		base = (base << amount) | (base >> (bits - amount));
-		return base & mask & BITWISE_MASK;
+		return base & mask & maskn<nbits>();
 	}
 
+	template<unsigned nbits>
 	uint64_t shift_rrotate(uint64_t base, uint64_t amount, uint64_t bits)
 	{
-		uint64_t mask = ((1ULL << bits) - 1);
+		uint64_t mask = maskx(bits);
 		base &= mask;
 		base = (base >> amount) | (base << (bits - amount));
-		return base & mask & BITWISE_MASK;
+		return base & mask & maskn<nbits>();
 	}
 
+	template<unsigned nbits>
 	uint64_t shift_lshift(uint64_t base, uint64_t amount, uint64_t bits)
 	{
-		uint64_t mask = ((1ULL << bits) - 1);
+		uint64_t mask = maskx(bits);
 		base <<= amount;
-		return base & mask & BITWISE_MASK;
+		return base & mask & maskn<nbits>();
 	}
 
+	template<unsigned nbits>
 	uint64_t shift_lrshift(uint64_t base, uint64_t amount, uint64_t bits)
 	{
-		uint64_t mask = ((1ULL << bits) - 1);
+		uint64_t mask = maskx(bits);
 		base &= mask;
 		base >>= amount;
-		return base & BITWISE_MASK;
+		return base & maskn<nbits>();
 	}
 
+	template<unsigned nbits>
 	uint64_t shift_arshift(uint64_t base, uint64_t amount, uint64_t bits)
 	{
-		uint64_t mask = ((1ULL << bits) - 1);
+		uint64_t mask = maskx(bits);
 		base &= mask;
 		bool negative = ((base >> (bits - 1)) != 0);
 		base >>= amount;
-		base |= ((negative ? BITWISE_MASK : 0) << (bits - amount));
-		return base & mask & BITWISE_MASK;
+		base |= ((negative ? maskn<nbits>() : 0) << (bits - amount));
+		return base & mask & maskn<nbits>();
 	}
 
-	template<uint64_t (*combine)(uint64_t chain, uint64_t arg), uint64_t init>
+	uint64_t zero()
+	{
+		return 0;
+	}
+
+	template<unsigned nbits>
+	uint64_t ones()
+	{
+		return maskn<nbits>();
+	}
+
+	template<uint64_t (*combine)(uint64_t chain, uint64_t arg), uint64_t (*init)()>
 	int fold(lua::state& L, lua::parameters& P)
 	{
-		uint64_t ret = init;
+		uint64_t ret = init();
 		while(P.more())
 			ret = combine(ret, P.arg<uint64_t>());
 		L.pushnumber(ret);
 		return 1;
 	}
 
-	template<uint64_t (*sh)(uint64_t base, uint64_t amount, uint64_t bits)>
+	template<uint64_t (*sh)(uint64_t base, uint64_t amount, uint64_t bits), unsigned nbits>
 	int shift(lua::state& L, lua::parameters& P)
 	{
 		uint64_t base, amount, bits;
 
-		P(base, P.optional(amount, 1), P.optional(bits, BITWISE_BITS));
+		P(base, P.optional(amount, 1), P.optional(bits, nbits));
 
 		L.pushnumber(sh(base, amount, bits));
 		return 1;
@@ -183,15 +217,15 @@ namespace
 		return 1;
 	}
 
-	template<bool right>
+	template<bool right, unsigned nbits>
 	int bit_cshift(lua::state& L, lua::parameters& P)
 	{
 		uint64_t a, b;
 		unsigned amount, bits;
 
-		P(a, b, P.optional(amount, 1), P.optional(bits, BITWISE_BITS));
+		P(a, b, P.optional(amount, 1), P.optional(bits, nbits));
 
-		uint64_t mask = ((1ULL << bits) - 1);
+		uint64_t mask = maskx(bits);
 		a &= mask;
 		b &= mask;
 		if(right) {
@@ -324,19 +358,36 @@ namespace
 	lua::functions LUA_bitops_fn(lua_func_bit, "bit", {
 		{"flagdecode", flagdecode_core<false>},
 		{"rflagdecode", flagdecode_core<true>},
-		{"none", fold<combine_none, BITWISE_MASK>},
-		{"any", fold<combine_any, 0>},
-		{"all", fold<combine_all, BITWISE_MASK>},
-		{"parity", fold<combine_parity, 0>},
-		{"bnot", fold<combine_none, BITWISE_MASK>},
-		{"bor", fold<combine_any, 0>},
-		{"band", fold<combine_all, BITWISE_MASK>},
-		{"bxor", fold<combine_parity, 0>},
-		{"lrotate", shift<shift_lrotate>},
-		{"rrotate", shift<shift_rrotate>},
-		{"lshift", shift<shift_lshift>},
-		{"arshift", shift<shift_arshift>},
-		{"lrshift", shift<shift_lrshift>},
+		{"none", fold<combine_none<48>, ones<48>>},
+		{"any", fold<combine_any<48>, zero>},
+		{"all", fold<combine_all<48>, ones<48>>},
+		{"parity", fold<combine_parity<48>, zero>},
+		{"bnot", fold<combine_none<48>, ones<48>>},
+		{"bor", fold<combine_any<48>, zero>},
+		{"band", fold<combine_all<48>, ones<48>>},
+		{"bxor", fold<combine_parity<48>, zero>},
+		{"lrotate", shift<shift_lrotate<48>, 48>},
+		{"rrotate", shift<shift_rrotate<48>, 48>},
+		{"lshift", shift<shift_lshift<48>, 48>},
+		{"arshift", shift<shift_arshift<48>, 48>},
+		{"lrshift", shift<shift_lrshift<48>, 48>},
+#ifdef LUA_SUPPORTS_INTEGERS
+		{"wnone", fold<combine_none<64>, ones<64>>},
+		{"wany", fold<combine_any<64>, zero>},
+		{"wall", fold<combine_all<64>, ones<64>>},
+		{"wparity", fold<combine_parity<64>, zero>},
+		{"wbnot", fold<combine_none<64>, ones<64>>},
+		{"wbor", fold<combine_any<64>, zero>},
+		{"wband", fold<combine_all<64>, ones<64>>},
+		{"wbxor", fold<combine_parity<64>, zero>},
+		{"wlrotate", shift<shift_lrotate<64>, 64>},
+		{"wrrotate", shift<shift_rrotate<64>, 64>},
+		{"wlshift", shift<shift_lshift<64>, 64>},
+		{"warshift", shift<shift_arshift<64>, 64>},
+		{"wlrshift", shift<shift_lrshift<64>, 64>},
+		{"wclshift", bit_cshift<false, 64>},
+		{"wcrshift", bit_cshift<true, 64>},
+#endif
 		{"swapword", bswap<uint16_t>},
 		{"swaphword", bswap<ss_uint24_t>},
 		{"swapdword", bswap<uint32_t>},
@@ -352,8 +403,8 @@ namespace
 		{"test", bit_test2<false>},
 		{"testn", bit_test2<true>},
 		{"popcount", bit_popcount},
-		{"clshift", bit_cshift<false>},
-		{"crshift", bit_cshift<true>},
+		{"clshift", bit_cshift<false, 48>},
+		{"crshift", bit_cshift<true, 48>},
 		{"compose", bit_compose},
 		{"quotent", bit_quotent},
 		{"multidiv", bit_multidiv},
