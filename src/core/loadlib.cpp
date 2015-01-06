@@ -1,9 +1,11 @@
 #include "cmdhelp/loadlib.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
+#include "core/instance.hpp"
 #include "core/loadlib.hpp"
 #include "core/messages.hpp"
 #include "core/misc.hpp"
+#include "core/rom.hpp"
 #include "interface/c-interface.hpp"
 #include "interface/romtype.hpp"
 #include "library/command.hpp"
@@ -92,16 +94,24 @@ void with_loaded_library(const loadlib::module& l)
 		//This wasn't libopus.
 	}
 	try {
+		module_loading = &l;
 		try_init_c_module(l);
+		module_loading = NULL;
 	} catch(...) {
+		module_loading = NULL;
 		//Ignored.
 	}
 	messages << "Loaded library '" << l.get_libname() << "'" << std::endl;
 	modules[next_mod++] = const_cast<loadlib::module*>(&l);
 }
 
-void with_unloaded_library(loadlib::module& l)
+bool with_unloaded_library(loadlib::module& l)
 {
+	//Check that this module is not needed.
+	if(!CORE().rom->get_internal_rom_type().safe_to_unload(l)) {
+		messages << "Current core is from this module, can't unload" << std::endl;
+		return false;
+	}
 	try {
 		try_uninit_c_module(l);
 	} catch(...) {
@@ -110,6 +120,8 @@ void with_unloaded_library(loadlib::module& l)
 	//Spot removed cores.
 	notify_new_core();
 	delete &l;
+	notify_new_core();	//In case only unload made it go away.
+	return true;
 }
 
 namespace
@@ -169,8 +181,8 @@ namespace
 			unsigned libid = parse_value<unsigned>(args);
 			if(!modules.count(libid))
 				throw std::runtime_error("No such library loaded");
-			with_unloaded_library(*modules[libid]);
-			modules.erase(libid);
+			if(with_unloaded_library(*modules[libid]))
+				modules.erase(libid);
 		});
 
 	command::fnptr<> CMD_list_library(lsnes_cmds, CLOADLIB::list,

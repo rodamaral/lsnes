@@ -1,6 +1,7 @@
 #include "loadlib.hpp"
 #include <sstream>
 #include <list>
+#include <set>
 
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
@@ -17,6 +18,7 @@ threads::lock& global_mutex()
 
 namespace
 {
+	thread_local library* currently_loading;
 #if defined(_WIN32) || defined(_WIN64)
 	std::string callsign = "dynamic link library";
 	std::string callsign_ext = "dll";
@@ -119,6 +121,9 @@ const std::string& library::extension() throw()
 {
 	return callsign_ext;
 }
+
+library* library::loading() throw() { return currently_loading; }
+void library::set_loading(library* lib) throw(std::bad_alloc) { currently_loading = lib; }
 
 namespace
 {

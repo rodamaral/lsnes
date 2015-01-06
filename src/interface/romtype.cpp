@@ -12,8 +12,18 @@
 #include <list>
 #include <limits>
 
+thread_local const loadlib::module* module_loading;
+
 namespace
 {
+	void mark_against_loading(const void* obj)
+	{
+		auto i = module_loading;
+		if(i) i->mark(obj);
+		auto j = loadlib::library::loading();
+		if(j) j->mark(obj);
+	}
+
 	bool install_handlers_automatically;
 
 	std::map<std::string, std::string>& sysreg_mapping()
@@ -374,6 +384,7 @@ core_core::core_core(std::initializer_list<portctrl::type*> ports, std::initiali
 	uninitialized_cores_set().insert(this);
 	all_cores_set().insert(this);
 	new_core_flag = true;
+	mark_against_loading(this);
 }
 
 core_core::core_core(std::vector<portctrl::type*> ports, std::vector<interface_action> x_actions)
@@ -387,6 +398,7 @@ core_core::core_core(std::vector<portctrl::type*> ports, std::vector<interface_a
 	uninitialized_cores_set().insert(this);
 	all_cores_set().insert(this);
 	new_core_flag = true;
+	mark_against_loading(this);
 }
 
 core_core::~core_core() throw()

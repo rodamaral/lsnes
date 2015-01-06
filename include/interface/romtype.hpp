@@ -9,6 +9,7 @@
 #include "interface/setting.hpp"
 #include "library/framebuffer.hpp"
 #include "library/threads.hpp"
+#include "library/loadlib.hpp"
 
 struct core_region;
 struct core_type;
@@ -16,6 +17,11 @@ struct core_sysregion;
 struct core_romimage;
 struct core_romimage_info;
 struct core_core;
+
+/**
+ * The module currently being loaded.
+ */
+extern thread_local const loadlib::module* module_loading;
 
 /**
  * Interface device register.
@@ -356,6 +362,7 @@ struct core_core
 	std::vector<std::string> get_trace_cpus();
 	void debug_reset();
 	bool isnull();
+	bool safe_to_unload(loadlib::module& mod) { return !mod.is_marked(this); }
 protected:
 /**
  * Get the name of the core.
@@ -611,6 +618,7 @@ public:
 	std::vector<std::string> get_trace_cpus() { return core->get_trace_cpus(); }
 	void debug_reset() { core->debug_reset(); }
 	bool isnull() { return core->isnull(); }
+	bool safe_to_unload(loadlib::module& mod) { return core->safe_to_unload(mod); }
 protected:
 /**
  * Load a ROM slot set. Changes the ROM currently loaded for core.

@@ -4,6 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <map>
+#include <set>
 #include "threads.hpp"
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -36,7 +37,14 @@ public:
  */
 	library(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 	{
-		lib = new internal(filename);
+		try {
+			set_loading(this);
+			lib = new internal(filename);
+			set_loading(NULL);
+		} catch(...) {
+			set_loading(NULL);
+			throw;
+		}
 	}
 /**
  * Unload a library.
@@ -94,7 +102,14 @@ public:
 		return *this;
 	}
 	std::string get_libname() const { return lib->libname; }
+	void mark(const void* obj) const { if(lib) lib->mark(obj); }
+	bool is_marked(const void* obj) const { return lib ? lib->is_marked(obj) : false; }
+/**
+ * Get currently loading library, or NULL if nothing is loading.
+ */
+	static library* loading() throw();
 private:
+	void set_loading(library* lib) throw(std::bad_alloc);
 	struct internal
 	{
 		internal(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
@@ -109,8 +124,11 @@ private:
 #endif
 		size_t refs;
 		std::string libname;
+		void mark(const void* obj) { marked.insert(obj); }
+		bool is_marked(const void* obj) { return marked.count(obj); }
+		std::set<const void*> marked;
 	};
-	internal* lib;
+	mutable internal* lib;
 };
 
 /**
@@ -171,6 +189,14 @@ public:
  * Run all not ran initialization functions.
  */
 	static void run_initializers();
+/**
+ * Mark object (only works for libraries).
+ */
+	void mark(const void* obj) const { if(dynamic) lib.mark(obj); }
+/**
+ * Is object marked (only works for libraries)?
+ */
+	bool is_marked(const void* obj) const { return dynamic ? lib.is_marked(obj) : false; }
 private:
 	bool dynamic;
 	library lib;
