@@ -12,10 +12,7 @@
 #include <cassert>
 #include "string.hpp"
 #include "utf8.hpp"
-extern "C"
-{
-#include <lua.h>
-}
+#include "lua-version.hpp"
 
 namespace lua
 {
@@ -437,31 +434,17 @@ public:
 	void settable(int index) { lua_settable(lua_handle, index); }
 	int isnone(int index) { return lua_isnone(lua_handle, index); }
 	int isnumber(int index) { return lua_isnumber(lua_handle, index); }
-	int isinteger(int index)
-#if LUA_VERSION_NUM < 503
-	{ return lua_isnumber(lua_handle, index); }
-#else
-	{ return lua_isinteger(lua_handle, index); }
-#endif
+	int isinteger(int index) { return LUA_INTEGER_POSTFIX(lua_is) (lua_handle, index); }
 	int isboolean(int index) { return lua_isboolean(lua_handle, index); }
 	int toboolean(int index) { return lua_toboolean(lua_handle, index); }
 	const char* tolstring(int index, size_t *len) { return lua_tolstring(lua_handle, index, len); }
 	lua_Number tonumber(int index) { return lua_tonumber(lua_handle, index); }
-	uint64_t tointeger(int index)
-#if LUA_VERSION_NUM < 503
-	{ return lua_tonumber(lua_handle, index); }
-#else
-	{ return lua_tointeger(lua_handle, index); }
-#endif
+	uint64_t tointeger(int index) { return LUA_INTEGER_POSTFIX(lua_to) (lua_handle, index); }
 	void gettable(int index) { lua_gettable(lua_handle, index); }
-#if LUA_VERSION_NUM == 501
-	int load(lua_Reader reader, void* data, const char* chunkname) { return lua_load(lua_handle, reader, data,
-		chunkname); }
-#endif
-#if LUA_VERSION_NUM == 502 || LUA_VERSION_NUM == 503
-	int load(lua_Reader reader, void* data, const char* chunkname, const char* mode) { return lua_load(lua_handle,
-		reader, data, chunkname, mode); }
-#endif
+	int load(lua_Reader reader, void* data, const char* chunkname, const char* mode) {
+		(void)mode;
+		return lua_load(lua_handle, reader, data, chunkname LUA_LOADMODE_ARG(mode) );
+	}
 	const char* tostring(int index) { return lua_tostring(lua_handle, index); }
 	const char* tolstring(int index, size_t& len) { return lua_tolstring(lua_handle, index, &len); }
 	void pushlstring(const char* s, size_t len) { lua_pushlstring(lua_handle, s, len); }
@@ -479,14 +462,10 @@ public:
 			_pushnumber(val);
 	}
 	void pushboolean(bool b) { lua_pushboolean(lua_handle, b); }
+	void pushglobals() { LUA_LOADGLOBALS }
 private:
 	void _pushnumber(lua_Number n) { return lua_pushnumber(lua_handle, n); }
-	void _pushinteger(uint64_t n)
-#if LUA_VERSION_NUM < 503
-	{ return lua_pushnumber(lua_handle, n); }
-#else
-	{ return lua_pushinteger(lua_handle, n); }
-#endif
+	void _pushinteger(uint64_t n) { return LUA_INTEGER_POSTFIX(lua_push) (lua_handle, n); }
 	static void builtin_oom();
 	static void* builtin_alloc(void* user, void* old, size_t olds, size_t news);
 	void (*oom_handler)();
