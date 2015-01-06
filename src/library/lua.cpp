@@ -245,7 +245,7 @@ namespace
 #if LUA_VERSION_NUM == 501
 			L.pushvalue(LUA_GLOBALSINDEX);
 #endif
-#if LUA_VERSION_NUM == 502
+#if LUA_VERSION_NUM == 502 || LUA_VERSION_NUM == 503
 			L.rawgeti(LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
 #endif
 			assert(L.type(-1) == LUA_TTABLE);

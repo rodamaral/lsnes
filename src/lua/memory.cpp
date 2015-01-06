@@ -121,10 +121,10 @@ namespace
 		lua::state& mL = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(3)));
 		lua::state L(mL, _L);
 
-		uint64_t base = L.tonumber(lua_upvalueindex(1));
+		uint64_t base = L.tointeger(lua_upvalueindex(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
 		if(L.type(lua_upvalueindex(2)) == LUA_TNUMBER)
-			size = L.tonumber(lua_upvalueindex(2));
+			size = L.tointeger(lua_upvalueindex(2));
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, "aperture(read)");
 		if(addr > size || addr + base < addr) {
 			L.pushnumber(0);
@@ -141,10 +141,10 @@ namespace
 		lua::state& mL = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(3)));
 		lua::state L(mL, _L);
 
-		uint64_t base = L.tonumber(lua_upvalueindex(1));
+		uint64_t base = L.tointeger(lua_upvalueindex(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
 		if(L.type(lua_upvalueindex(2)) == LUA_TNUMBER)
-			size = L.tonumber(lua_upvalueindex(2));
+			size = L.tointeger(lua_upvalueindex(2));
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, "aperture(write)");
 		if(addr > size || addr + base < addr)
 			return 0;

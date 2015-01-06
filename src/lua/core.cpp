@@ -22,7 +22,10 @@ namespace
 		case LUA_TBOOLEAN:
 			return L.toboolean(index) ? "true" : "false";
 		case LUA_TNUMBER:
-			return (stringfmt() << L.tonumber(index)).str();
+			if(L.isinteger(index))
+				return (stringfmt() << L.tointeger(index)).str();
+			else
+				return (stringfmt() << L.tonumber(index)).str();
 		case LUA_TSTRING: {
 			const char* tmp2;
 			size_t len;

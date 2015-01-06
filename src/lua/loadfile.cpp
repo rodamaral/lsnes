@@ -268,7 +268,7 @@ namespace
 			chunkname = file1;
 		reader rc(file, absfilename);
 		int r = lua_load(L.handle(), reader::rfn, &rc, chunkname.c_str()
-#if LUA_VERSION_NUM == 502
+#if LUA_VERSION_NUM == 502 || LUA_VERSION_NUM == 503
 			, "t"
 #endif
 		);

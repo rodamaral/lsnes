@@ -152,7 +152,7 @@ private:
 
 	template<typename... T> void _callback(int argc, string_tag tag, T... args)
 	{
-		pushlstring(tag.val.c_str(), tag.val.length());
+		pushlstring(tag.val);
 		_callback(argc + 1, args...);
 	}
 
@@ -239,7 +239,7 @@ public:
  */
 	std::string get_string(int argindex, const std::string& fname) throw(std::runtime_error, std::bad_alloc)
 	{
-		if(lua_isnone(lua_handle, argindex))
+		if(isnone(argindex))
 			(stringfmt() << "argument #" << argindex << " to " << fname << " must be string").throwex();
 		size_t len;
 		const char* f = lua_tolstring(lua_handle, argindex, &len);
@@ -257,7 +257,7 @@ public:
  */
 	bool get_bool(int argindex, const std::string& fname) throw(std::runtime_error, std::bad_alloc)
 	{
-		if(lua_isnone(lua_handle, argindex) || !lua_isboolean(lua_handle, argindex))
+		if(isnone(argindex) || !isboolean(argindex))
 			(stringfmt() << "argument #" << argindex << " to " << fname << " must be boolean").throwex();
 		return (lua_toboolean(lua_handle, argindex) != 0);
 	}
@@ -272,9 +272,17 @@ public:
 	template<typename T>
 	T get_numeric_argument(int argindex, const std::string& fname)
 	{
-		if(lua_isnone(lua_handle, argindex) || !lua_isnumber(lua_handle, argindex))
-			(stringfmt() << "Argument #" << argindex << " to " << fname << " must be numeric").throwex();
-		return static_cast<T>(lua_tonumber(lua_handle, argindex));
+		if(std::numeric_limits<T>::is_integer) {
+			if(isnone(argindex) || !isinteger(argindex))
+				(stringfmt() << "Argument #" << argindex << " to " << fname
+					<< " must be integer").throwex();
+			return static_cast<T>(lua_tointeger(lua_handle, argindex));
+		} else {
+			if(isnone(argindex) || !isnumber(argindex))
+				(stringfmt() << "Argument #" << argindex << " to " << fname
+					<< " must be numeric").throwex();
+			return static_cast<T>(lua_tonumber(lua_handle, argindex));
+		}
 	}
 /**
  * Get a optional numeric argument.
@@ -287,12 +295,19 @@ public:
 	template<typename T>
 	void get_numeric_argument(unsigned argindex, T& value, const std::string& fname)
 	{
-		if(lua_isnoneornil(lua_handle, argindex))
+		if(isnoneornil(argindex))
 			return;
-		if(lua_isnone(lua_handle, argindex) || !lua_isnumber(lua_handle, argindex))
-			(stringfmt() << "Argument #" << argindex << " to " << fname << " must be numeric if "
-				"present").throwex();
-		value = static_cast<T>(lua_tonumber(lua_handle, argindex));
+		if(std::numeric_limits<T>::is_integer) {
+			if(isnone(argindex) || !isinteger(argindex))
+				(stringfmt() << "Argument #" << argindex << " to " << fname << " must be integer if "
+					"present").throwex();
+			value = static_cast<T>(lua_tointeger(lua_handle, argindex));
+		} else {
+			if(isnone(argindex) || !isnumber(argindex))
+				(stringfmt() << "Argument #" << argindex << " to " << fname << " must be numeric if "
+					"present").throwex();
+			value = static_cast<T>(lua_tonumber(lua_handle, argindex));
+		}
 	}
 /**
  * Do a callback.
@@ -421,19 +436,29 @@ public:
 	void insert(int index) { lua_insert(lua_handle, index); }
 	void settable(int index) { lua_settable(lua_handle, index); }
 	int isnone(int index) { return lua_isnone(lua_handle, index); }
-	void pushnumber(lua_Number n) { return lua_pushnumber(lua_handle, n); }
 	int isnumber(int index) { return lua_isnumber(lua_handle, index); }
+	int isinteger(int index)
+#if LUA_VERSION_NUM < 503
+	{ return lua_isnumber(lua_handle, index); }
+#else
+	{ return lua_isinteger(lua_handle, index); }
+#endif
 	int isboolean(int index) { return lua_isboolean(lua_handle, index); }
 	int toboolean(int index) { return lua_toboolean(lua_handle, index); }
 	const char* tolstring(int index, size_t *len) { return lua_tolstring(lua_handle, index, len); }
-	void pushboolean(int b) { lua_pushboolean(lua_handle, b); }
 	lua_Number tonumber(int index) { return lua_tonumber(lua_handle, index); }
+	uint64_t tointeger(int index)
+#if LUA_VERSION_NUM < 503
+	{ return lua_tonumber(lua_handle, index); }
+#else
+	{ return lua_tointeger(lua_handle, index); }
+#endif
 	void gettable(int index) { lua_gettable(lua_handle, index); }
 #if LUA_VERSION_NUM == 501
 	int load(lua_Reader reader, void* data, const char* chunkname) { return lua_load(lua_handle, reader, data,
 		chunkname); }
 #endif
-#if LUA_VERSION_NUM == 502
+#if LUA_VERSION_NUM == 502 || LUA_VERSION_NUM == 503
 	int load(lua_Reader reader, void* data, const char* chunkname, const char* mode) { return lua_load(lua_handle,
 		reader, data, chunkname, mode); }
 #endif
@@ -445,9 +470,23 @@ public:
 	int pcall(int nargs, int nresults, int errfunc) { return lua_pcall(lua_handle, nargs, nresults, errfunc); }
 	int next(int index) { return lua_next(lua_handle, index); }
 	int isnoneornil(int index) { return lua_isnoneornil(lua_handle, index); }
-	lua_Integer tointeger(int index) { return lua_tointeger(lua_handle, index); }
 	void rawgeti(int index, int n) { lua_rawgeti(lua_handle, index, n); }
+	template<typename T> void pushnumber(T val)
+	{
+		if(std::numeric_limits<T>::is_integer)
+			_pushinteger(val);
+		else
+			_pushnumber(val);
+	}
+	void pushboolean(bool b) { lua_pushboolean(lua_handle, b); }
 private:
+	void _pushnumber(lua_Number n) { return lua_pushnumber(lua_handle, n); }
+	void _pushinteger(uint64_t n)
+#if LUA_VERSION_NUM < 503
+	{ return lua_pushnumber(lua_handle, n); }
+#else
+	{ return lua_pushinteger(lua_handle, n); }
+#endif
 	static void builtin_oom();
 	static void* builtin_alloc(void* user, void* old, size_t olds, size_t news);
 	void (*oom_handler)();

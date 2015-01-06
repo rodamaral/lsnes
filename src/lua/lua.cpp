@@ -114,10 +114,17 @@ namespace
 
 #define TEMPORARY "LUAINTERP_INTERNAL_COMMAND_TEMPORARY"
 
+#if LUA_VERSION_NUM < 503
 	const char* CONST_eval_sysrc_lua = "local fn, err = loadstring(" TEMPORARY ", \"<built-in>\"); "
 		"if fn then fn(); else print2(\"Parse error in sysrc.lua script: \"..err); end;";
 	const char* CONST_eval_lua_lua = "local fn, err = loadstring(" TEMPORARY "); if fn then fn(); else print("
 		"\"Parse error in Lua statement: \"..err); end;";
+#else
+	const char* CONST_eval_sysrc_lua = "local fn, err = load(" TEMPORARY ", \"<built-in>\"); "
+		"if fn then fn(); else print2(\"Parse error in sysrc.lua script: \"..err); end;";
+	const char* CONST_eval_lua_lua = "local fn, err = load(" TEMPORARY "); if fn then fn(); else print("
+		"\"Parse error in Lua statement: \"..err); end;";
+#endif
 	const char* CONST_run_lua_lua = "dofile(" TEMPORARY ");";
 
 	int system_write_error(lua_State* L)
@@ -132,7 +139,7 @@ namespace
 #if LUA_VERSION_NUM == 501
 		L.pushvalue(LUA_GLOBALSINDEX);
 #endif
-#if LUA_VERSION_NUM == 502
+#if LUA_VERSION_NUM == 502 || LUA_VERSION_NUM == 503
 		L.rawgeti(LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
 #endif
 		L.newtable();
@@ -496,7 +503,7 @@ bool lua_state::run_lua_fragment() throw(std::bad_alloc)
 #if LUA_VERSION_NUM == 501
 	int t = L.load(read_lua_fragment, &luareader_fragment, "run_lua_fragment");
 #endif
-#if LUA_VERSION_NUM == 502
+#if LUA_VERSION_NUM == 502 || LUA_VERSION_NUM == 503
 	int t = L.load(read_lua_fragment, &luareader_fragment, "run_lua_fragment", "t");
 #endif
 	if(t == LUA_ERRSYNTAX) {

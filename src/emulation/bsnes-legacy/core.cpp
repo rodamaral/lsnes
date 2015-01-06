@@ -1923,7 +1923,7 @@ again2:
 		uint32_t r = 0;
 		L.getfield(-1, "addr");
 		if(L.type(-1) == LUA_TNUMBER)
-			r = static_cast<uint32_t>(L.tonumber(-1));
+			r = static_cast<uint32_t>(L.tointeger(-1));
 		L.pop(1);
 		return r;
 	}
@@ -1933,7 +1933,7 @@ again2:
 		signed r = -1;
 		L.getfield(-1, "data");
 		if(L.type(-1) == LUA_TNUMBER)
-			r = static_cast<signed>(L.tonumber(-1));
+			r = static_cast<signed>(L.tointeger(-1));
 		L.pop(1);
 		return r;
 	}
