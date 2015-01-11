@@ -394,11 +394,12 @@ int main(int argc, char** argv)
 
 	init_main_callbacks();
 	messages << "--- Loading ROM ---" << std::endl;
-	struct loaded_rom r;
+	struct loadable_rom r;
+	struct incore_rom* icrom = NULL;
 	try {
 		std::map<std::string, std::string> tmp;
 		r = construct_rom(movfn, cmdline);
-		r.load(tmp, 1000000000, 0);
+		icrom = &r.load(tmp, 1000000000, 0);
 		messages << "Using core: " << r.get_core_identifier() << std::endl;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -408,8 +409,8 @@ int main(int argc, char** argv)
 		fatal_error();
 		exit(1);
 	}
-	messages << "Detected region: " << r.get_sysregion().get_name() << std::endl;
-	lsnes_instance.framerate->set_nominal_framerate(r.region_approx_framerate());
+	messages << "Detected region: " << icrom->get_sysregion().get_name() << std::endl;
+	lsnes_instance.framerate->set_nominal_framerate(icrom->region_approx_framerate());
 
 	messages << "--- End of Startup --- " << std::endl;
 
@@ -434,6 +435,7 @@ int main(int argc, char** argv)
 		fatal_error();
 		return 1;
 	}
+	icrom->destroy();
 	quit_lua();
 	lsnes_instance.mlogic->release_memory();
 	lsnes_instance.buttons->cleanup();

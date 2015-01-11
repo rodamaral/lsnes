@@ -109,8 +109,9 @@ extern "C" {
 #define LSNES_CORE_CAP1_MEMWATCH	0x00010000U
 //Core supports lightguns (By setting lightgun_height/lightgun_width in LSNES_CORE_GET_AV_STATE).
 #define LSNES_CORE_CAP1_LIGHTGUN	0x00020000U
+//Core supports multicore (By supporting LSNES_CORE_LOAD_ROM2).
+#define LSNES_CORE_CAP1_MULTICORE	0x00040000U
 //Reserved capabilities.
-#define LSNES_CORE_CAP1_RESERVED18	0x00040000U
 #define LSNES_CORE_CAP1_RESERVED19	0x00080000U
 #define LSNES_CORE_CAP1_RESERVED20	0x00100000U
 #define LSNES_CORE_CAP1_RESERVED21	0x00200000U
@@ -423,7 +424,7 @@ struct lsnes_core_get_sysregion_info
 
 
 //Request 5: Get current A/V state.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: (required)
 //Fill the structure with current A/V state.
 #define LSNES_CORE_GET_AV_STATE 5
@@ -440,7 +441,7 @@ struct lsnes_core_get_av_state
 
 
 //Request 6: Emulate a frame
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: (required).
 //Emulate a frame and output the video and audio data resulting.
 #define LSNES_CORE_EMULATE 6
@@ -449,7 +450,7 @@ struct lsnes_core_emulate
 };
 
 //Request 7: Save state.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: (required).
 //Save core state.
 #define LSNES_CORE_SAVESTATE 7
@@ -462,7 +463,7 @@ struct lsnes_core_savestate
 };
 
 //Request 8: Load state.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: (required).
 //Load core state.
 #define LSNES_CORE_LOADSTATE 8
@@ -523,7 +524,7 @@ struct lsnes_core_load_rom
 };
 
 //Request 11: Get region.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Fill region 0.
 //Return the current region.
 #define LSNES_CORE_GET_REGION 11
@@ -534,7 +535,7 @@ struct lsnes_core_get_region
 };
 
 //Request 12: Set region.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: If region is 0, succeed, otherwise fail.
 //Set current region.
 #define LSNES_CORE_SET_REGION 12
@@ -554,7 +555,7 @@ struct lsnes_core_deinitialize
 };
 
 //Request 14: Get poll flag state.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Return flag inferred from polls.
 //Return the poll flag state.
 //The poll flag gets automatically set to 1 if core reads controllers.
@@ -566,7 +567,7 @@ struct lsnes_core_get_pflag
 };
 
 //Request 15: Set poll flag state.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Set flag inferred from polls.
 //Sets the poll flag state.
 #define LSNES_CORE_SET_PFLAG 15
@@ -577,7 +578,7 @@ struct lsnes_core_set_pflag
 };
 
 //Request 16: Get action flags.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Act as if flags was 1.
 //Get flags for given action.
 #define LSNES_CORE_GET_ACTION_FLAGS 16
@@ -592,7 +593,7 @@ struct lsnes_core_get_action_flags
 };
 
 //Request 17: Execute action.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Do nothing.
 //Execute given action.
 #define LSNES_CORE_EXECUTE_ACTION 17
@@ -616,7 +617,7 @@ struct lsnes_core_execute_action
 };
 
 //Request 18: Get bus mapping.
-//Item: Core ID.
+//Item: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: base=0, size=0 (no mapping).
 //Get the base and size of bus mapping.
 #define LSNES_CORE_GET_BUS_MAPPING 18
@@ -629,7 +630,7 @@ struct lsnes_core_get_bus_mapping
 };
 
 //Request 19: Enumerate SRAMs.
-//Item iD: Core ID.
+//Item iD: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Return empty set.
 //Get the set of SRAMs available.
 #define LSNES_CORE_ENUMERATE_SRAM 19
@@ -640,7 +641,7 @@ struct lsnes_core_enumerate_sram
 };
 
 //Request 20: Save SRAMs.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Return empty set.
 //Save the contents of SRAMs.
 #define LSNES_CORE_SAVE_SRAM 20
@@ -651,7 +652,7 @@ struct lsnes_core_save_sram
 };
 
 //Request 21: Load SRAMs.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Warn about any SRAMs present.
 //Load the contents of SRAMs.
 #define LSNES_CORE_LOAD_SRAM 21
@@ -662,7 +663,7 @@ struct lsnes_core_load_sram
 };
 
 //Request 22: Get reset action number.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Return -1 for both (not supported).
 //Return the IDs for reset actions.
 #define LSNES_CORE_GET_RESET_ACTION 22
@@ -675,7 +676,7 @@ struct lsnes_core_get_reset_action
 };
 
 //Request 23: Get scale factors.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Scale to at least 360 width, 320 height.
 //Compute scale factors for given resolution.
 #define LSNES_CORE_COMPUTE_SCALE 23
@@ -692,7 +693,7 @@ struct lsnes_core_compute_scale
 };
 
 //Request 24: Run to save.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Do nothing.
 //Run to next save point (can be at most frame).
 #define LSNES_CORE_RUNTOSAVE 24
@@ -701,7 +702,7 @@ struct lsnes_core_runtosave
 };
 
 //Request 25: Poweron the system
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Do nothing.
 //Powers on the emulate system.
 #define LSNES_CORE_POWERON 25
@@ -710,16 +711,16 @@ struct lsnes_core_poweron
 };
 
 //Request 26: Unload the ROM.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Do nothing.
-//Signals that the ROM is no longer needed and can be unloaded.
+//Signals that the ROM is no longer needed and can be unloaded. Destroys the instance of LSNES_CORE_CAP1_MULTICORE.
 #define LSNES_CORE_UNLOAD_CARTRIDGE 26
 struct lsnes_core_unload_cartridge
 {
 };
 
 //Request 27: Reset debugging.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Do nothing.
 //Signals that debugging system should discard all breakpoints, cheats and tracks.
 #define LSNES_CORE_DEBUG_RESET 27
@@ -728,7 +729,7 @@ struct lsnes_core_debug_reset
 };
 
 //Request 28: Set debug flags.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Do nothing.
 //Set debugging flags.
 #define LSNES_CORE_SET_DEBUG_FLAGS 28
@@ -747,7 +748,7 @@ struct lsnes_core_set_debug_flags
 };
 
 //Request 29: Set cheat.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Do nothing.
 //Set or clear cheat.
 #define LSNES_CORE_SET_CHEAT 29
@@ -762,7 +763,7 @@ struct lsnes_core_set_cheat
 };
 
 //Request 30: Draw cover page.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Draw black screen.
 //Draw the cover page.
 #define LSNES_CORE_DRAW_COVER 30
@@ -773,7 +774,7 @@ struct lsnes_core_draw_cover
 };
 
 //Request 31: Set system controls before emulating frame.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Do nothing.
 //Set the system controls before frame is emulated.
 #define LSNES_CORE_PRE_EMULATE 31
@@ -786,7 +787,7 @@ struct lsnes_core_pre_emulate
 };
 
 //Request 32: Get list of device registers.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Return no registers.
 //Return list of device registers.
 #define LSNES_CORE_GET_DEVICE_REGS 32
@@ -808,7 +809,7 @@ struct lsnes_core_get_device_regs
 };
 
 //Request 33: Get VMA list.
-//Item id: Core ID.
+//Item id: Core ID (Instance ID if LSNES_CORE_CAP1_MULTICORE)
 //Default action: Return no VMAs.
 //Get the list of VMAs.
 #define LSNES_CORE_GET_VMA_LIST 33
@@ -836,6 +837,25 @@ struct lsnes_core_get_vma_list
 {
 	//Output: List of VMAs. NULL-terminated.
 	struct lsnes_core_get_vma_list_vma** vmas;
+};
+
+//Request 34: Load ROM and allocate instance ID. Only for emu_flags1 >= 3.
+//Item id: Type ID.
+//Default action: Not used.
+//Load given ROM, allocating instance ID.
+#define LSNES_CORE_LOAD_ROM2 34
+struct lsnes_core_load_rom2
+{
+	//Input: The image set.
+	struct lsnes_core_load_rom_image* images;
+	//Input: System settings. Ended by entry with NULL name.
+	struct lsnes_core_system_setting* settings;
+	//Input: RTC second.
+	uint64_t rtc_sec;
+	//Input: RTC subsecond.
+	uint64_t rtc_subsec;
+	//Output: The instance ID.
+	unsigned instance_id;
 };
 
 

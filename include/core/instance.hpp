@@ -123,7 +123,7 @@ struct emulator_instance
 	master_dumper* mdumper;
 	slotinfo_cache* slotcache;
 	audioapi_instance* audio;
-	loaded_rom* rom;
+	loadable_rom* rom;
 	save_jukebox* jukebox;
 	emulator_runmode* runmode;
 	status_updater* supdater;

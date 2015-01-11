@@ -19,7 +19,7 @@ struct file_download
 	file_download();
 	~file_download();
 	//Lauch.
-	void do_async(loaded_rom& rom);
+	void do_async(loadable_rom& rom);
 	void cancel();
 	//Status.
 	volatile bool finished;  //This signals download finishing, call finish().
@@ -29,7 +29,7 @@ struct file_download
 	threads::cv cond;
 	threads::lock m;
 	//Internal.
-	void _do_async(loaded_rom& rom);
+	void _do_async(loadable_rom& rom);
 	std::string tempname;
 	std::string tempname2;
 };

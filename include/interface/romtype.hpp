@@ -319,48 +319,16 @@ struct core_core
 	core_core(std::initializer_list<portctrl::type*> ports, std::initializer_list<interface_action> actions);
 	core_core(std::vector<portctrl::type*> ports, std::vector<interface_action> actions);
 	virtual ~core_core() throw();
-	bool set_region(core_region& region);
-	std::pair<uint32_t, uint32_t> get_video_rate();
-	double get_PAR();
-	std::pair<uint32_t, uint32_t> get_audio_rate();
 	std::string get_core_identifier();
-	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
-	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
-	void serialize(std::vector<char>& out);
-	void unserialize(const char* in, size_t insize);
-	core_region& get_region();
-	void power();
-	void unload_cartridge();
-	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 	void install_handler();
 	void uninstall_handler();
-	void emulate();
-	void runtosave();
-	bool get_pflag();
-	void set_pflag(bool pflag);
-	framebuffer::raw& draw_cover();
-	std::vector<portctrl::type*> get_port_types() { return port_types; }
 	std::string get_core_shortname();
-	void pre_emulate_frame(portctrl::frame& cf);
-	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p);
-	unsigned action_flags(unsigned id);
-	std::pair<uint64_t, uint64_t> get_bus_map();
-	std::list<core_vma_info> vma_list();
-	std::set<std::string> srams();
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
 	static void initialize_new_cores();
 	void hide() { hidden = true; }
 	bool is_hidden() { return hidden; }
-	std::set<const interface_action*> get_actions();
-	const interface_device_reg* get_registers();
-	int reset_action(bool hard);
-	std::pair<unsigned, unsigned> lightgun_scale();
-	void set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear);
-	void set_cheat(uint64_t addr, uint64_t value, bool set);
-	std::vector<std::string> get_trace_cpus();
-	void debug_reset();
 	bool isnull();
 	bool safe_to_unload(loadlib::module& mod) { return !mod.is_marked(this); }
 protected:
@@ -368,6 +336,195 @@ protected:
  * Get the name of the core.
  */
 	virtual std::string c_core_identifier() = 0;
+/**
+ * Do basic core initialization. Called on lsnes startup.
+ */
+	virtual void c_install_handler() = 0;
+/**
+ * Do basic core uninitialization. Called on lsnes shutdown.
+ */
+	virtual void c_uninstall_handler() = 0;
+/**
+ * Get shortened name of the core.
+ */
+	virtual std::string c_get_core_shortname() = 0;
+/**
+ * Is null core (only NULL core should define this).
+ */
+	virtual bool c_isnull();
+private:
+	bool hidden;
+};
+
+struct core_instance;
+
+struct core_type
+{
+public:
+	core_type(const core_type_params& params);
+	core_type(std::initializer_list<core_type_params> p) : core_type(*p.begin()) {}
+	virtual ~core_type() throw();
+	static std::list<core_type*> get_core_types();
+	core_region& get_preferred_region();
+	std::list<core_region*> get_regions();
+	core_sysregion& combine_region(core_region& reg);
+	const std::string& get_iname();
+	const std::string& get_hname();
+	std::list<std::string> get_extensions();
+	bool is_known_extension(const std::string& ext);
+	core_sysregion& lookup_sysregion(const std::string& sysreg);
+	std::string get_biosname();
+	unsigned get_id();
+	unsigned get_image_count();
+	core_romimage_info get_image_info(unsigned index);
+	core_instance& load(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
+		uint64_t rtc_subsec);
+	controller_set controllerconfig(std::map<std::string, std::string>& settings);
+	core_setting_group& get_settings();
+	core_core* get_core() { return core; }
+	void install_handler() { core->install_handler(); }
+	void uninstall_handler() { core->uninstall_handler(); }
+	std::string get_systemmenu_name() { return sysname; }
+	bool is_hidden() { return core->is_hidden(); }
+	std::string get_core_identifier() { return core->get_core_identifier(); }
+	std::string get_core_shortname() { return core->get_core_shortname(); }
+	bool isnull() { return core->isnull(); }
+	bool safe_to_unload(loadlib::module& mod) { return core->safe_to_unload(mod); }
+	bool multicore_capable() { return t_multicore_capable(); }
+protected:
+/**
+ * Load a ROM slot set. Changes the ROM currently loaded for core.
+ *
+ * Parameter images: The set of images to load.
+ * Parameter settings: The settings to use.
+ * Parameter rtc_sec: The initial RTC seconds value.
+ * Parameter rtc_subsec: The initial RTC subseconds value.
+ * Returns: The new instance, or NULL on failure.
+ */
+	virtual core_instance* t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings,
+		uint64_t rtc_sec, uint64_t rtc_subsec) = 0;
+/**
+ * Obtain controller config for given settings.
+ *
+ * Parameter settings: The settings to use.
+ * Returns: The controller configuration.
+ */
+	virtual controller_set t_controllerconfig(std::map<std::string, std::string>& settings) = 0;
+/**
+ * Is multicore capable?
+ */
+	virtual bool t_multicore_capable() const;
+private:
+	core_type(const core_type&);
+	core_type& operator=(const core_type&);
+	unsigned id;
+	std::string iname;
+	std::string hname;
+	std::string biosname;
+	std::string sysname;
+	std::list<core_region*> regions;
+	std::vector<core_romimage_info> imageinfo;
+	core_setting_group settings;
+	core_core* core;
+};
+
+/**
+ * System type / region pair.
+ *
+ * All run regions for given system must have valid pairs.
+ */
+struct core_sysregion
+{
+public:
+/**
+ * Create a new system type / region pair.
+ *
+ * Parameter name: The internal name of the pair.
+ * Parameter type: The system.
+ * Parameter region: The region.
+ */
+	core_sysregion(const std::string& name, core_type& type, core_region& region);
+	~core_sysregion() throw();
+	const std::string& get_name();
+	core_region& get_region();
+	core_type& get_type();
+	void fill_framerate_magic(uint64_t* magic);	//4 elements filled.
+/**
+ * Find all sysregions matching specified name.
+ *
+ * Parameter name: The name of system region.
+ * Returns: Sysregions matching the specified.
+ */
+	static std::set<core_sysregion*> find_matching(const std::string& name);
+private:
+	core_sysregion(const core_sysregion&);
+	core_sysregion& operator=(const core_sysregion&);
+	std::string name;
+	core_type& type;
+	core_region& region;
+};
+
+/**
+ * A core instance.
+ */
+struct core_instance
+{
+public:
+	virtual ~core_instance();
+	void serialize(std::vector<char>& out) { c_serialize(out); }
+	void unserialize(const char* in, size_t insize) { c_unserialize(in, insize); }
+	core_type& from_type() { return *type; }
+	bool set_region(core_region& region) { return c_set_region(region); }
+	std::pair<uint32_t, uint32_t> get_video_rate() { return c_video_rate(); }
+	double get_PAR() { return c_get_PAR(); }
+	std::pair<uint32_t, uint32_t> get_audio_rate() { return c_audio_rate(); }
+	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return c_save_sram(); }
+	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) { c_load_sram(sram); }
+	core_region& get_region() { return c_get_region(); }
+	void power() { return c_power(); }
+	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
+	{
+		return c_get_scale_factors(width, height);
+	}
+	void emulate() { c_emulate(); }
+	void runtosave() { c_runtosave(); }
+	bool get_pflag() { return c_get_pflag(); }
+	void set_pflag(bool pflag) { return c_set_pflag(pflag); }
+	framebuffer::raw& draw_cover() { return c_draw_cover(); }
+	std::vector<portctrl::type*> get_port_types() { return port_types; }
+	void pre_emulate_frame(portctrl::frame& cf) { c_pre_emulate_frame(cf); }
+	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
+	{
+		c_execute_action(id, p);
+	}
+	unsigned action_flags(unsigned id) { return c_action_flags(id); }
+	std::pair<uint64_t, uint64_t> get_bus_map() { return c_get_bus_map(); }
+	std::list<core_vma_info> vma_list() { return c_vma_list(); }
+	std::set<std::string> srams() { return c_srams(); }
+	std::set<const interface_action*> get_actions();
+	const interface_device_reg* get_registers() { return c_get_registers(); }
+	int reset_action(bool hard) { return c_reset_action(hard); }
+	std::pair<unsigned, unsigned> lightgun_scale() { return c_lightgun_scale(); }
+	void set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear)
+	{
+		c_set_debug_flags(addr, flags_set, flags_clear);
+	}
+	void set_cheat(uint64_t addr, uint64_t value, bool set) { return c_set_cheat(addr, value, set); }
+	std::vector<std::string> get_trace_cpus() { return c_get_trace_cpus(); }
+	void debug_reset() { return c_debug_reset(); }
+	bool unload_destroys_instance() { return type->multicore_capable(); }
+	//If multicore, capable, DESTROYS the instance.
+	void unload_cartridge();
+protected:
+	core_type* type;
+/**
+ * Serialize the system state.
+ */
+	virtual void c_serialize(std::vector<char>& out) = 0;
+/**
+ * Unserialize the system state.
+ */
+	virtual void c_unserialize(const char* in, size_t insize) = 0;
 /**
  * Set the current region.
  *
@@ -400,14 +557,6 @@ protected:
  */
 	virtual void c_load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) = 0;
 /**
- * Serialize the system state.
- */
-	virtual void c_serialize(std::vector<char>& out) = 0;
-/**
- * Unserialize the system state.
- */
-	virtual void c_unserialize(const char* in, size_t insize) = 0;
-/**
  * Get current region.
  */
 	virtual core_region& c_get_region() = 0;
@@ -415,22 +564,6 @@ protected:
  * Poweron the console.
  */
 	virtual void c_power() = 0;
-/**
- * Unload the cartridge from the console.
- */
-	virtual void c_unload_cartridge() = 0;
-/**
- * Get the current scale factors for screen as (xscale, yscale).
- */
-	virtual std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t width, uint32_t height) = 0;
-/**
- * Do basic core initialization. Called on lsnes startup.
- */
-	virtual void c_install_handler() = 0;
-/**
- * Do basic core uninitialization. Called on lsnes shutdown.
- */
-	virtual void c_uninstall_handler() = 0;
 /**
  * Emulate one frame.
  */
@@ -457,10 +590,6 @@ protected:
  * Should display information about the ROM loaded.
  */
 	virtual framebuffer::raw& c_draw_cover() = 0;
-/**
- * Get shortened name of the core.
- */
-	virtual std::string c_get_core_shortname() = 0;
 /**
  * Set the system controls to appropriate values for next frame.
  *
@@ -531,161 +660,17 @@ protected:
  */
 	virtual void c_debug_reset() = 0;
 /**
- * Is null core (only NULL core should define this).
+ * Unload the cartridge from the console (prepare instance to be destroyed).
  */
-	virtual bool c_isnull();
+	virtual void c_unload_cartridge() = 0;
+/**
+ * Get the current scale factors for screen as (xscale, yscale).
+ */
+	virtual std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t width, uint32_t height) = 0;
 private:
 	std::vector<portctrl::type*> port_types;
-	bool hidden;
 	std::map<std::string, interface_action> actions;
 	threads::lock actions_lock;
-};
-
-struct core_type
-{
-public:
-	core_type(const core_type_params& params);
-	core_type(std::initializer_list<core_type_params> p) : core_type(*p.begin()) {}
-	virtual ~core_type() throw();
-	static std::list<core_type*> get_core_types();
-	core_region& get_preferred_region();
-	std::list<core_region*> get_regions();
-	core_sysregion& combine_region(core_region& reg);
-	const std::string& get_iname();
-	const std::string& get_hname();
-	std::list<std::string> get_extensions();
-	bool is_known_extension(const std::string& ext);
-	core_sysregion& lookup_sysregion(const std::string& sysreg);
-	std::string get_biosname();
-	unsigned get_id();
-	unsigned get_image_count();
-	core_romimage_info get_image_info(unsigned index);
-	bool load(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-		uint64_t rtc_subsec);
-	controller_set controllerconfig(std::map<std::string, std::string>& settings);
-	core_setting_group& get_settings();
-	std::pair<uint64_t, uint64_t> get_bus_map() { return core->get_bus_map(); }
-	std::list<core_vma_info> vma_list() { return core->vma_list(); }
-	std::set<std::string> srams() { return core->srams(); }
-	core_core* get_core() { return core; }
-	bool set_region(core_region& region) { return core->set_region(region); }
-	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
-	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
-	std::string get_core_identifier() { return core->get_core_identifier(); }
-	std::string get_core_shortname() { return core->get_core_shortname(); }
-	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return core->save_sram(); }
-	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
-	{
-		core->load_sram(sram);
-	}
-	void serialize(std::vector<char>& out) { core->serialize(out); }
-	void unserialize(const char* in, size_t insize) { core->unserialize(in, insize); }
-	core_region& get_region() { return core->get_region(); }
-	void power() { core->power(); }
-	void unload_cartridge() { core->unload_cartridge(); }
-	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
-	{
-		return core->get_scale_factors(width, height);
-	}
-	void install_handler() { core->install_handler(); }
-	void uninstall_handler() { core->uninstall_handler(); }
-	void emulate() { core->emulate(); }
-	void runtosave() { core->runtosave(); }
-	bool get_pflag() { return core->get_pflag(); }
-	void set_pflag(bool pflag) { core->set_pflag(pflag); }
-	framebuffer::raw& draw_cover() { return core->draw_cover(); }
-	std::string get_systemmenu_name() { return sysname; }
-	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
-	{
-		return core->execute_action(id, p);
-	}
-	unsigned action_flags(unsigned id) { return core->action_flags(id); }
-	bool is_hidden() { return core->is_hidden(); }
-	double get_PAR() { return core->get_PAR(); }
-	void pre_emulate_frame(portctrl::frame& cf) { return core->pre_emulate_frame(cf); }
-	std::set<const interface_action*> get_actions() { return core->get_actions(); }
-	const interface_device_reg* get_registers() { return core->get_registers(); }
-	int reset_action(bool hard) { return core->reset_action(hard); }
-	std::pair<unsigned, unsigned> lightgun_scale() { return core->lightgun_scale(); }
-	void set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear)
-	{
-		return core->set_debug_flags(addr, flags_set, flags_clear);
-	}
-	void set_cheat(uint64_t addr, uint64_t value, bool set)
-	{
-		return core->set_cheat(addr, value, set);
-	}
-	std::vector<std::string> get_trace_cpus() { return core->get_trace_cpus(); }
-	void debug_reset() { core->debug_reset(); }
-	bool isnull() { return core->isnull(); }
-	bool safe_to_unload(loadlib::module& mod) { return core->safe_to_unload(mod); }
-protected:
-/**
- * Load a ROM slot set. Changes the ROM currently loaded for core.
- *
- * Parameter images: The set of images to load.
- * Parameter settings: The settings to use.
- * Parameter rtc_sec: The initial RTC seconds value.
- * Parameter rtc_subsec: The initial RTC subseconds value.
- * Returns: -1 on failure, 0 on success.
- */
-	virtual int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-		uint64_t rtc_subsec) = 0;
-/**
- * Obtain controller config for given settings.
- *
- * Parameter settings: The settings to use.
- * Returns: The controller configuration.
- */
-	virtual controller_set t_controllerconfig(std::map<std::string, std::string>& settings) = 0;
-private:
-	core_type(const core_type&);
-	core_type& operator=(const core_type&);
-	unsigned id;
-	std::string iname;
-	std::string hname;
-	std::string biosname;
-	std::string sysname;
-	std::list<core_region*> regions;
-	std::vector<core_romimage_info> imageinfo;
-	core_setting_group settings;
-	core_core* core;
-};
-
-/**
- * System type / region pair.
- *
- * All run regions for given system must have valid pairs.
- */
-struct core_sysregion
-{
-public:
-/**
- * Create a new system type / region pair.
- *
- * Parameter name: The internal name of the pair.
- * Parameter type: The system.
- * Parameter region: The region.
- */
-	core_sysregion(const std::string& name, core_type& type, core_region& region);
-	~core_sysregion() throw();
-	const std::string& get_name();
-	core_region& get_region();
-	core_type& get_type();
-	void fill_framerate_magic(uint64_t* magic);	//4 elements filled.
-/**
- * Find all sysregions matching specified name.
- *
- * Parameter name: The name of system region.
- * Returns: Sysregions matching the specified.
- */
-	static std::set<core_sysregion*> find_matching(const std::string& name);
-private:
-	core_sysregion(const core_sysregion&);
-	core_sysregion& operator=(const core_sysregion&);
-	std::string name;
-	core_type& type;
-	core_region& region;
 };
 
 //Register a sysregion to name mapping.
