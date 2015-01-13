@@ -1,3 +1,10 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/statline.h>
+#include <wx/spinctrl.h>
+
 #include "core/controller.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
@@ -15,12 +22,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
-#include <wx/statline.h>
-#include <wx/spinctrl.h>
 
 #define MTMODE_PRESERVE "Preserve"
 #define MTMODE_OVERWRITE "Overwrite"

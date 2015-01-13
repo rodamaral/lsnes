@@ -1732,7 +1732,7 @@ std::string printer::object_end()
 printer_indenting::printer_indenting()
 {
 	depth = 0;
-	state = S_NORMAL;
+	state = S_STANDARD;
 }
 
 printer_indenting::~printer_indenting() throw()
@@ -1753,12 +1753,12 @@ std::string printer_indenting::value_val(const std::string& val)
 	if(depth == 0)
 		return val + "\n";
 	switch(state) {
-	case S_NORMAL:
+	case S_STANDARD:
 		return val;
 	default:
 		//According to JSON rules, value is not allowed immediately after end of array/object, so
 		//states S_END and S_START_END really have comma right before.
-		state = S_NORMAL;
+		state = S_STANDARD;
 		return linestart(depth) + val;
 	}
 }
@@ -1768,12 +1768,12 @@ std::string printer_indenting::value_string(const std::u32string& s)
 	if(depth == 0)
 		return json_string_escape(s) + "\n";
 	switch(state) {
-	case S_NORMAL:
+	case S_STANDARD:
 		return json_string_escape(s);
 	default:
 		//According to JSON rules, value is not allowed immediately after end of array/object, so
 		//states S_END and S_START_END really have comma right before.
-		state = S_NORMAL;
+		state = S_STANDARD;
 		return linestart(depth) + json_string_escape(s);
 	}
 }
@@ -1781,7 +1781,7 @@ std::string printer_indenting::value_string(const std::u32string& s)
 std::string printer_indenting::array_begin()
 {
 	switch(state) {
-	case S_NORMAL:
+	case S_STANDARD:
 		//This can only happen in beginning of expression or after key.
 		state = S_START;
 		depth++;
@@ -1817,7 +1817,7 @@ std::string printer_indenting::array_separator()
 std::string printer_indenting::array_end()
 {
 	switch(state) {
-	case S_NORMAL:
+	case S_STANDARD:
 	case S_END:
 	case S_COMMA:
 	case S_START_END:
@@ -1837,7 +1837,7 @@ std::string printer_indenting::array_end()
 std::string printer_indenting::object_begin()
 {
 	switch(state) {
-	case S_NORMAL:
+	case S_STANDARD:
 		//This can only happen in beginning of expression or after key.
 		state = S_START;
 		depth++;
@@ -1864,11 +1864,11 @@ std::string printer_indenting::object_key(const std::u32string& s)
 	case S_COMMA:
 	case S_END:
 	case S_START_END:
-		state = S_NORMAL;
+		state = S_STANDARD;
 		return linestart(depth) + json_string_escape(s) + ":";
 	default:
 		//Can't actually happe
-		state = S_NORMAL;
+		state = S_STANDARD;
 		return json_string_escape(s) + ":";
 	}
 	return "<WTF?>";  //NOTREACHED.
@@ -1890,7 +1890,7 @@ std::string printer_indenting::object_separator()
 std::string printer_indenting::object_end()
 {
 	switch(state) {
-	case S_NORMAL:
+	case S_STANDARD:
 	case S_END:
 	case S_COMMA:
 	case S_START_END:

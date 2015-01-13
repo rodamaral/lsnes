@@ -1,3 +1,9 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/radiobut.h>
+
 #include "core/moviedata.hpp"
 #include "core/memorywatch.hpp"
 #include "core/dispatch.hpp"
@@ -13,12 +19,6 @@
 #include "platform/wxwidgets/textrender.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
 #include "platform/wxwidgets/scrollbar.hpp"
-
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
-#include <wx/radiobut.h>
 
 #include "library/string.hpp"
 #include "library/json.hpp"

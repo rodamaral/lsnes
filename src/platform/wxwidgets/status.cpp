@@ -1,3 +1,9 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/statline.h>
+
 #include "core/emustatus.hpp"
 #include "core/instance.hpp"
 #include "core/window.hpp"

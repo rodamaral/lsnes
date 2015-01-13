@@ -1,3 +1,11 @@
+#include <wx/wx.h>
+#include <wx/statline.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/radiobut.h>
+#include <wx/spinctrl.h>
+
 #include "platform/wxwidgets/menu_tracelog.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"

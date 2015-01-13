@@ -1,3 +1,8 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
 #include "library/keyboard.hpp"
 #include "library/keyboard-mapper.hpp"
 #include "core/instance.hpp"
@@ -9,11 +14,6 @@
 
 #include <cstdint>
 #include <map>
-
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
 
 int wx_escape_count = 0;
 

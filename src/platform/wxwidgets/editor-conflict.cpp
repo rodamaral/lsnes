@@ -1,14 +1,14 @@
-#include "interface/romtype.hpp"
-#include "library/string.hpp"
-#include "core/rom.hpp"
-
-#include "platform/wxwidgets/platform.hpp"
-
 #include <wx/wx.h>
 #include <wx/event.h>
 #include <wx/control.h>
 #include <wx/combobox.h>
 #include <wx/scrolwin.h>
+
+#include "interface/romtype.hpp"
+#include "library/string.hpp"
+#include "core/rom.hpp"
+
+#include "platform/wxwidgets/platform.hpp"
 
 class wxeditor_conflict : public wxDialog
 {

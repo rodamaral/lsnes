@@ -1,3 +1,9 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/radiobut.h>
+
 #include "core/subtitles.hpp"
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
@@ -5,12 +11,6 @@
 #include "library/string.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
-
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
-#include <wx/radiobut.h>
 #include <cstdint>
 
 

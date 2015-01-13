@@ -1,10 +1,16 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
+#include "platform/wxwidgets/platform.hpp"
+
 #include "core/instance.hpp"
 #include "core/instance-map.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "library/keyboard.hpp"
 
-#include "platform/wxwidgets/platform.hpp"
 
 std::pair<double, double> calc_scale_factors(double factor, bool ar, double par);
 

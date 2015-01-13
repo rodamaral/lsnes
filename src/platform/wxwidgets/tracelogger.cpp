@@ -1,3 +1,9 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/statline.h>
+
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/textrender.hpp"
 #include "platform/wxwidgets/scrollbar.hpp"

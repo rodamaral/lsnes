@@ -1,3 +1,9 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/statline.h>
+
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
@@ -16,11 +22,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
-#include <wx/statline.h>
 
 class wxeditor_autohold : public wxDialog
 {

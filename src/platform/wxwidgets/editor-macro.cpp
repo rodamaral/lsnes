@@ -1,3 +1,8 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
 #include "core/controller.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
@@ -12,11 +17,6 @@
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
-
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
 
 namespace
 {

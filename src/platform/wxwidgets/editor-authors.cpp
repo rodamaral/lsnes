@@ -1,3 +1,8 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/ui-services.hpp"
@@ -5,11 +10,6 @@
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
-
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
 
 class wxeditor_authors : public wxDialog
 {

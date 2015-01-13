@@ -1,3 +1,9 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/clipbrd.h>
+
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
 #include "core/instance-map.hpp"
@@ -21,11 +27,6 @@
 #include <algorithm>
 #include <cstring>
 #include <limits>
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
-#include <wx/clipbrd.h>
 
 extern "C"
 {

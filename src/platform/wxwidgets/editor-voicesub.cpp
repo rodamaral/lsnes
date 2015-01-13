@@ -1,3 +1,8 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
 #include "core/inthread.hpp"
@@ -8,10 +13,6 @@
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
 
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
 #include <stdexcept>
 #include <sstream>
 #include <set>

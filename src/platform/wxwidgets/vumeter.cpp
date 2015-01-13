@@ -1,3 +1,8 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
 #include "core/audioapi.hpp"
 #include "core/audioapi-driver.hpp"
 #include "core/dispatch.hpp"
@@ -6,11 +11,6 @@
 
 #include "library/string.hpp"
 #include "platform/wxwidgets/platform.hpp"
-
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
 
 namespace
 {

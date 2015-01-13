@@ -1,3 +1,8 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"
 #include "core/instance-map.hpp"
@@ -19,11 +24,6 @@
 #include <sstream>
 #include <fstream>
 #include <iomanip>
-
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
 
 #define wxID_RESET (wxID_HIGHEST + 1)
 #define wxID_UPDATE (wxID_HIGHEST + 2)

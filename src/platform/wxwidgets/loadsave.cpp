@@ -1,9 +1,9 @@
-#include "platform/wxwidgets/loadsave.hpp"
 #include <wx/wx.h>
 #include <wx/event.h>
 #include <wx/control.h>
 #include <wx/combobox.h>
 #include <wx/cmdline.h>
+#include "platform/wxwidgets/loadsave.hpp"
 
 single_type::single_type(const std::string& _ext, const std::string& _desc)
 {

@@ -1,3 +1,9 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/spinctrl.h>
+
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/mainloop.hpp"
@@ -9,11 +15,6 @@
 
 #include "platform/wxwidgets/platform.hpp"
 
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
-#include <wx/spinctrl.h>
 
 class wxeditor_action : public wxDialog
 {

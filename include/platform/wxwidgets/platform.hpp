@@ -1,6 +1,11 @@
 #ifndef _plat_wxwidgets__platform__hpp__included__
 #define _plat_wxwidgets__platform__hpp__included__
 
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
 #include "core/queue.hpp"
 #include "core/moviefile.hpp"
 #include "core/window.hpp"

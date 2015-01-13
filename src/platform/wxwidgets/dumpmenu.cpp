@@ -1,3 +1,9 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/statline.h>
+
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
 #include "core/instance.hpp"

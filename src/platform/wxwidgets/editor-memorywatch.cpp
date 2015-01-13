@@ -1,3 +1,11 @@
+#include <wx/wx.h>
+#include <wx/statline.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/radiobut.h>
+#include <wx/spinctrl.h>
+
 #include "core/instance.hpp"
 #include "core/moviedata.hpp"
 #include "core/memorywatch.hpp"
@@ -8,14 +16,6 @@
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
-
-#include <wx/wx.h>
-#include <wx/statline.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
-#include <wx/radiobut.h>
-#include <wx/spinctrl.h>
 
 #include "library/string.hpp"
 #include "library/hex.hpp"

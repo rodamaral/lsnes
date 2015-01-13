@@ -1,3 +1,10 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <wx/statline.h>
+#include <wx/spinctrl.h>
+
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/framebuffer.hpp"
@@ -18,13 +25,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <wx/wx.h>
-#include <wx/event.h>
-#include <wx/control.h>
-#include <wx/combobox.h>
-#include <wx/statline.h>
-#include <wx/spinctrl.h>
-
 extern "C"
 {
 #ifndef UINT64_C

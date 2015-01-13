@@ -273,7 +273,7 @@ private:
 	size_t depth;
 	enum _state
 	{
-		S_NORMAL,
+		S_STANDARD,
 		S_END,
 		S_COMMA,
 		S_START,

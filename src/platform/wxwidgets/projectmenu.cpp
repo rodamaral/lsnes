@@ -1,3 +1,8 @@
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
 #include "platform/wxwidgets/menu_projects.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "library/eatarg.hpp"
