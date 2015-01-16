@@ -34,6 +34,7 @@ precheck:
 clean:
 	rm -f *.$(OBJECT_SUFFIX) $(JSON_SRC) inverselist.cpp __all__.ldflags __all__.files
 	rm -f mkstubs$(DOT_EXECUTABLE_SUFFIX)
+	rm -f mkstubsi$(DOT_EXECUTABLE_SUFFIX)
 
 forcelook:
 	@true

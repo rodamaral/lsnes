@@ -90,6 +90,8 @@ platclean:
 clean:
 	$(MAKE) -C src clean
 	rm -f buildaux/version$(DOT_EXECUTABLE_SUFFIX)
+	rm -f buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX)
+	rm -f buildaux/txt2cstr$(DOT_EXECUTABLE_SUFFIX)
 
 forcelook:
 	@true
