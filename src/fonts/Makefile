@@ -18,6 +18,9 @@ font.cpp: $(FONT_SRC)
 	echo ";" >>font.cpp
 	touch font.cpp.dep
 
+font.cpp.dep:
+	touch font.cpp.dep
+
 precheck:
 	../../buildaux/mkdeps$(DOT_EXECUTABLE_SUFFIX) ../../include -- *.cpp
 	@true
