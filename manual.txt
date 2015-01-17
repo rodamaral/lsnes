@@ -461,6 +461,11 @@ record a stream.
 
 Subframe advance timeout in milliseconds. Default is 100.
 
+5.8.4 set-speed <speed>
+
+Set the speed multiplier. <speed> may be positive number (1 is 
+normal speed) or “turbo” for turbo.
+
 6 Settings
 
 6.1 Core settings

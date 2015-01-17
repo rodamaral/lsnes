@@ -84,6 +84,7 @@ public:
  */
 	bool turboed;
 private:
+	void set_speed_cmd(const std::string& args);
 	uint64_t get_time(uint64_t curtime, bool update);
 	double get_realized_fps();
 	void add_frame(uint64_t linear_time);
@@ -101,6 +102,7 @@ private:
 	command::_fnptr<> turbo_p;
 	command::_fnptr<> turbo_r;
 	command::_fnptr<> turbo_t;
+	command::_fnptr<const std::string&> setspeed_t;
 };
 
 #endif

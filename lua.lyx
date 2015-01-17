@@ -6857,6 +6857,64 @@ Set value <value> of setting <name>.
  If setting can't be set, returns (nil, error message).
 \end_layout
 
+\begin_layout Subsection
+settings.get_all: Get values of all settings
+\end_layout
+
+\begin_layout Itemize
+Syntax: table settings.get_all()
+\end_layout
+
+\begin_layout Standard
+Return a table with all setting names as keys and all current values as
+ values.
+\end_layout
+
+\begin_layout Subsection
+settings.get_speed: Get current speed
+\end_layout
+
+\begin_layout Itemize
+Syntax: number/string settings.get_speed()
+\end_layout
+
+\begin_layout Standard
+Return the current speed multiplier (1 is normal), or 
+\begin_inset Quotes eld
+\end_inset
+
+turbo
+\begin_inset Quotes erd
+\end_inset
+
+ if speed is set to turbo (this does not react to turbo toggle).
+\end_layout
+
+\begin_layout Subsection
+settings.set_speed: Set current speed
+\end_layout
+
+\begin_layout Itemize
+Syntax: settings.get_speed(number spd)
+\end_layout
+
+\begin_layout Itemize
+Syntax: settings.get_speed(string special)
+\end_layout
+
+\begin_layout Standard
+Set the current speed multiplier (1 is normal).
+ The speed may be positive multiplier or 
+\begin_inset Quotes eld
+\end_inset
+
+turbo
+\begin_inset Quotes erd
+\end_inset
+
+ for turbo speed.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset

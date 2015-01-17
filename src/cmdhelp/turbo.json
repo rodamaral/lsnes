@@ -13,5 +13,23 @@
 	"-turbo":[
 		"r", "Deactivate turbo",
 		{"":"Deactivate turbo mode."}
+	],
+	"set-speed":[
+		"ss", "Set speed",
+		{"<speed>":"Speed multiplier or 'turbo'."},
+		{"0.05":"Speed‣Set 1/20x speed",
+		"0.1":"Speed‣Set 1/10x speed",
+		"0.17":"Speed‣Set 1/6x speed",
+		"0.2":"Speed‣Set 1/5x speed",
+		"0.25":"Speed‣Set 1/4x speed",
+		"0.33":"Speed‣Set 1/3x speed",
+		"0.5":"Speed‣Set half speed",
+		"0.67":"Speed‣Set 2/3x speed",
+		"1.00":"Speed‣Set normal speed",
+		"1.5":"Speed‣Set 1.5x speed",
+		"2.0":"Speed‣Set 2x speed",
+		"3.0":"Speed‣Set 3x speed",
+		"10.0":"Speed‣Set 10x speed",
+		"turbo":"Speed‣Set turbo speed"}
 	]
 }

@@ -4,6 +4,7 @@
 #include "core/instance.hpp"
 #include "core/keymapper.hpp"
 #include "core/moviedata.hpp"
+#include "core/messages.hpp"
 #include "library/minmax.hpp"
 
 #include <cstdlib>
@@ -21,7 +22,8 @@ framerate_regulator::framerate_regulator(command::group& _cmd)
 	: cmd(_cmd),
 	turbo_p(cmd, CTURBO::p, [this]() { this->turboed = true; }),
 	turbo_r(cmd, CTURBO::r, [this]() { this->turboed = false; }),
-	turbo_t(cmd, CTURBO::t, [this]() { this->turboed = !this->turboed; })
+	turbo_t(cmd, CTURBO::t, [this]() { this->turboed = !this->turboed; }),
+	setspeed_t(cmd, CTURBO::ss, [this](const std::string& args) { this->set_speed_cmd(args); })
 {
 	last_time_update = 0;
 	time_at_last_update = 0;
@@ -160,4 +162,20 @@ std::pair<bool, double> framerate_regulator::read_fps()
 		return std::make_pair(true, 0);
 	else
 		return std::make_pair(false, n * m);
+}
+
+void framerate_regulator::set_speed_cmd(const std::string& args)
+{
+	if(args == "turbo") {
+		set_speed_multiplier(std::numeric_limits<double>::infinity());
+		return;
+	}
+	try {
+		double mul = parse_value<double>(args);
+		if(mul <= 0)
+			throw 42;	//Zero and negative is not allowed.
+		set_speed_multiplier(mul);
+	} catch(...) {
+		messages << "Expected positive speed multiplier or \"turbo\"" << std::endl;
+	}
 }
