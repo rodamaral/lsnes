@@ -76,7 +76,7 @@ private:
 	{
 		size_t i;
 		for(i = 0; i < str.length(); i++)
-			if(index("^$\\.*+?()[]{}| ", (unsigned char)str[i]))
+			if(strchr("^$\\.*+?()[]{}| ", (unsigned char)str[i]))
 				break;
 		return i;
 	}
@@ -215,7 +215,7 @@ struct instruction_data
 				case '%': x << "%"; break;
 				default: throw std::logic_error("Unknown % replacement");
 				}
-			} else if(index("^$\\.*+?()[]{}|", ch))
+			} else if(strchr("^$\\.*+?()[]{}|", ch))
 				x << "\\" << (char)ch;
 			else if(ch == ',')
 				x << " ?, ?";
