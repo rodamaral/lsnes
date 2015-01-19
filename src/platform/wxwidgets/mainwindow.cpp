@@ -201,6 +201,7 @@ namespace
 		}
 	};
 
+	void cleanup_dead_download_timers();
 	class _focus_timer : public wxTimer
 	{
 	public:
@@ -225,11 +226,15 @@ namespace
 					platform::sound_enable(false);
 			}
 			was_focused = is_focused;
+			cleanup_dead_download_timers();
 		}
 	private:
 		bool was_focused;
 		bool was_enabled;
 	};
+
+	class download_timer;
+	std::list<download_timer*> download_timer_gc_queue;
 
 	class download_timer : public wxTimer
 	{
@@ -243,6 +248,10 @@ namespace
 		void Notify()
 		{
 			CHECK_UI_THREAD;
+			if(!w->download_in_progress) {
+				//Received a call with download finish already done. Ignore.
+				return;
+			}
 			if(w->download_in_progress->finished) {
 				w->update_statusbar();
 				auto old = w->download_in_progress;
@@ -254,8 +263,7 @@ namespace
 					inst.iqueue->queue(CLOADSAVE::ldm.name, "$MEMORY:wxwidgets_download_tmp");
 				}
 				delete old;
-				Stop();
-				delete this;
+				try { download_timer_gc_queue.push_back(this); } catch(...) { Stop(); }
 			} else {
 				w->update_statusbar();
 			}
@@ -264,6 +272,15 @@ namespace
 		emulator_instance& inst;
 		wxwin_mainwindow* w;
 	};
+
+	void cleanup_dead_download_timers()
+	{
+		for(auto i : download_timer_gc_queue) {
+			i->Stop();
+			delete i;
+		}
+		download_timer_gc_queue.clear();
+	}
 
 	void hash_callback(uint64_t left, uint64_t total)
 	{
