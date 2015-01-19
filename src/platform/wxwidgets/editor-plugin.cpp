@@ -5,6 +5,7 @@
 #include <wx/radiobut.h>
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
+#include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
 #include "library/directory.hpp"
@@ -144,6 +145,9 @@ void wxeditor_plugins::reload_plugins()
 	else
 		name = pluginstbl[sel].first;
 
+	if(!directory::ensure_exists(pathpfx)) {
+		throw std::runtime_error("Can't create plugins directory");
+	}
 	auto dir = directory::enumerate(pathpfx, ".*\\." + extension);
 	plugins->Clear();
 	pluginstbl.clear();
@@ -376,7 +380,15 @@ bool wxeditor_plugin_manager_display(wxWindow* parent)
 		try {
 			editor = new wxeditor_plugins(parent);
 			r = editor->ShowModal();
+		} catch(std::exception& e) {
+			if(hld)
+				messages << "Error opening plugin dialog: " << e.what() << std::endl;
+			else
+				std::cerr << "Error opening plugin dialog: " << e.what() << std::endl;
+			if(hld) delete hld;
+			return false;
 		} catch(...) {
+			if(hld) delete hld;
 			return false;
 		}
 		editor->Destroy();
