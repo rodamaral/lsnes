@@ -835,6 +835,12 @@ namespace
 		}
 #endif
 	}
+	void cpu_dma_fn(const char* buf)
+	{
+		if(trace_cpu_enable) {
+			ecore_callbacks->memory_trace(0, buf, false);
+		}
+	}
 	bool delayreset_fn()
 	{
 		trace_fn();	//Call this also.
@@ -869,6 +875,12 @@ namespace
 		else
 			SNES::sa1.step_event = sa1_trace_fn;
 		SNES::sa1.trace_enabled = trace_sa1_enable;
+#endif
+#ifdef BSNES_SUPPORTS_DMA_TRACE
+		if(!trace_enabled())
+			SNES::cpu.dma_trace_fn = nall::function<void(const char*)>();
+		else
+			SNES::cpu.dma_trace_fn = cpu_dma_fn;
 #endif
 #endif
 	}

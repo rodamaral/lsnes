@@ -1,0 +1,288 @@
+From 5bc96b8aeea26729ef4399c2d8d5e562894616e1 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Tue, 20 Jan 2015 10:04:58 +0200
+Subject: [PATCH 22/22] Support DMA tracing
+
+---
+ snes/alt/ppu-compatibility/mmio/mmio.cpp | 18 +++++++
+ snes/alt/ppu-compatibility/ppu.cpp       |  1 +
+ snes/alt/ppu-compatibility/ppu.hpp       |  4 ++
+ snes/cpu/cpu.cpp                         |  1 +
+ snes/cpu/cpu.hpp                         |  1 +
+ snes/cpu/dma/dma.cpp                     | 84 ++++++++++++++++++++++++++++++++
+ snes/cpu/dma/dma.hpp                     |  5 ++
+ snes/ppu/mmio/mmio.cpp                   | 18 +++++++
+ snes/ppu/ppu.cpp                         |  1 +
+ snes/ppu/ppu.hpp                         |  3 ++
+ snes/snes.hpp                            |  1 +
+ 11 files changed, 137 insertions(+)
+
+diff --git a/snes/alt/ppu-compatibility/mmio/mmio.cpp b/snes/alt/ppu-compatibility/mmio/mmio.cpp
+index aedb67c..0a269cc 100755
+--- a/snes/alt/ppu-compatibility/mmio/mmio.cpp
++++ b/snes/alt/ppu-compatibility/mmio/mmio.cpp
+@@ -1,5 +1,23 @@
+ #ifdef PPU_CPP
+ 
++size_t PPU::get_dma_oam_subaddr(char* buf)
++{
++  return sprintf(buf, "[%03x]", regs.oam_addr);
++}
++
++size_t PPU::get_dma_cgram_subaddr(char* buf)
++{
++  return sprintf(buf, "[%02x%c]", regs.cgram_addr >> 1, (regs.cgram_addr & 1) ?
++    'H' : 'L');
++}
++
++size_t PPU::get_dma_vram_subaddr(char* buf)
++{
++  return sprintf(buf, "[%04x map%d inc %d on %s]", regs.vram_addr << 1,
++    regs.vram_mapping, 2 * regs.vram_incsize, regs.vram_incmode ? "high" :
++    "low");
++}
++
+ //INIDISP
+ void PPU::mmio_w2100(uint8 value) {
+   if(regs.display_disabled == true && cpu.vcounter() == (!overscan() ? 225 : 240)) {
+diff --git a/snes/alt/ppu-compatibility/ppu.cpp b/snes/alt/ppu-compatibility/ppu.cpp
+index 122b143..ac886ed 100755
+--- a/snes/alt/ppu-compatibility/ppu.cpp
++++ b/snes/alt/ppu-compatibility/ppu.cpp
+@@ -1,4 +1,5 @@
+ #include <snes/snes.hpp>
++#include <cstdio>
+ 
+ #define PPU_CPP
+ namespace SNES {
+diff --git a/snes/alt/ppu-compatibility/ppu.hpp b/snes/alt/ppu-compatibility/ppu.hpp
+index 4adac4c..b0eabf7 100755
+--- a/snes/alt/ppu-compatibility/ppu.hpp
++++ b/snes/alt/ppu-compatibility/ppu.hpp
+@@ -14,6 +14,10 @@ public:
+   alwaysinline void step(unsigned clocks);
+   alwaysinline void synchronize_cpu();
+ 
++  size_t get_dma_oam_subaddr(char* buf);
++  size_t get_dma_cgram_subaddr(char* buf);
++  size_t get_dma_vram_subaddr(char* buf);
++
+   #include "memory/memory.hpp"
+   #include "mmio/mmio.hpp"
+   #include "render/render.hpp"
+diff --git a/snes/cpu/cpu.cpp b/snes/cpu/cpu.cpp
+index 39da6b1..ce112af 100755
+--- a/snes/cpu/cpu.cpp
++++ b/snes/cpu/cpu.cpp
+@@ -1,4 +1,5 @@
+ #include <snes/snes.hpp>
++#include <cstdio>
+ 
+ #define CPU_CPP
+ namespace SNES {
+diff --git a/snes/cpu/cpu.hpp b/snes/cpu/cpu.hpp
+index 4944577..fd665b1 100755
+--- a/snes/cpu/cpu.hpp
++++ b/snes/cpu/cpu.hpp
+@@ -26,6 +26,7 @@ struct CPU : public Processor, public CPUcore, public PPUcounter {
+   ~CPU();
+ 
+   bool controller_flag;
++  function<void(const char*)> dma_trace_fn;
+ private:
+   #include "dma/dma.hpp"
+   #include "memory/memory.hpp"
+diff --git a/snes/cpu/dma/dma.cpp b/snes/cpu/dma/dma.cpp
+index 0a00bfe..8f7be26 100755
+--- a/snes/cpu/dma/dma.cpp
++++ b/snes/cpu/dma/dma.cpp
+@@ -144,6 +144,7 @@ void CPU::dma_run() {
+ 
+   for(unsigned i = 0; i < 8; i++) {
+     if(channel[i].dma_enabled == false) continue;
++    dma_trace_start(i);
+ 
+     unsigned index = 0;
+     do {
+@@ -155,6 +156,7 @@ void CPU::dma_run() {
+     dma_write(false);
+     dma_edge();
+ 
++    dma_trace_end(i);
+     channel[i].dma_enabled = false;
+   }
+ 
+@@ -202,6 +204,7 @@ void CPU::hdma_run() {
+     channel[i].dma_enabled = false;  //HDMA run during DMA will stop DMA mid-transfer
+ 
+     if(channel[i].hdma_do_transfer) {
++      dma_trace_hdma(i);
+       static const unsigned transfer_length[8] = { 1, 2, 2, 4, 4, 4, 2, 4 };
+       unsigned length = transfer_length[channel[i].transfer_mode];
+       for(unsigned index = 0; index < length; index++) {
+@@ -286,4 +289,85 @@ void CPU::dma_reset() {
+   pipe.data = 0;
+ }
+ 
++size_t CPU::dma_trace_subaddr(char* buf, uint8 b_addr)
++{
++  if(b_addr == 0x04 || b_addr == 0x38) {
++    return ppu.get_dma_oam_subaddr(buf);
++  }
++  if(b_addr == 0x22 || b_addr == 0x3B) {
++    return ppu.get_dma_cgram_subaddr(buf);
++  }
++  if(b_addr == 0x18 || b_addr == 0x19 || b_addr == 0x39 || b_addr == 0x3A) {
++    return ppu.get_dma_vram_subaddr(buf);
++  }
++  if(b_addr == 0x80) {
++    return sprintf(buf, "[%06x]", 0x7e0000 | status.wram_addr);
++  }
++  return 0;
++}
++
++void CPU::dma_trace_start(unsigned i)
++{
++  if(!dma_trace_fn) return;
++  char buf[512];
++  size_t ptr = 0;
++  unsigned bytes = channel[i].transfer_size;
++  if(!bytes) bytes = 0x10000;
++  ptr += sprintf(buf + ptr, "-- DMA%i %d(%x) bytes ", i, bytes, bytes);
++  if(channel[i].direction) {
++    //B->A
++    ptr += sprintf(buf + ptr, "%02x", channel[i].dest_addr);
++    ptr += dma_trace_subaddr(buf + ptr, channel[i].dest_addr);
++    ptr += sprintf(buf + ptr, "-> %02x%04x", channel[i].source_bank,
++      channel[i].source_addr);
++  } else {
++    //A->B
++    ptr += sprintf(buf + ptr, "%02x%04x -> %02x", channel[i].source_bank,
++      channel[i].source_addr, channel[i].dest_addr);
++    ptr += dma_trace_subaddr(buf + ptr, channel[i].dest_addr);
++  }
++  if(channel[i].fixed_transfer)
++    ptr += sprintf(buf + ptr, " fixed");
++  else if(channel[i].reverse_transfer)
++    ptr += sprintf(buf + ptr, " decrement");
++  else
++    ptr += sprintf(buf + ptr, " incrment");
++  ptr += sprintf(buf + ptr, " mode%d --", channel[i].transfer_mode);
++  dma_trace_fn(buf);
++}
++
++void CPU::dma_trace_end(unsigned i)
++{
++  if(!dma_trace_fn) return;
++  if(!channel[i].transfer_size) return; //No message for complete DMA.
++  char buf[512];
++  size_t ptr = 0;
++  sprintf(buf, "-- DMA%i aborted with %d(0x%x) bytes remaining --", i,
++    (int)channel[i].transfer_size, (unsigned)channel[i].transfer_size);
++  dma_trace_fn(buf);
++}
++
++void CPU::dma_trace_hdma(unsigned i)
++{
++  if(!dma_trace_fn) return;
++  char buf[512];
++  size_t ptr = 0;
++  unsigned addr = channel[i].indirect ?
++    (channel[i].indirect_bank << 16) | (channel[i].indirect_addr) :
++    (channel[i].source_bank << 16) | (channel[i].hdma_addr);
++  ptr += sprintf(buf + ptr, "-- HDMA%i %06x -> %02x", i, addr,
++    channel[i].dest_addr);
++  ptr += dma_trace_subaddr(buf + ptr, channel[i].dest_addr);
++  if(channel[i].indirect)
++    ptr += sprintf(buf + ptr, " indirect");
++  if(channel[i].fixed_transfer)
++    ptr += sprintf(buf + ptr, " fixed");
++  else if(channel[i].reverse_transfer)
++    ptr += sprintf(buf + ptr, " decrement");
++  else
++    ptr += sprintf(buf + ptr, " incrment");
++  ptr += sprintf(buf + ptr, " mode%d --", channel[i].transfer_mode);
++  dma_trace_fn(buf);
++}
++
+ #endif
+diff --git a/snes/cpu/dma/dma.hpp b/snes/cpu/dma/dma.hpp
+index 33755bd..8740bb3 100755
+--- a/snes/cpu/dma/dma.hpp
++++ b/snes/cpu/dma/dma.hpp
+@@ -77,3 +77,8 @@ void hdma_init();
+ 
+ void dma_power();
+ void dma_reset();
++
++size_t dma_trace_subaddr(char* buf, uint8 b_addr);
++void dma_trace_start(unsigned i);
++void dma_trace_end(unsigned i);
++void dma_trace_hdma(unsigned i);
+diff --git a/snes/ppu/mmio/mmio.cpp b/snes/ppu/mmio/mmio.cpp
+index 302f74f..4a4fb9c 100755
+--- a/snes/ppu/mmio/mmio.cpp
++++ b/snes/ppu/mmio/mmio.cpp
+@@ -1,5 +1,23 @@
+ #ifdef PPU_CPP
+ 
++size_t PPU::get_dma_oam_subaddr(char* buf)
++{
++  return sprintf(buf, "[%03x]", regs.oam_addr);
++}
++
++size_t PPU::get_dma_cgram_subaddr(char* buf)
++{
++  return sprintf(buf, "[%02x%c]", regs.cgram_addr >> 1, (regs.cgram_addr & 1) ?
++    'H' : 'L');
++}
++
++size_t PPU::get_dma_vram_subaddr(char* buf)
++{
++  return sprintf(buf, "[%04x map%d inc %d on %s]", regs.vram_addr << 1,
++    regs.vram_mapping, 2 * regs.vram_incsize, regs.vram_incmode ? "high" :
++    "low");
++}
++
+ bool PPU::interlace() const {
+   return display.interlace;
+ }
+diff --git a/snes/ppu/ppu.cpp b/snes/ppu/ppu.cpp
+index 13e231c..5874209 100755
+--- a/snes/ppu/ppu.cpp
++++ b/snes/ppu/ppu.cpp
+@@ -1,4 +1,5 @@
+ #include <snes/snes.hpp>
++#include <cstdio>
+ 
+ #define PPU_CPP
+ namespace SNES {
+diff --git a/snes/ppu/ppu.hpp b/snes/ppu/ppu.hpp
+index fdba113..0addb77 100755
+--- a/snes/ppu/ppu.hpp
++++ b/snes/ppu/ppu.hpp
+@@ -21,6 +21,9 @@ struct PPU : public Processor, public PPUcounter {
+   PPU();
+   ~PPU();
+ 
++  size_t get_dma_oam_subaddr(char* buf);
++  size_t get_dma_cgram_subaddr(char* buf);
++  size_t get_dma_vram_subaddr(char* buf);
+ private:
+   uint32 *surface;
+   uint32 *output;
+diff --git a/snes/snes.hpp b/snes/snes.hpp
+index 3bdca7e..7c48ebb 100755
+--- a/snes/snes.hpp
++++ b/snes/snes.hpp
+@@ -4,6 +4,7 @@
+ #define BSNES_SUPPORTS_ADV_BREAKPOINTS_PPU
+ #define BSNES_SUPPORTS_ALT_TIMINGS
+ #define BSNES_SUPPORTS_TRACE_SA1
++#define BSNES_SUPPORTS_DMA_TRACE
+ 
+ namespace SNES {
+   namespace Info {
+-- 
+2.1.4
+
