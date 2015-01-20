@@ -144,6 +144,7 @@ void CPU::dma_run() {
 
   for(unsigned i = 0; i < 8; i++) {
     if(channel[i].dma_enabled == false) continue;
+    dma_trace_start(i);
 
     unsigned index = 0;
     do {
@@ -155,6 +156,7 @@ void CPU::dma_run() {
     dma_write(false);
     dma_edge();
 
+    dma_trace_end(i);
     channel[i].dma_enabled = false;
   }
 
@@ -202,6 +204,7 @@ void CPU::hdma_run() {
     channel[i].dma_enabled = false;  //HDMA run during DMA will stop DMA mid-transfer
 
     if(channel[i].hdma_do_transfer) {
+      dma_trace_hdma(i);
       static const unsigned transfer_length[8] = { 1, 2, 2, 4, 4, 4, 2, 4 };
       unsigned length = transfer_length[channel[i].transfer_mode];
       for(unsigned index = 0; index < length; index++) {
@@ -284,6 +287,87 @@ void CPU::dma_reset() {
   pipe.valid = false;
   pipe.addr = 0;
   pipe.data = 0;
+}
+
+size_t CPU::dma_trace_subaddr(char* buf, uint8 b_addr)
+{
+  if(b_addr == 0x04 || b_addr == 0x38) {
+    return ppu.get_dma_oam_subaddr(buf);
+  }
+  if(b_addr == 0x22 || b_addr == 0x3B) {
+    return ppu.get_dma_cgram_subaddr(buf);
+  }
+  if(b_addr == 0x18 || b_addr == 0x19 || b_addr == 0x39 || b_addr == 0x3A) {
+    return ppu.get_dma_vram_subaddr(buf);
+  }
+  if(b_addr == 0x80) {
+    return sprintf(buf, "[%06x]", 0x7e0000 | status.wram_addr);
+  }
+  return 0;
+}
+
+void CPU::dma_trace_start(unsigned i)
+{
+  if(!dma_trace_fn) return;
+  char buf[512];
+  size_t ptr = 0;
+  unsigned bytes = channel[i].transfer_size;
+  if(!bytes) bytes = 0x10000;
+  ptr += sprintf(buf + ptr, "-- DMA%i %d(%x) bytes ", i, bytes, bytes);
+  if(channel[i].direction) {
+    //B->A
+    ptr += sprintf(buf + ptr, "%02x", channel[i].dest_addr);
+    ptr += dma_trace_subaddr(buf + ptr, channel[i].dest_addr);
+    ptr += sprintf(buf + ptr, "-> %02x%04x", channel[i].source_bank,
+      channel[i].source_addr);
+  } else {
+    //A->B
+    ptr += sprintf(buf + ptr, "%02x%04x -> %02x", channel[i].source_bank,
+      channel[i].source_addr, channel[i].dest_addr);
+    ptr += dma_trace_subaddr(buf + ptr, channel[i].dest_addr);
+  }
+  if(channel[i].fixed_transfer)
+    ptr += sprintf(buf + ptr, " fixed");
+  else if(channel[i].reverse_transfer)
+    ptr += sprintf(buf + ptr, " decrement");
+  else
+    ptr += sprintf(buf + ptr, " incrment");
+  ptr += sprintf(buf + ptr, " mode%d --", channel[i].transfer_mode);
+  dma_trace_fn(buf);
+}
+
+void CPU::dma_trace_end(unsigned i)
+{
+  if(!dma_trace_fn) return;
+  if(!channel[i].transfer_size) return; //No message for complete DMA.
+  char buf[512];
+  size_t ptr = 0;
+  sprintf(buf, "-- DMA%i aborted with %d(0x%x) bytes remaining --", i,
+    (int)channel[i].transfer_size, (unsigned)channel[i].transfer_size);
+  dma_trace_fn(buf);
+}
+
+void CPU::dma_trace_hdma(unsigned i)
+{
+  if(!dma_trace_fn) return;
+  char buf[512];
+  size_t ptr = 0;
+  unsigned addr = channel[i].indirect ?
+    (channel[i].indirect_bank << 16) | (channel[i].indirect_addr) :
+    (channel[i].source_bank << 16) | (channel[i].hdma_addr);
+  ptr += sprintf(buf + ptr, "-- HDMA%i %06x -> %02x", i, addr,
+    channel[i].dest_addr);
+  ptr += dma_trace_subaddr(buf + ptr, channel[i].dest_addr);
+  if(channel[i].indirect)
+    ptr += sprintf(buf + ptr, " indirect");
+  if(channel[i].fixed_transfer)
+    ptr += sprintf(buf + ptr, " fixed");
+  else if(channel[i].reverse_transfer)
+    ptr += sprintf(buf + ptr, " decrement");
+  else
+    ptr += sprintf(buf + ptr, " incrment");
+  ptr += sprintf(buf + ptr, " mode%d --", channel[i].transfer_mode);
+  dma_trace_fn(buf);
 }
 
 #endif

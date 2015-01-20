@@ -26,6 +26,7 @@ struct CPU : public Processor, public CPUcore, public PPUcounter {
   ~CPU();
 
   bool controller_flag;
+  function<void(const char*)> dma_trace_fn;
 private:
   #include "dma/dma.hpp"
   #include "memory/memory.hpp"

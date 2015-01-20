@@ -21,6 +21,9 @@ struct PPU : public Processor, public PPUcounter {
   PPU();
   ~PPU();
 
+  size_t get_dma_oam_subaddr(char* buf);
+  size_t get_dma_cgram_subaddr(char* buf);
+  size_t get_dma_vram_subaddr(char* buf);
 private:
   uint32 *surface;
   uint32 *output;

@@ -14,6 +14,10 @@ public:
   alwaysinline void step(unsigned clocks);
   alwaysinline void synchronize_cpu();
 
+  size_t get_dma_oam_subaddr(char* buf);
+  size_t get_dma_cgram_subaddr(char* buf);
+  size_t get_dma_vram_subaddr(char* buf);
+
   #include "memory/memory.hpp"
   #include "mmio/mmio.hpp"
   #include "render/render.hpp"

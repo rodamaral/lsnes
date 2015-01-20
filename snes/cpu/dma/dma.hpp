@@ -77,3 +77,8 @@ void hdma_init();
 
 void dma_power();
 void dma_reset();
+
+size_t dma_trace_subaddr(char* buf, uint8 b_addr);
+void dma_trace_start(unsigned i);
+void dma_trace_end(unsigned i);
+void dma_trace_hdma(unsigned i);

@@ -1,5 +1,23 @@
 #ifdef PPU_CPP
 
+size_t PPU::get_dma_oam_subaddr(char* buf)
+{
+  return sprintf(buf, "[%03x]", regs.oam_addr);
+}
+
+size_t PPU::get_dma_cgram_subaddr(char* buf)
+{
+  return sprintf(buf, "[%02x%c]", regs.cgram_addr >> 1, (regs.cgram_addr & 1) ?
+    'H' : 'L');
+}
+
+size_t PPU::get_dma_vram_subaddr(char* buf)
+{
+  return sprintf(buf, "[%04x map%d inc %d on %s]", regs.vram_addr << 1,
+    regs.vram_mapping, 2 * regs.vram_incsize, regs.vram_incmode ? "high" :
+    "low");
+}
+
 bool PPU::interlace() const {
   return display.interlace;
 }
