@@ -1819,3 +1819,231 @@ rr2-β21 [Sunday May 4th 2014]
 * Some Win32 build fixes
 * TAS input keyboard support
 * Use urandom / rtlgenrandom
+
+rr2-β22 [Saturday January 24th 2015]
+====================================
+* Lua: memory.getregisters()
+* Zeroize: Don't crash if size=0
+* Remove unused variable and some commented out debug code
+* movb -> lsnes_instance.mlogic
+* lsnes_memory -> lsnes_instance.memory
+* Don't extern lsnes_lua_state, it is only used in one file
+* lsnes_lua_state -> lsnes_instance.lua
+* lsnes_memorywatch -> lsnes_instance.mwatch
+* lsnes_vsetc -> lsnes_instance.setcache
+* Get rid of lsnes_vset[foo]
+* Instancefy inthread.cpp stuff
+* Instancefy subtitles.cpp stuff
+* Clean up some uses of lsnes_instance
+* Instancefy mbranch.cpp stuff
+* Kill unused generic_controller_name()
+* Instancefy multitrack.cpp stuff
+* Instancefy emustatus.cpp stuff
+* Split random number functions from misc.cpp to dedicated file
+* Move lsnes_kbd and lsnes_mapper to be instance vars
+* Command sets WIP
+* Simplify command::* memory management
+* Use recursive locks to deal with the locking mess in command::*
+* Delete some unused fields
+* Fix valgrind warnings in inthread.cpp
+* Inverse binding sets
+* EVDEV: Select on joysticks
+* Listener object is better than 3 lambdas + handle
+* Initialize fdset before polling on it
+* Setting sets
+* Kill command::set::get_commands()
+* Reduce dependicies between header files
+* keyboard.cpp: Get rid of register_queue
+* keyboard-mapper.cpp: Get rid of register_queue
+* Lua.cpp: Get rid of register-queue
+* settingvar.cpp: Get rid of register_queue
+* Lua.cpp: Don't call unregister callbacks if nothing get unreg'd
+* Kill off register-queue
+* Rename some classes
+* Move memorywatch stuff to dedicated namespace
+* Namespacify mathexpr
+* Move lua-framebuffer to lua namespace
+* lua.hpp: Forward-declare keyboard::key
+* controller_frame_vector: Use object instead of lambda for notify
+* Scope listener base classes inside respective master classes
+* Fix keyboard::keyboard::all_keys and all_modifiers
+* Toggle sound mute command/hotkey
+* Move directory stuff to dedicated namespace
+* Move rename_overwrite from zip:: to directory::
+* Change some terms in UI
+* Don't crash if trying to select key without keys (shouldn't happen)
+* Instancefy alias binds management
+* Instancefy next rrdata
+* Instancefy internal emulation thread execution queue
+* Instancefy cart mappings
+* Make main controllers state a instance variable
+* Introduce run_show_error() and use it to clean up some code
+* Instancefy project state
+* Don't crash on exit with voice track loaded
+* Get rid of most absolute refs to lsnes_instance in src/core
+* run in emu thread: Throw exceptions over thread switches
+* Gambatte: Fix bus write breaks
+* Gambatte: Fix execute breaks on bus and IOAMHRAM
+* Don't corrupt memory when trying to GC various items on exit
+* Make the emulator harder to imporperly quit
+* Fix all sort of Windows stupidities
+* Add some test commands
+* Refactor debugging into instance object
+* Faster arithmetic modulo 2^255-19 on 64-bit
+* Remove broken crap
+* Some optimizations & fixes
+* Some more optimization, some test code for this thing
+* Move some debug stuff to be in class scope
+* Instancefy framerate stuff
+* Instancefy framebuffer stuff
+* Make various instance stuff to take references to other instance objs
+* Do some more stuff missed in last commit
+* Factor queue stuff to its own file
+* Make instance vars to be pointers
+* Properly handle deletes if those behave oddly on some platform
+* Remove unused dump_region_map()
+* Rewrite basic video dumping framework
+* Instancefy button manager stuff
+* Make helper class for instance member allocation / deallocation
+* Combine some small headers together
+* Factor message stream stuff to its own files
+* Some #include cleanup
+* Move render_video_hud and killed_audio_length to master dumper class
+* Refactor video dump framedrop handling
+* Instancefy dispatch stuff
+* Move action_update to be via dispatch
+* Remove unused load_rom_from_commandline
+* More include cleanups
+* Instancefy base mmio stuff
+* Get rid of direct references to emulation thread in branchesmenu.cpp
+* Use variable obtained earlier for current branch
+* Cleanup direct emulation thread references in editor-authors.cpp
+* Get rid of direct references from dumpmenu.cpp to emulation thread
+* Remove direct emulation thread references from keyboard.cpp
+* Sweep instance variables upward in UI code
+* Fix repainting status panel
+* More sweeping instance variables up
+* Eliminate settings_tab::call_window_fit(), nothing uses it
+* Push instances up out from settings window code
+* Push instance vars out of keyboard/mouse driver code
+* Do not use CORE() multiple times in the same function, it is pointless
+* Use helper class to simplify per-instance external vars
+* Fix warnings from valgrind
+* Refactor slotcache to be instance variable
+* Make some values const, remove some unused stuff
+* Lua: Memory address object
+* Kill emulation_thread, nothing uses it
+* lua::state::reset(): Use get instead of get_soft
+* Instancefy lua core stuff
+* Don't crash if exiting on panic
+* When panicing, show last message (as it is presumably related)
+* read_lua_fragment: Don't duplicate the script infinite number of times
+* Actually don't start if sysrc.lua is bad
+* Remove Lua 5.1 support
+* Make some arrow magic constants in gui-arrow.cpp const
+* Make render queue scratch variables instance variables
+* Some non-instance variables cleanup
+* Cleanup unused boost includes
+* Instancefy audioapi core (but not driver) stuff
+* Make some static variables in audioapi functions fields of audioapi class
+* Instancefy currently loaded ROM
+* Privatefy loaded_rom rtype, region and orig_region
+* Refactor save jukebox handling into its own class
+* Make class for emulator run mode
+* Factor updating status to its own class
+* Cleanup some symbols
+* Fix updating statusbar on save slot change
+* Clean up window-fileupload.cpp
+* Clean up use of project->moviepath/otherpath
+* Clean up instance usage in editor-voicesub.cpp
+* Use UI_in_project_context() in branchesmenu.cpp
+* bsnes: Fix on_latch in alttimings mode
+* Fix build on GCC 4.9
+* Fix memory.writeregion
+* Fix compilation on Mac OS X
+* Fix loading lz images with 128 or more colors
+* Fix some accidentially mistyped variables in makefile
+* Lua: Initialize some variables in address.cpp to make GCC happy
+* Revert "Remove Lua 5.1 support"
+* 25519: Add valgrind test mode
+* Opus: Support some newly added stuff
+* Small whitespace cleanup
+* Commentary: Fix gain on oggopus export
+* Fix emulator going out of whack after project load
+* Add -pthread to flags
+* Don't overdraw in outside draw
+* Add few extra sound commands
+* Fix jukebox slot select
+* Remember sound device over sound restart
+* Remember sound devices
+* Oggopus: Complain about single-dpage streams with bad granulepos
+* Lua: memory.action_flags
+* Print messages about loaded libraries
+* Library: Don't fail link without library support
+* Wxwidgets: --library=<filename>
+* C interface: render_text (version bump to v2)
+* Music: Use all PSID LSIDs as implicit entrypoints (not just the first)
+* Refactor controller runtime code generation
+* Namespace library port-controller stuff
+* Refactor library GC to its own namespace
+* Refactor memory_region{,_direct} to be subclasses of memory_space
+* Make workthread a class in top namespace and move some stuff under it
+* Rename token_iterator_foreach to token_iterator::foreach
+* Split audioapi to core interface and driver interface parts
+* Fix crash if canceling load of other project
+* Allow memory watch to read registers
+* Show error dialog if project switch fails
+* Add missing file
+* gambatte fixes: Properly save MBC3 without RTC
+* Don't try to do controller runtime codegen on X32, it won't work
+* Memory watch fixes
+* Rudimentary library unloading support
+* Allow binding commands to class instance
+* Module unloading: Small cleanup
+* Module unloading: Small further cleanup
+* Reinitialize gamepads command and fix EVDEV going bonkers on gamepad suddenly disconnecting
+* Remove unused function
+* Show VMA relative hex address when dumping debug hook list
+* Tweak format of command help files and do some further command cleanup
+* Don't try to unregister killed debug CBs
+* bsnes: Add hcounter/vcounter registers
+* Tracelogger: Unregister the frame callback even on hard kill
+* Music playback: Guard against crazy pcmpos
+* Wxwidgets: Fix loading ROM from commandline
+* Fix most hotkeys to show up in configuration (were missing due to errant !)
+* Fix error message if trying to load ROM with project active
+* If project switch loads savestate, mark position at point of save
+* Squash some wrong-thread bugs
+* Memory editor: Squash another wrong-thread bug
+* Add the UI thread checking code
+* runuifun: Allow marking cb routine to run once at a time
+* wxwidgets: Add some missing conversions for string arguments
+* Oops from previous commit
+* Portaudio: Don't blacklist ALSA default/sysdefault for input
+* Redraw framebuffer when entering break pause
+* Fix some nondeterminism (probably wouldn't cause desyncs)
+* Lua: PALETTE:get()
+* Fix some valgrind warnings
+* Exit immediately on double fault
+* Update the default build options
+* Libao: Don't crash on quit
+* Remove some utilities that should not be there anymore
+* Use $DOT_EXECUTABLE_SUFFIX instead of hardcoding .exe
+* Fattest? Really?
+* Ignore some build helper programs, now that the .exe rule doesn't cover those
+* Don't use arbitrary garbage as amount of samples to squash
+* Show error from Lua if parsing Lua expression fails
+* Don't let one unload currently used core (crashes the emulator)
+* Lua 5.3 support
+* Cleanup Lua multiversion support
+* Add wide (64 bits) versions of bit functions if Lua 5.3 is used
+* Fix Win32 build
+* Fix compile error with Lua 5.1
+* Clean up all build helper programs on make clean
+* Add commands and Lua functions to manipulate running speed
+* Remove target for font.cpp.dep
+* Readd rule for font.cpp.dep in different way
+* Pluginmanager: Autocreate directory instead of crashing
+* Fix bad download crashing the emulator
+* bsnes: DMA tracing
+* bsnes: Support IRQ/NMI tracing
