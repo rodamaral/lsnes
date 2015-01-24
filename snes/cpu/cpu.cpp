@@ -69,14 +69,17 @@ void CPU::enter() {
     if(status.interrupt_pending) {
       status.interrupt_pending = false;
       if(status.nmi_pending) {
+        if(dma_trace_fn) dma_trace_fn("-- NMI occured --");
         status.nmi_pending = false;
         regs.vector = (regs.e == false ? 0xffea : 0xfffa);
         op_irq();
       } else if(status.irq_pending) {
+        if(dma_trace_fn) dma_trace_fn("-- IRQ occured --");
         status.irq_pending = false;
         regs.vector = (regs.e == false ? 0xffee : 0xfffe);
         op_irq();
       } else if(status.reset_pending) {
+        if(dma_trace_fn) dma_trace_fn("-- RESET occured --");
         status.reset_pending = false;
         add_clocks(186);
         regs.pc.l = bus.read(0xfffc, false);
