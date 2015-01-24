@@ -1,0 +1,86 @@
+From 9682df9e33c366dfe047a99c8bcefc2c8ab29620 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Sat, 24 Jan 2015 16:46:18 +0200
+Subject: [PATCH 23/23] Add autopoller and IRQ/NMI tracing
+
+---
+ snes/cpu/cpu.cpp           |  3 +++
+ snes/cpu/timing/joypad.cpp | 16 ++++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/snes/cpu/cpu.cpp b/snes/cpu/cpu.cpp
+index ce112af..e11fc88 100755
+--- a/snes/cpu/cpu.cpp
++++ b/snes/cpu/cpu.cpp
+@@ -69,14 +69,17 @@ void CPU::enter() {
+     if(status.interrupt_pending) {
+       status.interrupt_pending = false;
+       if(status.nmi_pending) {
++        if(dma_trace_fn) dma_trace_fn("-- NMI occured --");
+         status.nmi_pending = false;
+         regs.vector = (regs.e == false ? 0xffea : 0xfffa);
+         op_irq();
+       } else if(status.irq_pending) {
++        if(dma_trace_fn) dma_trace_fn("-- IRQ occured --");
+         status.irq_pending = false;
+         regs.vector = (regs.e == false ? 0xffee : 0xfffe);
+         op_irq();
+       } else if(status.reset_pending) {
++        if(dma_trace_fn) dma_trace_fn("-- RESET occured --");
+         status.reset_pending = false;
+         add_clocks(186);
+         regs.pc.l = bus.read(0xfffc, false);
+diff --git a/snes/cpu/timing/joypad.cpp b/snes/cpu/timing/joypad.cpp
+index 3fd4d23..afca750 100755
+--- a/snes/cpu/timing/joypad.cpp
++++ b/snes/cpu/timing/joypad.cpp
+@@ -6,9 +6,9 @@ void CPU::step_auto_joypad_poll() {
+     //cache enable state at first iteration
+     if(status.auto_joypad_counter == 0) status.auto_joypad_latch = status.auto_joypad_poll;
+     status.auto_joypad_active = status.auto_joypad_counter <= 15;
+-
+     if(status.auto_joypad_active && status.auto_joypad_latch) {
+       if(status.auto_joypad_counter == 0) {
++        if(dma_trace_fn) dma_trace_fn("-- Start automatic polling --");
+         interface->notifyLatched();
+         input.port1->latch(1);
+         input.port2->latch(1);
+@@ -23,6 +23,12 @@ void CPU::step_auto_joypad_poll() {
+       status.joy2 = (status.joy2 << 1) | (bool)(port1 & 1);
+       status.joy3 = (status.joy3 << 1) | (bool)(port0 & 2);
+       status.joy4 = (status.joy4 << 1) | (bool)(port1 & 2);
++      if(status.auto_joypad_counter == 15) {
++        char buf[512];
++        sprintf(buf, "-- End automatic polling [%04x %04x %04x %04x] --",
++          status.joy1, status.joy2, status.joy3, status.joy4);
++        if(dma_trace_fn) dma_trace_fn(buf);
++      }
+     }
+ 
+     status.auto_joypad_counter++;
+@@ -40,6 +46,7 @@ void CPU::step_auto_joypad_poll_NEW(bool polarity) {
+         status.auto_joypad_active = false;
+     } else {
+       if(status.auto_joypad_counter == 1) {
++        if(dma_trace_fn) dma_trace_fn("-- Start automatic polling --");
+         status.auto_joypad_active = true;
+         interface->notifyLatched();
+         input.port1->latch(1);
+@@ -58,8 +65,13 @@ void CPU::step_auto_joypad_poll_NEW(bool polarity) {
+         status.joy3 = (status.joy3 << 1) | (bool)(port0 & 2);
+         status.joy4 = (status.joy4 << 1) | (bool)(port1 & 2);
+       }
+-      if(status.auto_joypad_counter == 34)
++      if(status.auto_joypad_counter == 34) {
+         status.auto_joypad_active = false;
++        char buf[512];
++        sprintf(buf, "-- End automatic polling [%04x %04x %04x %04x] --",
++          status.joy1, status.joy2, status.joy3, status.joy4);
++        if(dma_trace_fn) dma_trace_fn(buf);
++      }
+     }
+     status.auto_joypad_counter++;
+   }
+-- 
+2.1.4
+
