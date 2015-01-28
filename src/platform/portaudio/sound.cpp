@@ -144,6 +144,8 @@ namespace
 
 	bool check_indev(PaDeviceIndex dev)
 	{
+		if(getenv("LSNES_NO_SOUND_IN"))
+			return false;
 		const PaDeviceInfo* inf = NULL;
 		if(dev != paNoDevice)
 			inf = Pa_GetDeviceInfo(dev);
@@ -396,7 +398,7 @@ namespace
 				std::ostringstream str;
 				str << j;
 				auto devinfo = Pa_GetDeviceInfo(j);
-				if(rec && devinfo->maxInputChannels)
+				if(rec && !getenv("LSNES_NO_SOUND_IN") && devinfo->maxInputChannels)
 					ret[str.str()] = devinfo->name;
 				if(!rec && devinfo->maxOutputChannels)
 					ret[str.str()] = devinfo->name;
