@@ -79,6 +79,7 @@ lsnes$(DOT_EXECUTABLE_SUFFIX): __all_common__.files __all_platform__.files
 	$(REALCC) -o $@ `cat __all_common__.files __all_platform__.files` $(LDFLAGS) `cat $(COMMON_LIBRARY_FLAGS) $(PLATFORM_LIBRARY_FLAGS)`
 
 precheck:
+	$(MAKE) -C cmdhelp prebuild
 	$(MAKE) -C core precheck
 	$(MAKE) -C emulation precheck
 	$(MAKE) -C fonts precheck

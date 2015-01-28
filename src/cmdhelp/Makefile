@@ -28,6 +28,9 @@ inverselist.cpp: $(JSON_FILES) mkstubsi$(DOT_EXECUTABLE_SUFFIX)
 
 .PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
+prebuild: __all__.files
+	@true
+
 precheck:
 	@true
 
