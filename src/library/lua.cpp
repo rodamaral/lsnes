@@ -211,9 +211,9 @@ namespace
 		state* lstate = reinterpret_cast<state*>(lua_touserdata(L, lua_upvalueindex(1)));
 		void* _fn = lua_touserdata(L, lua_upvalueindex(2));
 		fn_t fn = (fn_t)_fn;
-		std::string name = lua_tostring(L, lua_upvalueindex(3));
-		state _L(*lstate, L);
 		try {
+			std::string name = lua_tostring(L, lua_upvalueindex(3));
+			state _L(*lstate, L);
 			parameters P(_L, name);
 			return fn(_L, P);
 		} catch(std::exception& e) {
@@ -228,8 +228,8 @@ namespace
 		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
 		state* lstate = reinterpret_cast<state*>(lua_touserdata(L, lua_upvalueindex(2)));
 		function* f = reinterpret_cast<function*>(ptr);
-		state _L(*lstate, L);
 		try {
+			state _L(*lstate, L);
 			return f->invoke(_L);
 		} catch(std::exception& e) {
 			lua_pushfstring(L, "%s", e.what());
