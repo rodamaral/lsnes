@@ -6,6 +6,7 @@
 #include "core/memorymanip.hpp"
 #include "core/messages.hpp"
 #include "core/queue.hpp"
+#include "library/directory.hpp"
 #include "library/globalwrap.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
@@ -84,10 +85,17 @@ void lsnes_gamepads_init()
 
 void lsnes_gamepads_deinit()
 {
-	std::ofstream cfg(get_config_path() + "/gamepads.json");
+	std::string tmpname = get_config_path() + "/gamepads.json.tmp";
+	std::string finalname = get_config_path() + "/gamepads.json";
+	std::ofstream cfg(get_config_path() + "/gamepads.json.tmp");
 	JSON::printer_indenting printer;
 	if(cfg)
 		cfg << lsnes_gamepads.save().serialize(&printer);
+	cfg.flush();
+	if(cfg) {
+		cfg.close();
+		directory::rename_overwrite(tmpname.c_str(), finalname.c_str());
+	}
 }
 
 void cleanup_keymapper()
