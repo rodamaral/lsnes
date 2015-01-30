@@ -1534,8 +1534,10 @@ out:
 		bitrate_tracker& brtrack)
 	{
 		threads::alock m2(current_collection_lock);
-		if(!current_collection)
+		if(!current_collection) {
+			messages << "No file to save stream set" << std::endl;
 			return;
+		}
 		try {
 			e.ctl(opus::reset);
 			e.ctl(opus::bitrate(SET_opus_bitrate(settings)));
@@ -1653,12 +1655,15 @@ out:
 					break;
 				}
 				uint64_t ticks = framerate_regulator::get_utime();
-				//Handle tangent edgets.
+				//Handle tangent edges.
 				if(internal.active_flag && !active_stream) {
 					internal.drain_input();
 					buf_in_use = 0;
 					buf_inr_use = 0;
 					internal.handle_tangent_positive_edge(oenc, active_stream, brtrack);
+					//If stream didn't start, autodrop the activity flag.
+					if(!active_stream)
+						internal.active_flag = false;
 				}
 				else if((!internal.active_flag || quit) && active_stream)
 					internal.handle_tangent_negative_edge(active_stream, brtrack);

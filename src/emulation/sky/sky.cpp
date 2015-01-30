@@ -256,7 +256,7 @@ namespace sky
 				.priority = 0,
 				.handle = 0,
 				.multi = false,
-				.framemagic = {656250, 18227},
+				.framemagic = {18227, 656250},
 				.compatible_runs = {0}
 			}}),
 			core_sysregion("sky", *this, *this) { hide(); }
