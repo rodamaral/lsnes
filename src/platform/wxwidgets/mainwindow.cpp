@@ -954,7 +954,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 				PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags, NULL, NULL, NULL);
 		tw = max(tw, static_cast<uint32_t>(128));
 		th = max(th, static_cast<uint32_t>(112));
-		screen_buffer = new unsigned char[tw * th * 3];
+		screen_buffer = new unsigned char[tw * th * 3 + 64];
 		if(aux)
 			rotate_buffer = new uint32_t[inst.fbuf->main_screen.get_width() *
 				inst.fbuf->main_screen.get_height()];
