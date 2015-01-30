@@ -2,6 +2,7 @@
 
 #include "lsnes.hpp"
 
+#include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
@@ -35,6 +36,7 @@
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/window_mainwindow.hpp"
 
+#include <math.h>
 #include <cassert>
 #include <boost/lexical_cast.hpp>
 
@@ -161,6 +163,11 @@ end:
 	std::string loaded_pdev;
 	std::string loaded_rdev;
 
+	double from_logscale(double v)
+	{
+		return exp(v);
+	}
+
 	void handle_config_line(std::string line)
 	{
 		regex_results r;
@@ -201,6 +208,12 @@ end:
 			loaded_pdev = r[1];
 		} else if(r = regex("AUDIO_RDEV[ \t]+(.*)", line)) {
 			loaded_rdev = r[1];
+		} else if(r = regex("AUDIO_GVOL[ \t]+(.*)", line)) {
+			lsnes_instance.audio->music_volume(from_logscale(parse_value<double>(r[1])));
+		} else if(r = regex("AUDIO_RVOL[ \t]+(.*)", line)) {
+			lsnes_instance.audio->voicer_volume(from_logscale(parse_value<double>(r[1])));
+		} else if(r = regex("AUDIO_PVOL[ \t]+(.*)", line)) {
+			lsnes_instance.audio->voicep_volume(from_logscale(parse_value<double>(r[1])));
 		} else
 			(stringfmt() << "Unrecognized directive: " << line).throwex();
 	}
@@ -224,6 +237,13 @@ end:
 		lsnes_uri_rewrite.load(get_config_path() + "/lsnesurirewrite.cfg");
 	}
 
+	double to_logscale(double v)
+	{
+		if(fabs(v) < 1e-15)
+			return -999.0;
+		return log(fabs(v));
+	}
+	
 	void save_configuration()
 	{
 		std::string cfg = get_config_path() + "/lsneswxw.cfg";
@@ -266,6 +286,9 @@ end:
 		//Sound config.
 		cfgfile << "AUDIO_PDEV " << platform::get_sound_device_description(false) << std::endl;
 		cfgfile << "AUDIO_RDEV " << platform::get_sound_device_description(true) << std::endl;
+		cfgfile << "AUDIO_GVOL " << to_logscale(lsnes_instance.audio->music_volume()) << std::endl;
+		cfgfile << "AUDIO_RVOL " << to_logscale(lsnes_instance.audio->voicer_volume()) << std::endl;
+		cfgfile << "AUDIO_PVOL " << to_logscale(lsnes_instance.audio->voicep_volume()) << std::endl;
 		if(!cfgfile) {
 			show_message_ok(NULL, "Error Saving configuration", "Error saving configuration",
 				wxICON_EXCLAMATION);
