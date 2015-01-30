@@ -72,8 +72,11 @@ short movie_logic::input_poll(unsigned port, unsigned dev, unsigned id) throw(st
 {
 	if(!mov)
 		return 0;
-	if(!mov->get_DRDY(port, dev, id)) {
-		mov->set_controls(update_controls(true));
+	//If this is for something else than 0-0-x, drop out of poll advance if any.
+	bool force = false;
+	if(port || dev) force = notify_user_poll();
+	if(!mov->get_DRDY(port, dev, id) || force) {
+		mov->set_controls(update_controls(true, force));
 		mov->set_all_DRDY();
 	}
 	return mov->next_input(port, dev, id);

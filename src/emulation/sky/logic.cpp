@@ -417,6 +417,23 @@ namespace sky
 		lstate_level, lstate_level, lstate_lockup
 	};
 
+	bool state_needs_input[] = {
+		false,		//Menu fadein
+		true,		//Menu needs input for selections.
+		false,		//Menu fadeout.
+		true,		//Level load needs input for timeattack mode.
+		false,		//Level fadein.
+		true,		//Level play needs input for actual playing.
+		true,		//Level complete needs input to break out before time.
+		false,		//Level fadeout.
+		false,		//Loading the menu (initial boot vector):
+		true,		//Level unavailable needs input to break out of it.
+		true,		//Demo unavailable needs input to break out of it.
+		false,		//Level fadeout for retry.
+		false,		//Load level for retry. Unlike primary load, this does not need input.
+		false,		//Lockup.
+	};
+	
 	void rom_boot_vector(struct instance& inst)
 	{
 		inst.state.stage = inst.state.savestage = inst.state.oldstage = 0;
@@ -436,6 +453,13 @@ namespace sky
 		if(retstate != inst.state.state)
 			inst.state.change_state(retstate);
 		inst.state.lastkeys = b;
+	}
+
+	bool simulate_needs_input(struct instance& inst)
+	{
+		if(inst.state.state > state_lockup)
+			return false;
+		return state_needs_input[inst.state.state];
 	}
 
 	void handle_loadstate(struct instance& inst)

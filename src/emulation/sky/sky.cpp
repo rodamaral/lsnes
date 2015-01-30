@@ -302,10 +302,12 @@ namespace sky
 		void c_uninstall_handler() {}
 		void c_emulate() {
 			uint16_t x = 0;
-			for(unsigned i = 0; i < 7; i++)
-				if(ecore_callbacks->get_input(0, 1, iindexes[cstyle][i]))
-					x |= (1 << i);
-			pflag = true;
+			if(simulate_needs_input(corei)) {
+				for(unsigned i = 0; i < 7; i++)
+					if(ecore_callbacks->get_input(0, 1, iindexes[cstyle][i]))
+						x |= (1 << i);
+				pflag = true;
+			}
 			simulate_frame(corei, x);
 			uint32_t* fb = corei.get_framebuffer();
 			framebuffer::info inf;

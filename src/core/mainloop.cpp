@@ -86,7 +86,12 @@ void mainloop_signal_need_rewind(void* ptr)
 	unsafe_rewind_obj = ptr;
 }
 
-portctrl::frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
+bool movie_logic::notify_user_poll() throw(std::bad_alloc, std::runtime_error)
+{
+	return CORE().runmode->is_skiplag();
+}
+
+portctrl::frame movie_logic::update_controls(bool subframe, bool forced) throw(std::bad_alloc, std::runtime_error)
 {
 	auto& core = CORE();
 	if(core.lua2->requests_subframe_paint)
@@ -110,7 +115,7 @@ portctrl::frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc
 		} else if(core.runmode->is_advance_frame()) {
 			;
 		} else {
-			if(core.runmode->is_skiplag()) {
+			if(core.runmode->is_skiplag() && forced) {
 				stop_at_frame_active = false;
 				core.runmode->set_pause();
 			}

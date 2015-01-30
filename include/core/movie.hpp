@@ -77,8 +77,14 @@ public:
  *
  * parameter subframe: True if this is for subframe update, false if for frame update.
  */
-	portctrl::frame update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error);
+	portctrl::frame update_controls(bool subframe, bool forced = false) throw(std::bad_alloc, std::runtime_error);
 
+/**
+ * Notify user poll (exit poll advance).
+ *
+ * returns: If true, update_controls is forced.
+ */
+	bool notify_user_poll() throw(std::bad_alloc, std::runtime_error);
 /**
  * Release memory for mov, mf and rrd.
  */
