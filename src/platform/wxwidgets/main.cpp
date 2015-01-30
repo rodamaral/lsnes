@@ -204,16 +204,30 @@ end:
 				core_selections[r[1]] = r[2];
 				messages << "Prefer " << r[2] << " for " << r[1] << std::endl;
 			}
-		} else if(r = regex("AUDIO_PDEV[ \t]+(.*)", line)) {
+		} else if(r = regex("AUDIO_PDEV[ \t]+([^ \t].*)", line)) {
 			loaded_pdev = r[1];
-		} else if(r = regex("AUDIO_RDEV[ \t]+(.*)", line)) {
+		} else if(r = regex("AUDIO_RDEV[ \t]+([^ \t].*)", line)) {
 			loaded_rdev = r[1];
-		} else if(r = regex("AUDIO_GVOL[ \t]+(.*)", line)) {
+		} else if(r = regex("AUDIO_GVOL[ \t]+([^ \t].*)", line)) {
 			lsnes_instance.audio->music_volume(from_logscale(parse_value<double>(r[1])));
-		} else if(r = regex("AUDIO_RVOL[ \t]+(.*)", line)) {
+		} else if(r = regex("AUDIO_RVOL[ \t]+([^ \t].*)", line)) {
 			lsnes_instance.audio->voicer_volume(from_logscale(parse_value<double>(r[1])));
-		} else if(r = regex("AUDIO_PVOL[ \t]+(.*)", line)) {
+		} else if(r = regex("AUDIO_PVOL[ \t]+([^ \t].*)", line)) {
 			lsnes_instance.audio->voicep_volume(from_logscale(parse_value<double>(r[1])));
+		} else if(r = regex("VIDEO_ARC[ \t]*", line)) {
+			arcorrect_enabled = true;
+		} else if(r = regex("VIDEO_HFLIP[ \t]*", line)) {
+			hflip_enabled = true;
+		} else if(r = regex("VIDEO_VFLIP[ \t]*", line)) {
+			vflip_enabled = true;
+		} else if(r = regex("VIDEO_ROTATE[ \t]*", line)) {
+			rotate_enabled = true;
+		} else if(r = regex("VIDEO_SFACT[ \t]+([^ \t].*)", line)) {
+			double val = parse_value<double>(r[1]);
+			if(val < 0.1 || val > 10) throw std::runtime_error("Crazy scale factor");
+			video_scale_factor = val;
+		} else if(r = regex("VIDEO_SFLAGS[ \t]+([^ \t].*)", line)) {
+			scaling_flags = parse_value<uint32_t>(r[1]);
 		} else
 			(stringfmt() << "Unrecognized directive: " << line).throwex();
 	}
@@ -289,6 +303,12 @@ end:
 		cfgfile << "AUDIO_GVOL " << to_logscale(lsnes_instance.audio->music_volume()) << std::endl;
 		cfgfile << "AUDIO_RVOL " << to_logscale(lsnes_instance.audio->voicer_volume()) << std::endl;
 		cfgfile << "AUDIO_PVOL " << to_logscale(lsnes_instance.audio->voicep_volume()) << std::endl;
+		cfgfile << "VIDEO_SFACT " << video_scale_factor << std::endl;
+		cfgfile << "VIDEO_SFLAGS " << scaling_flags << std::endl;
+		if(arcorrect_enabled) cfgfile << "VIDEO_ARC" << std::endl;
+		if(hflip_enabled) cfgfile << "VIDEO_HFLIP" << std::endl;
+		if(vflip_enabled) cfgfile << "VIDEO_VFLIP" << std::endl;
+		if(rotate_enabled) cfgfile << "VIDEO_ROTATE" << std::endl;
 		if(!cfgfile) {
 			show_message_ok(NULL, "Error Saving configuration", "Error saving configuration",
 				wxICON_EXCLAMATION);
