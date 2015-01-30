@@ -20,7 +20,7 @@ inverselist.cpp: $(JSON_FILES) mkstubsi$(DOT_EXECUTABLE_SUFFIX)
 
 %.cpp: %.json mkstubs$(DOT_EXECUTABLE_SUFFIX)
 	./mkstubs$(DOT_EXECUTABLE_SUFFIX) $<
-	mv *.hpp ../../include/cmdhelp
+	mv $(patsubst %.json,%.hpp,$<) ../../include/cmdhelp
 
 %.$(OBJECT_SUFFIX): %.cpp
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include -Wall
