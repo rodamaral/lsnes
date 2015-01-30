@@ -58,9 +58,9 @@ namespace
 		{
 			const framebuffer::font2& fdata = font->get_font();
 			std::u32string _text = utf8::to32(text);
-			int32_t orig_x = x;
-			int32_t drawx = x;
-			int32_t drawy = y;
+			int32_t orig_x = x + scr.get_origin_x();
+			int32_t drawx = x + scr.get_origin_x();
+			int32_t drawy = y + scr.get_origin_y();
 			if(hl) {
 				//Adjust for halo.
 				drawx++;
