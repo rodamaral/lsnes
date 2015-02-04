@@ -91,6 +91,10 @@ void _ref()
 	_ref2<ss_uint24_t>();
 	_ref2<uint32_t>();
 	_ref2<uint64_t>();
+	_ref2<unsigned int>();
+	_ref2<unsigned long>();
+	_ref2<unsigned long long>();
+	_ref2<size_t>();
 }
 }
 

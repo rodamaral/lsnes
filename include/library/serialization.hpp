@@ -7,35 +7,31 @@
 
 namespace serialization
 {
-template<typename T> struct unsigned_of {};
-template<> struct unsigned_of<int8_t> { typedef uint8_t t; };
-template<> struct unsigned_of<uint8_t> { typedef uint8_t t; };
-template<> struct unsigned_of<int16_t> { typedef uint16_t t; };
-template<> struct unsigned_of<uint16_t> { typedef uint16_t t; };
-template<> struct unsigned_of<int32_t> { typedef uint32_t t; };
-template<> struct unsigned_of<uint32_t> { typedef uint32_t t; };
-template<> struct unsigned_of<int64_t> { typedef uint64_t t; };
-template<> struct unsigned_of<uint64_t> { typedef uint64_t t; };
+template<size_t n> struct unsigned_of {};
+template<> struct unsigned_of<1> { typedef uint8_t t; };
+template<> struct unsigned_of<2> { typedef uint16_t t; };
+template<> struct unsigned_of<4> { typedef uint32_t t; };
+template<> struct unsigned_of<8> { typedef uint64_t t; };
 
 template<typename T1, bool be>
 void write_common(uint8_t* target, T1 value)
 {
 	for(size_t i = 0; i < sizeof(T1); i++)
 		if(be)
-			target[i] = static_cast<typename unsigned_of<T1>::t>(value) >> 8 * (sizeof(T1) - i - 1);
+			target[i] = static_cast<typename unsigned_of<sizeof(T1)>::t>(value) >> 8 * (sizeof(T1) - i - 1);
 		else
-			target[i] = static_cast<typename unsigned_of<T1>::t>(value) >> 8 * i;
+			target[i] = static_cast<typename unsigned_of<sizeof(T1)>::t>(value) >> 8 * i;
 }
 
 template<typename T1, bool be>
 T1 read_common(const uint8_t* source)
 {
-	typename unsigned_of<T1>::t value = 0;
+	typename unsigned_of<sizeof(T1)>::t value = 0;
 	for(size_t i = 0; i < sizeof(T1); i++)
 		if(be)
-			value |= static_cast<typename unsigned_of<T1>::t>(source[i]) << 8 * (sizeof(T1) - i - 1);
+			value |= static_cast<typename unsigned_of<sizeof(T1)>::t>(source[i]) << 8 * (sizeof(T1) - i - 1);
 		else
-			value |= static_cast<typename unsigned_of<T1>::t>(source[i]) << 8 * i;
+			value |= static_cast<typename unsigned_of<sizeof(T1)>::t>(source[i]) << 8 * i;
 	return static_cast<T1>(value);
 }
 
