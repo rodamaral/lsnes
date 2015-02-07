@@ -845,49 +845,15 @@ namespace
 		static boost::regex regex;
 		if(pattern == "")
 			return false;
-		if(pattern[0] == 'F') {
-			//Substring find.
-			if(pattern != last_find) {
-				std::string tmp = pattern;
-				tmp = tmp.substr(1);
-				regex = boost::regex(tmp, boost::regex_constants::literal |
-					boost::regex_constants::icase);
-				last_find = pattern;
-			}
-		}
-		if(pattern[0] == 'W') {
-			//wildcard find.
-			if(pattern != last_find) {
-				std::ostringstream y;
-				for(size_t i = 1; i < pattern.length(); i++)
-					if(pattern[i] == '?')
-						y << ".";
-					else if(pattern[i] == '*')
-						y << ".*";
-					else if(pattern[i] >= 'A' && pattern[i] <= 'Z')
-						y << pattern[i];
-					else if(pattern[i] >= 'a' && pattern[i] <= 'z')
-						y << pattern[i];
-					else if(pattern[i] >= '0' && pattern[i] <= '9')
-						y << pattern[i];
-					else
-						y << "\\" << pattern[i];
-				std::string tmp = y.str();
-				regex = boost::regex(tmp, boost::regex_constants::extended);
-				last_find = pattern;
-			}
-		}
-		if(pattern[0] == 'R') {
-			//regexp find.
-			if(pattern != last_find) {
-				std::string tmp = pattern;
-				tmp = tmp.substr(1);
-				regex = boost::regex(tmp, boost::regex_constants::extended |
-					boost::regex_constants::icase);
-				last_find = pattern;
-			}
-		}
-		return regex_search(candidate, regex);
+		std::string tmp = pattern;
+		tmp = tmp.substr(1);
+		if(pattern[0] == 'F')
+			return regex_match(tmp, candidate, REGEX_MATCH_LITERIAL);
+		if(pattern[0] == 'W')
+			return regex_match(tmp, candidate, REGEX_MATCH_IWILDCARDS);
+		if(pattern[0] == 'R')
+			return regex_match(tmp, candidate, REGEX_MATCH_IREGEX);
+		return false;
 	}
 
 	void wxwin_tracelog::on_menu(wxCommandEvent& e)
@@ -931,6 +897,15 @@ namespace
 			d->Destroy();
 			if(tmp == "") {
 				find_active = false;
+				return;
+			}
+			//Do syntax check.
+			try {
+				find_match(tmp, "");
+			} catch(...) {
+				find_active = false;
+				wxMessageBox(towxstring("Invalid search pattern"), _T("Invalid pattern"),
+					wxICON_EXCLAMATION | wxOK, this);
 				return;
 			}
 			find_string = tmp;

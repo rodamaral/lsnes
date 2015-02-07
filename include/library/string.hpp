@@ -230,14 +230,33 @@ private:
 regex_results regex(const std::string& regex, const std::string& str, const char* ex = NULL)
 	throw(std::bad_alloc, std::runtime_error);
 
+enum regex_match_mode
+{
+	REGEX_MATCH_REGEX = 0,
+	REGEX_MATCH_LITERIAL = 1,
+	REGEX_MATCH_IWILDCARDS = 2,
+	REGEX_MATCH_IREGEX = 3,
+};
+
 /**
  * Regexp a string and return match result.
  *
  * Parameter regex: The regexp to apply.
  * Parameter str: The string to apply the regexp to.
+ * Parameter mode: Match mode.
+ *	0 => Case-senstive regex (default).
+ *	1 => Case-insensitive regex.
+ *	2 => 
  * Returns: True if matches, false if not.
  */
-bool regex_match(const std::string& regex, const std::string& str) throw(std::bad_alloc, std::runtime_error);
+bool regex_match(const std::string& regex, const std::string& str, enum regex_match_mode mode = REGEX_MATCH_REGEX)
+	throw(std::bad_alloc, std::runtime_error);
+
+/**
+ * Try match a case-insensitive string fragment and return the result.
+ *
+ * \param pattern The pattern to match a
+ */
 
 /**
  * Cast string to bool.

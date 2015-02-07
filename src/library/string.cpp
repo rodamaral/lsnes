@@ -119,9 +119,78 @@ regex_results regex(const std::string& regexp, const std::string& str, const cha
 		return regex_results();
 }
 
-bool regex_match(const std::string& regexp, const std::string& str) throw(std::bad_alloc, std::runtime_error)
+bool regex_match(const std::string& regexp, const std::string& str, enum regex_match_mode mode)
+	throw(std::bad_alloc, std::runtime_error)
 {
-	return regex(regexp, str);
+	static threads::lock m;
+	static std::map<std::string, map_pointer<boost::regex>> regexps;
+	static std::map<std::pair<regex_match_mode, std::string> , std::pair<std::string, bool>> transform_cache;
+	std::string _regexp;
+	bool icase = false;
+	std::ostringstream y;
+	{
+		//See if we have cached transform.
+		threads::alock h(m);
+		auto key = std::make_pair(mode, regexp);
+		if(transform_cache.count(key)) {
+			auto entry = transform_cache[key];
+			_regexp = entry.first;
+			icase = entry.second;
+			goto transformed;
+		}
+	}
+	switch(mode) {
+	case REGEX_MATCH_REGEX:
+		icase = false;
+		_regexp = regexp;
+		break;
+	case REGEX_MATCH_IWILDCARDS:
+	case REGEX_MATCH_LITERIAL:
+		for(size_t i = 0; i < regexp.length(); i++)
+			if(regexp[i] == '?' && mode == REGEX_MATCH_IWILDCARDS)
+				y << ".";
+			else if(regexp[i] == '*' && mode == REGEX_MATCH_IWILDCARDS)
+				y << ".*";
+			else if(regexp[i] >= 'A' && regexp[i] <= 'Z')
+				y << regexp[i];
+			else if(regexp[i] >= 'a' && regexp[i] <= 'z')
+				y << regexp[i];
+			else if(regexp[i] >= '0' && regexp[i] <= '9')
+				y << regexp[i];
+			else if((unsigned char)regexp[i] > 127)	//UTF-8.
+				y << regexp[i];
+			else
+				y << "\\" << regexp[i];
+		_regexp = ".*" + y.str() + ".*";
+		icase = true;
+		break;
+	case REGEX_MATCH_IREGEX:
+		icase = true;
+		_regexp = ".*" + regexp + ".*";
+		break;
+	}
+transformed:
+	threads::alock h(m);
+	auto key = std::make_pair(mode, regexp);
+	if(!transform_cache.count(key))
+		transform_cache[key] = std::make_pair(_regexp, icase);
+
+	if(!regexps.count(regexp)) {
+		boost::regex* y = NULL;
+		auto flags = boost::regex::extended & ~boost::regex::collate;
+		flags |= boost::regex::nosubs;
+		if(icase) flags |= boost::regex::icase;
+		try {
+			y = new boost::regex(_regexp, flags);
+			regexps[_regexp] = y;
+		} catch(std::bad_alloc& e) {
+			delete y;
+			throw;
+		} catch(std::exception& e) {
+			throw std::runtime_error(e.what());
+		}
+	}
+	return boost::regex_match(str.begin(), str.end(), *(regexps[_regexp]));
 }
 
 namespace
