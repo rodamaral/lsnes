@@ -3,8 +3,16 @@
 #include "threads.hpp"
 #include "eatarg.hpp"
 #include <cctype>
-#include <boost/regex.hpp>
 #include "map-pointer.hpp"
+
+#ifdef USE_BOOST_REGEX
+#include <boost/regex.hpp>
+namespace regex_ns = boost;
+#else
+#include <regex>
+namespace regex_ns = std;
+#endif
+
 
 std::string strip_CR(const std::string& str)
 {
@@ -88,11 +96,11 @@ regex_results regex(const std::string& regexp, const std::string& str, const cha
 {
 	static threads::lock m;
 	threads::alock h(m);
-	static std::map<std::string, map_pointer<boost::regex>> regexps;
+	static std::map<std::string, map_pointer<regex_ns::regex>> regexps;
 	if(!regexps.count(regexp)) {
-		boost::regex* y = NULL;
+		regex_ns::regex* y = NULL;
 		try {
-			y = new boost::regex(regexp, boost::regex::extended & ~boost::regex::collate);
+			y = new regex_ns::regex(regexp, regex_ns::regex::extended & ~regex_ns::regex::collate);
 			regexps[regexp] = y;
 		} catch(std::bad_alloc& e) {
 			delete y;
@@ -102,8 +110,8 @@ regex_results regex(const std::string& regexp, const std::string& str, const cha
 		}
 	}
 
-	boost::smatch matches;
-	bool x = boost::regex_match(str.begin(), str.end(), matches, *(regexps[regexp]));
+	regex_ns::smatch matches;
+	bool x = regex_ns::regex_match(str.begin(), str.end(), matches, *(regexps[regexp]));
 	if(x) {
 		std::vector<std::string> res;
 		std::vector<std::pair<size_t, size_t>> mch;
@@ -123,7 +131,7 @@ bool regex_match(const std::string& regexp, const std::string& str, enum regex_m
 	throw(std::bad_alloc, std::runtime_error)
 {
 	static threads::lock m;
-	static std::map<std::string, map_pointer<boost::regex>> regexps;
+	static std::map<std::string, map_pointer<regex_ns::regex>> regexps;
 	static std::map<std::pair<regex_match_mode, std::string> , std::pair<std::string, bool>> transform_cache;
 	std::string _regexp;
 	bool icase = false;
@@ -176,12 +184,12 @@ transformed:
 		transform_cache[key] = std::make_pair(_regexp, icase);
 
 	if(!regexps.count(regexp)) {
-		boost::regex* y = NULL;
-		auto flags = boost::regex::extended & ~boost::regex::collate;
-		flags |= boost::regex::nosubs;
-		if(icase) flags |= boost::regex::icase;
+		regex_ns::regex* y = NULL;
+		auto flags = regex_ns::regex::extended & ~regex_ns::regex::collate;
+		flags |= regex_ns::regex::nosubs;
+		if(icase) flags |= regex_ns::regex::icase;
 		try {
-			y = new boost::regex(_regexp, flags);
+			y = new regex_ns::regex(_regexp, flags);
 			regexps[_regexp] = y;
 		} catch(std::bad_alloc& e) {
 			delete y;
@@ -190,7 +198,7 @@ transformed:
 			throw std::runtime_error(e.what());
 		}
 	}
-	return boost::regex_match(str.begin(), str.end(), *(regexps[_regexp]));
+	return regex_ns::regex_match(str.begin(), str.end(), *(regexps[_regexp]));
 }
 
 namespace

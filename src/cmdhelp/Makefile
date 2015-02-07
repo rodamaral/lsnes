@@ -10,10 +10,10 @@ __all__.files: $(JSON_OBJECTS)  inverselist.$(OBJECT_SUFFIX)
 	touch $(ALLFLAGS)
 
 mkstubs$(DOT_EXECUTABLE_SUFFIX): mkstubs.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp
-	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  -lboost_regex$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX) -Wall
+	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^ $(HOSTHELPER_LDFLAGS) -Wall
 
 mkstubsi$(DOT_EXECUTABLE_SUFFIX): mkstubsi.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp
-	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  -lboost_regex$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX) -Wall
+	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  $(HOSTHELPER_LDFLAGS) -Wall
 
 inverselist.cpp: $(JSON_FILES) mkstubsi$(DOT_EXECUTABLE_SUFFIX)
 	./mkstubsi$(DOT_EXECUTABLE_SUFFIX) $^

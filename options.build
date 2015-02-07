@@ -66,6 +66,12 @@ FONT_SRC=unifontfull-5.1.20080820.hex
 # - Default value is 'lua'.
 LUA=lua
 
+# Regex package to use.
+# Currently supported:
+# - NATIVE: std::thread
+# - BOOST: boost_thread
+REGEX=NATIVE
+
 # Threading package to use.
 # Currently supported:
 # - NATIVE: std::thread

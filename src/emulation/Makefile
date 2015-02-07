@@ -9,7 +9,7 @@ __all__.files: $(CORES_FILES)
 	cat $(CORES_FLAGS) >$(ALLFLAGS)
 
 make-ports$(DOT_EXECUTABLE_SUFFIX): make-ports.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/portctrl-parse.cpp ../library/portctrl-data.cpp ../library/sha256.cpp ../library/assembler.cpp  ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp ../library/binarystream.cpp ../library/integer-pool.cpp
-	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  -lboost_regex$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX) -Wall -DNO_ASM_GENERATION
+	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  $(HOSTHELPER_LDFLAGS) -Wall -DNO_ASM_GENERATION
 
 bsnes-legacy/$(ALLFILES): forcelook make-ports$(DOT_EXECUTABLE_SUFFIX)
 	$(MAKE) -C bsnes-legacy

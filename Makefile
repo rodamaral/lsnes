@@ -20,7 +20,8 @@ ifdef HOST_BOOST_NEEDS_MT
 HOST_BOOST_POSTFIX=-mt
 endif
 
-LDFLAGS = -pthread -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS)
+LDFLAGS = -pthread -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS)
+HOSTHELPER_LDFLAGS =
 
 ifeq ($(THREADS), NATIVE)
 CFLAGS += -DNATIVE_THREADS
@@ -32,6 +33,14 @@ else
 $(error "Bad value for THREADS (expected NATIVE or BOOST)")
 endif
 endif
+
+ifeq ($(REGEX), BOOST)
+CFLAGS += -DUSE_BOOST_REGEX
+LDFLAGS += -lboost_regex$(BOOST_LIB_POSTFIX)
+HOSTHELPER_LDFLAGS += -lboost_regex$(HOST_BOOST_POSTFIX)
+endif
+HOSTHELPER_LDFLAGS += -lboost_system$(HOST_BOOST_POSTFIX)
+
 
 ifdef NEED_LIBICONV
 LDFLAGS += -liconv
