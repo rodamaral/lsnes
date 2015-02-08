@@ -1676,7 +1676,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			inst.iqueue->run_async([this, oldname, newname] {
 				CORE().mbranch->_new(newname, oldname);
 			}, [this](std::exception& e) {
-				show_exception(this, "Error creating branch", "Can't create branch", e);
+				show_exception_any(this, "Error creating branch", "Can't create branch", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1719,7 +1719,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			inst.iqueue->run_async([this, filename, branch, dbranch, mode]() {
 				CORE().mbranch->import_branch(filename, branch, dbranch, mode);
 			}, [this](std::exception& e) {
-				show_exception(this, "Can't import branch", "", e);
+				show_exception_any(this, "Can't import branch", "", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1736,7 +1736,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 				std::string bname = CORE().mbranch->get();
 				CORE().mbranch->export_branch(file, bname, mode == MBRANCH_IMPORT_BINARY);
 			}, [this](std::exception& e) {
-				show_exception(this, "Can't export branch", "", e);
+				show_exception_any(this, "Can't export branch", "", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1755,7 +1755,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			inst.iqueue->run_async([this, oldname, newname] {
 				CORE().mbranch->rename(oldname, newname);
 			}, [this](std::exception& e) {
-				show_exception(this, "Error renaming branch", "Can't rename branch", e);
+				show_exception_any(this, "Error renaming branch", "Can't rename branch", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1771,7 +1771,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			inst.iqueue->run_async([this, oldname] {
 				CORE().mbranch->_delete(oldname);
 			}, [this](std::exception& e) {
-				show_exception(this, "Error deleting branch", "Can't delete branch", e);
+				show_exception_any(this, "Error deleting branch", "Can't delete branch", e);
 			});
 		} catch(canceled_exception& e) {
 		}
@@ -1783,7 +1783,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		inst.iqueue->run_async([this, name]() {
 			CORE().mbranch->set(name);
 		}, [this](std::exception& e) {
-			show_exception(this, "Error changing branch", "Can't change branch", e);
+			show_exception_any(this, "Error changing branch", "Can't change branch", e);
 		});
 	}
 }
