@@ -1,4 +1,3 @@
-- Fix showing name of the default mbranch.
 - Make initsram/initstate be able to pull members out of savestates (including binary).
 - Add halo rendering to gui.text
 - Fix fullscreen mode on Win32

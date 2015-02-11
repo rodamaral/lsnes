@@ -135,6 +135,8 @@ public:
 
 //Prompt for stuff. These all can throw canceled_exception.
 std::string pick_file_member(wxWindow* parent, const std::string& title, const std::string& startdir);
+unsigned pick_among_index(wxWindow* parent, const std::string& title, const std::string& prompt,
+	const std::vector<std::string>& choices, unsigned defaultchoice = 0);
 std::string pick_among(wxWindow* parent, const std::string& title, const std::string& prompt,
 	const std::vector<std::string>& choices, unsigned defaultchoice = 0);
 std::string pick_text(wxWindow* parent, const std::string& title, const std::string& prompt,

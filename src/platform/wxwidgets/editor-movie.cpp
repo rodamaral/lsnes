@@ -742,6 +742,19 @@ namespace
 		delete p;
 		return r;
 	}
+
+	//Has the special behaviour of showing empty name specially.
+	std::string pick_among_branches(wxWindow* parent, const std::string& title, const std::string& prompt,
+		const std::vector<std::string>& choices)
+	{
+		std::vector<std::string> choices2 = choices;
+		for(size_t i = 0; i < choices2.size(); i++)
+			if(choices2[i] == "") choices2[i] = "(Default branch)";
+		auto idx = pick_among_index(parent, title, prompt, choices2);
+		if(idx < choices.size())
+			return choices[idx];
+		throw canceled_exception();
+	}
 }
 
 class wxeditor_movie : public wxDialog
@@ -1709,8 +1722,8 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 					branch = *brlist.begin();
 				} else {
 					std::vector<std::string> choices(brlist.begin(), brlist.end());
-					branch = pick_among(this, "Select branch to import",
-						"Select branch to import", choices, 0);
+					branch = pick_among_branches(this, "Select branch to import",
+						"Select branch to import", choices);
 				}
 				//Import from movie.
 			}
@@ -1748,8 +1761,8 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			std::set<std::string> list;
 			inst.iqueue->run([&list]() { list = CORE().mbranch->enumerate(); });
 			std::vector<std::string> choices(list.begin(), list.end());
-			oldname = pick_among(this, "Select branch to rename", "Select branch to rename",
-				choices, 0);
+			oldname = pick_among_branches(this, "Select branch to rename", "Select branch to rename",
+				choices);
 			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to rename "
 				"'" + inst.mbranch->name(oldname) + "'):", oldname, false);
 			inst.iqueue->run_async([this, oldname, newname] {
@@ -1766,8 +1779,8 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			std::set<std::string> list;
 			inst.iqueue->run([&list]() { list = CORE().mbranch->enumerate(); });
 			std::vector<std::string> choices(list.begin(), list.end());
-			oldname = pick_among(this, "Select branch to delete", "Select branch to delete",
-				choices, 0);
+			oldname = pick_among_branches(this, "Select branch to delete", "Select branch to delete",
+				choices);
 			inst.iqueue->run_async([this, oldname] {
 				CORE().mbranch->_delete(oldname);
 			}, [this](std::exception& e) {
