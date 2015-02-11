@@ -372,3 +372,93 @@ void moviefile_branch_extractor_binary::read(const std::string& name, portctrl::
 	if(!done)
 		(stringfmt() << "Can't find branch '" << name << "' in file.").throwex();
 }
+
+moviefile_sram_extractor_binary::moviefile_sram_extractor_binary(const std::string& filename)
+{
+	s = open(filename.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
+	if(s < 0) {
+		int err = errno;
+		(stringfmt() << "Can't open file '" << filename << "' for reading: " << strerror(err)).throwex();
+	}
+}
+
+moviefile_sram_extractor_binary::~moviefile_sram_extractor_binary()
+{
+}
+
+std::set<std::string> moviefile_sram_extractor_binary::enumerate()
+{
+	std::set<std::string> r;
+	std::string name;
+	if(lseek(s, 5, SEEK_SET) < 0) {
+		int err = errno;
+		(stringfmt() << "Can't read the file: " << strerror(err)).throwex();
+	}
+	binarystream::input b(s);
+	//Skip the headers.
+	b.string();
+	while(b.byte()) {
+		b.string();
+		b.string();
+	}
+	//Okay, read the extension packets.
+	b.extension({
+		{TAG_SAVESTATE, [this, &r](binarystream::input& s) {
+			r.insert("");
+		}},{TAG_SAVE_SRAM, [this, &r](binarystream::input& s) {
+			r.insert(s.string());
+		}}
+	}, binarystream::null_default);
+
+	return r;
+}
+
+void moviefile_sram_extractor_binary::read(const std::string& name, std::vector<char>& v)
+{
+	//Char and uint8_t are the same representation, right?
+	std::vector<char>* _v = &v;
+	std::string mname = name;
+	if(lseek(s, 5, SEEK_SET) < 0) {
+		int err = errno;
+		(stringfmt() << "Can't read the file: " << strerror(err)).throwex();
+	}
+	binarystream::input b(s);
+	bool done = false;
+	//Skip the headers.
+	b.string();
+	while(b.byte()) {
+		b.string();
+		b.string();
+	}
+	//Okay, read the extension packets.
+	b.extension({
+		{TAG_SAVESTATE, [this, mname, _v, &done](binarystream::input& s) {
+			if(mname == "") {
+				//This savestate.
+				s.number();			//Frame of save.
+				s.number();			//Lagged frames.
+				s.number();			//RTC second.
+				s.number();			//RTC subsecond.
+				size_t pctrs = s.number();	//Number of poll counters.
+				for(size_t i = 0; i < pctrs; i++)
+					s.number32();		//Poll counters.
+				s.byte();			//Poll flag.
+				s.blob_implicit(*_v);
+				done = true;
+			}
+		}},{TAG_SAVE_SRAM, [this, mname, _v, &done](binarystream::input& s) {
+			std::string sname = s.string();
+			if(sname == mname) {
+				//This SRAM.
+				s.blob_implicit(*_v);
+				done = true;
+			}
+		}}
+	}, binarystream::null_default);
+	if(!done) {
+		if(name != "")
+			(stringfmt() << "Can't find branch '" << name << "' in file.").throwex();
+		else
+			(stringfmt() << "Can't find savestate in file.").throwex();
+	}
+}

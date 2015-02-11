@@ -347,6 +347,30 @@ const std::string& moviefile::current_branch()
 	return blank_string;
 }
 
+bool moviefile::is_movie_or_savestate(const std::string& filename)
+{
+	try {
+		int s = open(filename.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
+		if(s < 0) {
+			//Can't open.
+			return false;
+		}
+		bool is_binary = check_binary_magic(s);
+		close(s);
+		if(is_binary)
+			return true;
+		//It is not binary, might be text.
+		std::string tmp;
+		zip::reader r(filename);
+		r.read_linefile("systemid", tmp);
+		if(tmp.substr(0, 8) != "lsnes-rr")
+			return false;
+		return true;
+	} catch(...) {
+		return false;
+	}
+}
+
 moviefile::branch_extractor::~branch_extractor()
 {
 	delete real;
@@ -367,4 +391,26 @@ moviefile::branch_extractor::branch_extractor(const std::string& filename)
 		real = new moviefile_branch_extractor_binary(filename);
 	else
 		real = new moviefile_branch_extractor_text(filename);
+}
+
+moviefile::sram_extractor::~sram_extractor()
+{
+	delete real;
+}
+
+moviefile::sram_extractor::sram_extractor(const std::string& filename)
+{
+	bool binary = false;
+	{
+		std::istream& s = zip::openrel(filename, "");
+		char buf[6] = {0};
+		s.read(buf, 5);
+		if(!strcmp(buf, "lsmv\x1A"))
+			binary = true;
+		delete &s;
+	}
+	if(binary)
+		real = new moviefile_sram_extractor_binary(filename);
+	else
+		real = new moviefile_sram_extractor_text(filename);
 }

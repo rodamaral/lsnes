@@ -39,4 +39,25 @@ private:
 	int s;
 };
 
+struct moviefile_sram_extractor_text : public moviefile::sram_extractor
+{
+	moviefile_sram_extractor_text(const std::string& filename);
+	~moviefile_sram_extractor_text();
+	std::set<std::string> enumerate();
+	void read(const std::string& name, std::vector<char>& v);
+private:
+	zip::reader z;
+};
+
+struct moviefile_sram_extractor_binary : public moviefile::sram_extractor
+{
+	moviefile_sram_extractor_binary(const std::string& filename);
+	~moviefile_sram_extractor_binary();
+	std::set<std::string> enumerate();
+	void read(const std::string& name, std::vector<char>& v);
+private:
+	int s;
+};
+
+
 #endif

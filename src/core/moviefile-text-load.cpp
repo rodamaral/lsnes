@@ -377,3 +377,46 @@ void moviefile_branch_extractor_text::read(const std::string& name, portctrl::fr
 	if(!done)
 		(stringfmt() << "Can't find branch '" << name << "' in file.").throwex();
 }
+
+
+moviefile_sram_extractor_text::moviefile_sram_extractor_text(const std::string& filename)
+	: z(filename)
+{
+}
+
+moviefile_sram_extractor_text::~moviefile_sram_extractor_text()
+{
+}
+
+std::set<std::string> moviefile_sram_extractor_text::enumerate()
+{
+	std::set<std::string> r;
+	for(auto& i : z) {
+		regex_results rgx;
+		if(i == "savestate")
+			r.insert("");
+		else if(rgx = regex("sram\\.(.*)", i))
+			r.insert(rgx[1]);
+	}
+	return r;
+}
+
+void moviefile_sram_extractor_text::read(const std::string& name, std::vector<char>& v)
+{
+	std::set<std::string> r;
+	std::string realname;
+	if(name == "") {
+		//Try to read savestate.
+		realname = "savestate";
+	} else {
+		realname = "sram." + name;
+	}
+	try {
+		z.read_raw_file(realname, v);
+	} catch(...) {
+		if(name != "")
+			(stringfmt() << "Can't find SRAM '" << name << "' in file.").throwex();
+		else
+			(stringfmt() << "Can't find savestate in file.").throwex();
+	}
+}

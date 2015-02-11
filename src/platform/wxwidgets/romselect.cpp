@@ -689,12 +689,18 @@ struct moviefile& wxwin_project::make_movie()
 	}
 	for(auto i : sram_files) {
 		std::string sf = tostdstring(i.second->GetValue());
-		if(i.first != "") {
-			if(sf != "")
-				f.movie_sram[i.first] = zip::readrel(sf, "");
-		} else {
-			if(sf != "")
-				f.anchor_savestate = zip::readrel(sf, "");
+		std::vector<char>* target;
+		if(i.first != "")
+			target = &(f.movie_sram[i.first]);
+		else
+			target = &(f.anchor_savestate);
+
+		if(sf != "") {
+			if(moviefile::is_movie_or_savestate(sf)) {
+				moviefile::sram_extractor e(sf);
+				e.read(i.first, *target);
+			} else
+				*target = zip::readrel(sf, "");
 		}
 	}
 	f.is_savestate = false;

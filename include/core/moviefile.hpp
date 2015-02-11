@@ -53,6 +53,24 @@ struct moviefile
 		branch_extractor* real;
 	};
 /**
+ * Extract SRAMs.
+ */
+	struct sram_extractor
+	{
+		sram_extractor(const std::string& filename);
+		virtual ~sram_extractor();
+		virtual std::set<std::string> enumerate() { return real->enumerate(); }
+		virtual void read(const std::string& name, std::vector<char>& v) { real->read(name, v); }
+	protected:
+		sram_extractor() { real = NULL; }
+	private:
+		sram_extractor* real;
+	};
+/**
+ * Identify if file is movie/savestate file or not.
+ */
+	static bool is_movie_or_savestate(const std::string& filename);
+/**
  * This constructor construct movie structure with default settings.
  *
  * throws std::bad_alloc: Not enough memory.
