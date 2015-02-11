@@ -5,6 +5,7 @@
 #include "core/moviefile.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
+#include "core/runmode.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
@@ -204,6 +205,24 @@ namespace
 		return 0;
 	}
 
+	int get_runmode(lua::state& L, lua::parameters& P)
+	{
+		auto& core = CORE();
+		auto m = core.runmode->get();
+		if(m == emulator_runmode::QUIT) L.pushstring("quit");
+		else if(m == emulator_runmode::NORMAL) L.pushstring("normal");
+		else if(m == emulator_runmode::LOAD) L.pushstring("load");
+		else if(m == emulator_runmode::ADVANCE_FRAME) L.pushstring("advance_frame");
+		else if(m == emulator_runmode::ADVANCE_SUBFRAME) L.pushstring("advance_subframe");
+		else if(m == emulator_runmode::SKIPLAG) L.pushstring("skiplag");
+		else if(m == emulator_runmode::SKIPLAG_PENDING) L.pushstring("skiplag_pending");
+		else if(m == emulator_runmode::PAUSE) L.pushstring("pause");
+		else if(m == emulator_runmode::PAUSE_BREAK) L.pushstring("pause_break");
+		else if(m == emulator_runmode::CORRUPT) L.pushstring("corrupt");
+		else L.pushstring("unknown");
+		return 1;
+	}
+
 	lua::functions LUA_misc_fns(lua_func_misc, "", {
 		{"print2", print2},
 		{"exec", exec},
@@ -214,6 +233,7 @@ namespace
 		{"bus_address", bus_address},
 		{"memory.get_lag_flag", get_lag_flag},
 		{"memory.set_lag_flag", set_lag_flag},
+		{"gui.get_runmode", get_runmode},
 	});
 
 	lua::functions LUA_pure_fns(lua_func_bit, "", {

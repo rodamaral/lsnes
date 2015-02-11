@@ -5491,6 +5491,63 @@ gui.image: Class IMAGELOADER
 See class IMAGELOADER.
 \end_layout
 
+\begin_layout Subsection
+gui.get_runmode: Get current emulator mode
+\end_layout
+
+\begin_layout Itemize
+Syntax: string gui.get_runmode()
+\end_layout
+
+\begin_layout Standard
+Gets the current emulator runmode.
+ The possible ones are:
+\end_layout
+
+\begin_layout Itemize
+quit: Emulator is quitting.
+\end_layout
+
+\begin_layout Itemize
+normal: Emulator is running emulation
+\end_layout
+
+\begin_layout Itemize
+load: Emulator is loading a movie/savestate
+\end_layout
+
+\begin_layout Itemize
+advance_frame: Emulator is doing frame advance
+\end_layout
+
+\begin_layout Itemize
+advance_subframe: Emulator is doing subframe advance
+\end_layout
+
+\begin_layout Itemize
+skiplag: Emulator is skipping lag frames
+\end_layout
+
+\begin_layout Itemize
+skiplag_pending: Emulator will start skipping lag frames next frame
+\end_layout
+
+\begin_layout Itemize
+pause: Emulator is paused
+\end_layout
+
+\begin_layout Itemize
+pause_break: Emulator is paused at breakpoint
+\end_layout
+
+\begin_layout Itemize
+corrupt: Emulator can't run because corrupt emulation state
+\end_layout
+
+\begin_layout Itemize
+unknown: Unknown state (should not happen).
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset

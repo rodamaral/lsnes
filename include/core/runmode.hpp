@@ -161,9 +161,12 @@ public:
  * Get current point
  */
 	unsigned get_point();
+/**
+ * Get the current runmode.
+ */
+	uint64_t get();
 private:
 	void revalidate();
-	uint64_t get();
 	void set(uint64_t m);
 	bool is(uint64_t m);
 	uint64_t mode;
