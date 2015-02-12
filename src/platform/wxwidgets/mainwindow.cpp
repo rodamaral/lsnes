@@ -181,6 +181,7 @@ namespace
 	int64_t last_update = 0;
 	threads::thread* emulation_thread;
 	bool status_updated = false;
+	bool becoming_fullscreen = false;
 
 	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(*lsnes_instance.settings,
 		"background-audio", "GUI‣Enable background audio", true);
@@ -924,11 +925,32 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		return;
 	}
 	//Scale this to fullscreen.
+	unsigned dx = 0, dy = 0;
 	if(is_fs) {
 		wxSize screen = main_window->GetSize();
 		double fss = min(1.0 * screen.GetWidth() / tw, 1.0 * screen.GetHeight() / th);
 		tw *= fss;
 		th *= fss;
+		if((signed)tw < screen.GetWidth())
+			dx = (screen.GetWidth() - tw) / 2;
+		if((signed)th < screen.GetHeight())
+			dy = (screen.GetHeight() - th) / 2;
+		if(becoming_fullscreen) {
+			//Force panel to fullscreen.
+			SetSize(screen);
+			Move(0, 0);
+			becoming_fullscreen = false;
+		}
+		//Erase borders.
+		signed dx2 = dx + tw;
+		signed dy2 = dy + th;
+		dc.SetBrush(*wxBLACK_BRUSH);
+		dc.SetPen(*wxBLACK_PEN);
+		//Erase the borders we don't draw.
+		if(dx > 0) dc.DrawRectangle(0, 0, dx, screen.GetHeight());
+		if(dy > 0) dc.DrawRectangle(0, 0, screen.GetWidth(), dy);
+		if(dx2 < screen.GetWidth()) dc.DrawRectangle(dx2, 0, screen.GetWidth() - dx2, screen.GetHeight());
+		if(dy2 < screen.GetHeight()) dc.DrawRectangle(0, dy2, screen.GetWidth(), screen.GetHeight() - dy2);
 	}
 
 	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags ||
@@ -958,8 +980,11 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		if(aux)
 			rotate_buffer = new uint32_t[inst.fbuf->main_screen.get_width() *
 				inst.fbuf->main_screen.get_height()];
-		SetMinSize(wxSize(tw, th));
-		signal_resize_needed();
+		if(!is_fs) {
+			//This is not preformed in fullscreen mode.
+			SetMinSize(wxSize(tw, th));
+			signal_resize_needed();
+		}
 	}
 	if(aux) {
 		//Hflip, Vflip or rotate active.
@@ -1007,7 +1032,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 			inst.fbuf->main_screen.get_height(),
 		dstp, dsts);
 	wxBitmap bmp(wxImage(tw, th, screen_buffer, true));
-	dc.DrawBitmap(bmp, 0, 0, false);
+	dc.DrawBitmap(bmp, dx, dy, false);
 	main_window_dirty = false;
 	main_window->update_statusbar();
 }
@@ -1027,6 +1052,10 @@ void wxwin_mainwindow::panel::on_keyboard_up(wxKeyEvent& e)
 {
 	CHECK_UI_THREAD;
 	handle_wx_keyboard(inst, e, false);
+	if(wx_escape_count >= 3 && is_fs) {
+		//Force leave fullscreen mode.
+		main_window->enter_or_leave_fullscreen(false);
+	}
 }
 
 void wxwin_mainwindow::panel::on_mouse(wxMouseEvent& e)
@@ -1840,14 +1869,19 @@ void wxwin_mainwindow::enter_or_leave_fullscreen(bool fs)
 		spanel->Hide();
 		is_fs = fs;
 		ShowFullScreen(true);
-		Fit();
+		becoming_fullscreen = true;
 	} else if(!fs && is_fs) {
+		becoming_fullscreen = false;
 		ShowFullScreen(false);
+		gpanel->Show();
 		if(spanel_shown) {
 			spanel->Show();
 			toplevel->Add(spanel, 1, wxGROW);
 		}
 		Fit();
+		gpanel->SetFocus();
 		is_fs = fs;
+		wx_escape_count = 0;
+		request_paint();	//Don't leave graphical corruption.
 	}
 }
