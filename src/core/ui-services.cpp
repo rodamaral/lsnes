@@ -32,6 +32,7 @@ namespace
 		for(auto i : mset)
 			inf.modes[i] = d->modename(i);
 		inf.active = inst.mdumper->busy(d);
+		inf.hidden = d->hidden();
 		new_dumpers[d->id()] = inf;
 	}
 }

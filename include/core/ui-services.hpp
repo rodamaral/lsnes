@@ -49,6 +49,8 @@ struct dumper_information_1
 	std::string name;
 	//Is this dumper active?
 	bool active;
+	//Hidden?
+	bool hidden;
 	//Modes available (first is internal name, second is human-readable one).
 	std::map<std::string, std::string> modes;
 };

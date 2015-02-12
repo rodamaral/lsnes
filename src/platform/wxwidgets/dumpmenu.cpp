@@ -164,6 +164,9 @@ void dumper_menu::update()
 	first = true;
 	menustructure.clear();
 	for(auto i : dinfo.dumpers) {
+		//Skip dumper called "NULL" unless actually active, since it doesn't really work.
+		if(i.second.hidden && !i.second.active)
+			continue;
 		if(!first)
 			menustructure[last_processed].sep = AppendSeparator();
 		last_processed = i.first;

@@ -103,6 +103,7 @@ namespace
 		{
 			return new null_dump_obj(_mdumper, *this, mode, prefix);
 		}
+		bool hidden() const { return true; }
 	} adv;
 
 	adv_null_dumper::~adv_null_dumper() throw()

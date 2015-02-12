@@ -106,6 +106,10 @@ public:
 	virtual dumper_base* start(master_dumper& _mdumper, const std::string& mode, const std::string& targetname)
 		throw(std::bad_alloc, std::runtime_error) = 0;
 /**
+ * Is hidden?
+ */
+	virtual bool hidden() const { return false; }
+/**
  * Add dumper update notifier object.
  */
 	static void add_notifier(notifier& n);
