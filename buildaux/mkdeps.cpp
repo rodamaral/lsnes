@@ -9,9 +9,27 @@
 
 namespace boost_fs = boost::filesystem;
 
-std::string search_include(const std::list<std::string>& searchpath, const std::string& filename,
+bool is_cmdhelp_file(const std::string& filename)
+{
+	std::string _filename = filename;
+	return (_filename.length() > 8 && _filename.substr(0, 8) == "cmdhelp/");
+}
+
+std::string search_include(const std::list<std::string>& searchpath, const std::string& _filename,
 	const std::string& ref_by)
 {
+	std::string filename = _filename;
+	//Hack: process cmdhelp includes internally as the date were for the JSON include.
+	if(is_cmdhelp_file(filename)) {
+		if(filename != "cmdhelp/inverselist.hpp") {
+			filename = "../src/" + filename;
+			//Replace the extension with .json.
+			size_t split = filename.find_last_of("./\\");
+			if(split < filename.length() && filename[split] == '.') {
+				filename = filename.substr(0, split) + ".json";
+			}
+		}
+	}
 	size_t p = ref_by.find_last_of("/");
 	if(p < ref_by.length()) {
 		std::string i = ref_by;
