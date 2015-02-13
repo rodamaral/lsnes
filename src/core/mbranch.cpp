@@ -128,6 +128,7 @@ void movie_branches::import_branch(const std::string& filename, const std::strin
 				vsize += (file.gcount() / stride);
 			}
 			v.resize(vsize);
+			v.recount_frames();
 		} else {
 			std::string line;
 			portctrl::frame tmpl = v.blank_frame(false);
