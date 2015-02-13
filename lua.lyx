@@ -6793,6 +6793,18 @@ Returns the name of all branches.
 \end_layout
 
 \begin_layout Subsection
+movie.rom_loaded: Is ROM loaded?
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean movie.rom_loaded()
+\end_layout
+
+\begin_layout Standard
+Returns true if ROM is loaded, false otherwise.
+\end_layout
+
+\begin_layout Subsection
 INPUTFRAME::get_button: Get button
 \end_layout
 

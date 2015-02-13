@@ -134,6 +134,13 @@ namespace
 		return 1;
 	}
 
+	int rom_loaded(lua::state& L, lua::parameters& P)
+	{
+		auto& core = CORE();
+		L.pushboolean(!core.rom->get_internal_rom_type().isnull());
+		return 1;
+	}
+
 	lua::functions LUA_movie_fns(lua_func_misc, "movie", {
 		{"currentframe", currentframe},
 		{"lagcount", lagcounter},
@@ -146,5 +153,6 @@ namespace
 		{"read_rtc", read_rtc},
 		{"unsafe_rewind", unsafe_rewind},
 		{"to_rewind", to_rewind},
+		{"rom_loaded", rom_loaded},
 	});
 }
