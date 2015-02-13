@@ -1870,6 +1870,7 @@ void wxwin_mainwindow::enter_or_leave_fullscreen(bool fs)
 		is_fs = fs;
 		ShowFullScreen(true);
 		becoming_fullscreen = true;
+		request_paint();	//Finish the resizing by running paint handler.
 	} else if(!fs && is_fs) {
 		becoming_fullscreen = false;
 		ShowFullScreen(false);
