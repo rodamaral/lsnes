@@ -96,6 +96,8 @@ namespace
 		auto& core = CORE();
 		auto& m = core.mlogic->get_movie();
 		portctrl::frame f = m.read_subframe(m.get_current_frame(), 0);
+		if(port >= f.get_port_count())
+			return NULL;	//Port does not exist.
 		const portctrl::type& p = f.get_port_type(port);
 		return p.controller_info;
 	}
