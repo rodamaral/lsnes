@@ -6805,6 +6805,48 @@ Returns true if ROM is loaded, false otherwise.
 \end_layout
 
 \begin_layout Subsection
+movie.get_rom_info: Get info about loaded ROM
+\end_layout
+
+\begin_layout Itemize
+Syntax: Table movie.get_rom_info()
+\end_layout
+
+\begin_layout Standard
+Returns a table of tables.
+ The outer table is indexed by ROM slot index.
+ The inner table has the following fields:
+\end_layout
+
+\begin_layout Itemize
+filename: The name of file
+\end_layout
+
+\begin_layout Itemize
+hint: File name hint
+\end_layout
+
+\begin_layout Itemize
+sha256: SHA-256 hash of ROM.
+\end_layout
+
+\begin_layout Itemize
+xml_filename: The name of file for markup
+\end_layout
+
+\begin_layout Itemize
+xml_hint: File name hint for markup
+\end_layout
+
+\begin_layout Itemize
+xml_sha256: SHA-256 hash of ROM markup.
+\end_layout
+
+\begin_layout Standard
+If there is no markup, the xml_* fields are absent.
+\end_layout
+
+\begin_layout Subsection
 INPUTFRAME::get_button: Get button
 \end_layout
 

@@ -141,6 +141,53 @@ namespace
 		return 1;
 	}
 
+	int get_rom_info(lua::state& L, lua::parameters& P)
+	{
+		auto& core = CORE();
+		auto& rom = *(core.rom);
+		bool any_loaded = false;
+
+		L.newtable();
+		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+			auto img = &(rom.romimg[i]);
+			auto xml = &(rom.romxml[i]);
+			if(img->sha_256.read() == "") img = NULL;	//Trivial image.
+			if(xml->sha_256.read() == "") xml = NULL;	//Trivial image.
+			if(!img && !xml) continue;
+			any_loaded = true;
+			L.pushnumber(i+1);
+			L.newtable();
+			if(img) {
+				L.pushstring("filename");
+				L.pushlstring(img->filename);
+				L.rawset(-3);
+				L.pushstring("hint");
+				L.pushlstring(img->namehint);
+				L.rawset(-3);
+				L.pushstring("sha256");
+				L.pushlstring(img->sha_256.read());
+				L.rawset(-3);
+			}
+			if(xml) {
+				L.pushstring("xml_filename");
+				L.pushlstring(xml->filename);
+				L.rawset(-3);
+				L.pushstring("xml_hint");
+				L.pushlstring(xml->namehint);
+				L.rawset(-3);
+				L.pushstring("xml_sha256");
+				L.pushlstring(xml->sha_256.read());
+				L.rawset(-3);
+			}
+			L.rawset(-3);
+		}
+		if(!any_loaded) {
+			L.pop(1);
+			return 0;
+		}
+		return 1;
+	}
+
 	lua::functions LUA_movie_fns(lua_func_misc, "movie", {
 		{"currentframe", currentframe},
 		{"lagcount", lagcounter},
@@ -154,5 +201,6 @@ namespace
 		{"unsafe_rewind", unsafe_rewind},
 		{"to_rewind", to_rewind},
 		{"rom_loaded", rom_loaded},
+		{"get_rom_info", get_rom_info},
 	});
 }
