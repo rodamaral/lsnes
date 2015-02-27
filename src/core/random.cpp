@@ -73,6 +73,13 @@ namespace
 	}
 }
 
+void contribute_random_entropy(void* buf, size_t bytes)
+{
+	do_mix_tsc();
+	threads::alock h(seed_mutex);
+	prng.write(buf, sizeof(buf));
+}
+
 std::string get_random_hexstring(size_t length) throw(std::bad_alloc)
 {
 	std::string out;

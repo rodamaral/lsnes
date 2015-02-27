@@ -9,6 +9,7 @@
 #include "core/inthread.hpp"
 #include "core/keymapper.hpp"
 #include "core/messages.hpp"
+#include "core/random.hpp"
 #include "core/settings.hpp"
 #include "library/filesystem.hpp"
 #include "library/minmax.hpp"
@@ -1675,6 +1676,9 @@ out:
 				unsigned rate_out = audio.voice_rate().second;
 				size_t dbuf_max = min(buf_max, rate_in / REC_THRESHOLD_DIV);
 				internal.read_input(buf_in, buf_in_use, dbuf_max);
+
+				//Contribute some entropy.
+				contribute_random_entropy(buf_in, buf_in_use * sizeof(float));
 
 				//Resample up to full opus block.
 				internal.do_resample(rin, buf_in, buf_in_use, buf_inr, buf_inr_use, OPUS_BLOCK_SIZE,

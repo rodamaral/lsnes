@@ -47,4 +47,9 @@ void random_mix_timing_entropy();
  */
 void highrandom_256(uint8_t* buf);
 
+/**
+ * Contribute buffer of entropy.
+ */
+void contribute_random_entropy(void* buf, size_t bytes);
+
 #endif
