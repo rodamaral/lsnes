@@ -46,7 +46,7 @@ void memread_oper::evaluate(mathexpr::value target, std::vector<std::function<ma
 	char buf[8];
 	mspace->read_range(addr, buf, bytes);
 	//Endian swap if needed.
-	if(system_endian != endianess)
+	if(endianess && system_endian != endianess)
 		for(unsigned i = 0; i < bytes / 2; i++)
 			std::swap(buf[i], buf[bytes - i - 1]);
 	switch(bytes) {
