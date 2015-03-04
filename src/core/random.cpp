@@ -42,8 +42,8 @@ namespace
 		static unsigned count = 0;
 		static uint64_t last_reseed = 0;
 		static uint64_t buf[slots + 1];
-		buf[count++] = crandom::arch_get_tsc();
 		threads::alock h(seed_mutex);
+		buf[count++] = crandom::arch_get_tsc();
 		if(count == 0) count = 1;  //Shouldn't happen.
 		if(count == slots || buf[count - 1] - last_reseed > 300000000) {
 			last_reseed = buf[count - 1];
@@ -55,7 +55,6 @@ namespace
 
 	std::string get_random_hexstring_64(size_t index)
 	{
-		threads::alock h(seed_mutex);
 		uint64_t buf[7];
 		uint8_t out[32];
 		timeval tv;
@@ -67,6 +66,7 @@ namespace
 		buf[0] = tv.tv_sec;
 		buf[1] = tv.tv_usec;
 		buf[2] = crandom::arch_get_tsc();
+		threads::alock h(seed_mutex);
 		prng.write(buf, sizeof(buf));
 		prng.read(out, sizeof(out));
 		return hex::b_to(out, sizeof(out));
