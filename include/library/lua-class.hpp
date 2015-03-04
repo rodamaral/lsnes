@@ -224,7 +224,15 @@ template<class T> class _class : public class_base
 		load_metatable(_state);
 		_state.setmetatable(-2);
 		T* _obj = reinterpret_cast<T*>(obj);
-		new(_obj) T(_state, args...);
+		try {
+			new(_obj) T(_state, args...);
+		} catch(...) {
+			//CTOR FAILED. Get rid of the dtor (since it would error) and then dump the object.
+			_state.newtable();
+			_state.setmetatable(-2);
+			_state.pop(1);
+			throw;
+		}
 		return _obj;
 	}
 
