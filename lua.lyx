@@ -4227,7 +4227,7 @@ resolve_filename: Resolve name of file relative to another
 \end_layout
 
 \begin_layout Itemize
-Syntax: string resolve_file(string filename, string base)
+Syntax: string resolve_filename(string filename[, string base])
 \end_layout
 
 \begin_layout Standard
