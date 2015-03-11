@@ -253,20 +253,23 @@ namespace
 
 		P(a, b, P.optional(on, ""), P.optional(off, ""));
 
-		size_t onl = on.length();
-		size_t offl = off.length();
-		char onc = onl ? on[onl - 1] : '*';
-		char offc = offl ? off[offl - 1] : '-';
-		char buffer[65];
+		auto on32 = utf8::to32(on);
+		auto off32 = utf8::to32(off);
+
+		size_t onl = on32.length();
+		size_t offl = off32.length();
+		auto onc = onl ? on32[onl - 1] : '*';
+		auto offc = offl ? off32[offl - 1] : '-';
+		char32_t buffer[65];
 		unsigned i;
 		size_t bias = min(b, (uint64_t)64) - 1;
 		for(i = 0; i < 64 && i < b; i++) {
-			char onc2 = (i < onl) ? on[i] : onc;
-			char offc2 = (i < offl) ? off[i] : offc;
+			auto onc2 = (i < onl) ? on32[i] : onc;
+			auto offc2 = (i < offl) ? off32[i] : offc;
 			buffer[reverse ? (bias - i) : i] = ((a >> i) & 1) ? onc2 : offc2;
 		}
 		buffer[i] = '\0';
-		L.pushstring(buffer);
+		L.pushlstring(utf8::to8(buffer));
 		return 1;
 	}
 
