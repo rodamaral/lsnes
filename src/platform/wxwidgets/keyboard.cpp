@@ -259,6 +259,9 @@ namespace
 		{ WXK_SPECIAL18, "special18", "special" },
 		{ WXK_SPECIAL19, "special19", "special" },
 		{ WXK_SPECIAL20, "special20", "special" },
+		{ 246, "ö", "alphabetic" },
+		{ 228, "ä", "alphabetic" },
+		{ 229, "å", "alphabetic" },
 		{ 0, NULL, NULL }
 	};
 
@@ -298,6 +301,7 @@ std::string map_keycode_to_key(int kcode)
 			return k->name;
 		k++;
 	}
+	std::cerr << "map_keycode_to_key: Unknown key " << kcode << std::endl;
 	return "";
 }
 
