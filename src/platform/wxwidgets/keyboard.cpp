@@ -259,6 +259,7 @@ namespace
 		{ WXK_SPECIAL18, "special18", "special" },
 		{ WXK_SPECIAL19, "special19", "special" },
 		{ WXK_SPECIAL20, "special20", "special" },
+		{ 167, "§", "characters" },
 		{ 246, "ö", "alphabetic" },
 		{ 228, "ä", "alphabetic" },
 		{ 229, "å", "alphabetic" },
