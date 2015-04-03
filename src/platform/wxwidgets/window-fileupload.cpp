@@ -132,7 +132,7 @@ public:
 		CHECK_UI_THREAD;
 		std::string current;
 		if(games->GetSelection() != wxNOT_FOUND)
-			current = games->GetStringSelection();
+			current = tostdstring(games->GetStringSelection());
 		games->Clear();
 		std::string terms = tostdstring(search->GetValue());
 		for(auto& i : choices) {
@@ -146,7 +146,7 @@ public:
 			games->Append(towxstring(i));
 		}
 		if(current != "")
-			games->SetStringSelection(current);
+			games->SetStringSelection(towxstring(current));
 	}
 	void on_list_select(wxCommandEvent& e)
 	{
@@ -814,7 +814,7 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 			bool done = false;
 			for(auto& i : games_list) {
 				if(i == fullname) {
-					game->SetLabel(fullname);
+					game->SetLabel(towxstring(fullname));
 					done = true;
 					break;
 				}
@@ -824,7 +824,7 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 					done = true;	//Keep.
 			}
 			if(!done)
-				game->SetLabel(NO_GAME_NAME);
+				game->SetLabel(towxstring(NO_GAME_NAME));
 		}
 	}
 }
