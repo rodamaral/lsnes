@@ -179,19 +179,19 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, emulator_instance& 
 	type = label_control<wxComboBox>(this, "Data type", wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize, 0,
 		nullptr, wxCB_READONLY);
 	type.add(s1);
-	type->Append("(Expression)");
-	type->Append("Signed byte");
-	type->Append("Unsigned byte");
-	type->Append("Signed word");
-	type->Append("Unsigned word");
-	type->Append("Signed 3-byte");
-	type->Append("Unsigned 3-byte");
-	type->Append("Signed dword");
-	type->Append("Unsigned dword");
-	type->Append("Float");
-	type->Append("Signed qword");
-	type->Append("Unsigned qword");
-	type->Append("Double");
+	type->Append(wxT("(Expression)"));
+	type->Append(wxT("Signed byte"));
+	type->Append(wxT("Unsigned byte"));
+	type->Append(wxT("Signed word"));
+	type->Append(wxT("Unsigned word"));
+	type->Append(wxT("Signed 3-byte"));
+	type->Append(wxT("Unsigned 3-byte"));
+	type->Append(wxT("Signed dword"));
+	type->Append(wxT("Unsigned dword"));
+	type->Append(wxT("Float"));
+	type->Append(wxT("Signed qword"));
+	type->Append(wxT("Unsigned qword"));
+	type->Append(wxT("Double"));
 	type->SetSelection(3);
 	type->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
 		wxCommandEventHandler(wxeditor_memorywatch::on_position_change), NULL, this);
@@ -324,9 +324,9 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, emulator_instance& 
 		expr->SetValue(towxstring(it.expr));
 		format->SetValue(towxstring(it.format));
 		cond_enable->SetValue(it.printer.cond_enable);
-		enabled->SetValue(it.printer.enabled);
-		xpos->SetValue(it.printer.onscreen_xpos);
-		ypos->SetValue(it.printer.onscreen_ypos);
+		enabled->SetValue(towxstring(it.printer.enabled));
+		xpos->SetValue(towxstring(it.printer.onscreen_xpos));
+		ypos->SetValue(towxstring(it.printer.onscreen_ypos));
 		alt_origin_x->SetValue(it.printer.onscreen_alt_origin_x);
 		alt_origin_y->SetValue(it.printer.onscreen_alt_origin_y);
 		cliprange_x->SetValue(it.printer.onscreen_cliprange_x);
