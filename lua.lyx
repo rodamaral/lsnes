@@ -388,12 +388,11 @@ MMAP_STRUCT: Quasi-table mapping emulated memory
 \end_layout
 
 \begin_layout Standard
-Objects of this class act like tables, except that the values are reflected
- to and from emulated memory.
+Objects act like tables, but the values reflect emulated memory.
 \end_layout
 
 \begin_layout Subsubsection
-static function new: Create new instance
+static function new: Create a new instance
 \end_layout
 
 \begin_layout Itemize
@@ -402,10 +401,6 @@ Syntax: mmap memory.mmap.new()
 
 \begin_layout Itemize
 Syntax: mmap classes.MMAP_STRUCT.new()
-\end_layout
-
-\begin_layout Itemize
-Deprecated: mmap memory.map_structure()
 \end_layout
 
 \begin_layout Standard
@@ -417,7 +412,7 @@ mmap: MMAP_STRUCT: The created mmap structure.
 \end_layout
 
 \begin_layout Standard
-Create a new MMAP_STRUCT (with no mappings) and return it.
+Create a new object (with no mappings) and return it.
 \end_layout
 
 \begin_layout Subsubsection
@@ -6844,6 +6839,58 @@ xml_sha256: SHA-256 hash of ROM markup.
 
 \begin_layout Standard
 If there is no markup, the xml_* fields are absent.
+\end_layout
+
+\begin_layout Subsection
+movie.get_game_info: Get info about loaded game
+\end_layout
+
+\begin_layout Itemize
+Syntax: Table movie.get_game_info()
+\end_layout
+
+\begin_layout Standard
+Returns a table with following fields:
+\end_layout
+
+\begin_layout Itemize
+core: The name of the core
+\end_layout
+
+\begin_layout Itemize
+core_short: Short name of the core
+\end_layout
+
+\begin_layout Itemize
+type: The name of the system type
+\end_layout
+
+\begin_layout Itemize
+type_long: The long name of the system type
+\end_layout
+
+\begin_layout Itemize
+region: The name of region
+\end_layout
+
+\begin_layout Itemize
+region_long: The long name of region
+\end_layout
+
+\begin_layout Itemize
+gametype: The gametype of movie.
+\end_layout
+
+\begin_layout Itemize
+fps: Nominal fps as floating-point value
+\end_layout
+
+\begin_layout Itemize
+fps_n: Exact nominal fps numerator
+\end_layout
+
+\begin_layout Itemize
+fps_d: Exact nominal fps denominator.
 \end_layout
 
 \begin_layout Subsection

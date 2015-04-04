@@ -188,6 +188,51 @@ namespace
 		return 1;
 	}
 
+	int get_game_info(lua::state& L, lua::parameters& P)
+	{
+		uint64_t framemagic[4];
+		auto& core = CORE();
+		auto& rom = core.rom->get_internal_rom_type();
+		auto& sysreg = rom.combine_region(rom.get_region());
+
+		sysreg.fill_framerate_magic(framemagic);
+
+		L.newtable();
+
+		L.pushstring("core");
+		L.pushlstring(rom.get_core_identifier());
+		L.rawset(-3);
+		L.pushstring("core_short");
+		L.pushlstring(rom.get_core_shortname());
+		L.rawset(-3);
+		L.pushstring("type");
+		L.pushlstring(rom.get_iname());
+		L.rawset(-3);
+		L.pushstring("type_long");
+		L.pushlstring(rom.get_hname());
+		L.rawset(-3);
+		L.pushstring("region");
+		L.pushlstring(rom.get_region().get_iname());
+		L.rawset(-3);
+		L.pushstring("region_long");
+		L.pushlstring(rom.get_region().get_hname());
+		L.rawset(-3);
+		L.pushstring("gametype");
+		L.pushlstring(sysreg.get_name());
+		L.rawset(-3);
+		L.pushstring("fps_n");
+		L.pushnumber(framemagic[1]);
+		L.rawset(-3);
+		L.pushstring("fps_d");
+		L.pushnumber(framemagic[0]);
+		L.rawset(-3);
+		L.pushstring("fps");
+		L.pushnumber(1.0 * framemagic[1] / framemagic[0]);
+		L.rawset(-3);
+
+		return 1;
+	}
+
 	lua::functions LUA_movie_fns(lua_func_misc, "movie", {
 		{"currentframe", currentframe},
 		{"lagcount", lagcounter},
@@ -202,5 +247,6 @@ namespace
 		{"to_rewind", to_rewind},
 		{"rom_loaded", rom_loaded},
 		{"get_rom_info", get_rom_info},
+		{"get_game_info", get_game_info},
 	});
 }
