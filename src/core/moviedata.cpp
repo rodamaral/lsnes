@@ -529,8 +529,6 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		try {
 			handle_load_core(*_movie.get(), portset2, false);
 			_movie.get()->gametype = &core.rom->get_sysregion();
-			core.fbuf->redraw_framebuffer(core.rom->draw_cover());
-			core.lua2->callback_do_rewind();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
@@ -545,6 +543,9 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		core.mlogic->set_rrdata(*(rrd()), true);
 		set_mprefix(get_mprefix_for_project(core.mlogic->get_mfile().projectid));
 		set_gameinfo(core.mlogic->get_mfile());
+
+		core.fbuf->redraw_framebuffer(core.rom->draw_cover());
+		core.lua2->callback_do_rewind();
 	}
 	core.dispatch->mode_change(core.mlogic->get_movie().readonly_mode());
 	core.dispatch->mbranch_change();
