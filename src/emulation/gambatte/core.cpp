@@ -688,7 +688,7 @@ namespace
 			}
 			framebuffer::info inf;
 			inf.type = &framebuffer::pixfmt_rgb32;
-			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(primary_framebuffer));
+			inf.mem = reinterpret_cast<char*>(primary_framebuffer);
 			inf.physwidth = 160;
 			inf.physheight = 144;
 			inf.physstride = 640;

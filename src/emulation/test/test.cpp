@@ -153,7 +153,7 @@ namespace
 			redraw_screen();
 			framebuffer::info inf;
 			inf.type = &framebuffer::pixfmt_rgb32;
-			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(cover_fbmem));
+			inf.mem = reinterpret_cast<char*>(cover_fbmem);
 			inf.physwidth = 480;
 			inf.physheight = 432;
 			inf.physstride = 1920;

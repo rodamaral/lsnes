@@ -312,7 +312,7 @@ namespace sky
 			uint32_t* fb = corei.get_framebuffer();
 			framebuffer::info inf;
 			inf.type = &framebuffer::pixfmt_rgb32;
-			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(fb));
+			inf.mem = reinterpret_cast<char*>(fb);
 			inf.physwidth = FB_WIDTH;
 			inf.physheight = FB_HEIGHT;
 			inf.physstride = 4 * FB_WIDTH;
