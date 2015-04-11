@@ -163,5 +163,13 @@
 	"flush-slotinfo":[
 		"flushslots", "Flush slotinfo cache",
 		{"":"Flush slotinfo cache"}
+	],
+	"reload-rom":[
+		"rlrom", "Reload the current ROM",
+		{"":"Reload the currently loaded ROM from disk"}
+	],
+	"close-rom":[
+		"clrom", "Close the current ROM",
+		{"":"Close the currentloy loaded ROM and return to null core"}
 	]
 }

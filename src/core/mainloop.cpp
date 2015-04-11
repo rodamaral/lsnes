@@ -561,6 +561,16 @@ namespace
 			mark_pending_save(args, SAVE_MOVIE, 0);
 		});
 
+	command::fnptr<> CMD_reload_rom(lsnes_cmds, CLOADSAVE::rlrom,
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			reload_current_rom();
+		});
+
+	command::fnptr<> CMD_close_rom(lsnes_cmds, CLOADSAVE::clrom,
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			close_rom();
+		});
+
 	command::fnptr<> CMD_set_rwmode(lsnes_cmds, "set-rwmode", "Switch to recording mode",
 		"Syntax: set-rwmode\nSwitches to recording mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
