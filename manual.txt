@@ -448,20 +448,24 @@ Enable/Disable sound.
 
 5.8 Misc.
 
-5.8.1 reload-rom [<file>]
+5.8.1 load-rom <file>
 
-Reloads the main ROM image from <file>.
+Loads ROM (format autodetected) from <file>.
 
-5.8.2 +tangent
+5.8.2 reload-rom
+
+Reloads the main ROM image from.
+
+5.8.3 +tangent
 
 Tangent for recording voice for commentary track. While pressed, 
 record a stream.
 
-5.8.3 advance-subframe-timeout
+5.8.4 advance-subframe-timeout
 
 Subframe advance timeout in milliseconds. Default is 100.
 
-5.8.4 set-speed <speed>
+5.8.5 set-speed <speed>
 
 Set the speed multiplier. <speed> may be positive number (1 is 
 normal speed) or “turbo” for turbo.

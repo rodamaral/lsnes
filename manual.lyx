@@ -947,11 +947,19 @@ Misc.
 \end_layout
 
 \begin_layout Subsubsection
-reload-rom [<file>]
+load-rom <file>
 \end_layout
 
 \begin_layout Standard
-Reloads the main ROM image from <file>.
+Loads ROM (format autodetected) from <file>.
+\end_layout
+
+\begin_layout Subsubsection
+reload-rom
+\end_layout
+
+\begin_layout Standard
+Reloads the main ROM image from.
 \end_layout
 
 \begin_layout Subsubsection

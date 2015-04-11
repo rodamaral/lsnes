@@ -561,6 +561,13 @@ namespace
 			mark_pending_save(args, SAVE_MOVIE, 0);
 		});
 
+	command::fnptr<command::arg_filename> CMD_load_rom(lsnes_cmds, CLOADSAVE::lrom,
+		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			romload_request req;
+			req.packfile = args;
+			load_new_rom(req);
+		});
+
 	command::fnptr<> CMD_reload_rom(lsnes_cmds, CLOADSAVE::rlrom,
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			reload_current_rom();
