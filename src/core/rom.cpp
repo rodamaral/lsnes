@@ -321,6 +321,13 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 			throw std::runtime_error("Required ROM images missing");
 		return;
 	}
+	load_bundle(file, spec, tmpprefer);
+}
+
+void loaded_rom::load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	std::string s;
 	load_filename = file;
 	std::vector<std::string> lines;
 	while(std::getline(spec, s))

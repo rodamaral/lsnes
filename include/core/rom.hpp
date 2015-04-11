@@ -216,6 +216,9 @@ private:
  * ROM original region (this is the region ROM is loaded as).
  */
 	core_region* orig_region;
+	//Handle bundle load case.
+	void load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer)
+		throw(std::bad_alloc, std::runtime_error);
 };
 
 /**
