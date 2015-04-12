@@ -719,6 +719,7 @@ jumpback:
 			core.mlogic->get_mfile().is_savestate = true;
 			core.runmode->set_point(emulator_runmode::P_SAVE);
 			core.supdater->update();
+			core.runmode->end_load();		//Restore previous mode.
 			messages << "Rewind done in " << (framerate_regulator::get_utime() - t) << " usec."
 				<< std::endl;
 			return 1;
