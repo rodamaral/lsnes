@@ -705,9 +705,9 @@ struct moviefile& wxwin_project::make_movie()
 				*target = zip::readrel(sf, "");
 		}
 	}
-	f.is_savestate = false;
-	f.movie_rtc_second = f.rtc_second = boost::lexical_cast<int64_t>(tostdstring(rtc_sec->GetValue()));
-	f.movie_rtc_subsecond = f.rtc_subsecond = boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
+	f.movie_rtc_second = f.dyn.rtc_second = boost::lexical_cast<int64_t>(tostdstring(rtc_sec->GetValue()));
+	f.movie_rtc_subsecond = f.dyn.rtc_subsecond =
+		boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
 	auto ctrldata = inst.rom->controllerconfig(f.settings);

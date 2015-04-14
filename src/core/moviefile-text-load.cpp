@@ -266,34 +266,34 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	movie_rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	r.read_numeric_file("starttime.second", movie_rtc_second, true);
 	r.read_numeric_file("starttime.subsecond", movie_rtc_subsecond, true);
-	rtc_second = movie_rtc_second;
-	rtc_subsecond = movie_rtc_subsecond;
+	dyn.rtc_second = movie_rtc_second;
+	dyn.rtc_subsecond = movie_rtc_subsecond;
 	if(r.has_member("savestate.anchor"))
 		r.read_raw_file("savestate.anchor", anchor_savestate);
 	if(r.has_member("savestate")) {
-		is_savestate = true;
-		r.read_numeric_file("saveframe", save_frame, true);
-		r.read_numeric_file("lagcounter", lagged_frames, true);
-		read_pollcounters(r, "pollcounters", pollcounters);
+		dyn.is_savestate = true;
+		r.read_numeric_file("saveframe", dyn.save_frame, true);
+		r.read_numeric_file("lagcounter", dyn.lagged_frames, true);
+		read_pollcounters(r, "pollcounters", dyn.pollcounters);
 		if(r.has_member("hostmemory"))
-			r.read_raw_file("hostmemory", host_memory);
-		r.read_raw_file("savestate", savestate);
+			r.read_raw_file("hostmemory", dyn.host_memory);
+		r.read_raw_file("savestate", dyn.savestate);
 		for(auto name : r)
 			if(name.length() >= 5 && name.substr(0, 5) == "sram.")
-				r.read_raw_file(name, sram[name.substr(5)]);
-		r.read_raw_file("screenshot", screenshot);
+				r.read_raw_file(name, dyn.sram[name.substr(5)]);
+		r.read_raw_file("screenshot", dyn.screenshot);
 		//If these can't be read, just use some (wrong) values.
-		r.read_numeric_file("savetime.second", rtc_second, true);
-		r.read_numeric_file("savetime.subsecond", rtc_subsecond, true);
+		r.read_numeric_file("savetime.second", dyn.rtc_second, true);
+		r.read_numeric_file("savetime.subsecond", dyn.rtc_subsecond, true);
 		uint64_t _poll_flag = 2;	//Legacy behaviour is the default.
 		r.read_numeric_file("pollflag", _poll_flag, true);
-		poll_flag = _poll_flag;
-		active_macros = read_active_macros(r, "macros");
+		dyn.poll_flag = _poll_flag;
+		dyn.active_macros = read_active_macros(r, "macros");
 	}
 	for(auto name : r)
 		if(name.length() >= 8 && name.substr(0, 8) == "initram.")
 			 r.read_raw_file(name, ramcontent[name.substr(8)]);
-	if(rtc_subsecond < 0 || movie_rtc_subsecond < 0)
+	if(dyn.rtc_subsecond < 0 || movie_rtc_subsecond < 0)
 		throw std::runtime_error("Invalid RTC subsecond value");
 	std::string name = r.find_first();
 	for(auto name : r)

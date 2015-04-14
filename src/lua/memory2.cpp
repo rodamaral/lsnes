@@ -380,7 +380,7 @@ namespace
 			throw std::runtime_error("Source out of range");
 
 		//Calculate new size of target.
-		auto& h = core.mlogic->get_mfile().host_memory;
+		auto& h = core.mlogic->get_mfile().dyn.host_memory;
 		size_t rsize = size * rows;
 		if(size && rsize / size != rows)
 			throw std::runtime_error("Copy size out of range");

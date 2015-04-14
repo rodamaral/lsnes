@@ -79,8 +79,8 @@ namespace
 	int read_rtc(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		L.pushnumber(core.mlogic->get_mfile().rtc_second);
-		L.pushnumber(core.mlogic->get_mfile().rtc_subsecond);
+		L.pushnumber(core.mlogic->get_mfile().dyn.rtc_second);
+		L.pushnumber(core.mlogic->get_mfile().dyn.rtc_subsecond);
 		return 2;
 	}
 
@@ -109,18 +109,18 @@ namespace
 		P(filename);
 
 		moviefile mfile(filename, core.rom->get_internal_rom_type());
-		if(!mfile.is_savestate)
+		if(!mfile.dyn.is_savestate)
 			throw std::runtime_error("movie.to_rewind only allows savestates");
 		lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(L);
-		u2->state = mfile.savestate;
+		u2->state = mfile.dyn.savestate;
 		if(u2->state.size() >= 32)
 			u2->state.resize(u2->state.size() - 32);
-		u2->secs = mfile.rtc_second;
-		u2->ssecs = mfile.rtc_subsecond;
-		u2->pollcounters = mfile.pollcounters;
-		u2->lag = mfile.lagged_frames;
-		u2->frame = mfile.save_frame;
-		u2->hostmemory = mfile.host_memory;
+		u2->secs = mfile.dyn.rtc_second;
+		u2->ssecs = mfile.dyn.rtc_subsecond;
+		u2->pollcounters = mfile.dyn.pollcounters;
+		u2->lag = mfile.dyn.lagged_frames;
+		u2->frame = mfile.dyn.save_frame;
+		u2->hostmemory = mfile.dyn.host_memory;
 		//Now the remaining field ptr is somewhat nastier.
 		uint64_t f = 0;
 		uint64_t s = mfile.input->size();

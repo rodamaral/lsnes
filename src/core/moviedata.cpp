@@ -229,8 +229,8 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 	core.lua2->callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = framerate_regulator::get_utime();
-		target.is_savestate = true;
-		target.sram = core.rom->save_sram();
+		target.dyn.is_savestate = true;
+		target.dyn.sram = core.rom->save_sram();
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 			auto& img = core.rom->get_rom(i);
 			auto& xml = core.rom->get_markup(i);
@@ -238,17 +238,17 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 			target.romxml_sha256[i] = xml.sha_256.read();
 			target.namehint[i] = img.namehint;
 		}
-		target.savestate = core.rom->save_core_state();
-		core.fbuf->get_framebuffer().save(target.screenshot);
-		core.mlogic->get_movie().save_state(target.projectid, target.save_frame,
-			target.lagged_frames, target.pollcounters);
-		target.poll_flag = core.rom->get_pflag();
+		target.dyn.savestate = core.rom->save_core_state();
+		core.fbuf->get_framebuffer().save(target.dyn.screenshot);
+		core.mlogic->get_movie().save_state(target.projectid, target.dyn.save_frame,
+			target.dyn.lagged_frames, target.dyn.pollcounters);
+		target.dyn.poll_flag = core.rom->get_pflag();
 		auto prj = core.project->get();
 		if(prj) {
 			target.gamename = prj->gamename;
 			target.authors = prj->authors;
 		}
-		target.active_macros = core.controls->get_macro_frames();
+		target.dyn.active_macros = core.controls->get_macro_frames();
 		target.save(filename2, SET_savecompression(*core.settings), binary > 0,
 			core.mlogic->get_rrdata());
 		uint64_t took = framerate_regulator::get_utime() - origtime;
@@ -285,13 +285,13 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 	core.lua2->callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = framerate_regulator::get_utime();
-		target.is_savestate = false;
+		target.dyn.is_savestate = false;
 		auto prj = core.project->get();
 		if(prj) {
 			target.gamename = prj->gamename;
 			target.authors = prj->authors;
 		}
-		target.active_macros.clear();
+		target.dyn.active_macros.clear();
 		target.save(filename2, SET_savecompression(*core.settings), binary > 0,
 			core.mlogic->get_rrdata());
 		uint64_t took = framerate_regulator::get_utime() - origtime;
@@ -355,7 +355,7 @@ namespace
 				<< std::endl;
 		std::string len, rerecs;
 		len = format_length(mov.get_movie_length());
-		std::string rerecords = mov.is_savestate ? (stringfmt() << rrd.count()).str() : mov.rerecords;
+		std::string rerecords = mov.dyn.is_savestate ? (stringfmt() << rrd.count()).str() : mov.rerecords;
 		messages << "Rerecords " << rerecords << " length " << format_length(mov.get_movie_length())
 			<< " (" << mov.get_frame_count() << " frames)" << std::endl;
 		if(mov.gamename != "")
@@ -426,16 +426,16 @@ namespace
 			//Load the savestate and movie state.
 			//Set the core ports in order to avoid port state being reinitialized when loading.
 			core.controls->set_ports(portset);
-			core.rom->load_core_state(_movie.savestate);
-			core.rom->set_pflag(_movie.poll_flag);
-			core.controls->set_macro_frames(_movie.active_macros);
+			core.rom->load_core_state(_movie.dyn.savestate);
+			core.rom->set_pflag(_movie.dyn.poll_flag);
+			core.controls->set_macro_frames(_movie.dyn.active_macros);
 		} else {
 			//Reload the ROM in order to rewind to the beginning.
 			core.rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 			//Load the SRAM and volatile RAM. Or anchor savestate if any.
 			core.controls->set_ports(portset);
-			_movie.rtc_second = _movie.movie_rtc_second;
-			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
+			_movie.dyn.rtc_second = _movie.movie_rtc_second;
+			_movie.dyn.rtc_subsecond = _movie.movie_rtc_subsecond;
 			if(!_movie.anchor_savestate.empty()) {
 				core.rom->load_core_state(_movie.anchor_savestate);
 			} else {
@@ -480,8 +480,8 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 				core.mlogic->get_mfile().romimg_sha256[i] = img.sha_256.read();
 				core.mlogic->get_mfile().romxml_sha256[i] = xml.sha_256.read();
 			}
-			core.mlogic->get_mfile().is_savestate = false;
-			core.mlogic->get_mfile().host_memory.clear();
+			core.mlogic->get_mfile().dyn.is_savestate = false;
+			core.mlogic->get_mfile().dyn.host_memory.clear();
 			core.mlogic->get_movie().reset_state();
 			core.fbuf->redraw_framebuffer(core.rom->draw_cover());
 			core.lua2->callback_do_rewind();
@@ -509,12 +509,8 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 			_movie.get()->romimg_sha256[i] = img.sha_256.read();
 			_movie.get()->romxml_sha256[i] = xml.sha_256.read();
 		}
-		_movie.get()->is_savestate = false;
-		_movie.get()->save_frame = 0;
-		_movie.get()->lagged_frames = 0;
-		_movie.get()->poll_flag = false;
-		_movie.get()->movie_rtc_second = _movie.get()->rtc_second = 1000000000ULL;
-		_movie.get()->movie_rtc_subsecond = _movie.get()->rtc_subsecond = 0;
+		_movie.get()->movie_rtc_second = _movie.get()->dyn.rtc_second = 1000000000ULL;
+		_movie.get()->movie_rtc_subsecond = _movie.get()->dyn.rtc_subsecond = 0;
 		_movie.get()->start_paused = false;
 		_movie.get()->lazy_project_create = true;
 		portctrl::type_set& portset2 = construct_movie_portset(*_movie.get(), *core.rom);
@@ -579,8 +575,8 @@ void do_load_rewind() throw(std::bad_alloc, std::runtime_error)
 	core.dispatch->mode_change(true);
 	try {
 		handle_load_core(core.mlogic->get_mfile(), portset, false);
-		core.mlogic->get_mfile().is_savestate = false;
-		core.mlogic->get_mfile().host_memory.clear();
+		core.mlogic->get_mfile().dyn.is_savestate = false;
+		core.mlogic->get_mfile().dyn.host_memory.clear();
 		core.mlogic->get_movie().reset_state();
 		core.fbuf->redraw_framebuffer(core.rom->draw_cover());
 		core.lua2->callback_do_rewind();
@@ -603,7 +599,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 	if(core.mlogic->get_mfile().projectid != _movie.projectid)
 		throw std::runtime_error("Savestate is from different movie");
 
-	bool will_load_state = _movie.is_savestate;
+	bool will_load_state = _movie.dyn.is_savestate;
 	portctrl::type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 
 	//Construct a new movie sharing the input data.
@@ -614,8 +610,8 @@ void do_load_state_preserve(struct moviefile& _movie)
 
 	newmovie.get()->load(_movie.rerecords, _movie.projectid, *_movie.input);
 	if(will_load_state)
-		newmovie.get()->restore_state(_movie.save_frame, _movie.lagged_frames, _movie.pollcounters, true,
-			_movie.input, _movie.projectid);
+		newmovie.get()->restore_state(_movie.dyn.save_frame, _movie.dyn.lagged_frames,
+			_movie.dyn.pollcounters, true, _movie.input, _movie.projectid);
 
 	//Count a rerecord.
 	if(core.mlogic->get_rrdata().is_lazy() && !_movie.lazy_project_create)
@@ -637,18 +633,18 @@ void do_load_state_preserve(struct moviefile& _movie)
 	core.mlogic->set_movie(*(newmovie()), true);
 
 	//Some fields MUST be taken from movie or one gets desyncs.
-	core.mlogic->get_mfile().is_savestate = _movie.is_savestate;
-	core.mlogic->get_mfile().rtc_second = _movie.rtc_second;
-	core.mlogic->get_mfile().rtc_subsecond = _movie.rtc_subsecond;
-	std::swap(core.mlogic->get_mfile().host_memory, _movie.host_memory);
+	core.mlogic->get_mfile().dyn.is_savestate = _movie.dyn.is_savestate;
+	core.mlogic->get_mfile().dyn.rtc_second = _movie.dyn.rtc_second;
+	core.mlogic->get_mfile().dyn.rtc_subsecond = _movie.dyn.rtc_subsecond;
+	std::swap(core.mlogic->get_mfile().dyn.host_memory, _movie.dyn.host_memory);
 	if(!will_load_state)
-		core.mlogic->get_mfile().host_memory.clear();
+		core.mlogic->get_mfile().dyn.host_memory.clear();
 
 	try {
 		//Paint the screen.
 		framebuffer::raw tmp;
 		if(will_load_state) {
-			tmp.load(_movie.screenshot);
+			tmp.load(_movie.dyn.screenshot);
 			core.fbuf->redraw_framebuffer(tmp);
 		} else
 			core.fbuf->redraw_framebuffer(core.rom->draw_cover());
@@ -665,7 +661,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	auto& core = CORE();
 	//Some basic sanity checks.
 	bool current_mode = *core.mlogic ? core.mlogic->get_movie().readonly_mode() : false;
-	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
+	bool will_load_state = _movie.dyn.is_savestate && lmode != LOAD_STATE_MOVIE;
 
 	//Load state all branches and load state initial are the same.
 	if(lmode == LOAD_STATE_ALLBRANCH) lmode = LOAD_STATE_INITIAL;
@@ -700,8 +696,8 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	newmovie.get()->load(_movie.rerecords, _movie.projectid, *_movie.input);
 	newmovie.get()->set_pflag_handler(&lsnes_pflag_handler);
 	if(will_load_state)
-		newmovie.get()->restore_state(_movie.save_frame, _movie.lagged_frames, _movie.pollcounters, true,
-			NULL, _movie.projectid);
+		newmovie.get()->restore_state(_movie.dyn.save_frame, _movie.dyn.lagged_frames,
+			_movie.dyn.pollcounters, true, NULL, _movie.projectid);
 
 	//Copy the other branches.
 	if(lmode != LOAD_STATE_INITIAL && core.mlogic->get_mfile().projectid == _movie.projectid) {
@@ -763,8 +759,8 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 
 	//If loaded a movie, clear the is savestate and rrdata.
 	if(!will_load_state) {
-		_movie.is_savestate = false;
-		_movie.host_memory.clear();
+		_movie.dyn.is_savestate = false;
+		_movie.dyn.host_memory.clear();
 	}
 
 	core.lua2->callback_movie_lost("load");
@@ -792,7 +788,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	{
 		framebuffer::raw tmp;
 		if(will_load_state) {
-			tmp.load(_movie.screenshot);
+			tmp.load(_movie.dyn.screenshot);
 			core.fbuf->redraw_framebuffer(tmp);
 		} else
 			core.fbuf->redraw_framebuffer(core.rom->draw_cover());
@@ -875,7 +871,7 @@ bool do_load_state(const std::string& filename, int lmode)
 		do_load_state(*mfile, lmode, used);
 		uint64_t took = framerate_regulator::get_utime() - origtime;
 		messages << "Loaded '" << filename2 << "' in " << took << " microseconds." << std::endl;
-		core.lua2->callback_post_load(filename2, core.mlogic->get_mfile().is_savestate);
+		core.lua2->callback_post_load(filename2, core.mlogic->get_mfile().dyn.is_savestate);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -896,8 +892,8 @@ void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint6
 	core.mlogic->get_rrdata().read_base(rrdata::filename(core.mlogic->get_mfile().projectid),
 		false);
 	core.mlogic->get_rrdata().add((*core.nrrdata)());
-	core.mlogic->get_mfile().rtc_second = secs;
-	core.mlogic->get_mfile().rtc_subsecond = ssecs;
+	core.mlogic->get_mfile().dyn.rtc_second = secs;
+	core.mlogic->get_mfile().dyn.rtc_subsecond = ssecs;
 	core.rom->load_core_state(state, true);
 }
 

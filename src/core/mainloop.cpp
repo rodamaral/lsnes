@@ -249,10 +249,10 @@ public:
 		if(!*core.mlogic)
 			return;
 		auto& m = core.mlogic->get_mfile();
-		m.rtc_subsecond += increment;
-		while(m.rtc_subsecond >= per_second) {
-			m.rtc_second++;
-			m.rtc_subsecond -= per_second;
+		m.dyn.rtc_subsecond += increment;
+		while(m.dyn.rtc_subsecond >= per_second) {
+			m.dyn.rtc_second++;
+			m.dyn.rtc_subsecond -= per_second;
 		}
 	}
 
@@ -269,7 +269,7 @@ public:
 	time_t get_time()
 	{
 		auto& core = CORE();
-		return *core.mlogic ? core.mlogic->get_mfile().rtc_second : 0;
+		return *core.mlogic ? core.mlogic->get_mfile().dyn.rtc_second : 0;
 	}
 
 	time_t get_randomseed()
@@ -716,7 +716,7 @@ jumpback:
 			core.lua2->callback_do_unsafe_rewind(s, 0, 0, core.mlogic->get_movie(), unsafe_rewind_obj);
 			core.dispatch->mode_change(false);
 			do_unsafe_rewind = false;
-			core.mlogic->get_mfile().is_savestate = true;
+			core.mlogic->get_mfile().dyn.is_savestate = true;
 			core.runmode->set_point(emulator_runmode::P_SAVE);
 			core.supdater->update();
 			core.runmode->end_load();		//Restore previous mode.
@@ -737,7 +737,7 @@ jumpback:
 					delete old;
 				core.slotcache->flush();		//Wrong movie may be stale.
 				core.runmode->end_load();		//Restore previous mode.
-				if(core.mlogic->get_mfile().is_savestate)
+				if(core.mlogic->get_mfile().dyn.is_savestate)
 					core.runmode->set_point(emulator_runmode::P_SAVE);
 				core.supdater->update();
 				return 1;
@@ -806,8 +806,8 @@ nothing_to_do:
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = framerate_regulator::get_utime();
 				std::vector<char> s = core.rom->save_core_state(true);
-				uint64_t secs = core.mlogic->get_mfile().rtc_second;
-				uint64_t ssecs = core.mlogic->get_mfile().rtc_subsecond;
+				uint64_t secs = core.mlogic->get_mfile().dyn.rtc_second;
+				uint64_t ssecs = core.mlogic->get_mfile().dyn.rtc_subsecond;
 				core.lua2->callback_do_unsafe_rewind(s, secs, ssecs, core.mlogic->get_movie(),
 					NULL);
 				do_unsafe_rewind = false;
@@ -863,7 +863,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		do_load_state(initial, LOAD_STATE_INITIAL, used);
 		core.runmode->set_point(emulator_runmode::P_SAVE);
 		core.supdater->update();
-		first_round = core.mlogic->get_mfile().is_savestate;
+		first_round = core.mlogic->get_mfile().dyn.is_savestate;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -888,7 +888,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 	while(!core.runmode->is_quit() || !queued_saves.empty()) {
 		if(handle_corrupt()) {
-			first_round = *core.mlogic && core.mlogic->get_mfile().is_savestate;
+			first_round = *core.mlogic && core.mlogic->get_mfile().dyn.is_savestate;
 			just_did_loadstate = first_round;
 			continue;
 		}
@@ -912,8 +912,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				r = handle_load();
 			if(r > 0 || core.runmode->is_corrupt()) {
 				core.mlogic->get_movie().get_pollcounters().set_framepflag(
-					core.mlogic->get_mfile().is_savestate);
-				first_round = core.mlogic->get_mfile().is_savestate;
+					core.mlogic->get_mfile().dyn.is_savestate);
+				first_round = core.mlogic->get_mfile().dyn.is_savestate;
 				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
 				core.controls->reset_framehold();

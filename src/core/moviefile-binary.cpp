@@ -116,35 +116,42 @@ void moviefile::binary_io(int _stream, rrdata_set& rrd) throw(std::bad_alloc, st
 	out.extension(TAG_ANCHOR_SAVE, [this](binarystream::output& s) {
 		s.blob_implicit(this->anchor_savestate);
 	});
-	if(is_savestate) {
+	if(dyn.is_savestate) {
 		out.extension(TAG_SAVESTATE, [this](binarystream::output& s) {
-			s.number(this->save_frame);
-			s.number(this->lagged_frames);
-			s.number(this->rtc_second);
-			s.number(this->rtc_subsecond);
-			s.number(this->pollcounters.size());
-			for(auto i : this->pollcounters)
+			s.number(this->dyn.save_frame);
+			s.number(this->dyn.lagged_frames);
+			s.number(this->dyn.rtc_second);
+			s.number(this->dyn.rtc_subsecond);
+			s.number(this->dyn.pollcounters.size());
+			for(auto i : this->dyn.pollcounters)
 				s.number32(i);
-			s.byte(this->poll_flag ? 0x01 : 0x00);
-			s.blob_implicit(this->savestate);
-		}, true, out.numberbytes(save_frame) + out.numberbytes(lagged_frames) + out.numberbytes(rtc_second) +
-			out.numberbytes(rtc_subsecond) + out.numberbytes(pollcounters.size()) +
-			4 * pollcounters.size() + 1 + savestate.size());
+			s.byte(this->dyn.poll_flag ? 0x01 : 0x00);
+			s.blob_implicit(this->dyn.savestate);
+		}, true, out.numberbytes(dyn.save_frame) + out.numberbytes(dyn.lagged_frames) +
+			out.numberbytes(dyn.rtc_second) + out.numberbytes(dyn.rtc_subsecond) +
+			out.numberbytes(dyn.pollcounters.size()) + 4 * dyn.pollcounters.size() + 1 +
+			dyn.savestate.size());
 
 		out.extension(TAG_HOSTMEMORY, [this](binarystream::output& s) {
-			s.blob_implicit(this->host_memory);
+			s.blob_implicit(this->dyn.host_memory);
 		});
 
 		out.extension(TAG_SCREENSHOT, [this](binarystream::output& s) {
-			s.blob_implicit(this->screenshot);
-		}, true, screenshot.size());
+			s.blob_implicit(this->dyn.screenshot);
+		}, true, dyn.screenshot.size());
 
-		for(auto i : sram) {
+		for(auto i : dyn.sram) {
 			out.extension(TAG_SAVE_SRAM, [&i](binarystream::output& s) {
 				s.string(i.first);
 				s.blob_implicit(i.second);
 			});
 		}
+
+		for(auto i : dyn.active_macros)
+			out.extension(TAG_MACRO, [&i](binarystream::output& s) {
+				s.number(i.second);
+				s.string_implicit(i.first);
+			});
 	}
 
 	out.extension(TAG_GAMENAME, [this](binarystream::output& s) {
@@ -162,12 +169,6 @@ void moviefile::binary_io(int _stream, rrdata_set& rrd) throw(std::bad_alloc, st
 		out.extension(TAG_AUTHOR, [&i](binarystream::output& s) {
 			s.string(i.first);
 			s.string_implicit(i.second);
-		});
-
-	for(auto i : active_macros)
-		out.extension(TAG_MACRO, [&i](binarystream::output& s) {
-			s.number(i.second);
-			s.string_implicit(i.first);
 		});
 
 	for(auto i : ramcontent) {
@@ -225,10 +226,10 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 		}},{TAG_GAMENAME, [this](binarystream::input& s) {
 			this->gamename = s.string_implicit();
 		}},{TAG_HOSTMEMORY, [this](binarystream::input& s) {
-			s.blob_implicit(this->host_memory);
+			s.blob_implicit(this->dyn.host_memory);
 		}},{TAG_MACRO, [this](binarystream::input& s) {
 			uint64_t n = s.number();
-			this->active_macros[s.string_implicit()] = n;
+			this->dyn.active_macros[s.string_implicit()] = n;
 		}},{TAG_BRANCH_NAME, [this, &branch_table, &next_bnum, &next_branch](binarystream::input& s) {
 			branch_table[next_bnum++] = next_branch = s.string_implicit();
 		}},{TAG_MOVIE, [this, &ports, &next_branch](binarystream::input& s) {
@@ -269,20 +270,20 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 			this->rerecords = (stringfmt() << rrdata_set::count(c_rrdata)).str();
 		}},{TAG_SAVE_SRAM, [this](binarystream::input& s) {
 			std::string a = s.string();
-			s.blob_implicit(this->sram[a]);
+			s.blob_implicit(this->dyn.sram[a]);
 		}},{TAG_SAVESTATE, [this](binarystream::input& s) {
-			this->is_savestate = true;
-			this->save_frame = s.number();
-			this->lagged_frames = s.number();
-			this->rtc_second = s.number();
-			this->rtc_subsecond = s.number();
-			this->pollcounters.resize(s.number());
-			for(auto& i : this->pollcounters)
+			this->dyn.is_savestate = true;
+			this->dyn.save_frame = s.number();
+			this->dyn.lagged_frames = s.number();
+			this->dyn.rtc_second = s.number();
+			this->dyn.rtc_subsecond = s.number();
+			this->dyn.pollcounters.resize(s.number());
+			for(auto& i : this->dyn.pollcounters)
 				i = s.number32();
-			this->poll_flag = (s.byte() != 0);
-			s.blob_implicit(this->savestate);
+			this->dyn.poll_flag = (s.byte() != 0);
+			s.blob_implicit(this->dyn.savestate);
 		}},{TAG_SCREENSHOT, [this](binarystream::input& s) {
-			s.blob_implicit(this->screenshot);
+			s.blob_implicit(this->dyn.screenshot);
 		}},{TAG_SUBTITLE, [this](binarystream::input& s) {
 			uint64_t f = s.number();
 			uint64_t l = s.number();

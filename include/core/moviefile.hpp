@@ -15,6 +15,65 @@
 class loaded_rom;
 
 /**
+ * Dynamic state parts of movie file.
+ */
+struct dynamic_state
+{
+/**
+ * Ctor.
+ */
+	dynamic_state();
+/**
+ * True if savestate, false if movie.
+ */
+	bool is_savestate;
+/**
+ * Contents of SRAM on time of savestate (if is_savestate is true).
+ */
+	std::map<std::string, std::vector<char>> sram;
+/**
+ * Core savestate (if is_savestate is true).
+ */
+	std::vector<char> savestate;		//Savestate to load (if is_savestate is true).
+/**
+ * Host memory (if is_savestate is true).
+ */
+	std::vector<char> host_memory;
+/**
+ * Screenshot (if is_savestate is true).
+ */
+	std::vector<char> screenshot;
+/**
+ * Current frame (if is_savestate is true).
+ */
+	uint64_t save_frame;
+/**
+ * Number of lagged frames (if is_savestate is true).
+ */
+	uint64_t lagged_frames;
+/**
+ * Poll counters (if is_savestate is true).
+ */
+	std::vector<uint32_t> pollcounters;
+/**
+ * Poll flag.
+ */
+	unsigned poll_flag;
+/**
+ * Current RTC second.
+ */
+	int64_t rtc_second;
+/**
+ * Current RTC subsecond.
+ */
+	int64_t rtc_subsecond;
+/**
+ * Active macros at savestate.
+ */
+	std::map<std::string, uint64_t> active_macros;
+};
+
+/**
  * This structure gives parsed representationg of movie file, as result of decoding or for encoding.
  */
 struct moviefile
@@ -171,45 +230,9 @@ struct moviefile
  */
 	std::map<std::string, std::vector<char>> ramcontent;
 /**
- * True if savestate, false if movie.
- */
-	bool is_savestate;
-/**
- * Contents of SRAM on time of savestate (if is_savestate is true).
- */
-	std::map<std::string, std::vector<char>> sram;
-/**
- * Core savestate (if is_savestate is true).
- */
-	std::vector<char> savestate;		//Savestate to load (if is_savestate is true).
-/**
  * Anchoring core savestate (if not empty).
  */
 	std::vector<char> anchor_savestate;
-/**
- * Host memory (if is_savestate is true).
- */
-	std::vector<char> host_memory;
-/**
- * Screenshot (if is_savestate is true).
- */
-	std::vector<char> screenshot;
-/**
- * Current frame (if is_savestate is true).
- */
-	uint64_t save_frame;
-/**
- * Number of lagged frames (if is_savestate is true).
- */
-	uint64_t lagged_frames;
-/**
- * Poll counters (if is_savestate is true).
- */
-	std::vector<uint32_t> pollcounters;
-/**
- * Poll flag.
- */
-	unsigned poll_flag;
 /**
  * Compressed rrdata.
  */
@@ -222,14 +245,6 @@ struct moviefile
  * Branches.
  */
 	std::map<std::string, portctrl::frame_vector> branches;
-/**
- * Current RTC second.
- */
-	int64_t rtc_second;
-/**
- * Current RTC subsecond.
- */
-	int64_t rtc_subsecond;
 /**
  * Movie starting RTC second.
  */
@@ -251,9 +266,9 @@ struct moviefile
  */
 	std::map<moviefile_subtiming, std::string> subtitles;
 /**
- * Active macros at savestate.
+ * Dynamic state.
  */
-	std::map<std::string, uint64_t> active_macros;
+	dynamic_state dyn;
 /**
  * Get number of frames in movie.
  *

@@ -147,7 +147,7 @@ void status_updater::update()
 		_status.speed = (unsigned)(100 * framerate.get_realized_multiplier() + 0.5);
 
 		if(mlogic && !runmode.is_corrupt()) {
-			time_t timevalue = static_cast<time_t>(mlogic.get_mfile().rtc_second);
+			time_t timevalue = static_cast<time_t>(mlogic.get_mfile().dyn.rtc_second);
 			struct tm* time_decompose = gmtime(&timevalue);
 			char datebuffer[512];
 			strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);

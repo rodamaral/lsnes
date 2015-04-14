@@ -75,7 +75,7 @@ moviefile::brief_info::brief_info(const std::string& filename)
 		sysregion = mv.gametype->get_name();
 		corename = mv.coreversion;
 		projectid = mv.projectid;
-		current_frame = mv.is_savestate ? mv.save_frame : 0;
+		current_frame = mv.dyn.is_savestate ? mv.dyn.save_frame : 0;
 		rerecords = mv.rerecords_mem;
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			hash[i] = mv.romimg_sha256[i];
@@ -109,12 +109,10 @@ moviefile::moviefile() throw(std::bad_alloc)
 	coreversion = "";
 	projectid = "";
 	rerecords = "0";
-	is_savestate = false;
-	movie_rtc_second = rtc_second = DEFAULT_RTC_SECOND;
-	movie_rtc_subsecond = rtc_subsecond = DEFAULT_RTC_SUBSECOND;
+	movie_rtc_second = dyn.rtc_second = DEFAULT_RTC_SECOND;
+	movie_rtc_subsecond = dyn.rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	start_paused = false;
 	lazy_project_create = true;
-	poll_flag = 0;
 }
 
 moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_settings, uint64_t rtc_sec,
@@ -125,12 +123,10 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 	coreversion = rom.get_core_identifier();
 	projectid = get_random_hexstring(40);
 	rerecords = "0";
-	is_savestate = false;
-	movie_rtc_second = rtc_second = rtc_sec;
-	movie_rtc_subsecond = rtc_subsecond = rtc_subsec;
+	movie_rtc_second = dyn.rtc_second = rtc_sec;
+	movie_rtc_subsecond = dyn.rtc_subsecond = rtc_subsec;
 	start_paused = false;
 	lazy_project_create = true;
-	poll_flag = 0;
 	settings = c_settings;
 	input = NULL;
 	auto ctrldata = rom.controllerconfig(settings);
@@ -160,10 +156,8 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 		return;
 	}
 	input = NULL;
-	poll_flag = false;
 	start_paused = false;
 	force_corrupt = false;
-	is_savestate = false;
 	lazy_project_create = false;
 	{
 		int s = open(movie.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
@@ -304,16 +298,7 @@ void moviefile::copy_fields(const moviefile& mv)
 	authors = mv.authors;
 	movie_sram = mv.movie_sram;
 	ramcontent = mv.ramcontent;
-	is_savestate = mv.is_savestate;
-	sram = mv.sram;
-	savestate = mv.savestate;
 	anchor_savestate = mv.anchor_savestate;
-	host_memory = mv.host_memory;
-	screenshot = mv.screenshot;
-	save_frame = mv.save_frame;
-	lagged_frames = mv.lagged_frames;
-	pollcounters = mv.pollcounters;
-	poll_flag = mv.poll_flag;
 	c_rrdata = mv.c_rrdata;
 	branches = mv.branches;
 
@@ -323,14 +308,12 @@ void moviefile::copy_fields(const moviefile& mv)
 		if(mv.branches.count(i.first) && &mv.branches.find(i.first)->second == mv.input)
 			input = &i.second;
 
-	rtc_second = mv.rtc_second;
-	rtc_subsecond = mv.rtc_subsecond;
 	movie_rtc_second = mv.movie_rtc_second;
 	movie_rtc_subsecond = mv.movie_rtc_subsecond;
 	start_paused = mv.start_paused;
 	lazy_project_create = mv.lazy_project_create;
 	subtitles = mv.subtitles;
-	active_macros = mv.active_macros;
+	dyn = mv.dyn;
 }
 
 void moviefile::fork_branch(const std::string& oldname, const std::string& newname)
@@ -415,4 +398,14 @@ moviefile::sram_extractor::sram_extractor(const std::string& filename)
 		real = new moviefile_sram_extractor_binary(filename);
 	else
 		real = new moviefile_sram_extractor_text(filename);
+}
+
+dynamic_state::dynamic_state()
+{
+	is_savestate = false;
+	save_frame = 0;
+	lagged_frames = 0;
+	poll_flag = 0;
+	rtc_second = DEFAULT_RTC_SECOND;
+	rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 }

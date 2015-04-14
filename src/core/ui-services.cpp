@@ -229,13 +229,13 @@ bool UI_has_movie(emulator_instance& inst)
 void UI_save_movie(emulator_instance& inst, std::ostringstream& stream)
 {
 	lsnes_instance.iqueue->run([&inst, &stream]() {
-		inst.mlogic->get_mfile().is_savestate = false;
+		inst.mlogic->get_mfile().dyn.is_savestate = false;
 		auto prj = inst.project->get();
 		if(prj) {
 			inst.mlogic->get_mfile().gamename = prj->gamename;
 			inst.mlogic->get_mfile().authors = prj->authors;
 		}
-		inst.mlogic->get_mfile().active_macros.clear();
+		inst.mlogic->get_mfile().dyn.active_macros.clear();
 		inst.mlogic->get_mfile().save(stream, inst.mlogic->get_rrdata());
 	});
 }
