@@ -843,7 +843,9 @@ void try_request_rom(const std::string& moviefile)
 	if(req.selected >= req.cores.size())
 		throw std::runtime_error("Invalid ROM type selected");
 	core_type* selected_core = req.cores[req.selected];
-	loaded_rom newrom(req.filename, selected_core->get_core_identifier(), selected_core->get_iname(), "");
+	rom_image_handle _img(new rom_image(req.filename, selected_core->get_core_identifier(),
+		selected_core->get_iname(), ""));
+	loaded_rom newrom(_img);
 	*core.rom = newrom;
 	core.dispatch->core_change();
 }

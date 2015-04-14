@@ -52,36 +52,14 @@ std::pair<core_type*, core_region*> get_current_rom_info() throw()
 }
 
 loaded_rom::loaded_rom() throw()
-	: image()
 {
-	region = &image.get_region();
+	region = &image->get_region();
 }
 
-loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error)
-	: image(file, ctype)
+loaded_rom::loaded_rom(rom_image_handle _image) throw(std::bad_alloc, std::runtime_error)
 {
-	region = &image.get_region();
-}
-
-loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) throw(std::bad_alloc,
-	std::runtime_error)
-	: image(file, tmpprefer)
-{
-	region = &image.get_region();
-}
-
-loaded_rom::loaded_rom(const std::string& file, const std::string& core, const std::string& type,
-	const std::string& _region)
-	: image(file, core, type, _region)
-{
-	region = &image.get_region();
-}
-
-loaded_rom::loaded_rom(const std::string file[ROM_SLOT_COUNT], const std::string& core, const std::string& type,
-	const std::string& _region)
-	: image(file, core, type, _region)
-{
-	region = &image.get_region();
+	image = _image; 
+	region = &image->get_region();
 }
 
 void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
@@ -92,18 +70,18 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	core_core* old_core = current_rom_type->get_core();
 	current_rom_type = &get_null_type();
 	if(&rtype() != &get_null_type())
-		image.setup_region(rtype().get_preferred_region());
+		image->setup_region(rtype().get_preferred_region());
 	if(!region)
-		region = &image.get_region();
-	if(!image.get_region().compatible_with(*region))
+		region = &image->get_region();
+	if(!image->get_region().compatible_with(*region))
 		throw std::runtime_error("Trying to force incompatible region");
 	if(!rtype().set_region(*region))
 		throw std::runtime_error("Trying to force unknown region");
 
 	core_romimage images[ROM_SLOT_COUNT];
 	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-		auto& img = image.get_image(i, false);
-		auto& xml = image.get_image(i, true);
+		auto& img = image->get_image(i, false);
+		auto& xml = image->get_image(i, true);
 		images[i].markup = (const char*)xml;
 		images[i].data = (const unsigned char*)img;
 		images[i].size = (size_t)img;

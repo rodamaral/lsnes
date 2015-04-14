@@ -361,7 +361,8 @@ bool project_state::set(project_info* p, bool current)
 
 		//First, try to load the ROM and the last movie file into RAM...
 		if(p->rom != "") {
-			newrom = loaded_rom(p->rom, p->coreversion);
+			rom_image_handle _img(new rom_image(p->rom, p->coreversion));
+			newrom = loaded_rom(_img);
 		} else {
 			core_type* ctype = NULL;
 			for(auto i : sysregs) {
@@ -369,7 +370,9 @@ bool project_state::set(project_info* p, bool current)
 				if(ctype->get_core_identifier() == p->coreversion)
 					break;
 			}
-			newrom = loaded_rom(p->roms, ctype->get_core_identifier(), ctype->get_iname(), "");
+			rom_image_handle _img(new rom_image(p->roms, ctype->get_core_identifier(), ctype->get_iname(),
+				""));
+			newrom = loaded_rom(_img);
 		}
 		if(newrom.get_core_identifier() != p->coreversion) {
 			messages << "Warning: Can't find matching core, using " << newrom.get_core_identifier()

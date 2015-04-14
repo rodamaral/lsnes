@@ -8,6 +8,7 @@
 
 fileimage::image rom_image::null_img;
 fileimage::hash lsnes_image_hasher;
+rom_image rom_image_handle::null_img;
 
 namespace
 {

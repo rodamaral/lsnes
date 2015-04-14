@@ -4,6 +4,7 @@
 #include "core/rom-small.hpp"
 #include "interface/romtype.hpp"
 #include "library/fileimage.hpp"
+#include "library/threads.hpp"
 
 //ROM request.
 struct rom_request
@@ -96,6 +97,10 @@ public:
  */
 	const std::string& get_msu1_base() { return msu1_base; }
 /**
+ * Is same ROM type?
+ */
+	bool is_of_type(core_type& type) { return (rtype == &type); }
+/**
  * Is file a gamepak?
  *
  * parameter filename: The file to probe.
@@ -103,7 +108,12 @@ public:
  * throws std::runtime_error: No such file.
  */
 	static bool is_gamepak(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
+	//ROM functions.
+	std::list<core_region*> get_regions() { return rtype->get_regions(); }
+	const std::string& get_hname() { return rtype->get_hname(); }
 private:
+	rom_image(const rom_image&);
+	rom_image& operator=(const rom_image&);
 	//Static NULL image.
 	static fileimage::image null_img;
 	//Loaded ROM images.
@@ -120,13 +130,89 @@ private:
 	core_region* region;
 	//Region ROM was loaded as.
 	core_region* orig_region;
+	//Reference count.
+	threads::lock usage_lock;
+	size_t usage_count;
+	void get() { threads::alock l(usage_lock); usage_count++; }
+	bool put() { threads::alock l(usage_lock); return !--usage_count; }
+	friend class rom_image_handle;
 	//Handle bundle load case.
 	void load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer)
 		throw(std::bad_alloc, std::runtime_error);
 };
 
+/**
+ * A handle for ROM imageset.
+ */
+class rom_image_handle
+{
+public:
+/**
+ * Create a handle to NULL imageset.
+ */
+	rom_image_handle()
+	{
+		img = &null_img;
+	}
+/**
+ * Create a new handle with refcount 1. The specified ROM imageset has to be allocated using new.
+ */
+	rom_image_handle(rom_image* _img)
+	{
+		img = _img;
+		img->usage_count = 1;
+	}
+/**
+ * Copy-construct a handle.
+ */
+	rom_image_handle(const rom_image_handle& h)
+	{
+		h.get();
+		img = h.img;
+	}
+/**
+ * Assign a handle.
+ */
+	rom_image_handle& operator=(const rom_image_handle& h)
+	{
+		if(img == h.img) return *this;
+		h.get();
+		put();
+		img = h.img;
+		return *this;
+	}
+/**
+ * Destroy a handle.
+ */
+	~rom_image_handle()
+	{
+		put();
+	}
+/**
+ * Access the handle.
+ */
+	rom_image& operator*()
+	{
+		return *img;
+	}
+/**
+ * Access the handle.
+ */
+	rom_image* operator->()
+	{
+		return img;
+	}
+private:
+	static rom_image null_img;
+	mutable rom_image* img;
+	void get() const { if(img != &null_img) img->get(); }
+	void put() const { if(img != &null_img && img->put()) delete img; }
+};
+
+
 void record_filehash(const std::string& file, uint64_t prefix, const std::string& hash);
 void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb);
+rom_image_handle construct_rom(const std::string& movie_filename, const std::vector<std::string>& cmdline);
 
 //Map of preferred cores for each extension and type.
 extern std::map<std::string, core_type*> preferred_core;

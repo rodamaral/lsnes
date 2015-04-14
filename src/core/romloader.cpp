@@ -34,17 +34,20 @@ namespace
 		auto& core = CORE();
 		if(req.packfile != "") {
 			messages << "Loading ROM " << req.packfile << std::endl;
-			loaded_rom newrom(req.packfile);
+			rom_image_handle _img(new rom_image(req.packfile));
+			loaded_rom newrom(_img);
 			*core.rom = newrom;
 			return;
 		} else if(req.singlefile != "") {
 			messages << "Loading ROM " << req.singlefile << std::endl;
-			loaded_rom newrom(req.singlefile, req.core, req.system, req.region);
+			rom_image_handle _img(new rom_image(req.singlefile, req.core, req.system, req.region));
+			loaded_rom newrom(_img);
 			*core.rom = newrom;
 			return;
 		} else {
 			messages << "Loading multi-file ROM."  << std::endl;
-			loaded_rom newrom(req.files, req.core, req.system, req.region);
+			rom_image_handle _img(new rom_image(req.files, req.core, req.system, req.region));
+			loaded_rom newrom(_img);
 			*core.rom = newrom;
 			return;
 		}
@@ -161,7 +164,7 @@ std::string get_requested_core(const std::vector<std::string>& cmdline)
 	return "";
 };
 
-loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info& info,
+rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brief_info& info,
 	const std::vector<std::string>& cmdline, bool have_movie)
 {
 	auto& core = CORE();
@@ -234,10 +237,10 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 	}
 	if(pmand != tmand)
 		print_missing(*ctype, pmand);
-	return loaded_rom(roms, realcore, realtype, "");
+	return rom_image_handle(new rom_image(roms, realcore, realtype, ""));
 }
 
-loaded_rom construct_rom_nofile(const std::vector<std::string>& cmdline)
+rom_image_handle construct_rom_nofile(const std::vector<std::string>& cmdline)
 {
 	std::string requested_core = get_requested_core(cmdline);
 	//Handle bundle / single-file ROMs.
@@ -245,7 +248,7 @@ loaded_rom construct_rom_nofile(const std::vector<std::string>& cmdline)
 		regex_results r;
 		if(r = regex("--rom=(.*)", i)) {
 			//Okay, load as ROM bundle and check validity.
-			loaded_rom cr(r[1], requested_core);
+			rom_image_handle cr(new rom_image(r[1], requested_core));
 			return cr;
 		}
 	}
@@ -259,7 +262,7 @@ valid:	;
 	//Multi-file ROMs.
 	regex_results _type = get_argument(cmdline, "--rom-type=(.*)");
 	if(!_type)
-		return loaded_rom();  //NULL rom.
+		return rom_image_handle();  //NULL rom.
 	core_type* ctype = NULL;
 	for(auto i : core_type::get_core_types()) {
 		if(i->get_iname() != _type[1])
@@ -276,7 +279,7 @@ valid:	;
 }
 
 
-loaded_rom construct_rom(const std::string& movie_filename, const std::vector<std::string>& cmdline)
+rom_image_handle construct_rom(const std::string& movie_filename, const std::vector<std::string>& cmdline)
 {
 	if(movie_filename == "")
 		return construct_rom_nofile(cmdline);
@@ -298,16 +301,16 @@ loaded_rom construct_rom(const std::string& movie_filename, const std::vector<st
 		regex_results r;
 		if(r = regex("--rom=(.*)", i)) {
 			//Okay, load as ROM bundle and check validity.
-			loaded_rom cr(r[1], requested_core);
+			rom_image_handle cr(new rom_image(r[1], requested_core));
 			for(auto j : sysregs) {
-				if(cr.is_of_type(j->get_type()))
+				if(cr->is_of_type(j->get_type()))
 					continue;
-				for(auto k : cr.get_regions())
+				for(auto k : cr->get_regions())
 					if(k == &j->get_region())
 						goto valid;
 			}
 			throw std::runtime_error("Specified ROM is of wrong type ('" +
-				cr.get_hname() + "') for movie ('" + info.sysregion + ")");
+				cr->get_hname() + "') for movie ('" + info.sysregion + ")");
 valid:
 			return cr;
 		}

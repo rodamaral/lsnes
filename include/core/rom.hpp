@@ -21,34 +21,13 @@ struct loaded_rom
  */
 	loaded_rom() throw();
 /**
- * Take in ROM filename (or a bundle) and load it to memory.
+ * Create ROM from image.
  *
- * parameter file: The file to load
- * parameter tmpprefer: The core name to prefer.
+ * parameter _image: The image to use load
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Loading ROM file failed.
  */
-	loaded_rom(const std::string& file, const std::string& tmpprefer = "") throw(std::bad_alloc,
-		std::runtime_error);
-/**
- * Take a ROM and load it.
- */
-	loaded_rom(const std::string& file, const std::string& core, const std::string& type,
-		const std::string& region);
-/**
- * Load a multi-file ROM.
- */
-	loaded_rom(const std::string file[ROM_SLOT_COUNT], const std::string& core, const std::string& type,
-		const std::string& region);
-/**
- * Take in ROM filename and load it to memory with specified type.
- *
- * parameter file: The file to load
- * parameter ctype: The core type to use.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Loading ROM file failed.
- */
-	loaded_rom(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error);
+	loaded_rom(rom_image_handle _image) throw(std::bad_alloc, std::runtime_error);
 /**
  * Switches the active cartridge to this cartridge. The compatiblity between selected region and original region
  * is checked. Region is updated after cartridge has been loaded.
@@ -85,7 +64,7 @@ struct loaded_rom
 /**
  * Is same ROM type?
  */
-	bool is_of_type(core_type& type) { return (&rtype() == &type); }
+	bool is_of_type(core_type& type) { return image->is_of_type(type); }
 /**
  * Get gametype of this ROM.
  */
@@ -100,29 +79,29 @@ struct loaded_rom
  * parameter index: The index of ROM slot to access.
  * returns: The ROM image (NULL image if index is out of range).
  */
-	fileimage::image& get_rom(size_t index) { return image.get_image(index, false); }
+	fileimage::image& get_rom(size_t index) { return image->get_image(index, false); }
 /**
  * Access ROM markup image.
  *
  * parameter index: The index of ROM slot to access.
  * returns: The ROM markup image (NULL image if index is out of range).
  */
-	fileimage::image& get_markup(size_t index) { return image.get_image(index, true); }
+	fileimage::image& get_markup(size_t index) { return image->get_image(index, true); }
 /**
  * Get filename of ROM pack, if any.
  */
-	const std::string& get_pack_filename() { return image.get_pack_filename(); }
+	const std::string& get_pack_filename() { return image->get_pack_filename(); }
 /**
  * Get MSU-1 base fileaname.
  */
-	const std::string& get_msu1_base() { return image.get_msu1_base(); }
+	const std::string& get_msu1_base() { return image->get_msu1_base(); }
 	//ROM methods.
 	std::string get_core_identifier() { return rtype().get_core_identifier(); }
 	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 	{
 		return rtype().get_scale_factors(width, height);
 	}
-	const std::string& get_hname() { return rtype().get_hname(); }
+	const std::string& get_hname() { return image->get_hname(); }
 	core_sysregion& combine_region(core_region& reg) { return rtype().combine_region(reg); }
 	bool isnull() { return rtype().isnull(); }
 	std::vector<std::string> get_trace_cpus() { return rtype().get_trace_cpus(); }
@@ -145,7 +124,7 @@ struct loaded_rom
 	bool get_pflag() { return rtype().get_pflag(); }
 	void set_pflag(bool pflag) { rtype().set_pflag(pflag); }
 	std::pair<uint64_t, uint64_t> get_bus_map() { return rtype().get_bus_map(); }
-	std::list<core_region*> get_regions() { return rtype().get_regions(); }
+	std::list<core_region*> get_regions() { return image->get_regions(); }
 	const std::string& get_iname() { return rtype().get_iname(); }
 	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return rtype().save_sram(); }
 	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
@@ -172,20 +151,20 @@ struct loaded_rom
 		rtype().debug_reset();
 	}
 	//Region methods.
-	const std::string& orig_region_get_iname() { return image.get_region().get_iname(); }
-	const std::string& orig_region_get_hname() { return image.get_region().get_hname(); }
+	const std::string& orig_region_get_iname() { return image->get_region().get_iname(); }
+	const std::string& orig_region_get_hname() { return image->get_region().get_hname(); }
 	const std::string& region_get_iname() { return region->get_iname(); }
 	const std::string& region_get_hname() { return region->get_hname(); }
 	double region_approx_framerate() { return region->approx_framerate(); }
 	void region_fill_framerate_magic(uint64_t* magic) { region->fill_framerate_magic(magic); }
 	bool region_compatible_with(core_region& run)
 	{
-		return image.get_region().compatible_with(run);
+		return image->get_region().compatible_with(run);
 	}
 private:
-	core_type& rtype() { return image.get_type(); }
+	core_type& rtype() { return image->get_type(); }
 	//The internal ROM image.
-	rom_image image;
+	rom_image_handle image;
 	//ROM region.
 	core_region* region;
 };
@@ -227,7 +206,6 @@ bool _load_new_rom(const romload_request& req);
 bool reload_active_rom();
 regex_results get_argument(const std::vector<std::string>& cmdline, const std::string& regexp);
 std::string get_requested_core(const std::vector<std::string>& cmdline);
-loaded_rom construct_rom(const std::string& movie_filename, const std::vector<std::string>& cmdline);
 void try_guess_roms(rom_request& req);
 std::string try_to_guess_rom(const std::string& hint, const std::string& hash, const std::string& xhash,
 	core_type& type, unsigned i);
