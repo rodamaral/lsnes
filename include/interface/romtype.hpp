@@ -323,7 +323,7 @@ struct core_core
 	std::pair<uint32_t, uint32_t> get_video_rate();
 	double get_PAR();
 	std::pair<uint32_t, uint32_t> get_audio_rate();
-	std::string get_core_identifier();
+	std::string get_core_identifier() const;
 	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
 	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
 	void serialize(std::vector<char>& out);
@@ -340,7 +340,7 @@ struct core_core
 	void set_pflag(bool pflag);
 	framebuffer::raw& draw_cover();
 	std::vector<portctrl::type*> get_port_types() { return port_types; }
-	std::string get_core_shortname();
+	std::string get_core_shortname() const;
 	void pre_emulate_frame(portctrl::frame& cf);
 	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p);
 	unsigned action_flags(unsigned id);
@@ -352,7 +352,7 @@ struct core_core
 	static void uninstall_all_handlers();
 	static void initialize_new_cores();
 	void hide() { hidden = true; }
-	bool is_hidden() { return hidden; }
+	bool is_hidden() const { return hidden; }
 	std::set<const interface_action*> get_actions();
 	const interface_device_reg* get_registers();
 	int reset_action(bool hard);
@@ -361,13 +361,13 @@ struct core_core
 	void set_cheat(uint64_t addr, uint64_t value, bool set);
 	std::vector<std::string> get_trace_cpus();
 	void debug_reset();
-	bool isnull();
+	bool isnull() const;
 	bool safe_to_unload(loadlib::module& mod) { return !mod.is_marked(this); }
 protected:
 /**
  * Get the name of the core.
  */
-	virtual std::string c_core_identifier() = 0;
+	virtual std::string c_core_identifier() const = 0;
 /**
  * Set the current region.
  *
@@ -460,7 +460,7 @@ protected:
 /**
  * Get shortened name of the core.
  */
-	virtual std::string c_get_core_shortname() = 0;
+	virtual std::string c_get_core_shortname() const = 0;
 /**
  * Set the system controls to appropriate values for next frame.
  *
@@ -533,7 +533,7 @@ protected:
 /**
  * Is null core (only NULL core should define this).
  */
-	virtual bool c_isnull();
+	virtual bool c_isnull() const;
 private:
 	std::vector<portctrl::type*> port_types;
 	bool hidden;
@@ -548,18 +548,18 @@ public:
 	core_type(std::initializer_list<core_type_params> p) : core_type(*p.begin()) {}
 	virtual ~core_type() throw();
 	static std::list<core_type*> get_core_types();
-	core_region& get_preferred_region();
-	std::list<core_region*> get_regions();
-	core_sysregion& combine_region(core_region& reg);
-	const std::string& get_iname();
-	const std::string& get_hname();
-	std::list<std::string> get_extensions();
-	bool is_known_extension(const std::string& ext);
-	core_sysregion& lookup_sysregion(const std::string& sysreg);
-	std::string get_biosname();
-	unsigned get_id();
-	unsigned get_image_count();
-	core_romimage_info get_image_info(unsigned index);
+	core_region& get_preferred_region() const;
+	std::list<core_region*> get_regions() const;
+	core_sysregion& combine_region(core_region& reg) const;
+	const std::string& get_iname() const;
+	const std::string& get_hname() const;
+	std::list<std::string> get_extensions() const;
+	bool is_known_extension(const std::string& ext) const;
+	core_sysregion& lookup_sysregion(const std::string& sysreg) const;
+	std::string get_biosname() const;
+	unsigned get_id() const;
+	unsigned get_image_count() const;
+	core_romimage_info get_image_info(unsigned index) const;
 	bool load(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 		uint64_t rtc_subsec);
 	controller_set controllerconfig(std::map<std::string, std::string>& settings);
@@ -572,7 +572,7 @@ public:
 	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
 	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
 	std::string get_core_identifier() { return core->get_core_identifier(); }
-	std::string get_core_shortname() { return core->get_core_shortname(); }
+	std::string get_core_shortname() const { return core->get_core_shortname(); }
 	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return core->save_sram(); }
 	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
 	{
@@ -600,7 +600,7 @@ public:
 		return core->execute_action(id, p);
 	}
 	unsigned action_flags(unsigned id) { return core->action_flags(id); }
-	bool is_hidden() { return core->is_hidden(); }
+	bool is_hidden() const { return core->is_hidden(); }
 	double get_PAR() { return core->get_PAR(); }
 	void pre_emulate_frame(portctrl::frame& cf) { return core->pre_emulate_frame(cf); }
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }
@@ -617,8 +617,8 @@ public:
 	}
 	std::vector<std::string> get_trace_cpus() { return core->get_trace_cpus(); }
 	void debug_reset() { core->debug_reset(); }
-	bool isnull() { return core->isnull(); }
-	bool safe_to_unload(loadlib::module& mod) { return core->safe_to_unload(mod); }
+	bool isnull() const { return core->isnull(); }
+	bool safe_to_unload(loadlib::module& mod) const { return core->safe_to_unload(mod); }
 protected:
 /**
  * Load a ROM slot set. Changes the ROM currently loaded for core.
@@ -669,7 +669,7 @@ public:
  */
 	core_sysregion(const std::string& name, core_type& type, core_region& region);
 	~core_sysregion() throw();
-	const std::string& get_name();
+	const std::string& get_name() const;
 	core_region& get_region();
 	core_type& get_type();
 	void fill_framerate_magic(uint64_t* magic);	//4 elements filled.

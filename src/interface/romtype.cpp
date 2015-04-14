@@ -176,22 +176,22 @@ core_type::~core_type() throw()
 	types().erase(this);
 }
 
-unsigned core_type::get_id()
+unsigned core_type::get_id() const
 {
 	return id;
 }
 
-const std::string& core_type::get_iname()
+const std::string& core_type::get_iname() const
 {
 	return iname;
 }
 
-const std::string& core_type::get_hname()
+const std::string& core_type::get_hname() const
 {
 	return hname;
 }
 
-unsigned core_type::get_image_count()
+unsigned core_type::get_image_count() const
 {
 	return imageinfo.size();
 }
@@ -201,7 +201,7 @@ core_setting_group& core_type::get_settings()
 	return settings;
 }
 
-core_romimage_info core_type::get_image_info(unsigned index)
+core_romimage_info core_type::get_image_info(unsigned index) const
 {
 	if(index >= imageinfo.size())
 		throw std::runtime_error("Requested invalid image index");
@@ -217,14 +217,14 @@ std::list<core_type*> core_type::get_core_types()
 	return ret;
 }
 
-std::list<core_region*> core_type::get_regions()
+std::list<core_region*> core_type::get_regions() const
 {
 	std::list<core_region*> ret = regions;
 	ret.sort(compare_regions);
 	return ret;
 }
 
-core_region& core_type::get_preferred_region()
+core_region& core_type::get_preferred_region() const
 {
 	core_region* p = NULL;
 	unsigned cutoff = 0;
@@ -244,7 +244,7 @@ bool core_type::load(core_romimage* images, std::map<std::string, std::string>& 
 	return (t_load_rom(images, settings, rtc_sec, rtc_subsec) >= 0);
 }
 
-core_sysregion& core_type::combine_region(core_region& reg)
+core_sysregion& core_type::combine_region(core_region& reg) const
 {
 	for(auto i : sysregions())
 		if(&(i.second->get_type()) == this && &(i.second->get_region()) == &reg)
@@ -252,7 +252,7 @@ core_sysregion& core_type::combine_region(core_region& reg)
 	throw std::runtime_error("Invalid region for system type");
 }
 
-std::list<std::string> core_type::get_extensions()
+std::list<std::string> core_type::get_extensions() const
 {
 	static std::list<std::string> empty;
 	unsigned base = (biosname != "") ? 1 : 0;
@@ -265,12 +265,12 @@ std::list<std::string> core_type::get_extensions()
 	return ret;
 }
 
-std::string core_type::get_biosname()
+std::string core_type::get_biosname() const
 {
 	return biosname;
 }
 
-bool core_type::is_known_extension(const std::string& ext)
+bool core_type::is_known_extension(const std::string& ext) const
 {
 	std::string _ext = ext;
 	std::transform(_ext.begin(), _ext.end(), _ext.begin(), ::tolower);
@@ -305,7 +305,7 @@ std::set<std::string> core_core::srams()
 	return c_srams();
 }
 
-bool core_core::isnull()
+bool core_core::isnull() const
 {
 	return c_isnull();
 }
@@ -325,7 +325,7 @@ void core_core::debug_reset()
 	return c_debug_reset();
 }
 
-bool core_core::c_isnull()
+bool core_core::c_isnull() const
 {
 	return false;
 }
@@ -345,7 +345,7 @@ core_sysregion::~core_sysregion() throw()
 		}
 }
 
-core_sysregion& core_type::lookup_sysregion(const std::string& sysreg)
+core_sysregion& core_type::lookup_sysregion(const std::string& sysreg) const
 {
 	for(auto i : sysregions())
 		if(i.first == sysreg && &i.second->get_type() == this)
@@ -353,7 +353,7 @@ core_sysregion& core_type::lookup_sysregion(const std::string& sysreg)
 	throw std::runtime_error("Bad system-region type");
 }
 
-const std::string& core_sysregion::get_name()
+const std::string& core_sysregion::get_name() const
 {
 	return name;
 }
@@ -414,7 +414,7 @@ void core_core::initialize_new_cores()
 	uninitialized_cores_set().clear();
 }
 
-std::string core_core::get_core_shortname()
+std::string core_core::get_core_shortname() const
 {
 	return c_get_core_shortname();
 }
@@ -434,7 +434,7 @@ std::pair<uint32_t, uint32_t> core_core::get_audio_rate()
 	return c_audio_rate();
 }
 
-std::string core_core::get_core_identifier()
+std::string core_core::get_core_identifier() const
 {
 	return c_core_identifier();
 }

@@ -217,7 +217,7 @@ namespace
 				ports[i] = p.ports[i];
 		}
 		~c_core_core() throw();
-		std::string c_core_identifier()
+		std::string c_core_identifier() const
 		{
 			return fullname;
 		}
@@ -278,7 +278,7 @@ namespace
 			if(!(caps1 & LSNES_CORE_CAP1_PFLAG) || !entrypoint(id, s))
 				internal_pflag = pflag;
 		}
-		std::string c_get_core_shortname()
+		std::string c_get_core_shortname() const
 		{
 			return shortname;
 		}

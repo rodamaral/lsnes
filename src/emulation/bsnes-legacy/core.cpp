@@ -1128,7 +1128,7 @@ namespace
 #endif
 			}) {}
 
-		std::string c_core_identifier() {
+		std::string c_core_identifier() const {
 			return (stringfmt() << snes_library_id() << " (" << SNES::Info::Profile << " core)").str();
 		}
 		bool c_set_region(core_region& region) {
@@ -1355,7 +1355,7 @@ again2:
 			redraw_cover_fbinfo();
 			return x;
 		}
-		std::string c_get_core_shortname()
+		std::string c_get_core_shortname() const
 		{
 #ifdef BSNES_IS_COMPAT
 			return (stringfmt() << "bsnes" << BSNES_VERSION << "c").str();

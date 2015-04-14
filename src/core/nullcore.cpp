@@ -36,7 +36,7 @@ namespace
 			.core = this,
 		}}), core_region({{"null", "(null)", 0, 0, false, {1, 60}, {0}}}),
 		core_sysregion("null", *this, *this) { hide(); }
-		std::string c_core_identifier() { return "null core"; }
+		std::string c_core_identifier() const { return "null core"; }
 		bool c_set_region(core_region& reg) { return true; }
 		std::pair<unsigned, unsigned> c_video_rate() { return std::make_pair(60, 1); }
 		double c_get_PAR() { return 1.0; }
@@ -68,7 +68,7 @@ namespace
 			cover_render_string(null_cover_fbmem, 204, 220, message, 0xFFFF, 0x0000, 512, 448, 1024, 2);
 			return x;
 		}
-		std::string c_get_core_shortname() { return "null"; }
+		std::string c_get_core_shortname() const { return "null"; }
 		void c_pre_emulate_frame(portctrl::frame& cf) {}
 		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) {}
 		const interface_device_reg* c_get_registers() { return null_registers; }
@@ -88,7 +88,7 @@ namespace
 		std::set<std::string> c_srams() { return std::set<std::string>(); }
 		unsigned c_action_flags(unsigned id) { return 0; }
 		int c_reset_action(bool hard) { return -1; }
-		bool c_isnull() { return true; }
+		bool c_isnull() const { return true; }
 		void c_set_debug_flags(uint64_t addr, unsigned int sflags, unsigned int cflags) {}
 		void c_set_cheat(uint64_t addr, uint64_t value, bool set) {}
 		void c_debug_reset() {}

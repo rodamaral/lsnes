@@ -261,7 +261,7 @@ namespace sky
 			}}),
 			core_sysregion("sky", *this, *this) { hide(); }
 
-		std::string c_core_identifier() { return "Sky"; }
+		std::string c_core_identifier() const { return "Sky"; }
 		bool c_set_region(core_region& region) { return (&region == this); }
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(656250, 18227); }
 		double c_get_PAR() { return 5.0/6; }
@@ -338,7 +338,7 @@ namespace sky
 			static framebuffer::raw x(cover_fbinfo);
 			return x;
 		}
-		std::string c_get_core_shortname() { return "sky"; }
+		std::string c_get_core_shortname() const { return "sky"; }
 		void c_pre_emulate_frame(portctrl::frame& cf) {}
 		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) {}
 		const interface_device_reg* c_get_registers() { return sky_registers; }

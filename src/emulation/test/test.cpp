@@ -127,7 +127,7 @@ namespace
 			core_region({{"world", "World", 0, 0, false, {1, 60}, {0}}}),
 			core_sysregion("test", *this, *this) { hide(); }
 
-		std::string c_core_identifier() { return "TEST"; }
+		std::string c_core_identifier() const { return "TEST"; }
 		bool c_set_region(core_region& region) { return (&region == this); }
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(60, 1); }
 		double c_get_PAR() { return 1.0; }
@@ -174,7 +174,7 @@ namespace
 			redraw_cover_fbinfo();
 			return x;
 		}
-		std::string c_get_core_shortname() { return "test"; }
+		std::string c_get_core_shortname() const { return "test"; }
 		void c_pre_emulate_frame(portctrl::frame& cf) {}
 		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 		{

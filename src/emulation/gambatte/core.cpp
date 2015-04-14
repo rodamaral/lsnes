@@ -556,7 +556,7 @@ namespace
 			}),
 			core_region({{"world", "World", 0, 0, false, {4389, 262144}, {0}}}) {}
 
-		std::string c_core_identifier() { return "libgambatte "+gambatte::GB::version(); }
+		std::string c_core_identifier() const { return "libgambatte "+gambatte::GB::version(); }
 		bool c_set_region(core_region& region) { return (&region == this); }
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(262144, 4389); }
 		double c_get_PAR() { return 1.0; }
@@ -710,7 +710,7 @@ namespace
 			redraw_cover_fbinfo();
 			return x;
 		}
-		std::string c_get_core_shortname() { return "gambatte"+gambatte::GB::version(); }
+		std::string c_get_core_shortname() const { return "gambatte"+gambatte::GB::version(); }
 		void c_pre_emulate_frame(portctrl::frame& cf) {
 			cf.axis3(0, 0, 1, do_reset_flag ? 1 : 0);
 		}
