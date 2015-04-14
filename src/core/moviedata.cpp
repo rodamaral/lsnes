@@ -232,9 +232,11 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		target.is_savestate = true;
 		target.sram = core.rom->save_sram();
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			target.romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
-			target.romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
-			target.namehint[i] = core.rom->romimg[i].namehint;
+			auto& img = core.rom->get_rom(i);
+			auto& xml = core.rom->get_markup(i);
+			target.romimg_sha256[i] = img.sha_256.read();
+			target.romxml_sha256[i] = xml.sha_256.read();
+			target.namehint[i] = img.namehint;
 		}
 		target.savestate = core.rom->save_core_state();
 		core.fbuf->get_framebuffer().save(target.screenshot);
@@ -390,15 +392,17 @@ namespace
 	{
 		bool rom_ok = true;
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
+			auto& img = against.get_rom(i);
+			auto& xml = against.get_markup(i);
 			if(mov.namehint[i] == "")
-				mov.namehint[i] = against.romimg[i].namehint;
+				mov.namehint[i] = img.namehint;
 			if(mov.romimg_sha256[i] == "")
-				mov.romimg_sha256[i] = against.romimg[i].sha_256.read();
+				mov.romimg_sha256[i] = img.sha_256.read();
 			if(mov.romxml_sha256[i] == "")
-				mov.romxml_sha256[i] = against.romxml[i].sha_256.read();
-			rom_ok = rom_ok & warn_hash_mismatch(mov.romimg_sha256[i], against.romimg[i],
+				mov.romxml_sha256[i] = xml.sha_256.read();
+			rom_ok = rom_ok & warn_hash_mismatch(mov.romimg_sha256[i], img,
 				(stringfmt() << "ROM #" << (i + 1)).str(), loadstate);
-			rom_ok = rom_ok & warn_hash_mismatch(mov.romxml_sha256[i], against.romxml[i],
+			rom_ok = rom_ok & warn_hash_mismatch(mov.romxml_sha256[i], xml,
 				(stringfmt() << "XML #" << (i + 1)).str(), loadstate);
 		}
 		if(!rom_ok)
@@ -470,9 +474,11 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 			handle_load_core(core.mlogic->get_mfile(), portset, false);
 			core.mlogic->get_mfile().gametype = &core.rom->get_sysregion();
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				core.mlogic->get_mfile().namehint[i] = core.rom->romimg[i].namehint;
-				core.mlogic->get_mfile().romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
-				core.mlogic->get_mfile().romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
+				auto& img = core.rom->get_rom(i);
+				auto& xml = core.rom->get_markup(i);
+				core.mlogic->get_mfile().namehint[i] = img.namehint;
+				core.mlogic->get_mfile().romimg_sha256[i] = img.sha_256.read();
+				core.mlogic->get_mfile().romxml_sha256[i] = xml.sha_256.read();
 			}
 			core.mlogic->get_mfile().is_savestate = false;
 			core.mlogic->get_mfile().host_memory.clear();
@@ -497,9 +503,11 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		_movie.get()->rerecords = "0";
 		_movie.get()->rerecords_mem = 0;
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			_movie.get()->namehint[i] = core.rom->romimg[i].namehint;
-			_movie.get()->romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
-			_movie.get()->romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
+			auto& img = core.rom->get_rom(i);
+			auto& xml = core.rom->get_markup(i);
+			_movie.get()->namehint[i] = img.namehint;
+			_movie.get()->romimg_sha256[i] = img.sha_256.read();
+			_movie.get()->romxml_sha256[i] = xml.sha_256.read();
 		}
 		_movie.get()->is_savestate = false;
 		_movie.get()->save_frame = 0;

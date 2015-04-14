@@ -263,7 +263,7 @@ public:
 
 	std::string get_base_path()
 	{
-		return CORE().rom->msu1_base;
+		return CORE().rom->get_msu1_base();
 	}
 
 	time_t get_time()

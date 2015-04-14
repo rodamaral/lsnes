@@ -225,18 +225,19 @@ namespace
 	{
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			try {
-				record_filehash(rom.romimg[i].filename, rom.romimg[i].stripped,
-					rom.romimg[i].sha_256.read());
+				auto& j = rom.get_rom(i);
+				record_filehash(j.filename, j.stripped, j.sha_256.read());
 			} catch(...) {}
 			try {
-				record_filehash(rom.romxml[i].filename, rom.romxml[i].stripped,
-					rom.romxml[i].sha_256.read());
+				auto& j = rom.get_markup(i);
+				record_filehash(j.filename, j.stripped, j.sha_256.read());
 			} catch(...) {}
 		}
 	}
 }
 
 fileimage::hash lsnes_image_hasher;
+fileimage::image loaded_rom::null_img;
 
 std::pair<core_type*, core_region*> get_current_rom_info() throw()
 {

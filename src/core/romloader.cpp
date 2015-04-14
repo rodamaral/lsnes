@@ -102,9 +102,11 @@ bool _load_new_rom(const romload_request& req)
 		load_new_rom_inner(req);
 		if(*core.mlogic)
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				core.mlogic->get_mfile().romimg_sha256[i] = core.rom->romimg[i].sha_256.read();
-				core.mlogic->get_mfile().romxml_sha256[i] = core.rom->romxml[i].sha_256.read();
-				core.mlogic->get_mfile().namehint[i] = core.rom->romimg[i].namehint;
+				auto& img = core.rom->get_rom(i);
+				auto& xml = core.rom->get_markup(i);
+				core.mlogic->get_mfile().romimg_sha256[i] = img.sha_256.read();
+				core.mlogic->get_mfile().romxml_sha256[i] = xml.sha_256.read();
+				core.mlogic->get_mfile().namehint[i] = img.namehint;
 			}
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Can't load ROM: ") + e.what());
@@ -126,8 +128,10 @@ bool reload_active_rom()
 		messages << "No ROM loaded" << std::endl;
 		return false;
 	}
-	if(core.rom->load_filename != "") {
-		req.packfile = core.rom->load_filename;
+	//Single-file ROM?
+	std::string loadfile = core.rom->get_pack_filename();
+	if(loadfile != "") {
+		req.packfile = loadfile;
 		return _load_new_rom(req);
 	}
 	//This is composite ROM.
@@ -135,7 +139,7 @@ bool reload_active_rom()
 	req.system = core.rom->get_iname();
 	req.region = core.rom->orig_region_get_iname();
 	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++)
-		req.files[i] = core.rom->romimg[i].filename;
+		req.files[i] = core.rom->get_rom(i).filename;
 	return _load_new_rom(req);
 }
 

@@ -253,7 +253,7 @@ namespace
 		project_info pinfo(*inst.dispatch);
 		pinfo.id = generate_project_id();
 		pinfo.name = tostdstring(projname->GetValue());
-		pinfo.rom = inst.rom->load_filename;
+		pinfo.rom = inst.rom->get_pack_filename();
 		pinfo.last_save = "";
 		pinfo.directory = tostdstring(projdir->GetValue());
 		pinfo.prefix = tostdstring(projpfx->GetValue());
@@ -273,7 +273,7 @@ namespace
 		inst.project->copy_watches(pinfo);
 		inst.project->copy_macros(pinfo, *inst.controls);
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
-			pinfo.roms[i] = inst.rom->romimg[i].filename;
+			pinfo.roms[i] = inst.rom->get_rom(i).filename;
 			pinfo.romimg_sha256[i] = m.romimg_sha256[i];
 			pinfo.romxml_sha256[i] = m.romxml_sha256[i];
 			pinfo.namehint[i] = m.namehint[i];
@@ -677,9 +677,11 @@ struct moviefile& wxwin_project::make_movie()
 	set_mprefix_for_project(f.projectid, tostdstring(prefix->GetValue()));
 	f.rerecords = "0";
 	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-		f.romimg_sha256[i] = inst.rom->romimg[i].sha_256.read();
-		f.romxml_sha256[i] = inst.rom->romxml[i].sha_256.read();
-		f.namehint[i] = inst.rom->romimg[i].namehint;
+		auto& img = inst.rom->get_rom(i);
+		auto& xml = inst.rom->get_markup(i);
+		f.romimg_sha256[i] = img.sha_256.read();
+		f.romxml_sha256[i] = xml.sha_256.read();
+		f.namehint[i] = img.namehint;
 	}
 	size_t lines = authors->GetNumberOfLines();
 	for(size_t i = 0; i < lines; i++) {

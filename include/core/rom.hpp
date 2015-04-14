@@ -67,22 +67,6 @@ struct loaded_rom
  */
 	loaded_rom(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error);
 /**
- * Loaded main ROM
- */
-	fileimage::image romimg[ROM_SLOT_COUNT];
-/**
- * Loaded main ROM XML
- */
-	fileimage::image romxml[ROM_SLOT_COUNT];
-/**
- * MSU-1 base.
- */
-	std::string msu1_base;
-/**
- * Load filename.
- */
-	std::string load_filename;
-/**
  * Switches the active cartridge to this cartridge. The compatiblity between selected region and original region
  * is checked. Region is updated after cartridge has been loaded.
  *
@@ -136,7 +120,28 @@ struct loaded_rom
  * Set internal region representation.
  */
 	void set_internal_region(core_region& reg) { region = &reg; }
-	
+/**
+ * Access main ROM image.
+ *
+ * parameter index: The index of ROM slot to access.
+ * returns: The ROM image (NULL image if index is out of range).
+ */
+	fileimage::image& get_rom(size_t index) { return get_image(index, false); }
+/**
+ * Access ROM markup image.
+ *
+ * parameter index: The index of ROM slot to access.
+ * returns: The ROM markup image (NULL image if index is out of range).
+ */
+	fileimage::image& get_markup(size_t index) { return get_image(index, true); }
+/**
+ * Get filename of ROM pack, if any.
+ */
+	const std::string& get_pack_filename() { return load_filename; }
+/**
+ * Get MSU-1 base fileaname.
+ */
+	const std::string& get_msu1_base() { return msu1_base; }
 	//ROM methods.
 	std::string get_core_identifier() { return rtype->get_core_identifier(); }
 	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
@@ -204,18 +209,33 @@ struct loaded_rom
 		return orig_region && orig_region->compatible_with(run);
 	}
 private:
-/**
- * ROM type
- */
+	//Static NULL image.
+	static fileimage::image null_img;
+	//Loaded ROM images.
+	fileimage::image romimg[ROM_SLOT_COUNT];
+	//Loaded ROM XML (markup) images.
+	fileimage::image romxml[ROM_SLOT_COUNT];
+	//MSU-1 base filename.
+	std::string msu1_base;
+	//Load filename.
+	std::string load_filename;
+	//ROM type.
 	core_type* rtype;
-/**
- * ROM region (this is the currently active region).
- */
+	//ROM region.
 	core_region* region;
-/**
- * ROM original region (this is the region ROM is loaded as).
- */
+	//Region ROM was loaded as.
 	core_region* orig_region;
+	//Get image.
+	fileimage::image& get_image(size_t index, bool xml)
+	{
+		if(index < ROM_SLOT_COUNT) {
+			if(xml)
+				return romxml[index];
+			else
+				return romimg[index];
+		} else
+			return null_img;
+	}
 	//Handle bundle load case.
 	void load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer)
 		throw(std::bad_alloc, std::runtime_error);

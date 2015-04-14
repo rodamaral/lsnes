@@ -140,9 +140,11 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 		//Initialize the remainder.
 		rerecords = "0";
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			romimg_sha256[i] = rom.romimg[i].sha_256.read();
-			romxml_sha256[i] = rom.romxml[i].sha_256.read();
-			namehint[i] = rom.romimg[i].namehint;
+			auto& img = rom.get_rom(i);
+			auto& xml = rom.get_markup(i);
+			romimg_sha256[i] = img.sha_256.read();
+			romxml_sha256[i] = xml.sha_256.read();
+			namehint[i] = img.namehint;
 		}
 	}
 }

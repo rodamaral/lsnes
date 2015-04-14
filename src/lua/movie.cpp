@@ -149,8 +149,8 @@ namespace
 
 		L.newtable();
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
-			auto img = &(rom.romimg[i]);
-			auto xml = &(rom.romxml[i]);
+			auto img = &rom.get_rom(i);
+			auto xml = &rom.get_markup(i);
 			if(img->sha_256.read() == "") img = NULL;	//Trivial image.
 			if(xml->sha_256.read() == "") xml = NULL;	//Trivial image.
 			if(!img && !xml) continue;
