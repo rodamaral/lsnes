@@ -34,20 +34,17 @@ namespace
 		auto& core = CORE();
 		if(req.packfile != "") {
 			messages << "Loading ROM " << req.packfile << std::endl;
-			rom_image_handle _img(new rom_image(req.packfile));
-			loaded_rom newrom(_img);
+			loaded_rom newrom(new rom_image(req.packfile));
 			*core.rom = newrom;
 			return;
 		} else if(req.singlefile != "") {
 			messages << "Loading ROM " << req.singlefile << std::endl;
-			rom_image_handle _img(new rom_image(req.singlefile, req.core, req.system, req.region));
-			loaded_rom newrom(_img);
+			loaded_rom newrom(new rom_image(req.singlefile, req.core, req.system, req.region));
 			*core.rom = newrom;
 			return;
 		} else {
 			messages << "Loading multi-file ROM."  << std::endl;
-			rom_image_handle _img(new rom_image(req.files, req.core, req.system, req.region));
-			loaded_rom newrom(_img);
+			loaded_rom newrom(new rom_image(req.files, req.core, req.system, req.region));
 			*core.rom = newrom;
 			return;
 		}
@@ -237,7 +234,7 @@ rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brie
 	}
 	if(pmand != tmand)
 		print_missing(*ctype, pmand);
-	return rom_image_handle(new rom_image(roms, realcore, realtype, ""));
+	return new rom_image(roms, realcore, realtype, "");
 }
 
 rom_image_handle construct_rom_nofile(const std::vector<std::string>& cmdline)
@@ -248,8 +245,7 @@ rom_image_handle construct_rom_nofile(const std::vector<std::string>& cmdline)
 		regex_results r;
 		if(r = regex("--rom=(.*)", i)) {
 			//Okay, load as ROM bundle and check validity.
-			rom_image_handle cr(new rom_image(r[1], requested_core));
-			return cr;
+			return new rom_image(r[1], requested_core);
 		}
 	}
 
@@ -301,7 +297,7 @@ rom_image_handle construct_rom(const std::string& movie_filename, const std::vec
 		regex_results r;
 		if(r = regex("--rom=(.*)", i)) {
 			//Okay, load as ROM bundle and check validity.
-			rom_image_handle cr(new rom_image(r[1], requested_core));
+			auto cr = new rom_image(r[1], requested_core);
 			for(auto j : sysregs) {
 				if(cr->is_of_type(j->get_type()))
 					continue;
