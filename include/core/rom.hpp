@@ -7,26 +7,9 @@
 #include <stdexcept>
 #include "core/misc.hpp"
 #include "core/rom-small.hpp"
+#include "core/romimage.hpp"
 #include "interface/romtype.hpp"
 #include "library/fileimage.hpp"
-
-//ROM request.
-struct rom_request
-{
-	//List of core types.
-	std::vector<core_type*> cores;
-	//Selected core (default core on call).
-	bool core_guessed;
-	size_t selected;
-	//Filename selected (on entry, filename hint).
-	bool has_slot[ROM_SLOT_COUNT];
-	bool guessed[ROM_SLOT_COUNT];
-	std::string filename[ROM_SLOT_COUNT];
-	std::string hash[ROM_SLOT_COUNT];
-	std::string hashxml[ROM_SLOT_COUNT];
-	//Canceled flag.
-	bool canceled;
-};
 
 /**
  * ROM loaded into memory.
@@ -92,18 +75,9 @@ struct loaded_rom
 	void load_core_state(const std::vector<char>& buf, bool nochecksum = false) throw(std::runtime_error);
 
 /**
- * Is file a gamepak?
- *
- * parameter filename: The file to probe.
- * retruns: True if gamepak, false if not.
- * throws std::runtime_error: No such file.
- */
-	static bool is_gamepak(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
-
-/**
  * Get internal type representation.
  */
-	core_type& get_internal_rom_type() { return *rtype; }
+	core_type& get_internal_rom_type() { return rtype(); }
 /**
  * Get internal region representation.
  */
@@ -111,11 +85,11 @@ struct loaded_rom
 /**
  * Is same ROM type?
  */
-	bool is_of_type(core_type& type) { return (rtype == &type); }
+	bool is_of_type(core_type& type) { return (&rtype() == &type); }
 /**
  * Get gametype of this ROM.
  */
-	core_sysregion& get_sysregion() { return rtype->combine_region(*region); }
+	core_sysregion& get_sysregion() { return rtype().combine_region(*region); }
 /**
  * Set internal region representation.
  */
@@ -126,119 +100,94 @@ struct loaded_rom
  * parameter index: The index of ROM slot to access.
  * returns: The ROM image (NULL image if index is out of range).
  */
-	fileimage::image& get_rom(size_t index) { return get_image(index, false); }
+	fileimage::image& get_rom(size_t index) { return image.get_image(index, false); }
 /**
  * Access ROM markup image.
  *
  * parameter index: The index of ROM slot to access.
  * returns: The ROM markup image (NULL image if index is out of range).
  */
-	fileimage::image& get_markup(size_t index) { return get_image(index, true); }
+	fileimage::image& get_markup(size_t index) { return image.get_image(index, true); }
 /**
  * Get filename of ROM pack, if any.
  */
-	const std::string& get_pack_filename() { return load_filename; }
+	const std::string& get_pack_filename() { return image.get_pack_filename(); }
 /**
  * Get MSU-1 base fileaname.
  */
-	const std::string& get_msu1_base() { return msu1_base; }
+	const std::string& get_msu1_base() { return image.get_msu1_base(); }
 	//ROM methods.
-	std::string get_core_identifier() { return rtype->get_core_identifier(); }
+	std::string get_core_identifier() { return rtype().get_core_identifier(); }
 	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 	{
-		return rtype->get_scale_factors(width, height);
+		return rtype().get_scale_factors(width, height);
 	}
-	const std::string& get_hname() { return rtype->get_hname(); }
-	core_sysregion& combine_region(core_region& reg) { return rtype->combine_region(reg); }
-	bool isnull() { return !rtype || rtype->isnull(); }
-	std::vector<std::string> get_trace_cpus() { return rtype->get_trace_cpus(); }
+	const std::string& get_hname() { return rtype().get_hname(); }
+	core_sysregion& combine_region(core_region& reg) { return rtype().combine_region(reg); }
+	bool isnull() { return rtype().isnull(); }
+	std::vector<std::string> get_trace_cpus() { return rtype().get_trace_cpus(); }
 	controller_set controllerconfig(std::map<std::string, std::string>& settings)
 	{
-		return rtype->controllerconfig(settings);
+		return rtype().controllerconfig(settings);
 	}
-	core_setting_group& get_settings() { return rtype->get_settings(); }
-	std::set<std::string> srams() { return rtype->srams(); }
-	double get_PAR() { return rtype->get_PAR(); }
-	std::string get_systemmenu_name() { return rtype->get_systemmenu_name(); }
-	unsigned action_flags(unsigned id) { return rtype->action_flags(id); }
-	std::set<const interface_action*> get_actions() { return rtype->get_actions(); }
+	core_setting_group& get_settings() { return rtype().get_settings(); }
+	std::set<std::string> srams() { return rtype().srams(); }
+	double get_PAR() { return rtype().get_PAR(); }
+	std::string get_systemmenu_name() { return rtype().get_systemmenu_name(); }
+	unsigned action_flags(unsigned id) { return rtype().action_flags(id); }
+	std::set<const interface_action*> get_actions() { return rtype().get_actions(); }
 	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 	{
-		return rtype->execute_action(id, p);
+		return rtype().execute_action(id, p);
 	}
-	std::pair<unsigned, unsigned> lightgun_scale() { return rtype->lightgun_scale(); }
-	const interface_device_reg* get_registers() { return rtype->get_registers(); }
-	bool get_pflag() { return rtype->get_pflag(); }
-	void set_pflag(bool pflag) { rtype->set_pflag(pflag); }
-	std::pair<uint64_t, uint64_t> get_bus_map() { return rtype->get_bus_map(); }
-	std::list<core_region*> get_regions() { return rtype->get_regions(); }
-	const std::string& get_iname() { return rtype->get_iname(); }
-	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return rtype->save_sram(); }
+	std::pair<unsigned, unsigned> lightgun_scale() { return rtype().lightgun_scale(); }
+	const interface_device_reg* get_registers() { return rtype().get_registers(); }
+	bool get_pflag() { return rtype().get_pflag(); }
+	void set_pflag(bool pflag) { rtype().set_pflag(pflag); }
+	std::pair<uint64_t, uint64_t> get_bus_map() { return rtype().get_bus_map(); }
+	std::list<core_region*> get_regions() { return rtype().get_regions(); }
+	const std::string& get_iname() { return rtype().get_iname(); }
+	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return rtype().save_sram(); }
 	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
 	{
-		rtype->load_sram(sram);
+		rtype().load_sram(sram);
 	}
-	std::list<core_vma_info> vma_list() { return rtype->vma_list(); }
-	framebuffer::raw& draw_cover() { return rtype->draw_cover(); }
-	int reset_action(bool hard) { return rtype->reset_action(hard); }
-	void pre_emulate_frame(portctrl::frame& cf) { return rtype->pre_emulate_frame(cf); }
-	void emulate() { rtype->emulate(); }
-	void runtosave() { rtype->runtosave(); }
-	std::pair<uint32_t, uint32_t> get_audio_rate() { return rtype->get_audio_rate(); }
+	std::list<core_vma_info> vma_list() { return rtype().vma_list(); }
+	framebuffer::raw& draw_cover() { return rtype().draw_cover(); }
+	int reset_action(bool hard) { return rtype().reset_action(hard); }
+	void pre_emulate_frame(portctrl::frame& cf) { return rtype().pre_emulate_frame(cf); }
+	void emulate() { rtype().emulate(); }
+	void runtosave() { rtype().runtosave(); }
+	std::pair<uint32_t, uint32_t> get_audio_rate() { return rtype().get_audio_rate(); }
 	void set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear)
 	{
-		return rtype->set_debug_flags(addr, flags_set, flags_clear);
+		return rtype().set_debug_flags(addr, flags_set, flags_clear);
 	}
 	void set_cheat(uint64_t addr, uint64_t value, bool set)
 	{
-		return rtype->set_cheat(addr, value, set);
+		return rtype().set_cheat(addr, value, set);
 	}
 	void debug_reset()
 	{
-		rtype->debug_reset();
+		rtype().debug_reset();
 	}
 	//Region methods.
-	const std::string& orig_region_get_iname() { return orig_region->get_iname(); }
-	const std::string& orig_region_get_hname() { return orig_region->get_hname(); }
+	const std::string& orig_region_get_iname() { return image.get_region().get_iname(); }
+	const std::string& orig_region_get_hname() { return image.get_region().get_hname(); }
 	const std::string& region_get_iname() { return region->get_iname(); }
 	const std::string& region_get_hname() { return region->get_hname(); }
 	double region_approx_framerate() { return region->approx_framerate(); }
 	void region_fill_framerate_magic(uint64_t* magic) { region->fill_framerate_magic(magic); }
 	bool region_compatible_with(core_region& run)
 	{
-		return orig_region && orig_region->compatible_with(run);
+		return image.get_region().compatible_with(run);
 	}
 private:
-	//Static NULL image.
-	static fileimage::image null_img;
-	//Loaded ROM images.
-	fileimage::image romimg[ROM_SLOT_COUNT];
-	//Loaded ROM XML (markup) images.
-	fileimage::image romxml[ROM_SLOT_COUNT];
-	//MSU-1 base filename.
-	std::string msu1_base;
-	//Load filename.
-	std::string load_filename;
-	//ROM type.
-	core_type* rtype;
+	core_type& rtype() { return image.get_type(); }
+	//The internal ROM image.
+	rom_image image;
 	//ROM region.
 	core_region* region;
-	//Region ROM was loaded as.
-	core_region* orig_region;
-	//Get image.
-	fileimage::image& get_image(size_t index, bool xml)
-	{
-		if(index < ROM_SLOT_COUNT) {
-			if(xml)
-				return romxml[index];
-			else
-				return romimg[index];
-		} else
-			return null_img;
-	}
-	//Handle bundle load case.
-	void load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer)
-		throw(std::bad_alloc, std::runtime_error);
 };
 
 /**
@@ -258,11 +207,6 @@ std::pair<core_type*, core_region*> get_current_rom_info() throw();
  */
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)
 	throw(std::bad_alloc, std::runtime_error);
-
-/**
- * Set the hasher callback.
- */
-void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb);
 
 struct romload_request
 {
@@ -285,15 +229,9 @@ regex_results get_argument(const std::vector<std::string>& cmdline, const std::s
 std::string get_requested_core(const std::vector<std::string>& cmdline);
 loaded_rom construct_rom(const std::string& movie_filename, const std::vector<std::string>& cmdline);
 void try_guess_roms(rom_request& req);
-void record_filehash(const std::string& file, uint64_t prefix, const std::string& hash);
 std::string try_to_guess_rom(const std::string& hint, const std::string& hash, const std::string& xhash,
 	core_type& type, unsigned i);
 
-
-//Map of preferred cores for each extension and type.
-extern std::map<std::string, core_type*> preferred_core;
-//Main hasher
-extern fileimage::hash lsnes_image_hasher;
 
 
 #endif

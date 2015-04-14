@@ -6,7 +6,7 @@
 
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
-#include "core/rom.hpp"
+#include "core/romimage.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 

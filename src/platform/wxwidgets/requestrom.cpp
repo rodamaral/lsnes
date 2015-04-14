@@ -39,7 +39,7 @@ namespace
 		CHECK_UI_THREAD;
 		if(coreid.count(findex))
 			return findex;	//Already resolved.
-		if(loaded_rom::is_gamepak(filename))
+		if(rom_image::is_gamepak(filename))
 			return 0; //Gamepaks don't resolve.
 
 		//Get the extension.
