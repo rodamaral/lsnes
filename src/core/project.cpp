@@ -151,8 +151,6 @@ namespace
 		m.start_paused = true;
 		m.movie_rtc_second = p.movie_rtc_second;
 		m.movie_rtc_subsecond = p.movie_rtc_subsecond;
-		m.dyn.save_frame = 0;
-		m.dyn.lagged_frames = 0;
 		m.anchor_savestate = p.anchor_savestate;
 		m.movie_sram = p.movie_sram;
 		m.authors = p.authors;
@@ -168,6 +166,7 @@ namespace
 		auto ctrldata = coretype.controllerconfig(m.settings);
 		portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 		m.create_default_branch(ports);
+		m.clear_dynstate();
 		try {
 			m.gametype = &coretype.lookup_sysregion(p.gametype);
 		} catch(std::bad_alloc& e) {

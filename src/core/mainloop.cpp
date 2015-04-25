@@ -715,7 +715,6 @@ jumpback:
 			core.lua2->callback_do_unsafe_rewind(core.mlogic->get_movie(), unsafe_rewind_obj);
 			core.dispatch->mode_change(false);
 			do_unsafe_rewind = false;
-			core.mlogic->get_mfile().dyn.is_savestate = true;
 			core.runmode->set_point(emulator_runmode::P_SAVE);
 			core.supdater->update();
 			core.runmode->end_load();		//Restore previous mode.
@@ -736,7 +735,7 @@ jumpback:
 					delete old;
 				core.slotcache->flush();		//Wrong movie may be stale.
 				core.runmode->end_load();		//Restore previous mode.
-				if(core.mlogic->get_mfile().dyn.is_savestate)
+				if(core.mlogic->get_mfile().dyn.save_frame)
 					core.runmode->set_point(emulator_runmode::P_SAVE);
 				core.supdater->update();
 				return 1;
@@ -859,7 +858,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		do_load_state(initial, LOAD_STATE_INITIAL, used);
 		core.runmode->set_point(emulator_runmode::P_SAVE);
 		core.supdater->update();
-		first_round = core.mlogic->get_mfile().dyn.is_savestate;
+		first_round = core.mlogic->get_mfile().dyn.save_frame;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -884,7 +883,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 	while(!core.runmode->is_quit() || !queued_saves.empty()) {
 		if(handle_corrupt()) {
-			first_round = *core.mlogic && core.mlogic->get_mfile().dyn.is_savestate;
+			first_round = *core.mlogic && core.mlogic->get_mfile().dyn.save_frame;
 			just_did_loadstate = first_round;
 			continue;
 		}
@@ -908,8 +907,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				r = handle_load();
 			if(r > 0 || core.runmode->is_corrupt()) {
 				core.mlogic->get_movie().get_pollcounters().set_framepflag(
-					core.mlogic->get_mfile().dyn.is_savestate);
-				first_round = core.mlogic->get_mfile().dyn.is_savestate;
+					core.mlogic->get_mfile().dyn.save_frame != 0);
+				first_round = core.mlogic->get_mfile().dyn.save_frame;
 				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
 				core.controls->reset_framehold();

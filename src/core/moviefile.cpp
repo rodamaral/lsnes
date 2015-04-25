@@ -75,7 +75,7 @@ moviefile::brief_info::brief_info(const std::string& filename)
 		sysregion = mv.gametype->get_name();
 		corename = mv.coreversion;
 		projectid = mv.projectid;
-		current_frame = mv.dyn.is_savestate ? mv.dyn.save_frame : 0;
+		current_frame = mv.dyn.save_frame;
 		rerecords = mv.rerecords_mem;
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			hash[i] = mv.romimg_sha256[i];
@@ -184,7 +184,7 @@ void moviefile::fixup_current_branch(const moviefile& mv)
 			input = &branches[i.first];
 }
 
-void moviefile::save(const std::string& movie, unsigned compression, bool binary, rrdata_set& rrd)
+void moviefile::save(const std::string& movie, unsigned compression, bool binary, rrdata_set& rrd, bool as_state)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	regex_results rr;
@@ -209,7 +209,7 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 		try {
 			char buf[5] = {'l', 's', 'm', 'v', 0x1A};
 			write_whole(strm, buf, 5);
-			binary_io(strm, rrd);
+			binary_io(strm, rrd, as_state);
 		} catch(std::exception& e) {
 			close(strm);
 			(stringfmt() << "Failed to write '" << tmp << "': " << e.what()).throwex();
@@ -225,13 +225,13 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 		return;
 	}
 	zip::writer w(movie, compression);
-	save(w, rrd);
+	save(w, rrd, as_state);
 }
 
-void moviefile::save(std::ostream& stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
+void moviefile::save(std::ostream& stream, rrdata_set& rrd, bool as_state) throw(std::bad_alloc, std::runtime_error)
 {
 	zip::writer w(stream, 0);
-	save(w, rrd);
+	save(w, rrd, as_state);
 }
 
 void moviefile::create_default_branch(portctrl::type_set& ports)
@@ -400,12 +400,47 @@ moviefile::sram_extractor::sram_extractor(const std::string& filename)
 		real = new moviefile_sram_extractor_text(filename);
 }
 
+void moviefile::clear_dynstate()
+{
+	dyn.clear(movie_rtc_second, movie_rtc_subsecond, movie_sram);
+}
+
 dynamic_state::dynamic_state()
 {
-	is_savestate = false;
 	save_frame = 0;
 	lagged_frames = 0;
 	poll_flag = 0;
 	rtc_second = DEFAULT_RTC_SECOND;
 	rtc_subsecond = DEFAULT_RTC_SUBSECOND;
+}
+
+void dynamic_state::clear(int64_t sec, int64_t ssec, const std::map<std::string, std::vector<char>>& initsram)
+{
+	sram = initsram;
+	savestate.clear();
+	host_memory.clear();
+	screenshot.clear();
+	save_frame = 0;
+	lagged_frames = 0;
+	for(auto& i : pollcounters)
+		i = 0;
+	poll_flag = 0;
+	rtc_second = sec;
+	rtc_subsecond = ssec;
+	active_macros.clear();
+}
+
+void dynamic_state::swap(dynamic_state& s) throw()
+{
+	std::swap(sram, s.sram);
+	std::swap(savestate, s.savestate);
+	std::swap(host_memory, s.host_memory);
+	std::swap(screenshot, s.screenshot);
+	std::swap(save_frame, s.save_frame);
+	std::swap(lagged_frames, s.lagged_frames);
+	std::swap(pollcounters, s.pollcounters);
+	std::swap(poll_flag, s.poll_flag);
+	std::swap(rtc_second, s.rtc_second);
+	std::swap(rtc_subsecond, s.rtc_subsecond);
+	std::swap(active_macros, s.active_macros);
 }

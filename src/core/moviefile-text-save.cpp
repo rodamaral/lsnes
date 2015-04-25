@@ -139,7 +139,7 @@ namespace
 	}
 }
 
-void moviefile::save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
+void moviefile::save(zip::writer& w, rrdata_set& rrd, bool as_state) throw(std::bad_alloc, std::runtime_error)
 {
 	w.write_linefile("gametype", gametype->get_name());
 	moviefile_write_settings<zip::writer>(w, settings, gametype->get_type().get_settings(), [](zip::writer& w,
@@ -174,7 +174,7 @@ void moviefile::save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std:
 	w.write_numeric_file("starttime.subsecond", movie_rtc_subsecond);
 	if(!anchor_savestate.empty())
 			w.write_raw_file("savestate.anchor", anchor_savestate);
-	if(dyn.is_savestate) {
+	if(as_state) {
 		w.write_numeric_file("saveframe", dyn.save_frame);
 		w.write_numeric_file("lagcounter", dyn.lagged_frames);
 		write_pollcounters(w, "pollcounters", dyn.pollcounters);

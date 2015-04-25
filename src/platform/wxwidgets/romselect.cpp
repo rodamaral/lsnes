@@ -651,7 +651,7 @@ void wxwin_project::on_load(wxCommandEvent& e)
 		moviefile& mov = make_movie();
 		mov.start_paused = false;
 		rrdata_set tmp_rdata;
-		mov.save("$MEMORY:wxwidgets-romload-tmp", 0, true, tmp_rdata);
+		mov.save("$MEMORY:wxwidgets-romload-tmp", 0, true, tmp_rdata, false);
 		inst.iqueue->queue("load-state $MEMORY:wxwidgets-romload-tmp");
 		EndModal(0);
 	} catch(std::exception& e) {

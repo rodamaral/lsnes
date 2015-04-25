@@ -57,7 +57,7 @@ void moviefile::brief_info::binary_io(int _stream)
 	}, binarystream::null_default);
 }
 
-void moviefile::binary_io(int _stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
+void moviefile::binary_io(int _stream, rrdata_set& rrd, bool as_state) throw(std::bad_alloc, std::runtime_error)
 {
 	binarystream::output out(_stream);
 	out.string(gametype->get_name());
@@ -116,7 +116,7 @@ void moviefile::binary_io(int _stream, rrdata_set& rrd) throw(std::bad_alloc, st
 	out.extension(TAG_ANCHOR_SAVE, [this](binarystream::output& s) {
 		s.blob_implicit(this->anchor_savestate);
 	});
-	if(dyn.is_savestate) {
+	if(as_state) {
 		out.extension(TAG_SAVESTATE, [this](binarystream::output& s) {
 			s.number(this->dyn.save_frame);
 			s.number(this->dyn.lagged_frames);
@@ -214,6 +214,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 	portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 	input = NULL;
 
+	this->dyn.save_frame = 0;	//If no savestate, ensure this is interpretted as a movie.
 	in.extension({
 		{TAG_ANCHOR_SAVE, [this](binarystream::input& s) {
 			s.blob_implicit(this->anchor_savestate);
@@ -272,7 +273,6 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 			std::string a = s.string();
 			s.blob_implicit(this->dyn.sram[a]);
 		}},{TAG_SAVESTATE, [this](binarystream::input& s) {
-			this->dyn.is_savestate = true;
 			this->dyn.save_frame = s.number();
 			this->dyn.lagged_frames = s.number();
 			this->dyn.rtc_second = s.number();

@@ -109,7 +109,7 @@ namespace
 		P(filename);
 
 		moviefile mfile(filename, core.rom->get_internal_rom_type());
-		if(!mfile.dyn.is_savestate)
+		if(!mfile.dyn.save_frame)
 			throw std::runtime_error("movie.to_rewind only allows savestates");
 		lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(L);
 		u2->console_state = mfile.dyn;

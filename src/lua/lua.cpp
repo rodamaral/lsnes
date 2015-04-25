@@ -444,7 +444,6 @@ void lua_state::callback_do_unsafe_rewind(movie& mov, void* u)
 			int {
 			lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(*core.lua);
 			u2->console_state = core.mlogic->get_mfile().dyn;
-			u2->console_state.is_savestate = true;
 			mov.fast_save(u2->console_state.save_frame, u2->ptr, u2->console_state.lagged_frames,
 				u2->console_state.pollcounters);
 			return 1;

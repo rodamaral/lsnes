@@ -24,10 +24,6 @@ struct dynamic_state
  */
 	dynamic_state();
 /**
- * True if savestate, false if movie.
- */
-	bool is_savestate;
-/**
  * Contents of SRAM on time of savestate (if is_savestate is true).
  */
 	std::map<std::string, std::vector<char>> sram;
@@ -71,6 +67,14 @@ struct dynamic_state
  * Active macros at savestate.
  */
 	std::map<std::string, uint64_t> active_macros;
+/**
+ * Clear the state to power-on defaults.
+ */
+	void clear(int64_t sec, int64_t ssec, const std::map<std::string, std::vector<char>>& initsram);
+/**
+ * Swap the dynamic state with another.
+ */
+	void swap(dynamic_state& s) throw();
 };
 
 /**
@@ -167,12 +171,12 @@ struct moviefile
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't save the movie file.
  */
-	void save(const std::string& filename, unsigned compression, bool binary, rrdata_set& rrd)
+	void save(const std::string& filename, unsigned compression, bool binary, rrdata_set& rrd, bool as_state)
 		throw(std::bad_alloc, std::runtime_error);
 /**
  * Reads this movie structure and saves it to stream (uncompressed ZIP).
  */
-	void save(std::ostream& outstream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
+	void save(std::ostream& outstream, rrdata_set& rrd, bool as_state) throw(std::bad_alloc, std::runtime_error);
 /**
  * Force loading as corrupt.
  */
@@ -307,12 +311,16 @@ struct moviefile
  * Fixup input pointer post-copy.
  */
 	void fixup_current_branch(const moviefile& mv);
+/**
+ * Clear the dynamic state to power-on defaults.
+ */
+	void clear_dynstate();
 private:
 	moviefile(const moviefile&);
 	moviefile& operator=(const moviefile&);
-	void binary_io(int stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
+	void binary_io(int stream, rrdata_set& rrd, bool as_state) throw(std::bad_alloc, std::runtime_error);
 	void binary_io(int stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
-	void save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
+	void save(zip::writer& w, rrdata_set& rrd, bool as_state) throw(std::bad_alloc, std::runtime_error);
 	void load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 };
 

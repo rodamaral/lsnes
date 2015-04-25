@@ -241,6 +241,7 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	settings = read_settings(r);
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
 	portctrl::type_set& ports = portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
+	dyn.save_frame = 0;	//Ensure load as movie if no savestate.
 
 	branches.clear();
 	r.read_linefile("gamename", gamename, true);
@@ -271,7 +272,6 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	if(r.has_member("savestate.anchor"))
 		r.read_raw_file("savestate.anchor", anchor_savestate);
 	if(r.has_member("savestate")) {
-		dyn.is_savestate = true;
 		r.read_numeric_file("saveframe", dyn.save_frame, true);
 		r.read_numeric_file("lagcounter", dyn.lagged_frames, true);
 		read_pollcounters(r, "pollcounters", dyn.pollcounters);
