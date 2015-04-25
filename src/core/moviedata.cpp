@@ -885,16 +885,14 @@ bool do_load_state(const std::string& filename, int lmode)
 	return true;
 }
 
-void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
+void mainloop_restore_state(const dynamic_state& state)
 {
 	auto& core = CORE();
 	//Force unlazy rrdata.
 	core.mlogic->get_rrdata().read_base(rrdata::filename(core.mlogic->get_mfile().projectid),
 		false);
 	core.mlogic->get_rrdata().add((*core.nrrdata)());
-	core.mlogic->get_mfile().dyn.rtc_second = secs;
-	core.mlogic->get_mfile().dyn.rtc_subsecond = ssecs;
-	core.rom->load_core_state(state, true);
+	core.rom->load_core_state(state.savestate, true);
 }
 
 rrdata::rrdata()

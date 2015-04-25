@@ -418,8 +418,7 @@ uint64_t lua_state::timed_hook(int timer) throw()
 	return 0;
 }
 
-void lua_state::callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs, uint64_t ssecs, movie& mov,
-	void* u)
+void lua_state::callback_do_unsafe_rewind(movie& mov, void* u)
 {
 	auto& core = CORE();
 	if(u) {
@@ -428,24 +427,26 @@ void lua_state::callback_do_unsafe_rewind(const std::vector<char>& save, uint64_
 		try {
 			run_callback(*on_pre_rewind);
 			run_callback(*on_movie_lost, "unsaferewind");
-			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
-			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
-			try { core.mlogic->get_mfile().dyn.host_memory = u2->hostmemory; } catch(...) {}
+			mainloop_restore_state(u2->console_state);
+			mov.fast_load(u2->console_state.save_frame, u2->ptr, u2->console_state.lagged_frames,
+				u2->console_state.pollcounters);
+			core.mlogic->get_mfile().dyn = u2->console_state;
 			run_callback(*on_post_rewind);
 			delete reinterpret_cast<lua::objpin<lua_unsaferewind>*>(u);
+		} catch(std::bad_alloc& e) {
+			OOM_panic();
 		} catch(...) {
 			return;
 		}
 	} else {
 		//Save
-		run_callback(*on_set_rewind, lua::state::fn_tag([&core, save, secs, ssecs, &mov](lua::state& L) ->
+		run_callback(*on_set_rewind, lua::state::fn_tag([&core, &mov](lua::state& L) ->
 			int {
 			lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(*core.lua);
-			u2->state = save;
-			u2->secs = secs,
-			u2->ssecs = ssecs;
-			u2->hostmemory = core.mlogic->get_mfile().dyn.host_memory;
-			mov.fast_save(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
+			u2->console_state = core.mlogic->get_mfile().dyn;
+			u2->console_state.is_savestate = true;
+			mov.fast_save(u2->console_state.save_frame, u2->ptr, u2->console_state.lagged_frames,
+				u2->console_state.pollcounters);
 			return 1;
 		}));
 	}

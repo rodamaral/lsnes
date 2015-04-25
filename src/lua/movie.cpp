@@ -112,20 +112,15 @@ namespace
 		if(!mfile.dyn.is_savestate)
 			throw std::runtime_error("movie.to_rewind only allows savestates");
 		lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(L);
-		u2->state = mfile.dyn.savestate;
-		if(u2->state.size() >= 32)
-			u2->state.resize(u2->state.size() - 32);
-		u2->secs = mfile.dyn.rtc_second;
-		u2->ssecs = mfile.dyn.rtc_subsecond;
-		u2->pollcounters = mfile.dyn.pollcounters;
-		u2->lag = mfile.dyn.lagged_frames;
-		u2->frame = mfile.dyn.save_frame;
-		u2->hostmemory = mfile.dyn.host_memory;
+		u2->console_state = mfile.dyn;
+		//Cut off the hash.
+		if(u2->console_state.savestate.size() >= 32)
+			u2->console_state.savestate.resize(u2->console_state.savestate.size() - 32);
 		//Now the remaining field ptr is somewhat nastier.
 		uint64_t f = 0;
 		uint64_t s = mfile.input->size();
 		u2->ptr = 0;
-		while(++f < u2->frame) {
+		while(++f < u2->console_state.save_frame) {
 			if(u2->ptr < s)
 				u2->ptr++;
 			while(u2->ptr < s && !(*mfile.input)[u2->ptr].sync())

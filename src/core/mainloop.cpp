@@ -712,8 +712,7 @@ jumpback:
 			if(!*core.mlogic)
 				return 0;
 			uint64_t t = framerate_regulator::get_utime();
-			std::vector<char> s;
-			core.lua2->callback_do_unsafe_rewind(s, 0, 0, core.mlogic->get_movie(), unsafe_rewind_obj);
+			core.lua2->callback_do_unsafe_rewind(core.mlogic->get_movie(), unsafe_rewind_obj);
 			core.dispatch->mode_change(false);
 			do_unsafe_rewind = false;
 			core.mlogic->get_mfile().dyn.is_savestate = true;
@@ -805,11 +804,8 @@ nothing_to_do:
 			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = framerate_regulator::get_utime();
-				std::vector<char> s = core.rom->save_core_state(true);
-				uint64_t secs = core.mlogic->get_mfile().dyn.rtc_second;
-				uint64_t ssecs = core.mlogic->get_mfile().dyn.rtc_subsecond;
-				core.lua2->callback_do_unsafe_rewind(s, secs, ssecs, core.mlogic->get_movie(),
-					NULL);
+				core.mlogic->get_mfile().dyn.savestate = core.rom->save_core_state(true);
+				core.lua2->callback_do_unsafe_rewind(core.mlogic->get_movie(), NULL);
 				do_unsafe_rewind = false;
 				messages << "Rewind point set in " << (framerate_regulator::get_utime() - t)
 					<< " usec." << std::endl;

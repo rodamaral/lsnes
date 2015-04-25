@@ -73,8 +73,7 @@ struct lua_state
 	void callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw();
 	void callback_quit() throw();
 	void callback_keyhook(const std::string& key, keyboard::key& p) throw();
-	void callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs, uint64_t ssecs, movie& mov,
-		void* u);
+	void callback_do_unsafe_rewind(movie& mov, void* u);
 	bool callback_do_button(uint32_t port, uint32_t controller, uint32_t index, const char* type);
 	void callback_movie_lost(const char* what);
 	void callback_do_latch(std::list<std::string>& args);

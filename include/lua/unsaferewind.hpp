@@ -3,22 +3,19 @@
 
 #include "library/lua-base.hpp"
 #include "library/string.hpp"
+#include "core/moviefile.hpp"
 
 struct lua_unsaferewind
 {
 	lua_unsaferewind(lua::state& L);
 	static size_t overcommit() { return 0; }
-	std::vector<char> state;
-	uint64_t frame;
-	uint64_t lag;
+	//The console state.
+	dynamic_state console_state;
+	//Extra state variable involved in fast movie restore. It is not part of normal console state.
 	uint64_t ptr;
-	uint64_t secs;
-	uint64_t ssecs;
-	std::vector<uint32_t> pollcounters;
-	std::vector<char> hostmemory;
 	std::string print()
 	{
-		return (stringfmt() << "to frame " << frame).str();
+		return (stringfmt() << "to frame " << console_state.save_frame).str();
 	}
 };
 
