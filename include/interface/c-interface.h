@@ -109,8 +109,9 @@ extern "C" {
 #define LSNES_CORE_CAP1_MEMWATCH	0x00010000U
 //Core supports lightguns (By setting lightgun_height/lightgun_width in LSNES_CORE_GET_AV_STATE).
 #define LSNES_CORE_CAP1_LIGHTGUN	0x00020000U
+//Core supports fast reinit (By supporting LSNES_CORE_REINIT).
+#define LSNES_CORE_CAP1_REINIT		0x00040000U
 //Reserved capabilities.
-#define LSNES_CORE_CAP1_RESERVED18	0x00040000U
 #define LSNES_CORE_CAP1_RESERVED19	0x00080000U
 #define LSNES_CORE_CAP1_RESERVED20	0x00100000U
 #define LSNES_CORE_CAP1_RESERVED21	0x00200000U
@@ -836,6 +837,16 @@ struct lsnes_core_get_vma_list
 {
 	//Output: List of VMAs. NULL-terminated.
 	struct lsnes_core_get_vma_list_vma** vmas;
+};
+
+//Request 34: Reinit core to last loaded state.
+//Item id: Core ID.
+//Default action: Emulate using loadstate.
+//Signals that the core state should be reset to state just after last load (load savestate at moment of initial
+//poweron).
+#define LSNES_CORE_REINIT 27
+struct lsnes_core_reinit
+{
 };
 
 

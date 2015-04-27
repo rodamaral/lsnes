@@ -362,6 +362,7 @@ struct core_core
 	std::vector<std::string> get_trace_cpus();
 	void debug_reset();
 	bool isnull() const;
+	void reset_to_load() { c_reset_to_load(); }
 	bool safe_to_unload(loadlib::module& mod) { return !mod.is_marked(this); }
 protected:
 /**
@@ -531,6 +532,10 @@ protected:
  */
 	virtual void c_debug_reset() = 0;
 /**
+ * Reset to state equivalent to ROM load.
+ */
+	virtual void c_reset_to_load() = 0;
+/**
  * Is null core (only NULL core should define this).
  */
 	virtual bool c_isnull() const;
@@ -618,6 +623,7 @@ public:
 	std::vector<std::string> get_trace_cpus() { return core->get_trace_cpus(); }
 	void debug_reset() { core->debug_reset(); }
 	bool isnull() const { return core->isnull(); }
+	void reset_to_load() { return core->reset_to_load(); }
 	bool safe_to_unload(loadlib::module& mod) const { return core->safe_to_unload(mod); }
 protected:
 /**

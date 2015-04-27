@@ -96,6 +96,7 @@ namespace
 		{
 			return std::vector<std::string>();
 		}
+		void c_reset_to_load() {}
 	} core_null;
 }
 

@@ -71,6 +71,7 @@ namespace
 #endif
 	unsigned frame_overflow = 0;
 	std::vector<unsigned char> romdata;
+	std::vector<char> init_savestate;
 	uint32_t cover_fbmem[480 * 432];
 	uint32_t primary_framebuffer[160*144];
 	uint32_t accumulator_l = 0;
@@ -407,7 +408,8 @@ namespace
 		for(unsigned i = 0; i < 12; i++)
 			if(!palette_colors_default[i >> 2])
 				instance->setDmgPaletteColor(i >> 2, i & 3, palette_colors[i]);
-
+		//Save initial savestate.
+		instance->saveState(init_savestate);
 		return 1;
 	}
 
@@ -844,6 +846,13 @@ namespace
 			std::vector<std::string> r;
 			r.push_back("cpu");
 			return r;
+		}
+		void c_reset_to_load()
+		{
+			instance->loadState(init_savestate);
+			memset(primary_framebuffer, 0, sizeof(primary_framebuffer));
+			frame_overflow = 0;	//frame_overflow is always 0 at the beginning.
+			do_reset_flag = false;
 		}
 	} gambatte_core;
 

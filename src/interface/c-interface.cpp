@@ -50,6 +50,7 @@ template<> int ccore_call_param_map<lsnes_core_draw_cover>::id = LSNES_CORE_DRAW
 template<> int ccore_call_param_map<lsnes_core_pre_emulate>::id = LSNES_CORE_PRE_EMULATE;
 template<> int ccore_call_param_map<lsnes_core_get_device_regs>::id = LSNES_CORE_GET_DEVICE_REGS;
 template<> int ccore_call_param_map<lsnes_core_get_vma_list>::id = LSNES_CORE_GET_VMA_LIST;
+template<> int ccore_call_param_map<lsnes_core_reinit>::id = LSNES_CORE_REINIT;
 
 template<> const char* ccore_call_param_map<lsnes_core_enumerate_cores>::name = "LSNES_CORE_ENUMERATE_CORES";
 template<> const char* ccore_call_param_map<lsnes_core_get_core_info>::name = "LSNES_CORE_GET_CORE_INFO";
@@ -86,6 +87,7 @@ template<> const char* ccore_call_param_map<lsnes_core_draw_cover>::name = "LSNE
 template<> const char* ccore_call_param_map<lsnes_core_pre_emulate>::name = "LSNES_CORE_PRE_EMULATE";
 template<> const char* ccore_call_param_map<lsnes_core_get_device_regs>::name = "LSNES_CORE_GET_DEVICE_REGS";
 template<> const char* ccore_call_param_map<lsnes_core_get_vma_list>::name = "LSNES_CORE_GET_VMA_LIST";
+template<> const char* ccore_call_param_map<lsnes_core_reinit>::name = "LSNES_CORE_REINIT";
 
 namespace
 {
@@ -660,6 +662,18 @@ failed:
 failed:
 			return std::list<core_vma_info>();
 		}
+		void c_reset_to_load()
+		{
+			lsnes_core_reinit r;
+			if(caps1 & LSNES_CORE_CAP1_REINIT) {
+				entrypoint(id, r, [](const char* name, const char* err) {
+					throw std::runtime_error("Resetting state failed: " + std::string(err));
+				});
+				return;
+			}
+			//Emulate by loadstate.
+			c_unserialize(&init_savestate[0], init_savestate.size());
+		}
 		std::map<unsigned, portctrl::type*> get_ports()
 		{
 			return ports;
@@ -667,6 +681,11 @@ failed:
 		void set_internal_pflag()
 		{
 			internal_pflag = true;
+		}
+		void update_initial_savestate()
+		{
+			if((caps1 & LSNES_CORE_CAP1_REINIT) == 0)
+				c_serialize(init_savestate);
 		}
 	private:
 		std::string fullname;
@@ -680,6 +699,7 @@ failed:
 		std::vector<interface_action> actions;
 		framebuffer::raw cover;
 		std::vector<char> covermem;
+		std::vector<char> init_savestate;
 		entrypoint_fn entrypoint;
 		c_lib_init* plugin;
 	};
@@ -721,6 +741,7 @@ failed:
 			entrypoint(_id, r, [_id](const char* name, const char* err) {
 				(stringfmt() << "LSNES_CORE_LOAD_ROM(" << _id << ") failed: " << err).throwex();
 			});
+			dynamic_cast<c_core_core*>(get_core())->update_initial_savestate();
 			return 0;
 		}
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)

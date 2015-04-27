@@ -38,6 +38,10 @@ struct loaded_rom
 	void load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
 		throw(std::bad_alloc, std::runtime_error);
 /**
+ * Reset the emulation state to state just before last load.
+ */
+	void reset_to_load() { return rtype().reset_to_load(); }
+/**
  * Saves core state into buffer. WARNING: This takes emulated time.
  *
  * returns: The saved state.

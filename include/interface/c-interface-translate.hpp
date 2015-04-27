@@ -166,6 +166,10 @@ template<> struct e2t<LSNES_CORE_GET_VMA_LIST> {
 	typedef lsnes_core_get_vma_list* t;
 	typedef lsnes_core_get_vma_list& r;
 };
+template<> struct e2t<LSNES_CORE_REINIT> {
+	typedef lsnes_core_reinit* t;
+	typedef lsnes_core_reinit& r;
+};
 
 template<typename T> class t2e {};
 template<> struct t2e<lsnes_core_enumerate_cores> { const static int e = LSNES_CORE_ENUMERATE_CORES; };
@@ -202,6 +206,7 @@ template<> struct t2e<lsnes_core_draw_cover> { const static int e = LSNES_CORE_D
 template<> struct t2e<lsnes_core_pre_emulate> { const static int e = LSNES_CORE_PRE_EMULATE; };
 template<> struct t2e<lsnes_core_get_device_regs> { const static int e = LSNES_CORE_GET_DEVICE_REGS; };
 template<> struct t2e<lsnes_core_get_vma_list> { const static int e = LSNES_CORE_GET_VMA_LIST; };
+template<> struct t2e<lsnes_core_reinit> { const static int e = LSNES_CORE_REINIT; };
 }
 
 #endif

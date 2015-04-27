@@ -420,5 +420,11 @@ namespace sky
 			std::vector<std::string> r;
 			return r;
 		}
+		void c_reset_to_load()
+		{
+			//Clear the RAM and jump to boot vector.
+			memset(corei.state.as_ram().first, 0, corei.state.as_ram().second);
+			rom_boot_vector(corei);
+		}
 	} sky_core;
 }

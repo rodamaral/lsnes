@@ -89,6 +89,7 @@ namespace
 	bool video_refresh_done;
 	bool forced_hook = false;
 	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
+	std::vector<uint8_t> init_savestate;
 	uint32_t cover_fbmem[512 * 448];
 	//Delay reset.
 	unsigned long long delayreset_cycles_run;
@@ -668,6 +669,10 @@ namespace
 			do_reset_flag = -1;
 			if(ecore_callbacks)
 				ecore_callbacks->action_state_updated();
+			//Save initial state, so we can restore it later.
+			serializer s = SNES::system.serialize();
+			init_savestate.resize(s.size());
+			memcpy(&init_savestate[0], s.data(), s.size());
 		}
 		return r ? 0 : -1;
 	}
@@ -1538,6 +1543,16 @@ again2:
 #endif
 			//TODO: Trace various chips.
 			return r;
+		}
+		void c_reset_to_load()
+		{
+			serializer s(&init_savestate[0], init_savestate.size());
+			if(!SNES::system.unserialize(s))
+				throw std::runtime_error("SNES core rejected initial state?");
+			have_saved_this_frame = false;
+			do_reset_flag = -1;
+			if(ecore_callbacks)
+				ecore_callbacks->action_state_updated();
 		}
 	} bsnes_core;
 

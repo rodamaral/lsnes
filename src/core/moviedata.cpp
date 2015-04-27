@@ -427,8 +427,11 @@ namespace
 			core.rom->set_pflag(_movie.dyn.poll_flag);
 			core.controls->set_macro_frames(_movie.dyn.active_macros);
 		} else {
-			//Reload the ROM in order to rewind to the beginning.
-			core.rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
+			//If settings possibly change, reload the ROM. Otherwise rewind to beginning.
+			if(!*core.mlogic || core.mlogic->get_mfile().projectid != _movie.projectid)
+				core.rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
+			else
+				core.rom->reset_to_load();
 			//Load the SRAM and volatile RAM. Or anchor savestate if any.
 			core.controls->set_ports(portset);
 			_movie.dyn.rtc_second = _movie.movie_rtc_second;

@@ -203,5 +203,8 @@ namespace
 		{
 			return std::vector<std::string>();
 		}
+		void c_reset_to_load()
+		{
+		}
 	} test_core;
 }
