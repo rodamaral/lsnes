@@ -27,11 +27,11 @@ namespace
 			uint32_t oY = y + scr.get_origin_y();
 			range bX = (range::make_w(scr.get_width()) - oX) & range::make_b(-radius, radius + 1);
 			range bY = (range::make_w(scr.get_height()) - oY) & range::make_b(-radius, radius + 1);
-			for(uint32_t r = bY.low(); r != bY.high(); r++) {
+			for(int32_t r = bY.low(); r != (int32_t)bY.high(); r++) {
 				uint64_t pd2 = static_cast<int64_t>(r) * r;
 				typename framebuffer::fb<X>::element_t* rptr = scr.rowptr(oY + r);
 				size_t eptr = oX + bX.low();
-				for(uint32_t c = bX.low(); c != bX.high(); c++, eptr++) {
+				for(int32_t c = bX.low(); c != (int32_t)bX.high(); c++, eptr++) {
 					uint64_t fd2 = pd2 + static_cast<int64_t>(c) * c;
 					if(fd2 > radius2)
 						continue;
