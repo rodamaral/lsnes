@@ -1468,6 +1468,38 @@ Set palette <palette> index <index> to color <color>.
 \end_layout
 
 \begin_layout Subsubsection
+Method get: Get palette entry
+\end_layout
+
+\begin_layout Itemize
+Syntax: number palette:get(index)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: The palette to query
+\end_layout
+
+\begin_layout Itemize
+index: number: The index of color to get (0-65535).
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+The palette entry as integer.
+\end_layout
+
+\begin_layout Standard
+Get palette entry <index> of palette <palette> and return it.
+\end_layout
+
+\begin_layout Subsubsection
 Method hash: Hash a palette
 \end_layout
 
