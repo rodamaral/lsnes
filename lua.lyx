@@ -4194,11 +4194,11 @@ create_command: Create a command
 \end_layout
 
 \begin_layout Itemize
-Syntax: COMMANDBIND create_commmand(string name, function a)
+Syntax: COMMANDBIND create_command(string name, function a)
 \end_layout
 
 \begin_layout Itemize
-Syntax: COMMANDBIND create_commmand(string name, function a, function b)
+Syntax: COMMANDBIND create_command(string name, function a, function b)
 \end_layout
 
 \begin_layout Standard
