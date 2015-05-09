@@ -216,6 +216,7 @@ rom_image::rom_image(const std::string& file, const std::string& tmpprefer) thro
 	std::getline(spec, s);
 	istrip_CR(s);
 	if(!spec || s != "[GAMEPACK FILE]") {
+		delete &spec;		//Close the file!
 		//This is a Raw ROM image.
 		regex_results tmp;
 		std::string ext = regex(".*\\.([^.]*)?", file, "Can't read file extension")[1];
@@ -262,6 +263,7 @@ void rom_image::load_bundle(const std::string& file, std::istream& spec, const s
 	std::vector<std::string> lines;
 	while(std::getline(spec, s))
 		lines.push_back(strip_CR(s));
+	delete &spec;
 	std::string platname = "";
 	std::string platreg = "";
 	for(auto i : lines) {
