@@ -66,8 +66,8 @@ namespace
 
 	struct render_object_bitmap : public framebuffer::object
 	{
-		render_object_bitmap(int32_t _x, int32_t _y, lua::objpin<lua_bitmap> _bitmap,
-			lua::objpin<lua_palette> _palette, int32_t _x0, int32_t _y0, uint32_t _dw, uint32_t _dh,
+		render_object_bitmap(int32_t _x, int32_t _y, lua::objpin<lua_bitmap>& _bitmap,
+			lua::objpin<lua_palette>& _palette, int32_t _x0, int32_t _y0, uint32_t _dw, uint32_t _dh,
 				bool _outside) throw()
 		{
 			x = _x;
@@ -81,7 +81,7 @@ namespace
 			outside = _outside;
 		}
 
-		render_object_bitmap(int32_t _x, int32_t _y, lua::objpin<lua_dbitmap> _bitmap, int32_t _x0,
+		render_object_bitmap(int32_t _x, int32_t _y, lua::objpin<lua_dbitmap>& _bitmap, int32_t _x0,
 			int32_t _y0, uint32_t _dw, uint32_t _dh, bool _outside) throw()
 		{
 			x = _x;

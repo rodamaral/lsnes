@@ -171,7 +171,7 @@ namespace
 	struct render_object_tilemap : public framebuffer::object
 	{
 		render_object_tilemap(int32_t _x, int32_t _y, int32_t _x0, int32_t _y0, uint32_t _w,
-			uint32_t _h, bool _outside, lua::objpin<tilemap> _map)
+			uint32_t _h, bool _outside, lua::objpin<tilemap>& _map)
 			: x(_x), y(_y), x0(_x0), y0(_y0), w(_w), h(_h), outside(_outside), map(_map) {}
 		~render_object_tilemap() throw()
 		{

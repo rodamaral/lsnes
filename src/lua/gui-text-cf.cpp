@@ -49,7 +49,7 @@ namespace
 	struct render_object_text_cf : public framebuffer::object
 	{
 		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, framebuffer::color _fg,
-			framebuffer::color _bg, framebuffer::color _hl, lua::objpin<lua_customfont> _font) throw()
+			framebuffer::color _bg, framebuffer::color _hl, lua::objpin<lua_customfont>& _font) throw()
 			: x(_x), y(_y), text(_text), fg(_fg), bg(_bg), hl(_hl), font(_font) {}
 		~render_object_text_cf() throw()
 		{
