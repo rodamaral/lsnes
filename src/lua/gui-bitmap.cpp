@@ -806,6 +806,7 @@ lua_palette::lua_palette(lua::state& L)
 
 lua_palette::~lua_palette()
 {
+	CORE().fbuf->render_kill_request(this);
 }
 
 std::string lua_palette::print()
