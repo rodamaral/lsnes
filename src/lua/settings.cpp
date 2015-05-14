@@ -66,7 +66,7 @@ namespace
 
 	int ss_setspeed(lua::state& L, lua::parameters& P)
 	{
-		double spd;
+		double spd = 0;
 		std::string special;
 		bool is_string = false;
 		
