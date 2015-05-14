@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include "framebuffer-pixfmt.hpp"
+#include "threads.hpp"
 
 namespace framebuffer
 {
@@ -641,6 +642,7 @@ private:
 	struct node* queue_tail;
 	size_t memory_allocated;
 	size_t pages;
+	threads::lock display_mutex; //Synchronize display and kill.
 	std::map<size_t, page> memory;
 };
 

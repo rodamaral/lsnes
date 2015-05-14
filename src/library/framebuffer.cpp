@@ -543,6 +543,8 @@ void queue::copy_from(queue& q) throw(std::bad_alloc)
 
 template<bool X> void queue::run(struct fb<X>& scr) throw()
 {
+	//Take queue lock in order to syncronize this with killing the queue.
+	threads::alock h(display_mutex);
 	struct node* tmp = queue_head;
 	while(tmp) {
 		try {
@@ -583,6 +585,8 @@ void* queue::alloc(size_t block) throw(std::bad_alloc)
 
 void queue::kill_request(void* obj) throw()
 {
+	//Take queue lock in order to syncronize this with drawing.
+	threads::alock h(display_mutex);
 	struct node* tmp = queue_head;
 	while(tmp) {
 		try {
