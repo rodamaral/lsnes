@@ -1,4 +1,5 @@
 #include "framebuffer-font2.hpp"
+#include "range.hpp"
 #include "serialization.hpp"
 #include <cstring>
 #include "zip.hpp"
@@ -8,26 +9,6 @@ namespace framebuffer
 {
 namespace
 {
-	void bound(int32_t c, uint32_t odim, uint32_t dim, uint32_t& dc, uint32_t& off, uint32_t& size)
-	{
-		if(c >= (int32_t)dim || c + odim <= 0) {
-			//Outside the screen.
-			dc = 0;
-			off = 0;
-			size = 0;
-		} else if(c >= 0) {
-			dc = c;
-			off = 0;
-			size = odim;
-		} else {
-			dc = 0;
-			off = -c;
-			size = odim + c;
-		}
-		if(dc + size > dim)
-			size = dim - dc;
-	}
-
 	inline bool readfont(const font2::glyph& fglyph, uint32_t xp1, uint32_t yp1)
 	{
 		if(xp1 < 1 || xp1 > fglyph.width || yp1 < 1 || yp1 > fglyph.height)
@@ -42,26 +23,26 @@ namespace
 	template<bool T> void _render(const font2::glyph& fglyph, fb<T>& fb, int32_t x, int32_t y,
 		color fg, color bg, color hl)
 	{
-		uint32_t xdc, xoff, xsize;
-		uint32_t ydc, yoff, ysize;
+		uint32_t _x = x;
+		uint32_t _y = y;
 		if(hl) {
-			bound(x - 1, fglyph.width + 2, fb.get_width(), xdc, xoff, xsize);
-			bound(y - 1, fglyph.height + 2, fb.get_height(), ydc, yoff, ysize);
-			if(!xsize || !ysize)
-				return;
-			for(unsigned i = 0; i < ysize; i++) {
-				auto p = fb.rowptr(i + ydc) + xdc;
-				for(unsigned j = 0; j < xsize; j++) {
+			_x--;
+			_y--;
+			range bX = (range::make_w(fb.get_width()) - _x) & range::make_w(fglyph.width + 2);
+			range bY = (range::make_w(fb.get_height()) - _y) & range::make_w(fglyph.height + 2);
+			for(unsigned i = bY.low(); i < bY.high(); i++) {
+				auto p = fb.rowptr(i + _y) + (_x + bX.low());
+				for(unsigned j = bX.low(); j < bX.high(); j++) {
 					bool in_halo = false;
-					in_halo |= readfont(fglyph, j + xoff - 1, i + yoff - 1);
-					in_halo |= readfont(fglyph, j + xoff, i + yoff - 1);
-					in_halo |= readfont(fglyph, j + xoff + 1, i + yoff - 1);
-					in_halo |= readfont(fglyph, j + xoff - 1, i + yoff);
-					in_halo |= readfont(fglyph, j + xoff + 1, i + yoff);
-					in_halo |= readfont(fglyph, j + xoff - 1, i + yoff + 1);
-					in_halo |= readfont(fglyph, j + xoff, i + yoff + 1);
-					in_halo |= readfont(fglyph, j + xoff + 1, i + yoff + 1);
-					if(readfont(fglyph, j + xoff, i + yoff))
+					in_halo |= readfont(fglyph, j - 1, i - 1);
+					in_halo |= readfont(fglyph, j,     i - 1);
+					in_halo |= readfont(fglyph, j + 1, i - 1);
+					in_halo |= readfont(fglyph, j - 1, i    );
+					in_halo |= readfont(fglyph, j + 1, i    );
+					in_halo |= readfont(fglyph, j - 1, i + 1);
+					in_halo |= readfont(fglyph, j,     i + 1);
+					in_halo |= readfont(fglyph, j + 1, i + 1);
+					if(readfont(fglyph, j, i))
 						fg.apply(p[j]);
 					else if(in_halo)
 						hl.apply(p[j]);
@@ -71,15 +52,13 @@ namespace
 				}
 			}
 		} else {
-			bound(x, fglyph.width, fb.get_width(), xdc, xoff, xsize);
-			bound(y, fglyph.height, fb.get_height(), ydc, yoff, ysize);
-			if(!xsize || !ysize)
-				return;
-			for(unsigned i = 0; i < ysize; i++) {
-				auto p = fb.rowptr(i + ydc) + xdc;
-				for(unsigned j = 0; j < xsize; j++) {
-					size_t ge = (i + yoff) * fglyph.stride + ((j + xoff) / 32);
-					size_t gb = 31 - (j + xoff) % 32;
+			range bX = (range::make_w(fb.get_width()) - _x) & range::make_w(fglyph.width);
+			range bY = (range::make_w(fb.get_height()) - _y) & range::make_w(fglyph.height);
+			for(unsigned i = bY.low(); i < bY.high(); i++) {
+				auto p = fb.rowptr(i + _y) + (_x + bX.low());
+				for(unsigned j = bX.low(); j < bX.high(); j++) {
+					size_t ge = i * fglyph.stride + (j / 32);
+					size_t gb = 31 - j % 32;
 					if((fglyph.fglyph[ge] >> gb) & 1)
 						fg.apply(p[j]);
 					else
