@@ -337,7 +337,7 @@ void* state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
 
 void state::push_trampoline(int(*fn)(state& L), unsigned n_upvals)
 {
-	lua_pushlightuserdata(lua_handle, (void*)this);
+	lua_pushlightuserdata(lua_handle, (void*)&get_master());
 	lua_pushlightuserdata(lua_handle, (void*)fn);
 	if(n_upvals > 0) {
 		lua_insert(lua_handle, -(int)n_upvals - 2);
