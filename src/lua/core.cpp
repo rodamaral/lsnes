@@ -205,6 +205,13 @@ namespace
 		return 0;
 	}
 
+	int get_lua_memory_use(lua::state& L, lua::parameters& P)
+	{
+		L.pushnumber(L.get_memory_use());
+		L.pushnumber(L.get_memory_limit());
+		return 2;
+	}
+
 	int get_runmode(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
@@ -231,6 +238,7 @@ namespace
 		{"set_idle_timeout", set_idle_timeout},
 		{"set_timer_timeout", set_timer_timeout},
 		{"bus_address", bus_address},
+		{"get_lua_memory_use", get_lua_memory_use},
 		{"memory.get_lag_flag", get_lag_flag},
 		{"memory.set_lag_flag", set_lag_flag},
 		{"gui.get_runmode", get_runmode},

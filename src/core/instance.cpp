@@ -81,10 +81,10 @@ emulator_instance::emulator_instance()
 	D.init(mlogic);
 	D.init(slotcache, *mlogic, *command);
 	D.init(memory);
-	D.init(lua);
-	D.init(lua2, *lua, *command);
-	D.init(mwatch, *memory, *project, *fbuf, *rom);
 	D.init(settings);
+	D.init(lua);
+	D.init(lua2, *lua, *command, *settings);
+	D.init(mwatch, *memory, *project, *fbuf, *rom);
 	D.init(jukebox, *settings, *command);
 	D.init(setcache, *settings);
 	D.init(audio);

@@ -390,7 +390,7 @@ public:
 /**
  * Get setting.
  */
-	valtype_t get() throw(std::bad_alloc)
+	valtype_t get() const throw(std::bad_alloc)
 	{
 		threads::arlock h(get_setting_lock());
 		return model::transform(value);
@@ -398,7 +398,7 @@ public:
 /**
  * Get setting.
  */
-	operator valtype_t()
+	operator valtype_t() const
 	{
 		return get();
 	}

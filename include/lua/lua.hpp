@@ -10,6 +10,7 @@
 #include "library/framebuffer.hpp"
 #include "library/lua-base.hpp"
 #include "library/lua-framebuffer.hpp"
+#include "library/settingvar.hpp"
 
 namespace command { class group; }
 namespace keyboard { class key; }
@@ -22,7 +23,7 @@ void quit_lua() throw();
 
 struct lua_state
 {
-	lua_state(lua::state& _L, command::group& _command);
+	lua_state(lua::state& _L, command::group& _command, settingvar::group& settings);
 	~lua_state();
 
 	lua::state::callback_list* on_paint;
@@ -102,6 +103,7 @@ struct lua_state
 	lua::render_context* renderq_saved;
 	lua::render_context* renderq_last;
 	bool renderq_redirect;
+	void set_memory_limit(size_t max_mb);
 
 	std::list<std::string> startup_scripts;
 	std::map<std::string, std::u32string> watch_vars;
@@ -119,6 +121,22 @@ private:
 	command::_fnptr<const std::string&> evalcmd;
 	command::_fnptr<const std::string&> evalcmd2;
 	command::_fnptr<command::arg_filename> runcmd;
+	struct _listener : public settingvar::listener
+	{
+		_listener(settingvar::group& group, lua_state& _obj)
+			: obj(_obj), grp(group)
+		{
+			group.add_listener(*this);
+		}
+		~_listener() throw()
+		{
+			grp.remove_listener(*this);
+		}
+		void on_setting_change(settingvar::group& grp, const settingvar::base& val);
+		lua_state& obj;
+		settingvar::group& grp;
+	};
+	_listener listener;
 };
 
 #endif

@@ -220,6 +220,10 @@ public:
  */
 	void set_oom_handler(void (*oom)()) { oom_handler = oom ? oom : builtin_oom; }
 /**
+ * Set soft OOM handler.
+ */
+	void set_soft_oom_handler(void (*oom)(int status)) { soft_oom_handler = oom ? oom : builtin_soft_oom; }
+/**
  * Reset the state.
  */
 	void reset() throw(std::runtime_error, std::bad_alloc);
@@ -238,6 +242,55 @@ public:
  * Get specified trampoline upvalue index.
  */
 	int trampoline_upval(int val) { return lua_upvalueindex(trampoline_upvals + val); }
+/**
+ * Set value of interruptable flag.
+ *
+ * Parameter flag: The flag.
+ */
+	void set_interruptable_flag(bool flag)
+	{
+		if(master) master->set_interruptable_flag(flag); else interruptable = flag;
+	}
+/**
+ * Get interruptable flag.
+ */
+	bool get_interruptable_flag()
+	{
+		if(master) return master->get_interruptable_flag(); else return interruptable;
+	}
+/**
+ * Set memory limit.
+ */
+	void set_memory_limit(size_t limit)
+	{
+		if(master) master->set_memory_limit(limit); else memory_limit = limit;
+	}
+/**
+ * Get memory limit.
+ */
+	size_t get_memory_limit()
+	{
+		if(master) return master->get_memory_limit(); else return memory_limit;
+	}
+/**
+ * Get memory use.
+ */
+	size_t get_memory_use()
+	{
+		if(master) return master->get_memory_use(); else return memory_use;
+	}
+/**
+ * Charge against memory limit.
+ */
+	bool charge_memory(size_t amount, bool release);
+/**
+ * Execute function in interruptable mode.
+ *
+ * Parameter fn: The function to execute
+ * Parameter in: Number of slots to copy in.
+ * Parameter out: Number of slots to copy out.
+ */
+	void run_interruptable(std::function<void()> fn, unsigned in, unsigned out);
 /**
  * Get a string argument.
  *
@@ -423,6 +476,7 @@ public:
 	void* newuserdata(size_t size) { return lua_newuserdata(lua_handle, size); }
 	int setmetatable(int index) { return lua_setmetatable(lua_handle, index); }
 	int type(int index) { return lua_type(lua_handle, index); }
+	void replace(int index) { lua_replace(lua_handle, index); }
 	int getmetatable(int index) { return lua_getmetatable(lua_handle, index); }
 	int rawequal(int index1, int index2) { return lua_rawequal(lua_handle, index1, index2); }
 	void* touserdata(int index) { return lua_touserdata(lua_handle, index); }
@@ -462,7 +516,18 @@ public:
 	void pushlstring(const char* s, size_t len) { lua_pushlstring(lua_handle, s, len); }
 	void pushlstring(const std::string& s) { lua_pushlstring(lua_handle, s.c_str(), s.length()); }
 	void pushlstring(const char32_t* s, size_t len) { pushlstring(utf8::to8(std::u32string(s, len))); }
-	int pcall(int nargs, int nresults, int errfunc) { return lua_pcall(lua_handle, nargs, nresults, errfunc); }
+	int pcall(int nargs, int nresults, int errfunc)
+	{
+		state* master_state = this;
+		while(master_state->master) master_state = master_state->master;
+		//Upon entry to protected mode, interruptable mode is always set, and it is restored on exit
+		//from protected mode.
+		bool old_interruptable = master_state->interruptable;
+		master_state->interruptable = true;
+		auto ret = lua_pcall(lua_handle, nargs, nresults, errfunc);
+		master_state->interruptable = old_interruptable;
+		return ret;
+	}
 	int next(int index) { return lua_next(lua_handle, index); }
 	int isnoneornil(int index) { return lua_isnoneornil(lua_handle, index); }
 	void rawgeti(int index, int n) { lua_rawgeti(lua_handle, index, n); }
@@ -479,9 +544,14 @@ private:
 	void _pushnumber(lua_Number n) { return lua_pushnumber(lua_handle, n); }
 	void _pushinteger(uint64_t n) { return LUA_INTEGER_POSTFIX(lua_push) (lua_handle, n); }
 	static void builtin_oom();
+	static void builtin_soft_oom(int status);
 	static void* builtin_alloc(void* user, void* old, size_t olds, size_t news);
 	void (*oom_handler)();
+	void (*soft_oom_handler)(int status);
 	state* master;
+	bool interruptable;
+	size_t memory_limit;
+	size_t memory_use;
 	lua_State* lua_handle;
 	state(state&);
 	state& operator=(state&);

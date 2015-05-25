@@ -37,6 +37,10 @@ lua::class_group lua_class_fileio;
 
 namespace
 {
+	typedef settingvar::model_int<32,1024> mb_model;
+	settingvar::supervariable<mb_model> SET_lua_maxmem(lsnes_setgrp, "lua-maxmem",
+		"Lua‣Maximum memory use (MB)", 128);
+
 	void pushpair(lua::state& L, std::string key, double value)
 	{
 		L.pushstring(key.c_str());
@@ -91,6 +95,16 @@ void push_keygroup_parameters(lua::state& L, keyboard::key& p)
 
 namespace
 {
+	void soft_oom(int status)
+	{
+		if(status == 0)
+			messages << "Lua: Memory limit exceeded, attempting to free memory..." << std::endl;
+		if(status < 0)
+			messages << "Lua: Memory allocation still failed." << std::endl;
+		if(status > 0)
+			messages << "Lua: Allocation successful after freeing some memory." << std::endl;
+	}
+
 	int push_keygroup_parameters2(lua::state& L, keyboard::key* p)
 	{
 		push_keygroup_parameters(L, *p);
@@ -148,17 +162,32 @@ namespace
 	}
 }
 
-lua_state::lua_state(lua::state& _L, command::group& _command)
+void lua_state::_listener::on_setting_change(settingvar::group& grp, const settingvar::base& val)
+{
+	if(val.get_iname() == "lua-maxmem")
+		obj.set_memory_limit(dynamic_cast<const settingvar::variable<mb_model>*>(&val)->get());
+}
+
+void lua_state::set_memory_limit(size_t limit_mb)
+{
+	L.set_memory_limit(limit_mb << 20);
+}
+
+lua_state::lua_state(lua::state& _L, command::group& _command, settingvar::group& settings)
 	: L(_L), command(_command),
 	resetcmd(command, CLUA::reset, [this]() { this->do_reset(); }),
 	evalcmd(command, CLUA::eval, [this](const std::string& a) { this->do_eval_lua(a); }),
 	evalcmd2(command, CLUA::eval2, [this](const std::string& a) { this->do_eval_lua(a); }),
-	runcmd(command, CLUA::run, [this](command::arg_filename a) { this->do_run_lua(a); })
+	runcmd(command, CLUA::run, [this](command::arg_filename a) { this->do_run_lua(a); }),
+	listener(settings, *this)
 {
 	requests_repaint = false;
 	requests_subframe_paint = false;
 	render_ctx = NULL;
 	input_controllerdata = NULL;
+	//We can't read the value of lua maxmem setting here (it crashes), so just set default, it will be changed
+	//if needed.
+	L.set_memory_limit(1 << 27);
 
 	idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 	timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
@@ -374,6 +403,7 @@ void init_lua() throw()
 {
 	auto& core = lsnes_instance;
 	core.lua->set_oom_handler(OOM_panic);
+	core.lua->set_soft_oom_handler(soft_oom);
 	try {
 		core.lua->reset();
 		core.lua->add_function_group(lua_func_bit);
@@ -516,6 +546,13 @@ bool lua_state::run_lua_fragment() throw(std::bad_alloc)
 		L.pop(1);
 		result = false;
 	}
+#ifdef LUA_ERRGCMM
+	if(r == LUA_ERRGCMM) {
+		messages << "Error running Lua hunk: Fault in garbage collector" << std::endl;
+		L.pop(1);
+		result = false;
+	}
+#endif
 	render_ctx = NULL;
 	if(requests_repaint) {
 		requests_repaint = false;

@@ -220,11 +220,16 @@ namespace
 		state* lstate = reinterpret_cast<state*>(lua_touserdata(L, lua_upvalueindex(1)));
 		void* _fn = lua_touserdata(L, lua_upvalueindex(2));
 		fnraw_t fn = (fnraw_t)_fn;
+		//The function is always run in non-set_interruptable mode.
 		try {
 			state _L(*lstate, L);
-			return fn(_L);
+			lstate->set_interruptable_flag(false);
+			int r = fn(_L);
+			lstate->set_interruptable_flag(true);
+			return r;
 		} catch(std::exception& e) {
 			lua_pushfstring(L, "%s", e.what());
+			lstate->set_interruptable_flag(true);
 			lua_error(L);
 		}
 		return 0;
@@ -286,6 +291,24 @@ namespace
 	{
 		fun->register_state(L);
 	}
+
+	int run_interruptable_trampoline(lua_State* L)
+	{
+		//Be very careful with faults here! We are running in interruptable context.
+		static std::string err;
+		auto& fn = *(std::function<void()>*)lua_touserdata(L, -1);
+		int out = lua_tonumber(L, -2);
+		lua_pop(L, 2);	//fn is passed as a pointer, so popping it is OK.
+		try {
+			fn();
+		} catch(std::exception& e) {
+			err = e.what();
+			//This can fault, so err is static.
+			lua_pushlstring(L, err.c_str(), err.length());
+			lua_error(L);
+		}
+		return out;
+	}
 }
 
 state::state() throw(std::bad_alloc)
@@ -293,6 +316,10 @@ state::state() throw(std::bad_alloc)
 	master = NULL;
 	lua_handle = NULL;
 	oom_handler = builtin_oom;
+	soft_oom_handler = builtin_soft_oom;
+	interruptable = false;		//Assume initially not interruptable.
+	memory_limit = (size_t)-1;	//Unlimited.
+	memory_use = 0;
 }
 
 state::state(state& _master, lua_State* L)
@@ -323,16 +350,54 @@ void state::builtin_oom()
 	exit(1);
 }
 
+void state::builtin_soft_oom(int status)
+{
+	if(status == 0)
+		std::cerr << "Lua: Memory limit exceeded, attempting to free memory..." << std::endl;
+	if(status < 0)
+		std::cerr << "Lua: Memory allocation still failed." << std::endl;
+	if(status > 0)
+		std::cerr << "Lua: Allocation successful after freeing some memory." << std::endl;
+}
+
 void* state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
 {
+	void* m;
+	auto& st = *reinterpret_cast<state*>(user);
 	if(news) {
-		void* m = realloc(old, news);
-		if(!m)
-			reinterpret_cast<state*>(user)->oom_handler();
+		if(news > olds && !st.charge_memory(news - olds, false)) {
+			goto retry_allocation;
+		}
+		m = realloc(old, news);
+		if(!m && !st.get_interruptable_flag())
+			st.oom_handler();
+		if(!m) {
+			st.charge_memory(news - olds, true);	//Undo commit.
+			goto retry_allocation;
+		}
+		if(news < olds)
+			st.charge_memory(olds - news, true);	//Release memory.
 		return m;
-	} else
+	} else {
+		st.charge_memory(olds, true);	//Release memory.
 		free(old);
+	}
 	return NULL;
+retry_allocation:
+	st.soft_oom_handler(0);
+	st.interruptable = false;			//Give everything we got for the GC.
+	lua_gc(st.lua_handle, LUA_GCCOLLECT,0);		//Do full cycle to try to free some memory.
+	st.interruptable = true;
+	if(!st.charge_memory(news - olds, false)) {	//Try to see if memory can be allocated.
+		st.soft_oom_handler(-1);
+		return NULL;
+	}
+	m = realloc(old, news);
+	if(!m && news > olds)
+		st.charge_memory(news - olds, true);	//Undo commit.
+	st.soft_oom_handler(m ? 1 : -1);
+	return m;
+	
 }
 
 void state::push_trampoline(int(*fn)(state& L), unsigned n_upvals)
@@ -344,6 +409,51 @@ void state::push_trampoline(int(*fn)(state& L), unsigned n_upvals)
 		lua_insert(lua_handle, -(int)n_upvals - 2);
 	}
 	lua_pushcclosure(lua_handle, lua_main_trampoline, trampoline_upvals + n_upvals);
+}
+
+void state::run_interruptable(std::function<void()> fn, unsigned in, unsigned out)
+{
+	pushnumber(out);
+	pushlightuserdata(&fn);
+	pushcfunction(run_interruptable_trampoline);
+	insert(-(int)in - 3);
+	int r = pcall(in + 2, out, 0);
+	if(r == LUA_OK) {
+		//Nothing.
+	} else if(r == LUA_ERRRUN) {
+		throw std::runtime_error(tostring(-1));
+	} else if(r == LUA_ERRMEM) {
+		throw std::runtime_error("Lua out of memory");
+	} else if(r == LUA_ERRERR) {
+		throw std::runtime_error("Lua double fault");
+#ifdef LUA_ERRGCMM
+	} else if(r == LUA_ERRGCMM) {
+		throw std::runtime_error("Lua fault in garbage collector");
+#endif
+	}
+}
+
+bool state::charge_memory(size_t amount, bool release)
+{
+	if(master) return master->charge_memory(amount, release);
+	if(release) {
+		if(memory_use > amount)
+			memory_use -= amount;
+		else
+			memory_use = 0;
+		return true;
+	}
+	if(!interruptable) {
+		//Give everything we got.
+		memory_use += amount;
+		return true;
+	} else {
+		//Check limit and refuse allocations too large.
+		if(memory_use + amount > memory_limit || memory_use + amount < amount)
+			return false;
+		memory_use += amount;
+		return true;
+	}
 }
 
 function::function(function_group& _group, const std::string& func) throw(std::bad_alloc)
