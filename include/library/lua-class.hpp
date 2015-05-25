@@ -236,20 +236,12 @@ template<class T> class _class : public class_base
 		return _obj;
 	}
 
-	static int class_bind_trampoline(lua_State* LS)
+	static int class_bind_trampoline(state& L)
 	{
-		try {
-			class_binding<T>* b = (class_binding<T>*)lua_touserdata(LS, lua_upvalueindex(1));
-			state L(*b->_state, LS);
-			T* p = _class<T>::get(L, 1, b->fname);
-			lua::parameters P(L, b->fname);
-			return (p->*(b->fn))(L, P);
-		} catch(std::exception& e) {
-			std::string err = e.what();
-			lua_pushlstring(LS, err.c_str(), err.length());
-			lua_error(LS);
-		}
-		return 0; //NOTREACHED
+		class_binding<T>* b = (class_binding<T>*)L.touserdata(L.trampoline_upval(1));
+		T* p = _class<T>::get(L, 1, b->fname);
+		lua::parameters P(L, b->fname);
+		return (p->*(b->fn))(L, P);
 	}
 
 	T* _get(state& _state, int arg, const std::string& fname, bool optional = false)
@@ -306,7 +298,7 @@ badtype:
 		bdata->_state = &_state.get_master();
 		std::copy(fname.begin(), fname.end(), bdata->fname);
 		bdata->fname[fname.length()] = 0;
-		_state.pushcclosure(class_bind_trampoline, 1);
+		_state.push_trampoline(class_bind_trampoline, 1);
 		_state.rawset(-3);
 		_state.pop(1);
 	}
@@ -459,30 +451,27 @@ public:
 		return r;
 	}
 private:
-	static int dogc(lua_State* LS)
+	static int dogc(state& L)
 	{
-		T* obj = reinterpret_cast<T*>(lua_touserdata(LS, 1));
+		T* obj = reinterpret_cast<T*>(L.touserdata(1));
 		obj->~T();
 		return 0;
 	}
 
-	static int newindex(lua_State* LS)
+	static int newindex(state& L)
 	{
-		lua_pushstring(LS, "Writing metatables of classes is not allowed");
-		lua_error(LS);
-		return 0;
+		throw std::runtime_error("Writing metatables of classes is not allowed");
 	}
 
-	static int index(lua_State* LS)
+	static int index(state& L)
 	{
-		lua_getmetatable(LS, 1);
-		lua_pushvalue(LS, 2);
-		lua_rawget(LS, -2);
-		if(lua_type(LS, -1) == LUA_TNIL) {
-			std::string err = std::string("Class '") + lua_tostring(LS, lua_upvalueindex(1)) +
-				"' does not have class method '" + lua_tostring(LS, 2) + "'";
-			lua_pushstring(LS, err.c_str());
-			lua_error(LS);
+		L.getmetatable(1);
+		L.pushvalue(2);
+		L.rawget(-2);
+		if(L.type(-1) == LUA_TNIL) {
+			std::string err = std::string("Class '") + L.tostring(L.trampoline_upval(1)) +
+				"' does not have class method '" + L.tostring(2) + "'";
+			throw std::runtime_error(err);
 		}
 		return 1;
 	}
@@ -499,14 +488,14 @@ again:
 			_state.pushvalue(-1);
 			_state.setmetatable(-2);
 			_state.pushstring("__gc");
-			_state.pushcfunction(&_class<T>::dogc);
+			_state.push_trampoline(&_class<T>::dogc, 0);
 			_state.rawset(-3);
 			_state.pushstring("__newindex");
-			_state.pushcfunction(&_class<T>::newindex);
+			_state.push_trampoline(&_class<T>::newindex, 0);
 			_state.rawset(-3);
 			_state.pushstring("__index");
 			_state.pushlstring(name);
-			_state.pushcclosure(&_class<T>::index, 1);
+			_state.push_trampoline(&_class<T>::index, 1);
 			_state.rawset(-3);
 			_state.rawset(LUA_REGISTRYINDEX);
 			goto again;

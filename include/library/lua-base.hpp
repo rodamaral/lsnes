@@ -28,6 +28,7 @@ class class_base;
 class state
 {
 public:
+	const static unsigned trampoline_upvals = 2;
 	//Auxillary type for store-tag.
 	template<typename T> struct _store_tag
 	{
@@ -226,6 +227,17 @@ public:
  * Deinit the state.
  */
 	void deinit() throw();
+/**
+ * Create a trampoline.
+ *
+ * Parameter fn The function to execute.
+ * Parameter n_upvals The number of extra upvalues besides the 2 used by trampoline itself. Popped from stack.
+ */
+	void push_trampoline(int(*fn)(state& L), unsigned n_upvals);
+/**
+ * Get specified trampoline upvalue index.
+ */
+	int trampoline_upval(int val) { return lua_upvalueindex(trampoline_upvals + val); }
 /**
  * Get a string argument.
  *

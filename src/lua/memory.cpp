@@ -116,15 +116,12 @@ private:
 namespace
 {
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
-	int aperture_read_fun(lua_State* _L)
+	int aperture_read_fun(lua::state& L)
 	{
-		lua::state& mL = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(3)));
-		lua::state L(mL, _L);
-
-		uint64_t base = L.tointeger(lua_upvalueindex(1));
+		uint64_t base = L.tointeger(L.trampoline_upval(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
-		if(L.type(lua_upvalueindex(2)) == LUA_TNUMBER)
-			size = L.tointeger(lua_upvalueindex(2));
+		if(L.type(L.trampoline_upval(2)) == LUA_TNUMBER)
+			size = L.tointeger(L.trampoline_upval(2));
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, "aperture(read)");
 		if(addr > size || addr + base < addr) {
 			L.pushnumber(0);
@@ -136,15 +133,12 @@ namespace
 	}
 
 	template<typename T, bool (memory_space::*wfun)(uint64_t addr, T value)>
-	int aperture_write_fun(lua_State* _L)
+	int aperture_write_fun(lua::state& L)
 	{
-		lua::state& mL = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(3)));
-		lua::state L(mL, _L);
-
-		uint64_t base = L.tointeger(lua_upvalueindex(1));
+		uint64_t base = L.tointeger(L.trampoline_upval(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
 		if(L.type(lua_upvalueindex(2)) == LUA_TNUMBER)
-			size = L.tointeger(lua_upvalueindex(2));
+			size = L.tointeger(L.trampoline_upval(2));
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, "aperture(write)");
 		if(addr > size || addr + base < addr)
 			return 0;
@@ -166,8 +160,7 @@ namespace
 			L.pushnil();
 		else
 			L.pushnumber(size);
-		L.pushlightuserdata(&L);
-		L.pushcclosure(aperture_read_fun<T, rfun>, 3);
+		L.push_trampoline(aperture_read_fun<T, rfun>, 2);
 		L.settable(-3);
 		L.pushstring("__newindex");
 		L.pushnumber(base);
@@ -175,8 +168,7 @@ namespace
 			L.pushnil();
 		else
 			L.pushnumber(size);
-		L.pushlightuserdata(&L);
-		L.pushcclosure(aperture_write_fun<T, wfun>, 3);
+		L.push_trampoline(aperture_write_fun<T, wfun>, 2);
 		L.settable(-3);
 		L.setmetatable(-2);
 	}
@@ -216,7 +208,7 @@ namespace
 		void unregister();
 		void callback(const debug_context::params& p);
 		void killed(uint64_t addr, debug_context::etype type);
-		static int on_lua_gc(lua_State* L);
+		static int on_lua_gc(lua::state& L);
 		lua_debug_callback2* prev;
 		lua_debug_callback2* next;
 	};
@@ -225,7 +217,7 @@ namespace
 	{
 		~lua_debug_callback_dict();
 		std::map<std::pair<debug_context::etype, uint64_t>, lua_debug_callback2*> cblist;
-		static int on_lua_gc(lua_State* L);
+		static int on_lua_gc(lua::state& L);
 	};
 
 	lua_debug_callback2::~lua_debug_callback2()
@@ -264,7 +256,7 @@ namespace
 			new(D) lua_debug_callback_dict;
 			L->newtable();
 			L->pushstring("__gc");
-			L->pushcclosure(&lua_debug_callback_dict::on_lua_gc, 0);
+			L->push_trampoline(&lua_debug_callback_dict::on_lua_gc, 0);
 			L->rawset(-3);
 			L->setmetatable(-2);
 			L->rawset(LUA_REGISTRYINDEX);
@@ -351,10 +343,10 @@ namespace
 		L->rawset(LUA_REGISTRYINDEX);
 	}
 
-	int lua_debug_callback2::on_lua_gc(lua_State* _L)
+	int lua_debug_callback2::on_lua_gc(lua::state& L)
 	{
 		//We need to destroy the object.
-		lua_debug_callback2* D = (lua_debug_callback2*)lua_touserdata(_L, 1);
+		lua_debug_callback2* D = (lua_debug_callback2*)L.touserdata(1);
 		if(!D->dead) {
 			//Unregister this!
 			CORE().dbg->remove_callback(D->addr, D->type, *D);
@@ -368,12 +360,12 @@ namespace
 	{
 	}
 
-	int lua_debug_callback_dict::on_lua_gc(lua_State* _L)
+	int lua_debug_callback_dict::on_lua_gc(lua::state& L)
 	{
-		lua_pushlightuserdata(_L, &CONST_lua_cb_list_key);
-		lua_pushnil(_L);
-		lua_rawset(_L, LUA_REGISTRYINDEX);
-		lua_debug_callback_dict* D = (lua_debug_callback_dict*)lua_touserdata(_L, 1);
+		L.pushlightuserdata(&CONST_lua_cb_list_key);
+		L.pushnil();
+		L.rawset(LUA_REGISTRYINDEX);
+		lua_debug_callback_dict* D = (lua_debug_callback_dict*)L.touserdata(1);
 		D->~lua_debug_callback_dict();
 		return 0;
 	}
@@ -387,7 +379,7 @@ void handle_registerX(lua::state& L, uint64_t addr, int lfn)
 	new(D) lua_debug_callback2;
 	L.newtable();
 	L.pushstring("__gc");
-	L.pushcclosure(&lua_debug_callback2::on_lua_gc, 0);
+	L.push_trampoline(&lua_debug_callback2::on_lua_gc, 0);
 	L.rawset(-3);
 	L.setmetatable(-2);
 	L.pushlightuserdata(D);

@@ -98,7 +98,7 @@ namespace
 	}
 
 
-	const char* read_lua_fragment(lua_State* L, void* fragment, size_t* size)
+	const char* read_lua_fragment(lua_State* unused, void* fragment, size_t* size)
 	{
 		const char*& luareader_fragment = *reinterpret_cast<const char**>(fragment);
 		if(luareader_fragment) {
@@ -120,11 +120,9 @@ namespace
 		" print(\"Parse error in Lua statement: \"..err); end;";
 	const char* CONST_run_lua_lua = "dofile(" TEMPORARY ");";
 
-	int system_write_error(lua_State* L)
+	int system_write_error(lua::state& L)
 	{
-		lua_pushstring(L, "_SYSTEM is write-protected");
-		lua_error(L);
-		return 0;
+		throw std::runtime_error("_SYSTEM is write-protected");
 	}
 
 	void copy_system_tables(lua::state& L)
@@ -143,7 +141,7 @@ namespace
 			//Stack: _SYSTEM, KEY
 		}
 		L.newtable();
-		L.pushcfunction(system_write_error);
+		L.push_trampoline(system_write_error, 0);
 		L.setfield(-2, "__newindex");
 		L.setmetatable(-2);
 		L.setglobal("_SYSTEM");

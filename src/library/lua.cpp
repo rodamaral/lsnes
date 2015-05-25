@@ -68,94 +68,79 @@ namespace
 	struct class_info
 	{
 		class_base* obj;
-		static int index(lua_State* L);
-		static int newindex(lua_State* L);
-		static int pairs(lua_State* L);
-		static int pairs_next(lua_State* L);
-		static int smethods(lua_State* L);
-		static int cmethods(lua_State* L);
-		static int trampoline(lua_State* L);
-		static void check(lua_State* L);
+		static int index(state& L);
+		static int newindex(state& L);
+		static int pairs(state& L);
+		static int pairs_next(state& L);
+		static int smethods(state& L);
+		static int cmethods(state& L);
+		static int trampoline(state& L);
+		static void check(state& L);
 	};
 
-	void class_info::check(lua_State* L)
+	void class_info::check(state& L)
 	{
-		lua_pushlightuserdata(L, &classtable_meta_key);
-		lua_rawget(L, LUA_REGISTRYINDEX);
-		lua_getmetatable(L, 1);
-		if(!lua_rawequal(L, -1, -2)) {
-			lua_pushstring(L, "Bad class table");
-			lua_error(L);
-		}
-		lua_pop(L, 2);
+		L.pushlightuserdata(&classtable_meta_key);
+		L.rawget(LUA_REGISTRYINDEX);
+		L.getmetatable(1);
+		if(!L.rawequal(-1, -2))
+			throw std::runtime_error("Bad class table");
+		L.pop(2);
 	}
 
-	int class_info::index(lua_State* L)
+	int class_info::index(state& L)
 	{
 		check(L);
 
-		class_base* ptr = ((class_info*)lua_touserdata(L, 1))->obj;
-		const char* method = lua_tostring(L, 2);
-		if(!method) {
-			lua_pushstring(L, "Indexing invalid element of class table");
-			lua_error(L);
-		}
+		class_base* ptr = ((class_info*)L.touserdata(1))->obj;
+		const char* method = L.tostring(2);
+		if(!method)
+			throw std::runtime_error("Indexing invalid element of class table");
 		if(!strcmp(method, "_static_methods")) {
-			lua_pushlightuserdata(L, ptr);
-			lua_pushcclosure(L, class_info::smethods, 1);
+			L.pushlightuserdata(ptr);
+			L.push_trampoline(class_info::smethods, 1);
 			return 1;
 		} else if(!strcmp(method, "_class_methods")) {
-			lua_pushlightuserdata(L, ptr);
-			lua_pushcclosure(L, class_info::cmethods, 1);
+			L.pushlightuserdata(ptr);
+			L.push_trampoline(class_info::cmethods, 1);
 			return 1;
 		} else {
 			auto m = ptr->static_methods();
 			for(auto i : m) {
 				if(!strcmp(i.name, method)) {
 					//Hit.
-					std::string name = ptr->get_name() + "::" + method;
-					lua_pushvalue(L, lua_upvalueindex(1));  //State.
-					lua_pushlightuserdata(L, (void*)i.fn);
 					std::string fname = ptr->get_name() + "::" + i.name;
-					lua_pushstring(L, fname.c_str());
-					lua_pushcclosure(L, class_info::trampoline, 3);
+					L.pushlightuserdata((void*)i.fn);
+					L.pushstring(fname.c_str());
+					L.push_trampoline(class_info::trampoline, 2);
 					return 1;
 				}
 			}
 			std::string err = std::string("Class '") + ptr->get_name() +
 				"' does not have static method '" + method + "'";
-			lua_pushstring(L, err.c_str());
-			lua_error(L);
+			throw std::runtime_error(err);
 		}
 		return 0; //NOTREACHED
 	}
-	int class_info::newindex(lua_State* L)
+	int class_info::newindex(state& L)
 	{
-		lua_pushstring(L, "Writing into class table not allowed");
-		lua_error(L);
-		return 0; //NOTREACHED
+		throw std::runtime_error("Writing into class table not allowed");
 	}
 
-	int class_info::pairs(lua_State* _xL)
+	int class_info::pairs(state& L)
 	{
-		check(_xL);
+		check(L);
 
-		lua::state* _L = (lua::state*)lua_touserdata(_xL, lua_upvalueindex(1));
-		state L(*_L, _xL);
-
-		L.pushvalue(lua_upvalueindex(1));
-		L.pushcclosure(class_info::pairs_next, 1);	//Next
+		L.push_trampoline(class_info::pairs_next, 0);	//Next.
 		L.pushvalue(1);					//State.
 		L.pushnil();					//Index.
 		return 3;
 	}
 
-	int class_info::pairs_next(lua_State* _xL)
+	int class_info::pairs_next(state& L)
 	{
-		check(_xL);
+		check(L);
 
-		lua::state* _L = (lua::state*)lua_touserdata(_xL, lua_upvalueindex(1));
-		state L(*_L, _xL);
 		class_base* obj = ((class_info*)L.touserdata(1))->obj;
 		auto m = obj->static_methods();
 		std::string key = (L.type(2) == LUA_TSTRING) ? L.tostring(2) : "";
@@ -169,10 +154,9 @@ namespace
 		if(best_fn) {
 			L.pushlstring(lowbound);
 			std::string name = obj->get_name() + "::" + lowbound;
-			L.pushvalue(lua_upvalueindex(1));  //State.
 			L.pushlightuserdata(best_fn);
 			L.pushlstring(name);
-			L.pushcclosure(class_info::trampoline, 3);
+			L.push_trampoline(class_info::trampoline, 2);
 			return 2;
 		} else {
 			L.pushnil();
@@ -180,57 +164,65 @@ namespace
 		}
 	}
 
-	int class_info::smethods(lua_State* L)
+	int class_info::smethods(state& L)
 	{
-		class_base* obj = (class_base*)lua_touserdata(L, lua_upvalueindex(1));
+		class_base* obj = (class_base*)L.touserdata(L.trampoline_upval(1));
 		auto m = obj->static_methods();
 		int rets = 0;
 		for(auto i : m) {
-			lua_pushstring(L, i.name);
+			L.pushstring(i.name);
 			rets++;
 		}
 		return rets;
 	}
 
-	int class_info::cmethods(lua_State* L)
+	int class_info::cmethods(state& L)
 	{
-		class_base* obj = (class_base*)lua_touserdata(L, lua_upvalueindex(1));
+		class_base* obj = (class_base*)L.touserdata(L.trampoline_upval(1));
 		auto m = obj->class_methods();
 		int rets = 0;
 		for(auto i : m) {
-			lua_pushstring(L, i.c_str());
+			L.pushstring(i.c_str());
 			rets++;
 		}
 		return rets;
 	}
 
 	typedef int (*fn_t)(state& L, parameters& P);
+	typedef int (*fnraw_t)(state& L);
 
-	int class_info::trampoline(lua_State* L)
+	//2 upvalues:
+	//1) Pointer to function control block.
+	//2) Pointer to method name.
+	int class_info::trampoline(state& L)
+	{
+		void* _fn = L.touserdata(L.trampoline_upval(1));
+		fn_t fn = (fn_t)_fn;
+		std::string name = L.tostring(L.trampoline_upval(2));
+		parameters P(L, name);
+		return fn(L, P);
+	}
+
+	//1 upvalue:
+	//1) Pointer to function control block.
+	int lua_trampoline_function(state& L)
+	{
+		void* ptr = L.touserdata(L.trampoline_upval(1));
+		function* f = reinterpret_cast<function*>(ptr);
+		return f->invoke(L);
+	}
+
+	//2 upvalues.
+	//1) Pointer to master state.
+	//2) Poiinter to function to call.
+	int lua_main_trampoline(lua_State* L)
 	{
 		state* lstate = reinterpret_cast<state*>(lua_touserdata(L, lua_upvalueindex(1)));
 		void* _fn = lua_touserdata(L, lua_upvalueindex(2));
-		fn_t fn = (fn_t)_fn;
-		try {
-			std::string name = lua_tostring(L, lua_upvalueindex(3));
-			state _L(*lstate, L);
-			parameters P(_L, name);
-			return fn(_L, P);
-		} catch(std::exception& e) {
-			lua_pushfstring(L, "%s", e.what());
-			lua_error(L);
-		}
-		return 0;
-	}
-
-	int lua_trampoline_function(lua_State* L)
-	{
-		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
-		state* lstate = reinterpret_cast<state*>(lua_touserdata(L, lua_upvalueindex(2)));
-		function* f = reinterpret_cast<function*>(ptr);
+		fnraw_t fn = (fnraw_t)_fn;
 		try {
 			state _L(*lstate, L);
-			return f->invoke(_L);
+			return fn(_L);
 		} catch(std::exception& e) {
 			lua_pushfstring(L, "%s", e.what());
 			lua_error(L);
@@ -284,8 +276,7 @@ namespace
 		else {
 			void* ptr = reinterpret_cast<void*>(fun);
 			L.pushlightuserdata(ptr);
-			L.pushlightuserdata(&L);
-			L.pushcclosure(lua_trampoline_function, 2);
+			L.push_trampoline(lua_trampoline_function, 1);
 		}
 		L.setfield(-2, u2.c_str());
 		L.pop(1);
@@ -344,6 +335,16 @@ void* state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
 	return NULL;
 }
 
+void state::push_trampoline(int(*fn)(state& L), unsigned n_upvals)
+{
+	lua_pushlightuserdata(lua_handle, (void*)this);
+	lua_pushlightuserdata(lua_handle, (void*)fn);
+	if(n_upvals > 0) {
+		lua_insert(lua_handle, -(int)n_upvals - 2);
+		lua_insert(lua_handle, -(int)n_upvals - 2);
+	}
+	lua_pushcclosure(lua_handle, lua_main_trampoline, trampoline_upvals + n_upvals);
+}
 
 function::function(function_group& _group, const std::string& func) throw(std::bad_alloc)
 	: group(_group)
@@ -834,15 +835,13 @@ again2:
 		L.pushlightuserdata(&classtable_meta_key);
 		L.newtable();
 		L.pushstring("__index");
-		L.pushlightuserdata(&L);
-		L.pushcclosure(class_info::index, 1);
+		L.push_trampoline(class_info::index, 0);
 		L.rawset(-3);
 		L.pushstring("__newindex");
-		L.pushcfunction(class_info::newindex);
+		L.push_trampoline(class_info::newindex, 0);
 		L.rawset(-3);
 		L.pushstring("__pairs");
-		L.pushlightuserdata(&L);
-		L.pushcclosure(class_info::pairs, 1);
+		L.push_trampoline(class_info::pairs, 0);
 		L.rawset(-3);
 		L.rawset(LUA_REGISTRYINDEX);
 		goto again2;

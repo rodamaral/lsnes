@@ -134,10 +134,10 @@ namespace
 			}
 			rpl = replace(dashstring('[', dashes) + fn + dashstring(']', dashes));
 		}
-		const char* rfn(lua_State* L, size_t* size);
-		static const char* rfn(lua_State* L, void* data, size_t* size)
+		const char* rfn(size_t* size);
+		static const char* rfn(lua_State* unused, void* data, size_t* size)
 		{
-			return reinterpret_cast<reader*>(data)->rfn(L, size);
+			return reinterpret_cast<reader*>(data)->rfn(size);
 		}
 		const std::string& get_err() { return err; }
 	private:
@@ -204,35 +204,35 @@ namespace
 		int lines(lua::state& L, lua::parameters& P)
 		{
 			L.pushlightuserdata(this);
-			L.pushcclosure(lua_file_reader::lines_helper2, 1);
+			L.push_trampoline(lua_file_reader::lines_helper2, 1);
 			//Trick: The first parameter is the userdata for this object, so by making it state, we
 			//can pin this object.
 			L.pushvalue(1);
 			L.pushboolean(true);
 			return 3;
 		}
-		int lines_helper(lua_State* L)
+		int lines_helper(lua::state& L)
 		{
 			std::string tmp;
 			std::getline(s, tmp);
 			if(!s) {
-				lua_pushnil(L);
+				L.pushnil();
 				return 1;
 			}
 			istrip_CR(tmp);
-			lua_pushlstring(L, tmp.c_str(), tmp.length());
+			L.pushlstring(tmp.c_str(), tmp.length());
 			return 1;
 		}
-		static int lines_helper2(lua_State* L)
+		static int lines_helper2(lua::state& L)
 		{
-			return reinterpret_cast<lua_file_reader*>(lua_touserdata(L, lua_upvalueindex(1)))->
+			return reinterpret_cast<lua_file_reader*>(L.touserdata(L.trampoline_upval(1)))->
 				lines_helper(L);
 		}
 	private:
 		std::istream& s;
 	};
 
-	const char* reader::rfn(lua_State* L, size_t* size)
+	const char* reader::rfn(size_t* size)
 	{
 		try {
 			auto g = rpl.run([this]() -> std::pair<const char*, size_t> {
