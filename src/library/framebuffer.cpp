@@ -788,6 +788,25 @@ std::vector<font::layout> font::dolayout(const std::string& string) throw(std::b
 	return l;
 }
 
+uint32_t font::get_width(const std::string& string)
+{
+	uint32_t width = 0;
+	utf8::to32i(string.begin(), string.end(), lambda_output_iterator<int32_t>([this, &width](const int32_t cp) {
+		const glyph& g = get_glyph(cp);
+		const uint32_t tabs = TABSTOPS >> 3;
+		switch(cp) {
+		case 9:
+			width = (width + tabs) / tabs * tabs;
+			break;
+		case 10:
+			break;
+		default:
+			width += (g.wide ? 2 : 1);
+		}
+	}));
+	return width;
+}
+
 template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, const std::string& text,
 	color fg, color bg, bool hdbl, bool vdbl) throw()
 {

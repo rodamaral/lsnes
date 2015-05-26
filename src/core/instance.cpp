@@ -16,6 +16,7 @@
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/messages.hpp"
+#include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/movie.hpp"
 #include "core/multitrack.hpp"
@@ -25,7 +26,9 @@
 #include "core/rom.hpp"
 #include "core/runmode.hpp"
 #include "core/settings.hpp"
+#include "fonts/wrapper.hpp"
 #include "library/command.hpp"
+#include "library/framebuffer.hpp"
 #include "library/keyboard.hpp"
 #include "library/keyboard-mapper.hpp"
 #include "library/lua-base.hpp"
@@ -141,4 +144,30 @@ emulator_instance& CORE()
 #endif
 	}
 	return lsnes_instance;
+}
+
+namespace
+{
+	uint32_t digits(size_t num)
+	{
+		if(num < 10) return 1;
+		return 1 + digits(num / 10);
+	}
+
+	command::fnptr<> CMD_memory_use(lsnes_cmds, "show-memory", "Show memory usage",
+		"show-memory\nShow memory usage",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			auto report = mem_tracker().report();
+			uint32_t maxwidth_left = 0;
+			uint32_t maxwidth_right = 0;
+			for(auto i : report) {
+				maxwidth_left = std::max(maxwidth_left, main_font.get_width(i.first));
+				maxwidth_right = std::max(maxwidth_right, digits(i.second));
+			}
+			for(auto i : report) {
+				uint32_t pad_spaces = maxwidth_left - main_font.get_width(i.first) + maxwidth_right -
+					digits(i.second) + 1;
+				messages << i.first << std::string(pad_spaces, ' ') << i.second << std::endl;
+			}
+		});
 }

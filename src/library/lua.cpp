@@ -377,9 +377,11 @@ void* state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
 		}
 		if(news < olds)
 			st.charge_memory(olds - news, true);	//Release memory.
+		if(m && st.memory_change) st.memory_change((ssize_t)news - (ssize_t)olds);
 		return m;
 	} else {
 		st.charge_memory(olds, true);	//Release memory.
+		if(st.memory_change) st.memory_change(-(ssize_t)olds);
 		free(old);
 	}
 	return NULL;
@@ -396,6 +398,7 @@ retry_allocation:
 	if(!m && news > olds)
 		st.charge_memory(news - olds, true);	//Undo commit.
 	st.soft_oom_handler(m ? 1 : -1);
+	if(m && st.memory_change) st.memory_change((ssize_t)news - (ssize_t)olds);
 	return m;
 	
 }

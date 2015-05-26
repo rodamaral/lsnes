@@ -1,6 +1,7 @@
 #include "core/romimage.hpp"
 #include "core/instance.hpp"
 #include "core/messages.hpp"
+#include "core/misc.hpp"
 #include "core/nullcore.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
@@ -12,6 +13,7 @@ rom_image rom_image_handle::null_img;
 
 namespace
 {
+	const char* romimage_id = "ROM images";
 	core_type* prompt_core_fallback(const std::vector<core_type*>& choices)
 	{
 		if(choices.size() == 0)
@@ -175,12 +177,15 @@ void rom_image::setup_region(core_region& reg)
 
 rom_image::rom_image() throw()
 {
+	memory_usage = 0;
 	rtype = &get_null_type();
 	region = orig_region = &get_null_region();
+	account_images();
 }
 
 rom_image::rom_image(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error)
 {
+	memory_usage = 0;
 	rtype = &ctype;
 	orig_region = &rtype->get_preferred_region();
 	unsigned romidx = 0;
@@ -205,12 +210,14 @@ rom_image::rom_image(const std::string& file, core_type& ctype) throw(std::bad_a
 	record_files(*this);
 	if(pmand != tmand)
 		throw std::runtime_error("Required ROM images missing");
+	account_images();
 	return;
 }
 
 rom_image::rom_image(const std::string& file, const std::string& tmpprefer) throw(std::bad_alloc,
 	std::runtime_error)
 {
+	memory_usage = 0;
 	std::istream& spec = zip::openrel(file, "");
 	std::string s;
 	std::getline(spec, s);
@@ -250,9 +257,11 @@ rom_image::rom_image(const std::string& file, const std::string& tmpprefer) thro
 		record_files(*this);
 		if(pmand != tmand)
 			throw std::runtime_error("Required ROM images missing");
+		account_images();
 		return;
 	}
 	load_bundle(file, spec, tmpprefer);
+	account_images();
 }
 
 void rom_image::load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer) 
@@ -362,6 +371,7 @@ void rom_image::load_bundle(const std::string& file, std::istream& spec, const s
 rom_image::rom_image(const std::string& file, const std::string& core, const std::string& type,
 	const std::string& _region)
 {
+	memory_usage = 0;
 	core_type* t = NULL;
 	core_region* r = NULL;
 	bool fullspec = (core != "" && type != "");
@@ -400,11 +410,13 @@ rom_image::rom_image(const std::string& file, const std::string& core, const std
 		throw std::runtime_error("Required ROM images missing");
 	rtype = t;
 	orig_region = region = r;
+	account_images();
 }
 
 rom_image::rom_image(const std::string file[ROM_SLOT_COUNT], const std::string& core, const std::string& type,
 	const std::string& _region)
 {
+	memory_usage = 0;
 	core_type* t = NULL;
 	core_region* r = NULL;
 	bool fullspec = (core != "" && type != "");
@@ -461,6 +473,25 @@ bool rom_image::is_gamepak(const std::string& filename) throw(std::bad_alloc, st
 		delete spec;
 		return false;
 	}
+}
+
+rom_image::~rom_image()
+{
+	//Hack: If there is no accounted size, don't unaccount it.
+	if(memory_usage)
+		mem_tracker()(romimage_id, -(ssize_t)memory_usage);
+}
+
+void rom_image::account_images()
+{
+	//Hack: don't account any size before main.
+	if(in_global_ctors()) return;
+	memory_usage = sizeof(rom_image) + msu1_base.length() + load_filename.length();
+	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+		memory_usage += (unsigned)romimg[i];
+		memory_usage += (unsigned)romxml[i];
+	}
+	mem_tracker()(romimage_id, (ssize_t)memory_usage);
 }
 
 void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb)

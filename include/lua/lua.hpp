@@ -10,6 +10,7 @@
 #include "library/framebuffer.hpp"
 #include "library/lua-base.hpp"
 #include "library/lua-framebuffer.hpp"
+#include "library/memtracker.hpp"
 #include "library/settingvar.hpp"
 
 namespace command { class group; }

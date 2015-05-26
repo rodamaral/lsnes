@@ -537,6 +537,13 @@ struct font
  */
 	std::vector<layout> dolayout(const std::string& string) throw(std::bad_alloc);
 /**
+ * Get width of string.
+ *
+ * Parameter string: The string to get width of.
+ * Returns: The width.
+ */
+	uint32_t get_width(const std::string& string);
+/**
  * Get set of all glyph numbers.
  */
 	std::set<uint32_t> get_glyphs_set();

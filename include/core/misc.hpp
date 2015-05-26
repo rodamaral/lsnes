@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdexcept>
 #include "library/string.hpp"
+#include "library/memtracker.hpp"
 
 /**
  * \brief Fatal error.
@@ -57,5 +58,7 @@ std::string mangle_name(const std::string& orig);
  * Return a new temporary file. The file will be created.
  */
 std::string get_temp_file();
+
+memtracker& mem_tracker();
 
 #endif

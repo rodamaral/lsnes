@@ -7,6 +7,7 @@
 #include <typeindex>
 #include <map>
 #include <unordered_map>
+#include <functional>
 #include <set>
 #include <list>
 #include <cassert>
@@ -223,6 +224,13 @@ public:
  * Set soft OOM handler.
  */
 	void set_soft_oom_handler(void (*oom)(int status)) { soft_oom_handler = oom ? oom : builtin_soft_oom; }
+/**
+ * Set memory use change handler.
+ */
+	void set_memory_change_handler(std::function<void(ssize_t change)> cb)
+	{
+		memory_change = cb;
+	}
 /**
  * Reset the state.
  */
@@ -548,6 +556,7 @@ private:
 	static void* builtin_alloc(void* user, void* old, size_t olds, size_t news);
 	void (*oom_handler)();
 	void (*soft_oom_handler)(int status);
+	std::function<void(ssize_t change)> memory_change;
 	state* master;
 	bool interruptable;
 	size_t memory_limit;

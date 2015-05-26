@@ -242,3 +242,8 @@ std::string get_temp_file()
 #endif
 }
 
+memtracker& mem_tracker()
+{
+	static memtracker x;
+	return x;
+}

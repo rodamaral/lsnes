@@ -64,6 +64,10 @@ public:
  */
 	rom_image(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error);
 /**
+ * Destroy ROM image.
+ */
+	~rom_image();
+/**
  * Get ROM type.
  */
 	core_type& get_type() { return *rtype; }
@@ -114,6 +118,10 @@ public:
 private:
 	rom_image(const rom_image&);
 	rom_image& operator=(const rom_image&);
+	//Account images.
+	void account_images();
+	//Accounted memory usage.
+	size_t memory_usage;
 	//Static NULL image.
 	static fileimage::image null_img;
 	//Loaded ROM images.

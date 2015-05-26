@@ -1,7 +1,9 @@
 #include "cmdhelp/lua.hpp"
 #include "core/command.hpp"
+#include "core/misc.hpp"
 #include "library/globalwrap.hpp"
 #include "library/keyboard.hpp"
+#include "library/memtracker.hpp"
 #include "lua/internal.hpp"
 #include "lua/lua.hpp"
 #include "lua/unsaferewind.hpp"
@@ -37,6 +39,7 @@ lua::class_group lua_class_fileio;
 
 namespace
 {
+	const char* lua_vm_id = "Lua VM";
 	typedef settingvar::model_int<32,1024> mb_model;
 	settingvar::supervariable<mb_model> SET_lua_maxmem(lsnes_setgrp, "lua-maxmem",
 		"Lua‣Maximum memory use (MB)", 128);
@@ -188,6 +191,8 @@ lua_state::lua_state(lua::state& _L, command::group& _command, settingvar::group
 	//We can't read the value of lua maxmem setting here (it crashes), so just set default, it will be changed
 	//if needed.
 	L.set_memory_limit(1 << 27);
+	mem_tracker()(lua_vm_id, L.get_memory_use());
+	L.set_memory_change_handler([](ssize_t delta) { mem_tracker()(lua_vm_id, delta); });
 
 	idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 	timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
