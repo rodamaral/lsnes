@@ -4344,7 +4344,21 @@ Get names of all classes available.
 \end_layout
 
 \begin_layout Subsection
+lsnes_features: Read feature flags
+\end_layout
 
+\begin_layout Itemize
+Syntax: boolean lsnes_features(string feature)
+\end_layout
+
+\begin_layout Standard
+Checks if feature <feature> is available, if it is, returns true, otherwise
+ returns false.
+ The following features are known:
+\end_layout
+
+\begin_layout Itemize
+text-halos: gui.text supports halos (takes halo color argument).
 \end_layout
 
 \begin_layout Subsection
@@ -4980,22 +4994,22 @@ gui.text/gui.textH/gui.textV,gui.textHV: Draw text
 
 \begin_layout Itemize
 Syntax: none gui.text(number x, number y, string text[, number fgc[, number
- bgc]])
+ bgc[, number hlc]]])
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.textH(number x, number y, string text[, number fgc[, number
- bgc]])
+ bgc[, number hlc]]])
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.textV(number x, number y, string text[, number fgc[, number
- bgc]])
+ bgc[, number hlc]]])
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.textHV(number x, number y, string text[, number fgc[, number
- bgc]])
+ bgc[, number hlc]]])
 \end_layout
 
 \begin_layout Standard
@@ -5025,9 +5039,14 @@ fgc: Text color (default is 0xFFFFFF (white))
 bgc: Background color (default is -1 (transparent))
 \end_layout
 
+\begin_layout Itemize
+hlc: Halo color (default is -1 (transparent))
+\end_layout
+
 \begin_layout Standard
 Note: The H variants draw at double width and V variants draw at double
  height.
+ Halo thickness is always 1 and is not doubled.
 \end_layout
 
 \begin_layout Subsection

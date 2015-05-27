@@ -950,8 +950,7 @@ failed:
 	template<typename T>
 	void callback_render_text2(struct lsnes_core_fontrender_req& req, const std::string& str)
 	{
-		auto size = main_font.get_metrics(str);
-		auto layout = main_font.dolayout(str);
+		auto size = main_font.get_metrics(str, 0, false, false);
 		size_t memreq = size.first * size.second * sizeof(T);
 		if(!memreq) memreq = 1;
 		if(size.first && memreq / size.first / sizeof(T) < size.second)
@@ -963,9 +962,9 @@ failed:
 		T bg = (T)req.bg_color;
 		T* bmp = (T*)req.bitmap;
 
-		for(auto i : layout) {
-			auto& g = *i.dglyph;
-			T* _bmp = bmp + (i.y * size.first + i.x);
+		main_font.for_each_glyph(str, 0, false, false, [size, &fg, &bg, bmp](uint32_t ix, uint32_t iy,
+			const framebuffer::font::glyph& g, bool hdbl, bool vdbl) {
+			T* _bmp = bmp + (iy * size.first + ix);
 			size_t w = g.wide ? 16 : 8;
 			size_t skip = size.first - w;
 			for(size_t _y = 0; _y < 16; _y++) {
@@ -980,7 +979,7 @@ failed:
 				}
 				_bmp = _bmp + skip;
 			}
-		}
+		});
 		req.width = size.first;
 		req.height = size.second;
 	}

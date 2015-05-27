@@ -135,7 +135,7 @@ void text_framebuffer::render(char* tbuffer)
 
 size_t text_framebuffer::text_width(const std::string& text)
 {
-	auto x = main_font.get_metrics(text);
+	auto x = main_font.get_metrics(text, 0, false, false);
 	return x.first / 8;
 }
 

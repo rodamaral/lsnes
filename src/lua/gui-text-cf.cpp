@@ -1,5 +1,6 @@
 #include "core/instance.hpp"
 #include "lua/internal.hpp"
+#include "lua/halo.hpp"
 #include "lua/bitmap.hpp"
 #include "fonts/wrapper.hpp"
 #include "core/framebuffer.hpp"
@@ -58,33 +59,37 @@ namespace
 		{
 			const framebuffer::font2& fdata = font->get_font();
 			std::u32string _text = utf8::to32(text);
-			int32_t orig_x = x + scr.get_origin_x();
-			int32_t drawx = x + scr.get_origin_x();
-			int32_t drawy = y + scr.get_origin_y();
-			if(hl) {
-				//Adjust for halo.
-				drawx++;
-				orig_x++;
-				drawy++;
+
+			auto size = fdata.get_metrics(_text, x);
+			//Enlarge size by 2 in each dimension, in order to accomodiate halo, if any.
+			//Round up width to multiple of 32.
+			size.first = (size.first + 33) >> 5 << 5;
+			size.second += 2;
+			size_t allocsize = size.first * size.second + 32;
+
+			if(allocsize > 32768) {
+				std::vector<uint8_t> memory;
+				memory.resize(allocsize);
+				op_with(scr, &memory[0], size, _text, fdata);
+			} else {
+				uint8_t memory[allocsize];
+				op_with(scr, memory, size, _text, fdata);
 			}
-			for(size_t i = 0; i < _text.size();) {
-				uint32_t cp = _text[i];
-				std::u32string k = fdata.best_ligature_match(_text, i);
-				const framebuffer::font2::glyph& glyph = fdata.lookup_glyph(k);
-				if(k.length())
-					i += k.length();
-				else
-					i++;
-				if(cp == 9) {
-					drawx = (drawx + 64) >> 6 << 6;
-				} else if(cp == 10) {
-					drawx = orig_x;
-					drawy += fdata.get_rowadvance();
-				} else {
-					glyph.render(scr, drawx, drawy, fg, bg, hl);
-					drawx += glyph.width;
-				}
-			}
+		}
+		template<bool X> void op_with(struct framebuffer::fb<X>& scr, unsigned char* mem,
+			std::pair<size_t, size_t> size, const std::u32string& _text, const framebuffer::font2& fdata)
+			throw()
+		{
+			memset(mem, 0, size.first * size.second);
+			int32_t rx = x + scr.get_origin_x();
+			int32_t ry = y + scr.get_origin_y();
+			fdata.for_each_glyph(_text, x, [mem, size](uint32_t x, uint32_t y,
+				const framebuffer::font2::glyph& glyph) {
+				x++;
+				y++;
+				glyph.render(mem + (y * size.first + x), size.first, 0, 0, glyph.width, glyph.height);
+			});
+			halo_blit(scr, mem, size.first, size.second, rx, ry, bg, fg, hl);
 		}
 		bool kill_request(void* obj) throw()
 		{

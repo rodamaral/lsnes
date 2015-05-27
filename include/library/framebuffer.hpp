@@ -528,7 +528,8 @@ struct font
  * Parameter string: The string to get metrics of.
  * Returns: A pair. First element is width of string, the second is height of string.
  */
-	std::pair<size_t, size_t> get_metrics(const std::string& string) throw();
+	std::pair<size_t, size_t> get_metrics(const std::string& string, uint32_t xalign, bool xdbl, bool ydbl)
+		throw();
 /**
  * Layout a string.
  *
@@ -565,6 +566,26 @@ struct font
  */
 	template<bool X> void render(struct fb<X>& scr, int32_t x, int32_t y, const std::string& text,
 		color fg, color bg, bool hdbl, bool vdbl) throw();
+/**
+ * Call function on every glyph.
+ *
+ * Parameter str: The string to call on.
+ * Parameter alignx: The x alignment.
+ * Parameter cb: The callback to call.
+ */
+	void for_each_glyph(const std::string& str, uint32_t alignx, bool xdbl, bool ydbl,
+		std::function<void(uint32_t x, uint32_t y, const glyph& g, bool xdbl, bool ydbl)> cb);
+/**
+ * Render to bitmap.
+ *
+ * Parameter buf: The bufer to render on.
+ * Parameter stride: The stride on buffer.
+ * Parameter str: The string to render.
+ * Parameter alignx: The x alignment.
+ * Parameter hdbl: If set, double width horizontally.
+ * Parameter vdbl: If set, double height vertically.
+ */
+	void render(uint8_t* buf, size_t stride, const std::string& str, uint32_t alignx, bool hdbl, bool vdbl);
 private:
 	glyph bad_glyph;
 	uint32_t bad_glyph_data[4];

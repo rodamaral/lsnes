@@ -230,6 +230,16 @@ namespace
 		return 1;
 	}
 
+	int lsnes_features(lua::state& L, lua::parameters& P)
+	{
+		bool ok = false;
+		std::string arg;
+		P(arg);
+		if(arg == "text-halos") ok = true;
+		L.pushboolean(ok);
+		return 1;
+	}
+
 	lua::functions LUA_misc_fns(lua_func_misc, "", {
 		{"print2", print2},
 		{"exec", exec},
@@ -239,6 +249,7 @@ namespace
 		{"set_timer_timeout", set_timer_timeout},
 		{"bus_address", bus_address},
 		{"get_lua_memory_use", get_lua_memory_use},
+		{"lsnes_features", lsnes_features},
 		{"memory.get_lag_flag", get_lag_flag},
 		{"memory.set_lag_flag", set_lag_flag},
 		{"gui.get_runmode", get_runmode},

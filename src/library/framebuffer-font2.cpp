@@ -165,6 +165,30 @@ void font2::glyph::render(fb<true>& fb, int32_t x, int32_t y, color fg,
 	_render(*this, fb, x, y, fg, bg, hl);
 }
 
+void font2::glyph::render(uint8_t* buf, size_t _stride, uint32_t u, uint32_t v, uint32_t w, uint32_t h) const
+{
+	//Clip the bounding box to valid range.
+	u = std::min(u, (uint32_t)width);
+	v = std::min(v, (uint32_t)height);
+	w = std::min(w, (uint32_t)width);
+	h = std::min(h, (uint32_t)height);
+	if(u + w > width) w = width - u;
+	if(v + h > height) h = height - v;
+	if(!w || !h) return;
+	//Do the actual render.
+	size_t ge = v * stride;
+	for(unsigned j = 0; j < h; j++) {
+		buf += _stride;
+		ge += stride;
+		for(unsigned i = 0; i < w; i++) {
+			unsigned dx = u + i;
+			size_t gb = 31 - (dx & 31);
+			buf[i] = (fglyph[ge + (dx >> 5)] >> gb) & 1;
+			
+			
+		}
+	}
+}
 
 font2::font2()
 {
@@ -299,5 +323,42 @@ const font2::glyph& font2::lookup_glyph(const std::u32string& key) const throw()
 	static glyph empty_glyph;
 	auto i = glyphs.find(key);
 	return (i == glyphs.end()) ? empty_glyph : i->second;
+}
+
+std::pair<uint32_t, uint32_t> font2::get_metrics(const std::u32string& str, uint32_t xalign) const
+{
+	uint32_t w = 0;
+	uint32_t h = 0;
+	for_each_glyph(str, xalign, [&w, &h](uint32_t x, uint32_t y, const glyph& g) {
+		w = std::max(w, x + (uint32_t)g.width);
+		h = std::max(h, y + (uint32_t)g.height);
+	});
+	return std::make_pair(w, h);
+}
+
+void font2::for_each_glyph(const std::u32string& str, uint32_t xalign, std::function<void(uint32_t x, uint32_t y,
+	const glyph& g)> cb) const
+{
+	uint32_t drawx = 0;
+	uint32_t orig_x = 0;
+	uint32_t drawy = 0;
+	for(size_t i = 0; i < str.size();) {
+		uint32_t cp = str[i];
+		std::u32string k = best_ligature_match(str, i);
+		const glyph& g = lookup_glyph(k);
+		if(k.length())
+			i += k.length();
+		else
+			i++;
+		if(cp == 9) {
+			drawx = (((drawx + xalign) + 64) >> 6 << 6) - xalign;
+		} else if(cp == 10) {
+			drawx = orig_x;
+			drawy += get_rowadvance();
+		} else {
+			cb(drawx, drawy, g);
+			drawx += g.width;
+		}
+	}
 }
 }

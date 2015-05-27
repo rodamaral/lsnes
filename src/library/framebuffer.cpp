@@ -727,28 +727,17 @@ const font::glyph& font::get_bad_glyph() throw()
 	return bad_glyph;
 }
 
-std::pair<size_t, size_t> font::get_metrics(const std::string& string) throw()
+std::pair<size_t, size_t> font::get_metrics(const std::string& string, uint32_t xalign, bool xdbl, bool ydbl) throw()
 {
 	size_t commit_width = 0;
 	size_t commit_height = 0;
-	size_t linelength = 0;
-	utf8::to32i(string.begin(), string.end(), lambda_output_iterator<int32_t>([this, &linelength, &commit_width,
-		&commit_height](const int32_t& cp) -> void {
-		const glyph& g = get_glyph(cp);
-		switch(cp) {
-		case 9:
-			linelength = (linelength + TABSTOPS) / TABSTOPS * TABSTOPS;
-			commit_width = max(commit_width, linelength);
-			break;
-		case 10:
-			commit_height += 16;
-			break;
-		default:
-			linelength = linelength + (g.wide ? 16 : 8);
-			commit_width = max(commit_width, linelength);
-			break;
-		};
-	}));
+	for_each_glyph(string, xalign, xdbl, ydbl, [&commit_width, &commit_height](uint32_t x, uint32_t y,
+		const glyph& g, bool xdbl, bool ydbl) {
+		size_t w = 1 << ((g.wide ? 4 : 3) + (xdbl ? 1 : 0));
+		size_t h = 1 << (4 + (ydbl ? 1 : 0));
+		commit_width = std::max(commit_width, (size_t)(x + w));
+		commit_height = std::max(commit_height, (size_t)(y + h));
+	});
 	return std::make_pair(commit_width, commit_height);
 }
 
@@ -756,35 +745,20 @@ std::vector<font::layout> font::dolayout(const std::string& string) throw(std::b
 {
 	//First, calculate the number of glyphs to draw.
 	size_t chars = 0;
-	utf8::to32i(string.begin(), string.end(), lambda_output_iterator<int32_t>([&chars](const int32_t& cp)
-		-> void {
-		if(cp != 9 && cp != 10)
-			chars++;
-	}));
+	for_each_glyph(string, 0, false, false, [&chars](uint32_t x, uint32_t y, const glyph& g, bool xdbl,
+		bool ydbl) {
+		chars++;
+	});
 	//Allocate space.
 	std::vector<layout> l;
 	l.resize(chars);
 	size_t gtr = 0;
-	size_t layout_x = 0;
-	size_t layout_y = 0;
-	utf8::to32i(string.begin(), string.end(), lambda_output_iterator<int32_t>([this, &layout_x, &layout_y,
-		&l, &gtr](const int32_t cp) {
-		const glyph& g = get_glyph(cp);
-		switch(cp) {
-		case 9:
-			layout_x = (layout_x + TABSTOPS) / TABSTOPS * TABSTOPS;
-			break;
-		case 10:
-			layout_x = 0;
-			layout_y = layout_y + 16;
-			break;
-		default:
-			l[gtr].x = layout_x;
-			l[gtr].y = layout_y;
-			l[gtr++].dglyph = &g;
-			layout_x = layout_x + (g.wide ? 16 : 8);;
-		}
-	}));
+	for_each_glyph(string, 0, false, false, [&l, &gtr](uint32_t x, uint32_t y, const glyph& g, bool xdbl,
+		bool ydbl) {
+		l[gtr].x = x;
+		l[gtr].y = y;
+		l[gtr++].dglyph = &g;
+	});
 	return l;
 }
 
@@ -812,12 +786,109 @@ template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, cons
 {
 	x += scr.get_origin_x();
 	y += scr.get_origin_y();
-	size_t layout_x = 0;
-	size_t layout_y = 0;
 	size_t swidth = scr.get_width();
 	size_t sheight = scr.get_height();
-	utf8::to32i(text.begin(), text.end(), lambda_output_iterator<int32_t>([this, x, y, &scr, &layout_x,
-		&layout_y, swidth, sheight, hdbl, vdbl, &fg, &bg](const int32_t& cp) {
+	
+	for_each_glyph(text, x, hdbl, vdbl, [this, x, y, &scr, swidth, sheight, &fg, &bg](uint32_t lx, uint32_t ly,
+		const glyph& g, bool hdbl, bool vdbl) {
+		//Render this glyph at x + lx, y + ly.
+		int32_t gx = x + lx;
+		int32_t gy = y + ly;
+		//Don't draw characters completely off-screen.
+		if(gy <= (vdbl ? -32 : -16) || gy >= (ssize_t)sheight)
+			return;
+		if(gx <= -(hdbl ? 2 : 1) * (g.wide ? 16 : 8) || gx >= (ssize_t)swidth)
+			return;
+		//Compute the bounding box.
+		uint32_t xstart = 0;
+		uint32_t ystart = 0;
+		uint32_t xlength = (hdbl ? 2 : 1) * (g.wide ? 16 : 8);
+		uint32_t ylength = (vdbl ? 32 : 16);
+		if(gx < 0)	xstart = -gx;
+		if(gy < 0)	ystart = -gy;
+		xlength -= xstart;
+		ylength -= ystart;
+		if(gx + xstart + xlength > swidth)	xlength = swidth - (gx + xstart);
+		if(gy + ystart + ylength > sheight)	ylength = sheight - (gy + ystart);
+		if(g.data)
+			for(size_t i = 0; i < ylength; i++) {
+				typename fb<X>::element_t* r = scr.rowptr(gy + ystart + i) +
+					(gx + xstart);
+				uint32_t _y = (i + ystart) >> (vdbl ? 1 : 0);
+				uint32_t d = g.data[_y >> (g.wide ? 1 : 2)];
+				if(g.wide)
+					d >>= 16 - ((_y & 1) << 4);
+				else
+					d >>= 24 - ((_y & 3) << 3);
+				if(hdbl)
+					for(size_t j = 0; j < xlength; j++) {
+						uint32_t b = (g.wide ? 15 : 7) - ((j + xstart) >> 1);
+						if(((d >> b) & 1) != 0)
+							fg.apply(r[j]);
+						else
+							bg.apply(r[j]);
+					}
+				else
+					for(size_t j = 0; j < xlength; j++) {
+						uint32_t b = (g.wide ? 15 : 7) - (j + xstart);
+						if(((d >> b) & 1) != 0)
+							fg.apply(r[j]);
+						else
+							bg.apply(r[j]);
+					}
+			}
+		else
+			for(size_t i = 0; i < ylength; i++) {
+				typename fb<X>::element_t* r = scr.rowptr(gy + ystart + i) + (gx + xstart);
+				for(size_t j = 0; j < xlength; j++)
+					bg.apply(r[j]);
+			}
+	});
+}
+
+void font::render(uint8_t* buf, size_t stride, const std::string& str, uint32_t alignx, bool hdbl, bool vdbl)
+{
+	for_each_glyph(str, alignx, hdbl, vdbl, [this, buf, stride]
+		(uint32_t lx, uint32_t ly, const glyph& g, bool hdbl, bool vdbl) {
+		uint8_t* ptr = buf + (ly * stride + lx);
+		size_t xlength = (g.wide ? 16 : 8) << (hdbl ? 1 : 0);
+		size_t height = 16 << (vdbl ? 1 : 0);
+	
+		if(g.data)
+			for(size_t i = 0; i < height; i++) {
+				ptr += stride;
+				uint32_t _y = i >> (vdbl ? 1 : 0);
+				uint32_t d = g.data[_y >> (g.wide ? 1 : 2)];
+				if(g.wide)
+					d >>= 16 - ((_y & 1) << 4);
+				else
+					d >>= 24 - ((_y & 3) << 3);
+				if(hdbl)
+					for(size_t j = 0; j < xlength; j++) {
+						uint32_t b = (g.wide ? 15 : 7) - (j >> 1);
+						ptr[j] = ((d >> b) & 1);
+					}
+				else
+					for(size_t j = 0; j < xlength; j++) {
+						uint32_t b = (g.wide ? 15 : 7) - j;
+						ptr[j] = ((d >> b) & 1);
+					}
+			}
+	});
+}
+
+
+void font::for_each_glyph(const std::string& str, uint32_t alignx, bool xdbl, bool ydbl,
+	std::function<void(uint32_t x, uint32_t y, const glyph& g, bool xdbl, bool ydbl)> cb)
+{
+	size_t layout_x = alignx;
+	size_t layout_y = 0;
+	size_t offset = alignx;
+	unsigned _xdbl = xdbl;
+	unsigned _ydbl = ydbl;
+	auto _cb = &cb;
+	utf8::to32i(str.begin(), str.end(), lambda_output_iterator<int32_t>([this, &layout_x, &layout_y, _xdbl,
+		_ydbl, offset, _cb](const int32_t cp) {
 		const glyph& g = get_glyph(cp);
 		switch(cp) {
 		case 9:
@@ -825,66 +896,15 @@ template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, cons
 			break;
 		case 10:
 			layout_x = 0;
-			layout_y = layout_y + (vdbl ? 32 : 16);
+			layout_y = layout_y + 16;
 			break;
 		default:
-			//Render this glyph at x + layout_x, y + layout_y.
-			int32_t gx = x + layout_x;
-			int32_t gy = y + layout_y;
-			//Don't draw characters completely off-screen.
-			if(gy <= (vdbl ? -32 : -16) || gy >= (ssize_t)sheight)
-				break;
-			if(gx <= -(hdbl ? 2 : 1) * (g.wide ? 16 : 8) || gx >= (ssize_t)swidth)
-				break;
-			//Compute the bounding box.
-			uint32_t xstart = 0;
-			uint32_t ystart = 0;
-			uint32_t xlength = (hdbl ? 2 : 1) * (g.wide ? 16 : 8);
-			uint32_t ylength = (vdbl ? 32 : 16);
-			if(gx < 0)	xstart = -gx;
-			if(gy < 0)	ystart = -gy;
-			xlength -= xstart;
-			ylength -= ystart;
-			if(gx + xstart + xlength > swidth)	xlength = swidth - (gx + xstart);
-			if(gy + ystart + ylength > sheight)	ylength = sheight - (gy + ystart);
-			if(g.data)
-				for(size_t i = 0; i < ylength; i++) {
-					typename fb<X>::element_t* r = scr.rowptr(gy + ystart + i) +
-						(gx + xstart);
-					uint32_t _y = (i + ystart) >> (vdbl ? 1 : 0);
-					uint32_t d = g.data[_y >> (g.wide ? 1 : 2)];
-					if(g.wide)
-						d >>= 16 - ((_y & 1) << 4);
-					else
-						d >>= 24 - ((_y & 3) << 3);
-					if(hdbl)
-						for(size_t j = 0; j < xlength; j++) {
-							uint32_t b = (g.wide ? 15 : 7) - ((j + xstart) >> 1);
-							if(((d >> b) & 1) != 0)
-								fg.apply(r[j]);
-							else
-								bg.apply(r[j]);
-						}
-					else
-						for(size_t j = 0; j < xlength; j++) {
-							uint32_t b = (g.wide ? 15 : 7) - (j + xstart);
-							if(((d >> b) & 1) != 0)
-								fg.apply(r[j]);
-							else
-								bg.apply(r[j]);
-						}
-				}
-			else
-				for(size_t i = 0; i < ylength; i++) {
-					typename fb<X>::element_t* r = scr.rowptr(gy + ystart + i) +
-						(gx + xstart);
-					for(size_t j = 0; j < xlength; j++)
-						bg.apply(r[j]);
-				}
-			layout_x += (hdbl ? 2 : 1) * (g.wide ? 16 : 8);
+			(*_cb)((layout_x - offset) << _xdbl, layout_y << _ydbl, g, _xdbl, _ydbl);
+			layout_x = layout_x + (g.wide ? 16 : 8);
 		}
 	}));
 }
+
 
 color::color(const std::string& clr) throw(std::bad_alloc, std::runtime_error)
 {
