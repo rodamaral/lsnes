@@ -677,7 +677,7 @@ struct queue
 private:
 	void add(struct object& obj) throw(std::bad_alloc);
 	struct node { struct object* obj; struct node* next; bool killed; };
-	struct page { 
+	struct page {
 		char content[RENDER_PAGE_SIZE];
 		page() { memtracker::singleton()(render_page_id, RENDER_PAGE_SIZE + 36); }
 		~page() { memtracker::singleton()(render_page_id, -RENDER_PAGE_SIZE - 36); }
