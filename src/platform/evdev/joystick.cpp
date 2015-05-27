@@ -341,7 +341,7 @@ namespace
 				lsnes_gamepads[fd.second].set_online(false);
 			}
 			gamepad_map.clear();
-			
+
 			quit_ack = true;
 		},
 		.signal = []() -> void {

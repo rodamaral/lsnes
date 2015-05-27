@@ -400,7 +400,7 @@ std::pair<uint64_t, uint64_t> memoryspace_row_bounds(uint64_t base, uint64_t siz
 			block_bounds(base, size, low, high);
 		} else if(stride == p63) {
 			//Case II: Stride is 2^63.
-			//If there are multiple blocks, There are 2 accessed blocks, [base, base+size) and 
+			//If there are multiple blocks, There are 2 accessed blocks, [base, base+size) and
 			//[base+X, base+size+X), where X=2^63.
 			lb = base;
 			hb = (rows > 1) ? (base + p63) : base;

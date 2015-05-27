@@ -35,9 +35,9 @@ button_mapping::button_mapping(controller_state& _controls, keyboard::mapper& _m
 	emu_framebuffer& _fbuf, emulator_dispatch& _dispatch, lua_state& _lua2, command::group& _cmd)
 	: controls(_controls), mapper(_mapper), keyboard(_keyboard), fbuf(_fbuf), edispatch(_dispatch),
 	lua2(_lua2), cmd(_cmd),
-	button_p(cmd, CBUTTON::p, [this](const std::string& a) { this->do_action(a, 1, 0); }), 
+	button_p(cmd, CBUTTON::p, [this](const std::string& a) { this->do_action(a, 1, 0); }),
 	button_r(cmd, CBUTTON::r, [this](const std::string& a) { this->do_action(a, 0, 0); }),
-	button_h(cmd, CBUTTON::h, [this](const std::string& a) { this->do_action(a, 1, 1); }), 
+	button_h(cmd, CBUTTON::h, [this](const std::string& a) { this->do_action(a, 1, 1); }),
 	button_t(cmd, CBUTTON::t, [this](const std::string& a) { this->do_action(a, 1, 2); }),
 	button_d(cmd, CBUTTON::d, [this](const std::string& a) { this->do_action(a, 0, 3); }),
 	button_ap(cmd, CBUTTON::ap, [this](const std::string& a) { this->do_autofire_action(a, 1); }),

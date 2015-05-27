@@ -14,7 +14,7 @@ class emulator_instance;
 class projects_menu : public wxMenu
 {
 public:
-	projects_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high, const std::string& cfg, 
+	projects_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high, const std::string& cfg,
 		std::function<void(const std::string& id)> cb);
 	~projects_menu();
 	void on_select(wxCommandEvent& e);

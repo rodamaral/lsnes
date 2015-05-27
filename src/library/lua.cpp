@@ -400,7 +400,6 @@ retry_allocation:
 	st.soft_oom_handler(m ? 1 : -1);
 	if(m && st.memory_change) st.memory_change((ssize_t)news - (ssize_t)olds);
 	return m;
-	
 }
 
 void state::push_trampoline(int(*fn)(state& L), unsigned n_upvals)

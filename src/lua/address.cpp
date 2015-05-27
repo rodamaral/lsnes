@@ -39,7 +39,7 @@ uint64_t lua_get_read_address(lua::parameters& P)
 	else {
 		//Deprecated.
 		if(P.get_state().do_once(deprecation))
-			messages << P.get_fname() << ": Global memory form is deprecated." << std::endl; 
+			messages << P.get_fname() << ": Global memory form is deprecated." << std::endl;
 	}
 	auto addr = P.arg<uint64_t>();
 	return addr + vmabase;

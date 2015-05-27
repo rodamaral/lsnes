@@ -58,7 +58,7 @@ loaded_rom::loaded_rom() throw()
 
 loaded_rom::loaded_rom(rom_image_handle _image) throw(std::bad_alloc, std::runtime_error)
 {
-	image = _image; 
+	image = _image;
 	region = &image->get_region();
 }
 

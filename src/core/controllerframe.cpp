@@ -31,7 +31,7 @@ namespace
 				return;
 			}
 			try {
-				const portctrl::controller* _ctrl = 
+				const portctrl::controller* _ctrl =
 					core.controls->get_blank().porttypes().port_type(pcid.first).
 					controller_info->get(pcid.second);
 				if(!_ctrl) {

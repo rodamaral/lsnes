@@ -271,7 +271,6 @@ namespace
 		dc->cblist[key] = this;
 		next = was;
 		L->pop(1);
-		
 	}
 
 	void lua_debug_callback2::set_lua_fn(int slot)
@@ -285,7 +284,7 @@ namespace
 		L->rawset(LUA_REGISTRYINDEX);
 		lua_fn = L->topointer(slot);
 	}
-	
+
 	void lua_debug_callback2::unregister()
 	{
 		//Unregister.
@@ -299,7 +298,7 @@ namespace
 		L->pushnil();
 		L->rawset(LUA_REGISTRYINDEX);
 	}
-	
+
 	void lua_debug_callback2::callback(const debug_context::params& p)
 	{
 		L->pushlightuserdata((char*)this + 1);
@@ -329,7 +328,7 @@ namespace
 			break;
 		}
 	}
-	
+
 	void lua_debug_callback2::killed(uint64_t addr, debug_context::etype type)
 	{
 		//Assume this has been unregistered.

@@ -78,7 +78,6 @@ public:
 	operator label&();
 	operator label*();
 	label& external(void* addr);
-	
 private:
 	std::list<label> labels;
 };

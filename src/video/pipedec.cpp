@@ -102,7 +102,7 @@ namespace
 				upsidedown = _upsidedown;
 				bits32 = _bits32;
 				swap = _swap;
-	
+
 				last_width = 0;
 				last_height = 0;
 				last_fps_n = 0;

@@ -143,7 +143,7 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent, emulator_instance& _inst)
 	top_s->SetSizeHints(this);
 	Fit();
 	vstreamchange.set(inst.dispatch->voice_stream_change, [this]() {
-		runuifun([this]() -> void { this->refresh(); }); 
+		runuifun([this]() -> void { this->refresh(); });
 	});
 	corechange.set(inst.dispatch->core_change, [this]() {
 		runuifun([this]() -> void { this->refresh(); });

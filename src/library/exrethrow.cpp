@@ -42,7 +42,7 @@ void add_ex_spec(unsigned prio, std::function<bool(std::exception& e)> identify,
 		exspecs = new std::list<exspec_item>;
 	for(auto j = exspecs->begin(); j != exspecs->end(); j++) {
 		if(j->prio <= prio) {
-			exspecs->insert(j, i); 
+			exspecs->insert(j, i);
 			return;
 		}
 	}

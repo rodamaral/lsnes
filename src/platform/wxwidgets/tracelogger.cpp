@@ -507,7 +507,6 @@ namespace
 			dtype = debug_context::DEBUG_EXEC;
 		return std::make_pair(addr, dtype);
 	}
-	
 
 	class dialog_breakpoints : public wxDialog
 	{
@@ -674,7 +673,7 @@ namespace
 		}else if(e.RightUp()) {
 			holding = false;
 			wxMenu menu;
-			menu.Connect(wxEVT_COMMAND_MENU_SELECTED, 
+			menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
 				wxCommandEventHandler(wxwin_tracelog::_panel::on_popup_menu), NULL, this);
 			menu.Append(wxID_COPY, wxT("Copy to clipboard"));
 			menu.Append(wxID_SAVE, wxT("Save to file"));
@@ -955,9 +954,9 @@ namespace
 				CORE().command->invoke("unpause-emulator");
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_FRAMEADVANCE) {
-			inst.iqueue->run_async([this]() { 
-				CORE().command->invoke("+advance-frame"); 
-				CORE().command->invoke("-advance-frame"); 
+			inst.iqueue->run_async([this]() {
+				CORE().command->invoke("+advance-frame");
+				CORE().command->invoke("-advance-frame");
 			}, [](std::exception& e) {});
 		} else if(e.GetId() == wxID_CONTINUE) {
 			inst.iqueue->run_async([this]() {
@@ -1257,7 +1256,7 @@ back:
 		}else if(e.RightUp()) {
 			holding = false;
 			wxMenu menu;
-			menu.Connect(wxEVT_COMMAND_MENU_SELECTED, 
+			menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
 				wxCommandEventHandler(wxwin_disassembler::_panel::on_popup_menu), NULL, this);
 			menu.Append(wxID_COPY, wxT("Copy to clipboard"));
 			menu.Append(wxID_SAVE, wxT("Save to file"));
@@ -1786,7 +1785,7 @@ back:
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 		top_s->Add(brklist = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(300, 400)), 1, wxGROW);
-		brklist->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, 
+		brklist->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
 			wxCommandEventHandler(dialog_breakpoints::on_selchange), NULL, this);
 		populate_breakpoints();
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);

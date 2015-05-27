@@ -904,7 +904,6 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		main_window->enter_or_leave_fullscreen(false);
 	}
 	inst.fbuf->render_framebuffer();
-	static 
 	uint8_t* srcp[1];
 	int srcs[1];
 	uint8_t* dstp[1];
@@ -1193,7 +1192,7 @@ wxwin_mainwindow::wxwin_mainwindow(emulator_instance& _inst, bool fscreen)
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
 	menu_entry(wxID_HEXEDITOR, wxT("Memory editor..."));
 	tracelog_menu* trlog;
-	auto trlog_item = menu_special_sub(wxT("Trace log"), trlog = new tracelog_menu(this, inst, 
+	auto trlog_item = menu_special_sub(wxT("Trace log"), trlog = new tracelog_menu(this, inst,
 		wxID_TRACELOG_FIRST, wxID_TRACELOG_LAST));
 	trlog->set_disabler([trlog_item](bool enabled) { trlog_item->Enable(enabled); });
 	trlog->update();

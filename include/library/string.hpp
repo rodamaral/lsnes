@@ -244,9 +244,6 @@ enum regex_match_mode
  * Parameter regex: The regexp to apply.
  * Parameter str: The string to apply the regexp to.
  * Parameter mode: Match mode.
- *	0 => Case-senstive regex (default).
- *	1 => Case-insensitive regex.
- *	2 => 
  * Returns: True if matches, false if not.
  */
 bool regex_match(const std::string& regex, const std::string& str, enum regex_match_mode mode = REGEX_MATCH_REGEX)

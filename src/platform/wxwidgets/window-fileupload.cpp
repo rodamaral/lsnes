@@ -99,7 +99,7 @@ public:
 			wxCommandEventHandler(wxwin_gameselect::on_search_type), NULL, this);
 		games->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
 			wxCommandEventHandler(wxwin_gameselect::on_list_select), NULL, this);
-	
+
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 		pbutton_s->AddStretchSpacer();
 		pbutton_s->Add(ok = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);

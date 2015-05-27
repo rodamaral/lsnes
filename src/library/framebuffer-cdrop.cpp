@@ -88,7 +88,7 @@ namespace
 			src += 64;
 		}
 	}
-	
+
 	void ssse3_swap(uint8_t* dest, const uint8_t* src, size_t units, const char* masks)
 	{
 		size_t blocks = (units + 3) / 4;
@@ -104,7 +104,7 @@ namespace
 	}
 #endif
 }
-	
+
 void copy_drop4(uint8_t* dest, const uint32_t* src, size_t units)
 {
 #ifdef ARCH_IS_I386

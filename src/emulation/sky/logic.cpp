@@ -433,7 +433,7 @@ namespace sky
 		false,		//Load level for retry. Unlike primary load, this does not need input.
 		false,		//Lockup.
 	};
-	
+
 	void rom_boot_vector(struct instance& inst)
 	{
 		inst.state.stage = inst.state.savestage = inst.state.oldstage = 0;

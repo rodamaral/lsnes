@@ -264,7 +264,7 @@ rom_image::rom_image(const std::string& file, const std::string& tmpprefer) thro
 	account_images();
 }
 
-void rom_image::load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer) 
+void rom_image::load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	std::string s;
@@ -500,4 +500,3 @@ void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb)
 }
 
 std::map<std::string, core_type*> preferred_core;
-

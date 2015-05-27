@@ -381,7 +381,7 @@ void lua_state::do_reset()
 {
 	L.reset();
 	luaL_openlibs(L.handle());
-	
+
 	run_sysrc_lua(true);
 	copy_system_tables(L);
 	messages << "Lua VM reset" << std::endl;

@@ -442,7 +442,7 @@ namespace
 				core.rom->load_sram(_movie.movie_sram);
 				std::list<core_vma_info> vmas = core.rom->vma_list();
 				populate_volatile_ram(_movie, vmas);
-			}	
+			}
 			core.rom->set_pflag(0);
 			core.controls->set_macro_frames(std::map<std::string, uint64_t>());
 		}
@@ -522,7 +522,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		newmovie.get()->load(_movie.get()->rerecords, _movie.get()->projectid, *(_movie.get()->input));
 		newmovie.get()->set_pflag_handler(&lsnes_pflag_handler);
 		newmovie.get()->readonly_mode(false);
-		
+
 		//Force new lazy rrdata and count a rerecord.
 		temporary_handle<rrdata_set> rrd;
 		rrd.get()->read_base(rrdata::filename(_movie.get()->projectid), true);

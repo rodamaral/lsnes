@@ -24,7 +24,6 @@ public:
 		add_ex_spec(prio, [](std::exception& e) -> bool { return (dynamic_cast<T*>(&e) != NULL); },
 			[](std::exception& e) -> std::function<void()>  { T _ex = *dynamic_cast<T*>(&e);
 			return [_ex]() -> void { throw _ex; }; });
-			    
 	}
 };
 

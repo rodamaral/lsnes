@@ -9,7 +9,7 @@ namespace
 		std::string against;
 
 		P(regexp, against);
-		
+
 		regex_results r = regex(regexp, against);
 		if(!r) {
 			L.pushboolean(false);

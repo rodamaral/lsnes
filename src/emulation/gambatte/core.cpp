@@ -990,7 +990,6 @@ namespace
 	lua::functions debug_fns_snes(lua_func_misc, "gambatte", {
 		{"last_frame_cycles", last_frame_cycles},
 	});
-	
 
 	struct oninit {
 		oninit()

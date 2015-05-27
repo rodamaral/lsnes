@@ -125,7 +125,7 @@ namespace
 				h = b2->height;
 			}
 
-			range bX = ((range::make_w(scr.get_width()) - oX) & range::make_w(w) & 
+			range bX = ((range::make_w(scr.get_width()) - oX) & range::make_w(w) &
 				range::make_s(x0, dw));
 			range bY = ((range::make_w(scr.get_height()) - oY) & range::make_w(h) &
 				range::make_s(y0, dh));
@@ -947,7 +947,7 @@ void lua_palette::adjust_palette_size(size_t newsize)
 
 void lua_palette::push_back(const framebuffer::color& cx)
 {
-	size_t c = color_count; 
+	size_t c = color_count;
 	adjust_palette_size(c + 1);
 	colors[c] = cx;
 }

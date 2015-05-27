@@ -69,7 +69,7 @@ namespace
 		double spd = 0;
 		std::string special;
 		bool is_string = false;
-		
+
 		if(P.is_string()) {
 			P(special);
 			is_string = true;

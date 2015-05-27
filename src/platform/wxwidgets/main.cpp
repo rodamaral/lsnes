@@ -257,7 +257,7 @@ end:
 			return -999.0;
 		return log(fabs(v));
 	}
-	
+
 	void save_configuration()
 	{
 		std::string cfg = get_config_path() + "/lsneswxw.cfg";

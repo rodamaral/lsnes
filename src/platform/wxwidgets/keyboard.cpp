@@ -291,7 +291,7 @@ namespace
 		std::map<modifier_entry*, keyboard::modifier*> mallocated;
 		std::map<key_entry*, keyboard::key_key*> kallocated;
 	};
-	instance_map<keyboard_state> keyboard_states; 
+	instance_map<keyboard_state> keyboard_states;
 }
 
 std::string map_keycode_to_key(int kcode)

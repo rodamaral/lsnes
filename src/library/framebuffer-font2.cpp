@@ -184,8 +184,6 @@ void font2::glyph::render(uint8_t* buf, size_t _stride, uint32_t u, uint32_t v, 
 			unsigned dx = u + i;
 			size_t gb = 31 - (dx & 31);
 			buf[i] = (fglyph[ge + (dx >> 5)] >> gb) & 1;
-			
-			
 		}
 	}
 }

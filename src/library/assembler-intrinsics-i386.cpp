@@ -81,7 +81,6 @@ namespace assembler_intrinsics
 	I386::sib_scale_off_intermediate::sib_scale_off_intermediate(reg _idx, uint8_t _scale, int32_t _offset)
 		: index(_idx), scale(_scale), offset(_offset)
 	{
-		
 	}
 
 	I386::sib_scale_intermediate::sib_scale_intermediate(reg _idx, uint8_t _scale)
@@ -143,12 +142,12 @@ namespace assembler_intrinsics
 	{
 		*this = sib(reg_none, r.index, r.scale);
 	}
-	
+
 	I386::ref::ref(sib_scale_off_intermediate r)
 	{
 		*this = sib(reg_none, r.index, r.scale, r.offset);
 	}
-	
+
 	I386::ref I386::ref::reg_off(reg r, int32_t off)
 	{
 		if(!r.valid(true))
@@ -189,7 +188,7 @@ namespace assembler_intrinsics
 		x.rex = 0;
 		return x;
 	}
-	
+
 	I386::ref I386::ref::sib(reg base, reg index, uint8_t scale, int32_t off)
 	{
 		I386::ref x;
@@ -205,7 +204,7 @@ namespace assembler_intrinsics
 		case 8: ss = 3; break;
 		default: throw std::runtime_error("Illegal scale in SIB");
 		};
-		
+
 		bool need_off = (off != 0);
 		bool need_loff = (off < -128 || off > 127);
 		if(base.is_none()) {
@@ -234,7 +233,7 @@ namespace assembler_intrinsics
 		}
 		return x;
 	}
-	
+
 	I386::low I386::ref::operator()(reg r, bool set_size_flag, bool amd64)
 	{
 		check_register(r, amd64);
@@ -256,7 +255,7 @@ namespace assembler_intrinsics
 		a(op1);
 		xref.emit_bytes(a);
 	}
-	
+
 	void I386::ref::emit(assembler::assembler& a, bool set_size_flag, bool amd64, reg r, uint8_t op1,
 		uint8_t op2)
 	{

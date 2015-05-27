@@ -491,7 +491,7 @@ std::string pcs_write_class(const struct controller_set& pset, unsigned& tmp_idx
 	for(auto i : repr) {
 		switch(i.type) {
 		case 0:
-			s << "\t\t\tif(portctrl::read_button_value(textbuf, ptr)) buffer[" << i.offset << "]|=" 
+			s << "\t\t\tif(portctrl::read_button_value(textbuf, ptr)) buffer[" << i.offset << "]|="
 				<< (int)i.mask << ";\n";
 			break;
 		case 1:

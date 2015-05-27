@@ -788,7 +788,7 @@ template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, cons
 	y += scr.get_origin_y();
 	size_t swidth = scr.get_width();
 	size_t sheight = scr.get_height();
-	
+
 	for_each_glyph(text, x, hdbl, vdbl, [this, x, y, &scr, swidth, sheight, &fg, &bg](uint32_t lx, uint32_t ly,
 		const glyph& g, bool hdbl, bool vdbl) {
 		//Render this glyph at x + lx, y + ly.
@@ -853,7 +853,7 @@ void font::render(uint8_t* buf, size_t stride, const std::string& str, uint32_t 
 		uint8_t* ptr = buf + (ly * stride + lx);
 		size_t xlength = (g.wide ? 16 : 8) << (hdbl ? 1 : 0);
 		size_t height = 16 << (vdbl ? 1 : 0);
-	
+
 		if(g.data)
 			for(size_t i = 0; i < height; i++) {
 				ptr += stride;

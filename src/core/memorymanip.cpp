@@ -100,7 +100,7 @@ void cart_mappings_refresher::operator()() throw(std::bad_alloc)
 	auto vmalist = rom.vma_list();
 	auto _mlogic = &mlogic;
 	try {
-		tmp = new iospace_region("LSNESMMIO", 0xFFFFFFFF00000000ULL, 32, true, 
+		tmp = new iospace_region("LSNESMMIO", 0xFFFFFFFF00000000ULL, 32, true,
 			[_mlogic](uint64_t addr) -> uint8_t { return lsnes_mmio_iospace_read(_mlogic, addr); },
 			[_mlogic](uint64_t addr, uint8_t value) { lsnes_mmio_iospace_write(_mlogic, addr, value); });
 		regions.push_back(tmp);
@@ -343,7 +343,7 @@ namespace
 		"write-byte");
 	command::byname_factory<write_command<uint16_t, -32768, 0xFFFF, &memory_space::write<uint16_t>>>
 		CMD_w2(lsnes_cmds, "write-word");
-	command::byname_factory<write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>>> 
+	command::byname_factory<write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>>>
 		CMD_w3(lsnes_cmds, "write-hword");
 	command::byname_factory<write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL, &memory_space::write<uint32_t>>>
 		CMD_w4(lsnes_cmds, "write-dword");

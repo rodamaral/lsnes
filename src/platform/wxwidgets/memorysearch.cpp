@@ -199,7 +199,7 @@ private:
 	wxButton* cancel;
 };
 
-wxwindow_memorysearch_vmasel::wxwindow_memorysearch_vmasel(wxWindow* p, emulator_instance& _inst, 
+wxwindow_memorysearch_vmasel::wxwindow_memorysearch_vmasel(wxWindow* p, emulator_instance& _inst,
 	const std::set<std::string>& enabled)
 	: wxDialog(p, wxID_ANY, towxstring("lsnes: Select enabled regions"), wxDefaultPosition, wxSize(300, -1)),
 	inst(_inst)

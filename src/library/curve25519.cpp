@@ -29,7 +29,7 @@ namespace
 			wide_t s[5];
 			memcpy(n, a.n, sizeof(n));
 			for(unsigned i = 0; i < count; i++) {
-				s[0] = (wide_t)n[0] * (wide_t)n[0] + 
+				s[0] = (wide_t)n[0] * (wide_t)n[0] +
 					(wide_t)(n[1] << 1) * (wide_t)(n[4] * 19) +
 					(wide_t)(n[2] << 1) * (wide_t)(n[3] * 19);
 				s[1] = (wide_t)n[0] * (wide_t)(n[1] << 1) +
@@ -66,15 +66,15 @@ namespace
 				(wide_t)(a.n[3] * 19) * (wide_t)b.n[2] + (wide_t)a.n[2] * (wide_t)(b.n[3] * 19) +
 				(wide_t)a.n[1] * (wide_t)(b.n[4] * 19);
 			s[1] = (wide_t)a.n[0] * (wide_t)b.n[1] + (wide_t)a.n[1] * (wide_t)b.n[0] +
-				 (wide_t)(a.n[4] * 19) * (wide_t)b.n[2] + (wide_t)(a.n[3] * 19) * (wide_t)b.n[3] + 
+				 (wide_t)(a.n[4] * 19) * (wide_t)b.n[2] + (wide_t)(a.n[3] * 19) * (wide_t)b.n[3] +
 				 (wide_t)a.n[2] * (wide_t)(b.n[4] * 19);
-			s[2] = (wide_t)a.n[0] * (wide_t)b.n[2] + (wide_t)a.n[1] * (wide_t)b.n[1] + 
+			s[2] = (wide_t)a.n[0] * (wide_t)b.n[2] + (wide_t)a.n[1] * (wide_t)b.n[1] +
 				(wide_t)a.n[2] * (wide_t)b.n[0] + (wide_t)(a.n[4] * 19) * (wide_t)b.n[3] +
 				(wide_t)(a.n[3] * 19) * (wide_t)b.n[4];
-			s[3] = (wide_t)a.n[0] * (wide_t)b.n[3] + (wide_t)a.n[1] * (wide_t)b.n[2] + 
+			s[3] = (wide_t)a.n[0] * (wide_t)b.n[3] + (wide_t)a.n[1] * (wide_t)b.n[2] +
 				(wide_t)a.n[2] * (wide_t)b.n[1] + (wide_t)a.n[3] * (wide_t)b.n[0] +
 				(wide_t)(a.n[4] * 19) * (wide_t)b.n[4];
-			s[4] = (wide_t)a.n[0] * (wide_t)b.n[4] + (wide_t)a.n[1] * (wide_t)b.n[3] + 
+			s[4] = (wide_t)a.n[0] * (wide_t)b.n[4] + (wide_t)a.n[1] * (wide_t)b.n[3] +
 				(wide_t)a.n[2] * (wide_t)b.n[2] + (wide_t)a.n[3] * (wide_t)b.n[1] +
 				(wide_t)a.n[4] * (wide_t)b.n[0];
 			s[1] += (s[0] >> shift);
