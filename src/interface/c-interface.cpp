@@ -965,17 +965,11 @@ failed:
 		main_font.for_each_glyph(str, 0, false, false, [size, &fg, &bg, bmp](uint32_t ix, uint32_t iy,
 			const framebuffer::font::glyph& g, bool hdbl, bool vdbl) {
 			T* _bmp = bmp + (iy * size.first + ix);
-			size_t w = g.wide ? 16 : 8;
+			size_t w = g.get_width();
 			size_t skip = size.first - w;
-			for(size_t _y = 0; _y < 16; _y++) {
-				uint32_t d = g.data[_y >> (g.wide ? 1 : 2)];
-				if(g.wide)
-					d >>= 16 - ((_y & 1) << 4);
-				else
-					d >>= 24 - ((_y & 3) << 3);
-				for(size_t _x = 0; _x < w; _x++, _bmp++) {
-					uint32_t b = w - _x - 1;
-					*_bmp = ((d >> b) & 1) ? fg : bg;
+			for(size_t _y = 0; _y < g.get_height(); _y++) {
+				for(size_t _x = 0; _x < g.get_width(); _x++, _bmp++) {
+					*_bmp = g.read_pixel(_x, _y) ? fg : bg;
 				}
 				_bmp = _bmp + skip;
 			}

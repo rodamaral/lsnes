@@ -240,31 +240,25 @@ font2::font2(const std::string& file)
 font2::font2(struct font& bfont)
 {
 	auto s = bfont.get_glyphs_set();
+	rowadvance = 0;
 	for(auto i = s.begin();;i++) {
 		const font::glyph& j = (i != s.end()) ? bfont.get_glyph(*i) : bfont.get_bad_glyph();
 		glyph k;
-		k.width = j.wide ? 16 : 8;
-		k.height = 16;
+		k.width = j.get_width();
+		k.height = j.get_height();
 		k.stride = 1;
 		k.fglyph.resize(16);
-		for(size_t y = 0; y < 16; y++) {
-			k.fglyph[y] = 0;
-			uint32_t r = j.data[y / (j.wide ? 2 : 4)];
-			if(j.wide)
-				r >>= 16 - ((y & 1) << 4);
-			else
-				r >>= 24 - ((y & 3) << 3);
+		for(size_t y = 0; y < k.height; y++) {
 			for(size_t x = 0; x < k.width; x++) {
-				uint32_t b = (j.wide ? 15 : 7) - x;
-				if(((r >> b) & 1) != 0)
+				if(j.read_pixel(x, y))
 					k.fglyph[y] |= 1UL << (31 - x);
 			}
 		}
+		rowadvance = std::max((size_t)rowadvance, (size_t)j.get_height());
 		std::u32string key = (i != s.end()) ? std::u32string(1, *i) : std::u32string();
 		glyphs[key] = k;
 		if(i == s.end()) break;
 	}
-	rowadvance = 16;
 }
 
 std::ostream& operator<<(std::ostream& os, const std::u32string& lkey)

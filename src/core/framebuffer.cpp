@@ -53,12 +53,9 @@ namespace
 	{
 		while(rlist->scale) {
 			auto g = main_font.get_glyph(rlist->codepoint);
-			for(uint32_t j = 0; j < 16; j++) {
-				for(uint32_t i = 0; i < (g.wide ? 16 : 8); i++) {
-					uint32_t slice = g.data[j / (g.wide ? 2 : 4)];
-					uint32_t bit = 31 - ((j % (g.wide ? 2 : 4)) * (g.wide ? 16 : 8) + i);
-					uint32_t value = (slice >> bit) & 1;
-					if(value) {
+			for(uint32_t j = 0; j < g.get_height(); j++) {
+				for(uint32_t i = 0; i < g.get_width(); i++) {
+					if(g.read_pixel(i, j)) {
 						uint32_t basex = rlist->x + rlist->scale * i;
 						uint32_t basey = rlist->y + rlist->scale * j;
 						for(uint32_t j2 = 0; j2 < rlist->scale; j2++)

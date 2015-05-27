@@ -50,7 +50,6 @@ std::pair<size_t, size_t> text_framebuffer::get_pixels()
 
 void text_framebuffer::render(char* tbuffer)
 {
-	uint32_t dummy[8] = {0};
 	size_t stride = 24 * width;
 	size_t cellstride = 24;
 	for(size_t y = 0; y < height; y++) {
@@ -67,68 +66,24 @@ void text_framebuffer::render(char* tbuffer)
 			char fgb = (e.fg >> 16);
 			char fgg = (e.fg >> 8);
 			char fgr = (e.fg >> 0);
-			const uint32_t* data = (g.data ? g.data : dummy);
-			if(g.wide && xp < width - 1) {
-				//Wide character, can draw full width.
-				for(size_t y2 = 0; y2 < 16; y2++) {
-					uint32_t d = data[y2 >> 1];
-					d >>= 16 - ((y2 & 1) << 4);
-					for(size_t j = 0; j < 16; j++) {
-						uint32_t b = 15 - j;
-						if(((d >> b) & 1) != 0) {
-							cellbase[3 * j + 0] = fgr;
-							cellbase[3 * j + 1] = fgg;
-							cellbase[3 * j + 2] = fgb;
-						} else {
-							cellbase[3 * j + 0] = bgr;
-							cellbase[3 * j + 1] = bgg;
-							cellbase[3 * j + 2] = bgb;
-						}
+
+			uint32_t cells = g.get_width() / 8;
+			uint32_t drawc = 8 * std::min(cells, (uint32_t)((xp < width - 1) ? 2 : 1));
+			for(size_t y2 = 0; y2 < g.get_height(); y2++) {
+				for(size_t j = 0; j < drawc; j++) {
+					if(g.read_pixel(j, y2)) {
+						cellbase[3 * j + 0] = fgr;
+						cellbase[3 * j + 1] = fgg;
+						cellbase[3 * j + 2] = fgb;
+					} else {
+						cellbase[3 * j + 0] = bgr;
+						cellbase[3 * j + 1] = bgg;
+						cellbase[3 * j + 2] = bgb;
 					}
-					cellbase += stride;
 				}
-				xp += 2;
-			} else if(g.wide) {
-				//Wide character, can only draw half.
-				for(size_t y2 = 0; y2 < 16; y2++) {
-					uint32_t d = data[y2 >> 1];
-					d >>= 16 - ((y2 & 1) << 4);
-					for(size_t j = 0; j < 8; j++) {
-						uint32_t b = 15 - j;
-						if(((d >> b) & 1) != 0) {
-							cellbase[3 * j + 0] = fgr;
-							cellbase[3 * j + 1] = fgg;
-							cellbase[3 * j + 2] = fgb;
-						} else {
-							cellbase[3 * j + 0] = bgr;
-							cellbase[3 * j + 1] = bgg;
-							cellbase[3 * j + 2] = bgb;
-						}
-					}
-					cellbase += stride;
-				}
-				xp += 2;
-			} else {
-				//Narrow character.
-				for(size_t y2 = 0; y2 < 16; y2++) {
-					uint32_t d = data[y2 >> 2];
-					d >>= 24 - ((y2 & 3) << 3);
-					for(size_t j = 0; j < 8; j++) {
-						uint32_t b = 7 - j;
-						if(((d >> b) & 1) != 0) {
-							cellbase[3 * j + 0] = fgr;
-							cellbase[3 * j + 1] = fgg;
-							cellbase[3 * j + 2] = fgb;
-						} else {
-							cellbase[3 * j + 0] = bgr;
-							cellbase[3 * j + 1] = bgg;
-							cellbase[3 * j + 2] = bgb;
-						}
-					}
-					cellbase += stride;
-				}
-				xp += 1;
+				cellbase += stride;
 			}
+			xp += cells;
 		}
 	}
 }
@@ -170,7 +125,7 @@ size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, si
 			e.fg = fg;
 			e.bg = bg;
 		}
-		pused += (g.wide ? 2 : 1);
+		pused += g.get_width() / 8;
 	}
 	while(pused < w) {
 		//Pad with spaces.

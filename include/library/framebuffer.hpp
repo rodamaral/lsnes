@@ -492,6 +492,16 @@ struct font
 		bool wide;		//If set, 16 wide instead of 8.
 		uint32_t* data;		//Glyph data. Bitpacked with element padding between rows.
 		size_t offset;		//Glyph offset.
+		uint32_t get_width() const throw() { return wide ? 16 : 8; }
+		uint32_t get_height() const throw() { return 16; }
+		bool read_pixel(uint32_t x, uint32_t y) const throw()
+		{
+			if(wide) {
+				return ((data[y >> 1] >> (31 - (((y & 1) << 4) + x))) & 1) != 0;
+			} else {
+				return ((data[y >> 2] >> (31 - (((y & 3) << 3) + x))) & 1) != 0;
+			}
+		}
 	};
 
 	/**

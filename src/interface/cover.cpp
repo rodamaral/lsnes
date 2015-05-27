@@ -19,43 +19,20 @@ namespace
 		if(x >= w || y >= h)
 			return;
 		const framebuffer::font::glyph& g = main_font.get_glyph(ch);
-		unsigned maxw = min((size_t)(g.wide ? 16 : 8), (size_t)(w - x));
-		unsigned maxh = min((size_t)16,  (size_t)(h - y));
+		unsigned maxw = min((size_t)g.get_width(), (size_t)(w - x));
+		unsigned maxh = min((size_t)g.get_height(),  (size_t)(h - y));
 		unsigned char* cellbase = reinterpret_cast<unsigned char*>(fb) + y * istride + pstride * x;
-		if(g.wide) {
-			//Wide character.
-			for(size_t y2 = 0; y2 < maxh; y2++) {
-				uint32_t d = g.data[y2 >> 1];
-				d >>= 16 - ((y2 & 1) << 4);
-				for(size_t j = 0; j < maxw; j++) {
-					uint32_t b = 15 - j;
-					if(((d >> b) & 1) != 0) {
-						for(unsigned k = 0; k < pstride; k++)
-							cellbase[pstride * j + k] = _fg[k];
-					} else {
-						for(unsigned k = 0; k < pstride; k++)
-							cellbase[pstride * j + k] = _bg[k];
-					}
+		for(size_t y2 = 0; y2 < maxh; y2++) {
+			for(size_t j = 0; j < maxw; j++) {
+				if(g.read_pixel(j, y2)) {
+					for(unsigned k = 0; k < pstride; k++)
+						cellbase[pstride * j + k] = _fg[k];
+				} else {
+					for(unsigned k = 0; k < pstride; k++)
+						cellbase[pstride * j + k] = _bg[k];
 				}
-				cellbase += istride;
 			}
-		} else {
-			//Narrow character.
-			for(size_t y2 = 0; y2 < maxh; y2++) {
-				uint32_t d = g.data[y2 >> 2];
-				d >>= 24 - ((y2 & 3) << 3);
-				for(size_t j = 0; j < maxw; j++) {
-					uint32_t b = 7 - j;
-					if(((d >> b) & 1) != 0) {
-						for(unsigned k = 0; k < pstride; k++)
-							cellbase[pstride * j + k] = _fg[k];
-					} else {
-						for(unsigned k = 0; k < pstride; k++)
-							cellbase[pstride * j + k] = _bg[k];
-					}
-				}
-				cellbase += istride;
-			}
+			cellbase += istride;
 		}
 	}
 }
@@ -91,7 +68,7 @@ void cover_next_position(uint32_t ch, unsigned& x, unsigned& y)
 		y = y + 16;
 	} else {
 		const framebuffer::font::glyph& g = main_font.get_glyph(ch);
-		x = x + (g.wide ? 16 : 8);
+		x = x + g.get_width();
 	}
 }
 
