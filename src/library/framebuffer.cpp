@@ -20,6 +20,7 @@ unsigned default_shift_b;
 
 namespace
 {
+	const char* render_pages_id = "Render objects";
 	void recalculate_default_shifts()
 	{
 		uint32_t magic = 0x18000810;
@@ -576,6 +577,8 @@ void* queue::alloc(size_t block) throw(std::bad_alloc)
 		throw std::bad_alloc();
 	if(pages == 0 || memory_allocated + block > pages * RENDER_PAGE_SIZE) {
 		memory_allocated = pages * RENDER_PAGE_SIZE;
+		if(!memory.count(pages))
+			tracker(render_pages_id, RENDER_PAGE_SIZE);
 		memory[pages++];
 	}
 	void* mem = memory[memory_allocated / RENDER_PAGE_SIZE].content + (memory_allocated % RENDER_PAGE_SIZE);
@@ -601,7 +604,8 @@ void queue::kill_request(void* obj) throw()
 	}
 }
 
-queue::queue() throw()
+queue::queue(memtracker& _tracker) throw()
+	: tracker(_tracker)
 {
 	queue_head = NULL;
 	queue_tail = NULL;
@@ -612,6 +616,7 @@ queue::queue() throw()
 queue::~queue() throw()
 {
 	clear();
+	tracker(render_pages_id, -(ssize_t)memory.size() * RENDER_PAGE_SIZE);
 }
 
 object::object() throw()

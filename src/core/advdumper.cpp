@@ -349,7 +349,7 @@ template<bool X> bool master_dumper::render_video_hud(struct framebuffer::fb<X>&
 {
 	bool lua_kill_video = false;
 	struct lua::render_context lrc;
-	framebuffer::queue rq;
+	framebuffer::queue rq(mem_tracker());
 	lrc.left_gap = lgap;
 	lrc.right_gap = rgap;
 	lrc.bottom_gap = bgap;

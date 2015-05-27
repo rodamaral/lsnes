@@ -9,6 +9,7 @@
 #include <set>
 #include "framebuffer-pixfmt.hpp"
 #include "threads.hpp"
+#include "memtracker.hpp"
 
 namespace framebuffer
 {
@@ -667,7 +668,7 @@ struct queue
 /**
  * Constructor.
  */
-	queue() throw();
+	queue(memtracker& _tracker) throw();
 /**
  * Destructor.
  */
@@ -682,6 +683,7 @@ private:
 	size_t pages;
 	threads::lock display_mutex; //Synchronize display and kill.
 	std::map<size_t, page> memory;
+	memtracker& tracker;
 };
 
 /**

@@ -87,6 +87,7 @@ private:
 	void do_screenshot(command::arg_filename a);
 	struct render_info
 	{
+		render_info();
 		framebuffer::raw fbuf;
 		framebuffer::queue rq;
 		uint32_t hscl;
