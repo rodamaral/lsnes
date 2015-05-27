@@ -322,6 +322,7 @@ private:
 	void binary_io(int stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 	void save(zip::writer& w, rrdata_set& rrd, bool as_state) throw(std::bad_alloc, std::runtime_error);
 	void load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, std::runtime_error);
+	memtracker::autorelease tracker;
 };
 
 void emerg_save_movie(const moviefile& mv, rrdata_set& rrd);

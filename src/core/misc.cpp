@@ -241,9 +241,3 @@ std::string get_temp_file()
 	return tname;
 #endif
 }
-
-memtracker& mem_tracker()
-{
-	static memtracker x;
-	return x;
-}

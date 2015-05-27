@@ -15,6 +15,7 @@
 
 namespace portctrl
 {
+const char* movie_page_id = "Input tracks";
 namespace
 {
 	controller simple_controller = {"(system)", "system", {}};
@@ -559,6 +560,7 @@ frame_vector::~frame_vector() throw()
 }
 
 frame_vector::frame_vector() throw()
+	: tracker(memtracker::singleton(), movie_page_id, sizeof(*this))
 {
 	real_frame_count = 0;
 	freeze_count = 0;
@@ -566,6 +568,7 @@ frame_vector::frame_vector() throw()
 }
 
 frame_vector::frame_vector(const type_set& p) throw()
+	: tracker(memtracker::singleton(), movie_page_id, sizeof(*this))
 {
 	real_frame_count = 0;
 	freeze_count = 0;
@@ -594,6 +597,7 @@ void frame_vector::append(frame cframe) throw(std::bad_alloc, std::runtime_error
 }
 
 frame_vector::frame_vector(const frame_vector& vector) throw(std::bad_alloc)
+	: tracker(memtracker::singleton(), movie_page_id, sizeof(*this))
 {
 	real_frame_count = 0;
 	freeze_count = 0;

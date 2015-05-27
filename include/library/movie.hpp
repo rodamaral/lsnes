@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include "portctrl-data.hpp"
+#include "memtracker.hpp"
 
 /**
  * Movie being played back or recorded
@@ -320,6 +321,8 @@ private:
 	uint64_t cached_subframe;
 	//Count present subframes in frame starting from first_subframe (returns 0 if out of movie).
 	uint32_t count_changes(uint64_t first_subframe) throw();
+	//Tracker.
+	memtracker::autorelease tracker;
 };
 
 #endif

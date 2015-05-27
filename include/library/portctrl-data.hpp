@@ -18,6 +18,7 @@
 #include <set>
 #include "json.hpp"
 #include "threads.hpp"
+#include "memtracker.hpp"
 
 namespace binarystream
 {
@@ -48,6 +49,7 @@ namespace binarystream
 
 namespace portctrl
 {
+extern const char* movie_page_id;
 /**
  * Is not field terminator.
  *
@@ -1320,7 +1322,11 @@ private:
 	class page
 	{
 	public:
-		page() { memset(content, 0, CONTROLLER_PAGE_SIZE); }
+		page() {
+			memtracker::singleton()(movie_page_id, CONTROLLER_PAGE_SIZE + 36);
+			memset(content, 0, CONTROLLER_PAGE_SIZE);
+		}
+		~page() { memtracker::singleton()(movie_page_id, -CONTROLLER_PAGE_SIZE - 36); }
 		unsigned char content[CONTROLLER_PAGE_SIZE];
 	};
 	size_t frames_per_page;
@@ -1342,6 +1348,7 @@ private:
 		cache_page_num--;
 		cache_page = NULL;
 	}
+	memtracker::autorelease tracker;
 };
 
 void frame::sync(bool x) throw()

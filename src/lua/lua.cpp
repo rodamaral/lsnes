@@ -191,8 +191,8 @@ lua_state::lua_state(lua::state& _L, command::group& _command, settingvar::group
 	//We can't read the value of lua maxmem setting here (it crashes), so just set default, it will be changed
 	//if needed.
 	L.set_memory_limit(1 << 27);
-	mem_tracker()(lua_vm_id, L.get_memory_use());
-	L.set_memory_change_handler([](ssize_t delta) { mem_tracker()(lua_vm_id, delta); });
+	memtracker::singleton()(lua_vm_id, L.get_memory_use());
+	L.set_memory_change_handler([](ssize_t delta) { memtracker::singleton()(lua_vm_id, delta); });
 
 	idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 	timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;

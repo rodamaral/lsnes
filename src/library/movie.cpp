@@ -11,6 +11,7 @@
 
 namespace
 {
+	const char* movie_id = "Movies";
 	bool movies_compatible(portctrl::frame_vector& old_movie, portctrl::frame_vector& new_movie,
 		uint64_t frame, const uint32_t* polls, const std::string& old_projectid,
 		const std::string& new_projectid)
@@ -193,7 +194,7 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 }
 
 movie::movie() throw(std::bad_alloc)
-	: _listener(*this)
+	: _listener(*this), tracker(memtracker::singleton(), movie_id, sizeof(*this))
 {
 	movie_data = NULL;
 	seqno = 0;

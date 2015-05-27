@@ -29,6 +29,7 @@
 
 namespace
 {
+	const char* movie_file_id = "Movie files";
 	std::map<std::string, moviefile*> memory_saves;
 
 	bool check_binary_magic(int s)
@@ -102,6 +103,7 @@ moviefile::brief_info::brief_info(const std::string& filename)
 }
 
 moviefile::moviefile() throw(std::bad_alloc)
+	: tracker(memtracker::singleton(), movie_file_id, sizeof(*this))
 {
 	force_corrupt = false;
 	gametype = NULL;
@@ -117,6 +119,7 @@ moviefile::moviefile() throw(std::bad_alloc)
 
 moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_settings, uint64_t rtc_sec,
 	uint64_t rtc_subsec)
+	: tracker(memtracker::singleton(), movie_file_id, sizeof(*this))
 {
 	force_corrupt = false;
 	gametype = &rom.get_sysregion();
@@ -146,6 +149,7 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 }
 
 moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
+	: tracker(memtracker::singleton(), movie_file_id, sizeof(*this))
 {
 	regex_results rr;
 	if(rr = regex("\\$MEMORY:(.*)", movie)) {

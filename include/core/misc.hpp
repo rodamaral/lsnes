@@ -59,6 +59,4 @@ std::string mangle_name(const std::string& orig);
  */
 std::string get_temp_file();
 
-memtracker& mem_tracker();
-
 #endif

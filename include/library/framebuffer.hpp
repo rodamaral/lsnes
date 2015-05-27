@@ -13,6 +13,7 @@
 
 namespace framebuffer
 {
+extern const char* render_page_id;
 template<bool X> struct elem {};
 template<> struct elem<false> { typedef uint32_t t; };
 template<> struct elem<true> { typedef uint64_t t; };
@@ -668,7 +669,7 @@ struct queue
 /**
  * Constructor.
  */
-	queue(memtracker& _tracker) throw();
+	queue() throw();
 /**
  * Destructor.
  */
@@ -676,14 +677,18 @@ struct queue
 private:
 	void add(struct object& obj) throw(std::bad_alloc);
 	struct node { struct object* obj; struct node* next; bool killed; };
-	struct page { char content[RENDER_PAGE_SIZE]; };
+	struct page { 
+		char content[RENDER_PAGE_SIZE];
+		page() { memtracker::singleton()(render_page_id, RENDER_PAGE_SIZE + 36); }
+		~page() { memtracker::singleton()(render_page_id, -RENDER_PAGE_SIZE - 36); }
+	};
 	struct node* queue_head;
 	struct node* queue_tail;
 	size_t memory_allocated;
 	size_t pages;
 	threads::lock display_mutex; //Synchronize display and kill.
 	std::map<size_t, page> memory;
-	memtracker& tracker;
+	memtracker::autorelease tracker;
 };
 
 /**

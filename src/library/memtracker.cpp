@@ -2,6 +2,7 @@
 
 void memtracker::operator()(const char* category, ssize_t change)
 {
+	if(invalid) return;
 	std::string cat = category;
 	threads::alock h(mut);
 	if(change > 0) {
@@ -19,6 +20,7 @@ void memtracker::operator()(const char* category, ssize_t change)
 
 void memtracker::reset(const char* category, size_t value)
 {
+	if(invalid) return;
 	std::string cat = category;
 	threads::alock h(mut);
 	data[cat] = value;
@@ -27,9 +29,24 @@ void memtracker::reset(const char* category, size_t value)
 std::map<std::string, size_t> memtracker::report()
 {
 	std::map<std::string, size_t> ret;
-	{
+	if(!invalid) {
 		threads::alock h(mut);
 		ret = data;
 	}
 	return ret;
+}
+
+memtracker::memtracker()
+{
+	invalid = false;
+}
+memtracker::~memtracker()
+{
+	invalid = true;
+}
+
+memtracker& memtracker::singleton()
+{
+	static memtracker x;
+	return x;
 }

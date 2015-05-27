@@ -88,11 +88,6 @@ namespace
 
 framebuffer::raw emu_framebuffer::screen_corrupt;
 
-emu_framebuffer::render_info::render_info()
-	: rq(mem_tracker())
-{
-}
-
 emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
 	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom,
 	status_updater& _supdater, command::group& _cmd)

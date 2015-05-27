@@ -157,7 +157,7 @@ namespace
 	command::fnptr<> CMD_memory_use(lsnes_cmds, "show-memory", "Show memory usage",
 		"show-memory\nShow memory usage",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			auto report = mem_tracker().report();
+			auto report = memtracker::singleton().report();
 			uint32_t maxwidth_left = 0;
 			uint32_t maxwidth_right = 0;
 			for(auto i : report) {

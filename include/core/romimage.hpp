@@ -120,8 +120,6 @@ private:
 	rom_image& operator=(const rom_image&);
 	//Account images.
 	void account_images();
-	//Accounted memory usage.
-	size_t memory_usage;
 	//Static NULL image.
 	static fileimage::image null_img;
 	//Loaded ROM images.
@@ -147,6 +145,8 @@ private:
 	//Handle bundle load case.
 	void load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer)
 		throw(std::bad_alloc, std::runtime_error);
+	//Tracker.
+	memtracker::autorelease tracker;
 };
 
 /**
