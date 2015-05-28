@@ -2047,3 +2047,83 @@ rr2-β22 [Saturday January 24th 2015]
 * Fix bad download crashing the emulator
 * bsnes: DMA tracing
 * bsnes: Support IRQ/NMI tracing
+
+rr2-β23 [Thursday May 28th 2015]
+================================
+* Lua: Don't lua_error() out of context with pending dtors
+* Add $LSNES_NO_SOUND_IN to disable sound input
+* Makefile: Build cmdhelp before anything else
+* keymapper: Verify gamepad config write before committing
+* Remember volume settings across restarts
+* Remember video settings
+* Fix CUSTOMFONT text positioning
+* Only exit poll advance on poll to non-00 control
+* Show error instead silently failing tangent positive edge
+* Fix race condition in makefile
+* Fix scaling-related crashes
+* NULL video dumper
+* Fix some compilation errors on Mac OS X
+* Move all regex matching to library/string.cpp
+* Switch to std::regex by default
+* Movie editor: Don't lock up on trying to display error messages
+* Add a internal TODO list
+* Lua: add gui.get_runmode()
+* Movie editor: Fix unnamed branch to show properly in select branch
+* If initsram/initstate points to LSS file, pull the matching member
+* wxwidgets: Hide dumper called "NULL"
+* Force game panel to window size in fullscreen mode
+* Implicitly redirect cmdhelp includes to corresponding JSON files
+* Fix movie length being wrong for imported binary tracks
+* Lua: input.controller_info(): Don't crash with out-of-range port
+* Lua: movie.rom_loaded()
+* Lua: movie.get_rom_info()
+* Force a repaint when becoming fullscreen
+* wxwidgets: exit-fullscreen to forcibly exit fullscreen mode
+* Make gitlinks for bsnes and gambatte
+* Throw mic in to entropy pool
+* Fix hostendian memory watches
+* Fix race condition in do_mix_tsc()
+* Lua: Don't run class destructor if constructor failed
+* Fix typo in resolve_filename documentation
+* bit.(r)flagdecode: Fix unicode in on/off strings
+* Wxwidgets: Add keycode entries for å, ä and ö
+* Wxwidgets: Fix §
+* Wxwidgets: Fix some compile errors in editor-memorywatch.cpp
+* Wxwidgets: Fix some compile errors in window-fileupload.cpp
+* Lua: movie.get_game_info
+* Don't callback to Lua in inconsistent state when loading a new ROM
+* SNES: Functions for messing with clockrate (for debugging games)
+* Remove some unnecressary casts
+* Add back reload-rom and close-rom
+* Add load-rom command
+* Split overly large loaded_rom constructor
+* Fix speed going out of whack after doing unsafe rewind
+* Refactor loaded_rom to make public fields private
+* Move NULL core code to its own file
+* Internally refactor loaded ROM imageset out of loaded ROM code
+* Refer to loaded ROM imagesets as handles
+* A bit of code cleanup
+* Mark the core methods that should be idempotent as const
+* Refactor dynamic state to its own subobject
+* Refactor unsafe rewinding a bit now that state is its own subobject
+* Clean up dynamic state handling a bit
+* Circle coordinates can go negative and thus must be signed
+* Add dedicated method for resetting to poweron state
+* Add description of PALETTE:get()
+* Fix typo in Lua reference
+* Don't leak open file descriptors to loaded ROMs
+* Fix race between killing object and drawing object
+* Fix a compiler warning
+* Small rendering speedups
+* Actually kill objects using palette about to be GC'd
+* font rendering: Use ranges for bounding instead of buggy routine
+* Have only one main Lua function trampoline
+* Use master state for trampolines
+* Lua: Memory usage limit
+* Framework for memory usage tracking
+* Redo text rendering (adds halo support to gui.text())
+* Make git diff --check happier
+* Clean up system font drawing
+* Memory tracker: Add tracking of render objects
+* Rework how memory tracking works
+* Small whitespace cleanup
