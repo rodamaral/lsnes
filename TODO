@@ -1,1 +1,3 @@
 - Memory Tracking: Track dynamic state.
+- Fix paths and filenames containing non-ASCII on Win32.
+- Win64 build.
