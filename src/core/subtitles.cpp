@@ -83,7 +83,7 @@ namespace
 
 	struct render_object_subtitle : public framebuffer::object
 	{
-		render_object_subtitle(int32_t _x, int32_t _y, const std::string& _text) throw()
+		render_object_subtitle(int32_t _x, int32_t _y, const text& _text) throw()
 			: x(_x), y(_y), text(_text), fg(0xFFFF80), bg(-1) {}
 		~render_object_subtitle() throw() {}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
@@ -96,7 +96,7 @@ namespace
 	private:
 		int32_t x;
 		int32_t y;
-		std::string text;
+		text text;
 		framebuffer::color fg;
 		framebuffer::color bg;
 	};
@@ -105,15 +105,15 @@ namespace
 subtitle_commentary::subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf, emulator_dispatch& _dispatch,
 	command::group& _cmd)
 	: mlogic(_mlogic), fbuf(_fbuf), edispatch(_dispatch), cmd(_cmd),
-	editsub(cmd, CSUBTITLE::edit, [this](const std::string& a) { this->do_editsub(a); }),
+	editsub(cmd, CSUBTITLE::edit, [this](const text& a) { this->do_editsub(a); }),
 	listsub(cmd, CSUBTITLE::list, [this]() { this->do_listsub(); }),
 	savesub(cmd, CSUBTITLE::save, [this](command::arg_filename a) { this->do_savesub(a); })
 {
 }
 
-std::string subtitle_commentary::s_escape(std::string x)
+text subtitle_commentary::s_escape(text x)
 {
-	std::string y;
+	text y;
 	for(size_t i = 0; i < x.length(); i++) {
 		char ch = x[i];
 		if(ch == '\n')
@@ -126,10 +126,10 @@ std::string subtitle_commentary::s_escape(std::string x)
 	return y;
 }
 
-std::string subtitle_commentary::s_unescape(std::string x)
+text subtitle_commentary::s_unescape(text x)
 {
 	bool escape = false;
-	std::string y;
+	text y;
 	for(size_t i = 0; i < x.length(); i++) {
 		char ch = x[i];
 		if(escape) {
@@ -158,7 +158,7 @@ void subtitle_commentary::render(lua::render_context& ctx)
 	moviefile_subtiming posmarker(curframe);
 	auto i = mlogic.get_mfile().subtitles.upper_bound(posmarker);
 	if(i != mlogic.get_mfile().subtitles.end() && i->first.inrange(curframe)) {
-		std::string subtxt = i->second;
+		text subtxt = i->second;
 		int32_t y = ctx.height;
 		ctx.queue->create_add<render_object_subtitle>(0, y, subtxt);
 	}
@@ -175,7 +175,7 @@ std::set<std::pair<uint64_t, uint64_t>> subtitle_commentary::get_all()
 	return r;
 }
 
-std::string subtitle_commentary::get(uint64_t f, uint64_t l)
+text subtitle_commentary::get(uint64_t f, uint64_t l)
 {
 	if(!mlogic)
 		return "";
@@ -186,7 +186,7 @@ std::string subtitle_commentary::get(uint64_t f, uint64_t l)
 		return s_escape(mlogic.get_mfile().subtitles[key]);
 }
 
-void subtitle_commentary::set(uint64_t f, uint64_t l, const std::string& x)
+void subtitle_commentary::set(uint64_t f, uint64_t l, const text& x)
 {
 	if(!mlogic)
 		return;
@@ -199,12 +199,12 @@ void subtitle_commentary::set(uint64_t f, uint64_t l, const std::string& x)
 	fbuf.redraw_framebuffer();
 }
 
-void subtitle_commentary::do_editsub(const std::string& args)
+void subtitle_commentary::do_editsub(const text& args)
 {
 	auto r = regex("([0-9]+)[ \t]+([0-9]+)([ \t]+(.*))?", args, "Bad syntax");
 	uint64_t frame = parse_value<uint64_t>(r[1]);
 	uint64_t length = parse_value<uint64_t>(r[2]);
-	std::string text = r[4];
+	text text = r[4];
 	moviefile_subtiming key(frame, length);
 	if(text == "")
 		mlogic.get_mfile().subtitles.erase(key);
@@ -225,16 +225,16 @@ void subtitle_commentary::do_listsub()
 	}
 }
 
-void subtitle_commentary::do_savesub(const std::string& args)
+void subtitle_commentary::do_savesub(const text& args)
 {
 	if(mlogic.get_mfile().subtitles.empty())
 		return;
 	auto i = mlogic.get_mfile().subtitles.begin();
 	uint64_t lastframe = i->first.get_frame() + i->first.get_length();
-	std::ofstream y(std::string(args).c_str());
+	std::ofstream y(args.c_str());
 	if(!y)
 		throw std::runtime_error("Can't open output file");
-	std::string lasttxt = "";
+	text lasttxt = "";
 	uint64_t since = 0;
 	for(uint64_t i = 1; i < lastframe; i++) {
 		moviefile_subtiming posmarker(i);
@@ -252,5 +252,5 @@ void subtitle_commentary::do_savesub(const std::string& args)
 	if(lasttxt != "")
 		y << "{" << since << "}{" << lastframe - 1 << "}" << s_subescape(lasttxt)
 			<< std::endl;
-	messages << "Saved subtitles to " << std::string(args) << std::endl;
+	messages << "Saved subtitles to " << args << std::endl;
 }

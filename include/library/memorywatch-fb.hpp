@@ -18,7 +18,7 @@ struct output_fb : public item_printer
 	~output_fb();
 	void set_rqueue(framebuffer::queue& rqueue);
 	void set_dtor_cb(std::function<void(output_fb&)> cb);
-	void show(const std::string& iname, const std::string& val);
+	void show(const text& iname, const text& val);
 	void reset();
 	bool cond_enable;
 	GC::pointer<mathexpr::mathexpr> enabled;

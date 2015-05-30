@@ -54,7 +54,7 @@ namespace
 		int64_t r, g, b, a;
 
 		if(P.is_string()) {
-			framebuffer::color c(P.arg<std::string>());
+			framebuffer::color c(P.arg<text>());
 			L.pushnumber(c.asnumber());
 			return 1;
 		}
@@ -71,7 +71,7 @@ namespace
 	int status(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		std::string name, value;
+		text name, value;
 
 		P(name, value);
 

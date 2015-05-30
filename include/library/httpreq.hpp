@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <map>
 #include <string>
+#include "text.hpp"
 #include "threads.hpp"
 
 class http_request
@@ -60,7 +61,7 @@ public:
 /**
  * Sink header.
  */
-		virtual void header(const std::string& name, const std::string& cotent) = 0;
+		virtual void header(const text& name, const text& cotent) = 0;
 /**
  * Sink data.
  */
@@ -80,17 +81,17 @@ public:
 	class www_authenticate_extractor : public output_handler
 	{
 	public:
-		www_authenticate_extractor(std::function<void(const std::string& value)> _callback);
+		www_authenticate_extractor(std::function<void(const text& value)> _callback);
 		~www_authenticate_extractor();
-		void header(const std::string& name, const std::string& cotent);
+		void header(const text& name, const text& cotent);
 		void write(const char* source, size_t srcsize);
 	private:
-		std::function<void(const std::string& value)> callback;
+		std::function<void(const text& value)> callback;
 	};
 /**
  * Create a new request instance.
  */
-	http_request(const std::string& verb, const std::string& url);
+	http_request(const text& verb, const text& url);
 /**
  * Destructor.
  */
@@ -98,7 +99,7 @@ public:
 /**
  * Set the authorization header to use.
  */
-	void set_authorization(const std::string& hdr)
+	void set_authorization(const text& hdr)
 	{
 		authorization = hdr;
 	}
@@ -126,7 +127,7 @@ private:
 	http_request(const http_request&);
 	http_request& operator=(const http_request&);
 	void* handle;
-	std::string authorization;
+	text authorization;
 	bool has_body;
 	double dltotal, dlnow, ultotal, ulnow;
 };
@@ -139,12 +140,12 @@ struct http_async_request
 	http_async_request();
 	http_request::input_handler* ihandler;		//Input handler (INPUT).
 	http_request::output_handler* ohandler;		//Output handler (INPUT).
-	std::string verb;				//HTTP verb (INPUT)
-	std::string url;				//URL to access (INPUT)
-	std::string authorization;			//Authorization to use (INPUT)
+	text verb;				//HTTP verb (INPUT)
+	text url;				//URL to access (INPUT)
+	text authorization;			//Authorization to use (INPUT)
 	int64_t final_dl;				//Final amount downloaded (OUTPUT).
 	int64_t final_ul;				//Final amound uploaded (OUTPUT).
-	std::string errormsg;				//Final error (OUTPUT).
+	text errormsg;				//Final error (OUTPUT).
 	long http_code;					//HTTP error code (OUTPUT).
 	volatile bool finished;				//Finished flag (semi-transient).
 	threads::cv finished_cond;				//This condition variable is fired on finish.
@@ -169,17 +170,17 @@ struct property_upload_request : public http_request::input_handler
 /**
  * Data to upload.
  */
-	std::map<std::string, std::string> data;
+	std::map<text, text> data;
 private:
 	unsigned state;
-	std::map<std::string, std::string>::iterator itr;
+	std::map<text, text>::iterator itr;
 	size_t sent;
-	void str_helper(const std::string& str, char*& target, size_t& maxread, size_t& x, unsigned next);
+	void str_helper(const text& str, char*& target, size_t& maxread, size_t& x, unsigned next);
 	void chr_helper(char ch, char*& target, size_t& maxread, size_t& x, unsigned next);
 	void len_helper(size_t len, char*& target, size_t& maxread, size_t& x, unsigned next);
 };
 
 //Lowercase a string.
-std::string http_strlower(const std::string& name);
+text http_strlower(const text& name);
 
 #endif

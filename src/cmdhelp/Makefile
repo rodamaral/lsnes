@@ -9,10 +9,10 @@ __all__.files: $(JSON_OBJECTS)  inverselist.$(OBJECT_SUFFIX)
 	lua ../genfilelist.lua $^ >$@
 	touch $(ALLFLAGS)
 
-mkstubs$(DOT_EXECUTABLE_SUFFIX): mkstubs.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp
+mkstubs$(DOT_EXECUTABLE_SUFFIX): mkstubs.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp ../library/text.cpp ../library/utf8.cpp  ../library/memtracker.cpp
 	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^ $(HOSTHELPER_LDFLAGS) -Wall
 
-mkstubsi$(DOT_EXECUTABLE_SUFFIX): mkstubsi.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp
+mkstubsi$(DOT_EXECUTABLE_SUFFIX): mkstubsi.cpp ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/hex.cpp  ../library/eatarg.cpp ../library/int24.cpp ../library/text.cpp ../library/utf8.cpp  ../library/memtracker.cpp
 	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $^  $(HOSTHELPER_LDFLAGS) -Wall
 
 inverselist.cpp: $(JSON_FILES) mkstubsi$(DOT_EXECUTABLE_SUFFIX)

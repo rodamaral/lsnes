@@ -26,7 +26,7 @@ public:
 /**
  * Notifies about latch. Only called on some systems.
  */
-	virtual void notify_latch(std::list<std::string>& l) = 0;
+	virtual void notify_latch(std::list<text>& l) = 0;
 /**
  * Tick the RTC timer.
  */
@@ -34,11 +34,11 @@ public:
 /**
  * Get path for firmware.
  */
-	virtual std::string get_firmware_path() = 0;
+	virtual text get_firmware_path() = 0;
 /**
  * Get the base filename for ROM.
  */
-	virtual std::string get_base_path() = 0;
+	virtual text get_base_path() = 0;
 /**
  * Get current RTC time.
  */

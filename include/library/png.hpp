@@ -13,7 +13,7 @@ struct decoder
 {
 	decoder();
 	decoder(std::istream& file);
-	decoder(const std::string& file);
+	decoder(const text& file);
 	size_t width;
 	size_t height;
 	bool has_palette;
@@ -33,7 +33,7 @@ struct encoder
 	uint32_t colorkey;
 	std::vector<uint32_t> data;
 	std::vector<uint32_t> palette;
-	void encode(const std::string& file) const;
+	void encode(const text& file) const;
 	void encode(std::ostream& file) const;
 };
 }

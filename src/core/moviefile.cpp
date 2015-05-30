@@ -30,7 +30,7 @@
 namespace
 {
 	const char* movie_file_id = "Movie files";
-	std::map<std::string, moviefile*> memory_saves;
+	std::map<text, moviefile*> memory_saves;
 
 	bool check_binary_magic(int s)
 	{
@@ -66,7 +66,7 @@ namespace
 	}
 }
 
-moviefile::brief_info::brief_info(const std::string& filename)
+moviefile::brief_info::brief_info(const text& filename)
 {
 	regex_results rr;
 	if(rr = regex("\\$MEMORY:(.*)", filename)) {
@@ -117,7 +117,7 @@ moviefile::moviefile() throw(std::bad_alloc)
 	lazy_project_create = true;
 }
 
-moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_settings, uint64_t rtc_sec,
+moviefile::moviefile(loaded_rom& rom, std::map<text, text>& c_settings, uint64_t rtc_sec,
 	uint64_t rtc_subsec)
 	: tracker(memtracker::singleton(), movie_file_id, sizeof(*this))
 {
@@ -148,7 +148,7 @@ moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_sett
 	}
 }
 
-moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
+moviefile::moviefile(const text& movie, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 	: tracker(memtracker::singleton(), movie_file_id, sizeof(*this))
 {
 	regex_results rr;
@@ -188,7 +188,7 @@ void moviefile::fixup_current_branch(const moviefile& mv)
 			input = &branches[i.first];
 }
 
-void moviefile::save(const std::string& movie, unsigned compression, bool binary, rrdata_set& rrd, bool as_state)
+void moviefile::save(const text& movie, unsigned compression, bool binary, rrdata_set& rrd, bool as_state)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	regex_results rr;
@@ -204,7 +204,7 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 		return;
 	}
 	if(binary) {
-		std::string tmp = movie + ".tmp";
+		text tmp = movie + ".tmp";
 		int strm = open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC | EXTRA_OPENFLAGS, 0644);
 		if(strm < 0) {
 			int err = errno;
@@ -222,7 +222,7 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 			int err = errno;
 			(stringfmt() << "Failed to write '" << tmp << "': " << strerror(err)).throwex();
 		}
-		std::string backup = movie + ".backup";
+		text backup = movie + ".backup";
 		directory::rename_overwrite(movie.c_str(), backup.c_str());
 		if(directory::rename_overwrite(tmp.c_str(), movie.c_str()) < 0)
 			throw std::runtime_error("Can't rename '" + tmp + "' -> '" + movie + "'");
@@ -279,7 +279,7 @@ uint64_t moviefile::get_movie_length() throw()
 	return t;
 }
 
-moviefile*& moviefile::memref(const std::string& slot)
+moviefile*& moviefile::memref(const text& slot)
 {
 	return memory_saves[slot];
 }
@@ -320,23 +320,23 @@ void moviefile::copy_fields(const moviefile& mv)
 	dyn = mv.dyn;
 }
 
-void moviefile::fork_branch(const std::string& oldname, const std::string& newname)
+void moviefile::fork_branch(const text& oldname, const text& newname)
 {
 	if(oldname == newname || branches.count(newname))
 		return;
 	branches[newname] = branches[oldname];
 }
 
-const std::string& moviefile::current_branch()
+const text& moviefile::current_branch()
 {
 	for(auto& i : branches)
 		if(&i.second == input)
 			return i.first;
-	static std::string blank_string;
+	static text blank_string;
 	return blank_string;
 }
 
-bool moviefile::is_movie_or_savestate(const std::string& filename)
+bool moviefile::is_movie_or_savestate(const text& filename)
 {
 	try {
 		int s = open(filename.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
@@ -349,7 +349,7 @@ bool moviefile::is_movie_or_savestate(const std::string& filename)
 		if(is_binary)
 			return true;
 		//It is not binary, might be text.
-		std::string tmp;
+		text tmp;
 		zip::reader r(filename);
 		r.read_linefile("systemid", tmp);
 		if(tmp.substr(0, 8) != "lsnes-rr")
@@ -365,7 +365,7 @@ moviefile::branch_extractor::~branch_extractor()
 	delete real;
 }
 
-moviefile::branch_extractor::branch_extractor(const std::string& filename)
+moviefile::branch_extractor::branch_extractor(const text& filename)
 {
 	bool binary = false;
 	{
@@ -387,7 +387,7 @@ moviefile::sram_extractor::~sram_extractor()
 	delete real;
 }
 
-moviefile::sram_extractor::sram_extractor(const std::string& filename)
+moviefile::sram_extractor::sram_extractor(const text& filename)
 {
 	bool binary = false;
 	{
@@ -418,7 +418,7 @@ dynamic_state::dynamic_state()
 	rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 }
 
-void dynamic_state::clear(int64_t sec, int64_t ssec, const std::map<std::string, std::vector<char>>& initsram)
+void dynamic_state::clear(int64_t sec, int64_t ssec, const std::map<text, std::vector<char>>& initsram)
 {
 	sram = initsram;
 	savestate.clear();

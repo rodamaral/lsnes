@@ -8,6 +8,7 @@
 #include "core/rom-small.hpp"
 #include "library/command.hpp"
 #include "library/json.hpp"
+#include "library/text.hpp"
 
 class voice_commentary;
 class memwatch_set;
@@ -24,49 +25,49 @@ struct project_branch_info
 	//Parent branch ID.
 	uint64_t pbid;
 	//Name.
-	std::string name;
+	text name;
 };
 
 //Information about project.
 struct project_info
 {
 	//Internal ID of the project.
-	std::string id;
+	text id;
 	//Name of the project.
-	std::string name;
+	text name;
 	//Bundle ROM used.
-	std::string rom;
+	text rom;
 	//ROMs used.
-	std::string roms[ROM_SLOT_COUNT];
+	text roms[ROM_SLOT_COUNT];
 	//Last savestate.
-	std::string last_save;
+	text last_save;
 	//Directory for save/load dialogs.
-	std::string directory;
+	text directory;
 	//Prefix for save/load dialogs.
-	std::string prefix;
+	text prefix;
 	//List of Lua scripts to run at startup.
-	std::list<std::string> luascripts;
+	std::list<text> luascripts;
 	//Memory watches.
-	std::map<std::string, std::string> watches;
+	std::map<text, text> watches;
 	//Macros.
-	std::map<std::string, JSON::node> macros;
+	std::map<text, JSON::node> macros;
 	//Branches.
 	std::map<uint64_t, project_branch_info> branches;
 	uint64_t active_branch;
 	uint64_t next_branch;
 	//Filename this was loaded from.
-	std::string filename;
+	text filename;
 	//Stub movie data.
-	std::string gametype;
-	std::map<std::string, std::string> settings;
-	std::string coreversion;
-	std::string gamename;
-	std::string projectid;
-	std::string romimg_sha256[ROM_SLOT_COUNT];
-	std::string romxml_sha256[ROM_SLOT_COUNT];
-	std::string namehint[ROM_SLOT_COUNT];
-	std::vector<std::pair<std::string, std::string>> authors;
-	std::map<std::string, std::vector<char>> movie_sram;
+	text gametype;
+	std::map<text, text> settings;
+	text coreversion;
+	text gamename;
+	text projectid;
+	text romimg_sha256[ROM_SLOT_COUNT];
+	text romxml_sha256[ROM_SLOT_COUNT];
+	text namehint[ROM_SLOT_COUNT];
+	std::vector<std::pair<text, text>> authors;
+	std::map<text, std::vector<char>> movie_sram;
 	std::vector<char> anchor_savestate;
 	int64_t movie_rtc_second;
 	int64_t movie_rtc_subsecond;
@@ -104,7 +105,7 @@ struct project_info
  * Throws std::runtime_error: Invalid branch ID.
  * Note: The name of ROOT branch is always empty string.
  */
-	const std::string& get_branch_name(uint64_t bid);
+	const text& get_branch_name(uint64_t bid);
 /**
  * Set name of branch.
  *
@@ -113,7 +114,7 @@ struct project_info
  * Throws std::runtime_error: Invalid branch ID.
  * Note: The name of ROOT branch can't be changed.
  */
-	void set_branch_name(uint64_t bid, const std::string& name);
+	void set_branch_name(uint64_t bid, const text& name);
 /**
  * Set parent branch of branch.
  *
@@ -139,7 +140,7 @@ struct project_info
  * Returns: Id of new branch.
  * Throws std::runtime_error: Invalid branch ID.
  */
-	uint64_t create_branch(uint64_t pbid, const std::string& name);
+	uint64_t create_branch(uint64_t pbid, const text& name);
 /**
  * Delete a branch.
  *
@@ -150,7 +151,7 @@ struct project_info
 /**
  * Get name of current branch as string.
  */
-	std::string get_branch_string();
+	text get_branch_string();
 /**
  * Flush the project to disk.
  */
@@ -185,32 +186,32 @@ public:
  *
  * Returns: Map from IDs of projects to project names.
  */
-	std::map<std::string, std::string> enumerate();
+	std::map<text, text> enumerate();
 /**
  * Load a given project.
  *
  * Parameter id: The ID of project to load.
  * Returns: The project information.
  */
-	project_info& load(const std::string& id);
+	project_info& load(const text& id);
 /**
  * Get project movie path.
  *
  * Returns: The movie path.
  */
-	std::string moviepath();
+	text moviepath();
 /**
  * Get project other path.
  *
  * Returns: The other path.
  */
-	std::string otherpath();
+	text otherpath();
 /**
  * Get project savestate extension.
  *
  * Returns: The savestate extension.
  */
-	std::string savestate_ext();
+	text savestate_ext();
 /**
  * Copy watches to project
  */
@@ -222,11 +223,11 @@ public:
 private:
 	void recursive_list_branch(uint64_t bid, std::set<unsigned>& dset, unsigned depth, bool last_of);
 	void do_branch_ls();
-	void do_branch_mk(const std::string& a);
-	void do_branch_rm(const std::string& a);
-	void do_branch_set(const std::string& a);
-	void do_branch_rp(const std::string& a);
-	void do_branch_mv(const std::string& a);
+	void do_branch_mk(const text& a);
+	void do_branch_rm(const text& a);
+	void do_branch_set(const text& a);
+	void do_branch_rp(const text& a);
+	void do_branch_mv(const text& a);
 	project_info* active_project;
 	voice_commentary& commentary;
 	memwatch_set& mwatch;
@@ -239,11 +240,11 @@ private:
 	loaded_rom& rom;
 	status_updater& supdater;
 	command::_fnptr<> branch_ls;
-	command::_fnptr<const std::string&> branch_mk;
-	command::_fnptr<const std::string&> branch_rm;
-	command::_fnptr<const std::string&> branch_set;
-	command::_fnptr<const std::string&> branch_rp;
-	command::_fnptr<const std::string&> branch_mv;
+	command::_fnptr<const text&> branch_mk;
+	command::_fnptr<const text&> branch_rm;
+	command::_fnptr<const text&> branch_set;
+	command::_fnptr<const text&> branch_rp;
+	command::_fnptr<const text&> branch_mv;
 };
 
 #endif

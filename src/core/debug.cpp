@@ -54,8 +54,8 @@ debug_context::debug_context(emulator_dispatch& _dispatch, loaded_rom& _rom, mem
 	command::group& _cmd)
 	: edispatch(_dispatch), rom(_rom), mspace(_mspace), cmd(_cmd),
 	showhooks(cmd, CDEBUG::scb, [this]() { this->do_showhooks(); }),
-	genevent(cmd, CDEBUG::genevt, [this](const std::string& a) { this->do_genevent(a); }),
-	tracecmd(cmd, CDEBUG::tr, [this](const std::string& a) { this->do_tracecmd(a); })
+	genevent(cmd, CDEBUG::genevt, [this](const text& a) { this->do_genevent(a); }),
+	tracecmd(cmd, CDEBUG::tr, [this](const text& a) { this->do_tracecmd(a); })
 {
 }
 
@@ -242,7 +242,7 @@ void debug_context::tracelog_file::killed(uint64_t addr, debug_context::etype ty
 		delete this;
 }
 
-void debug_context::tracelog(uint64_t proc, const std::string& filename)
+void debug_context::tracelog(uint64_t proc, const text& filename)
 {
 	if(filename == "") {
 		if(!trace_outputs.count(proc))
@@ -257,7 +257,7 @@ void debug_context::tracelog(uint64_t proc, const std::string& filename)
 		return;
 	}
 	if(trace_outputs.count(proc)) throw std::runtime_error("Already tracelogging");
-	std::string full_filename = directory::absolute_path(filename);
+	text full_filename = directory::absolute_path(filename);
 	bool found = false;
 	for(auto i : trace_outputs) {
 		if(i.second->full_filename == full_filename) {
@@ -314,7 +314,7 @@ void debug_context::do_showhooks()
 			messages << "FRAME handle=" << &j << std::endl;
 }
 
-void debug_context::do_genevent(const std::string& args)
+void debug_context::do_genevent(const text& args)
 {
 	regex_results r = regex("([^ \t]+) ([^ \t]+) (.+)", args);
 	if(!r) throw std::runtime_error("generate-memory-event: Bad arguments");
@@ -332,18 +332,18 @@ void debug_context::do_genevent(const std::string& args)
 		do_callback_exec(addr, val);
 	} else if(r[1] == "t") {
 		uint64_t proc = parse_value<uint64_t>(r[2]);
-		std::string str = r[3];
+		text str = r[3];
 		do_callback_trace(proc, str.c_str());
 	} else
 		throw std::runtime_error("Invalid operation");
 }
 
-void debug_context::do_tracecmd(const std::string& args)
+void debug_context::do_tracecmd(const text& args)
 {
 	regex_results r = regex("([^ \t]+)([ \t]+(.+))?", args);
 	if(!r) throw std::runtime_error("tracelog: Bad arguments");
-	std::string cpu = r[1];
-	std::string filename = r[3];
+	text cpu = r[1];
+	text filename = r[3];
 	uint64_t _cpu = 0;
 	for(auto i : rom.get_trace_cpus()) {
 		if(cpu == i)

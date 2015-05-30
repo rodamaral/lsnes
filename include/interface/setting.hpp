@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include "library/text.hpp"
 
 struct core_setting;
 struct core_setting_group;
@@ -44,11 +45,11 @@ struct core_setting_value
 /**
  * Internal value.
  */
-	const std::string iname;
+	const text iname;
 /**
  * Human-readable value.
  */
-	const std::string hname;
+	const text hname;
 /**
  * Index.
  */
@@ -67,19 +68,19 @@ struct core_setting
 /**
  * Internal name.
  */
-	const std::string iname;
+	const text iname;
 /**
  * Human-readable name.
  */
-	const std::string hname;
+	const text hname;
 /**
  * Regular expression for validation of fretext setting.
  */
-	const std::string regex;
+	const text regex;
 /**
  * The default value.
  */
-	const std::string dflt;
+	const text dflt;
 /**
  * The values.
  */
@@ -95,21 +96,21 @@ struct core_setting
 /**
  * Get set of human-readable strings.
  */
-	std::vector<std::string> hvalues() const throw(std::runtime_error);
+	std::vector<text> hvalues() const throw(std::runtime_error);
 /**
  * Translate hvalue to ivalue.
  */
-	std::string hvalue_to_ivalue(const std::string& hvalue) const throw(std::runtime_error);
+	text hvalue_to_ivalue(const text& hvalue) const throw(std::runtime_error);
 /**
  * Translate ivalue to index.
  */
-	signed ivalue_to_index(const std::string& ivalue) const throw(std::runtime_error);
+	signed ivalue_to_index(const text& ivalue) const throw(std::runtime_error);
 /**
  * Validate a value.
  *
  * Parameter value: The value to validate.
  */
-	bool validate(const std::string& value) const;
+	bool validate(const text& value) const;
 };
 
 /**
@@ -129,15 +130,15 @@ struct core_setting_group
 /**
  * The settings.
  */
-	std::map<std::string, core_setting> settings;
+	std::map<text, core_setting> settings;
 /**
  * Get specified setting.
  */
-	core_setting& operator[](const std::string& name) { return settings.find(name)->second; }
+	core_setting& operator[](const text& name) { return settings.find(name)->second; }
 /**
  * Translate ivalue to index.
  */
-	signed ivalue_to_index(std::map<std::string, std::string>& values, const std::string& name) const
+	signed ivalue_to_index(std::map<text, text>& values, const text& name) const
 		throw(std::runtime_error)
 	{
 		return settings.find(name)->second.ivalue_to_index(values[name]);
@@ -145,11 +146,11 @@ struct core_setting_group
 /**
  * Fill a map of settings with defaults.
  */
-	void fill_defaults(std::map<std::string, std::string>& values) throw(std::bad_alloc);
+	void fill_defaults(std::map<text, text>& values) throw(std::bad_alloc);
 /**
  * Get set of settings.
  */
-	std::set<std::string> get_setting_set();
+	std::set<text> get_setting_set();
 };
 
 #endif

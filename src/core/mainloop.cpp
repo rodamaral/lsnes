@@ -62,10 +62,10 @@ namespace
 
 	//Mode and filename of pending load, one of LOAD_* constants.
 	int loadmode;
-	std::string pending_load;
-	std::string pending_new_project;
+	text pending_load;
+	text pending_new_project;
 	//Queued saves (all savestates).
-	std::set<std::pair<std::string, int>> queued_saves;
+	std::set<std::pair<text, int>> queued_saves;
 	//Unsafe rewind.
 	bool do_unsafe_rewind = false;
 	void* unsafe_rewind_obj = NULL;
@@ -177,7 +177,7 @@ namespace
 {
 
 	//Do pending load (automatically unpauses).
-	void mark_pending_load(std::string filename, int lmode)
+	void mark_pending_load(text filename, int lmode)
 	{
 		//Convert break pause to ordinary pause.
 		auto& core = CORE();
@@ -189,7 +189,7 @@ namespace
 		platform::set_paused(false);
 	}
 
-	void mark_pending_save(std::string filename, int smode, int binary)
+	void mark_pending_save(text filename, int smode, int binary)
 	{
 		auto& core = CORE();
 		int tmp = -1;
@@ -238,7 +238,7 @@ public:
 		return core.mlogic->get_movie().next_input(port, index, control);
 	}
 
-	void notify_latch(std::list<std::string>& args)
+	void notify_latch(std::list<text>& args)
 	{
 		CORE().lua2->callback_do_latch(args);
 	}
@@ -256,12 +256,12 @@ public:
 		}
 	}
 
-	std::string get_firmware_path()
+	text get_firmware_path()
 	{
 		return CORE().setcache->get("firmwarepath");
 	}
 
-	std::string get_base_path()
+	text get_base_path()
 	{
 		return CORE().rom->get_msu1_base();
 	}
@@ -333,11 +333,11 @@ namespace
 			ptr = ptr / ptr2;
 		});
 
-	command::fnptr<const std::string&> CMD_test4(lsnes_cmds, "test4", "test", "test",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<const text&> CMD_test4(lsnes_cmds, "test4", "test", "test",
+		[](const text& args) throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
-			std::list<std::string> _args;
-			std::string args2 = args;
+			std::list<text> _args;
+			text args2 = args;
 			for(auto& sym : token_iterator<char>::foreach(args, {" ", "\t"}))
 				_args.push_back(sym);
 			core.lua2->callback_do_latch(_args);
@@ -350,9 +350,9 @@ namespace
 			messages << x << " rerecord(s)" << std::endl;
 		});
 
-	command::fnptr<const std::string&> CMD_quit_emulator(lsnes_cmds, "quit-emulator", "Quit the emulator",
+	command::fnptr<const text&> CMD_quit_emulator(lsnes_cmds, "quit-emulator", "Quit the emulator",
 		"Syntax: quit-emulator [/y]\nQuits emulator (/y => don't ask for confirmation).\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+		[](const text& args) throw(std::bad_alloc, std::runtime_error) {
 			CORE().runmode->set_quit();
 			platform::set_paused(false);
 			platform::cancel_wait();
@@ -706,7 +706,7 @@ namespace
 	int handle_load()
 	{
 		auto& core = CORE();
-		std::string old_project = *core.mlogic ? core.mlogic->get_mfile().projectid : "";
+		text old_project = *core.mlogic ? core.mlogic->get_mfile().projectid : "";
 jumpback:
 		if(do_unsafe_rewind && unsafe_rewind_obj) {
 			if(!*core.mlogic)
@@ -723,7 +723,7 @@ jumpback:
 			return 1;
 		}
 		if(pending_new_project != "") {
-			std::string id = pending_new_project;
+			text id = pending_new_project;
 			pending_new_project = "";
 			project_info* old = core.project->get();
 			if(old && old->id == id)
@@ -740,7 +740,7 @@ jumpback:
 				core.supdater->update();
 				return 1;
 			} catch(std::exception& e) {
-				platform::error_message(std::string("Can't switch projects: ") + e.what());
+				platform::error_message(text("Can't switch projects: ") + e.what());
 				messages << "Can't switch projects: " << e.what() << std::endl;
 				goto nothing_to_do;
 			}
@@ -767,7 +767,7 @@ nothing_to_do:
 				core.runmode->clear_corrupt();
 			} catch(std::exception& e) {
 				core.runmode->set_corrupt();
-				platform::error_message(std::string("Load failed: ") + e.what());
+				platform::error_message(text("Load failed: ") + e.what());
 				messages << "Load failed: " << e.what() << std::endl;
 			}
 			pending_load = "";
@@ -865,7 +865,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	} catch(std::exception& e) {
 		if(!used)
 			delete &initial;
-		platform::error_message(std::string("Can't load initial state: ") + e.what());
+		platform::error_message(text("Can't load initial state: ") + e.what());
 		messages << "ERROR: Can't load initial state: " << e.what() << std::endl;
 		if(load_has_to_succeed) {
 			messages << "FATAL: Can't load movie" << std::endl;
@@ -968,7 +968,7 @@ void do_flush_slotinfo()
 	CORE().slotcache->flush();
 }
 
-void switch_projects(const std::string& newproj)
+void switch_projects(const text& newproj)
 {
 	pending_new_project = newproj;
 	CORE().runmode->start_load();

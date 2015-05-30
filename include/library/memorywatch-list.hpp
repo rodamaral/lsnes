@@ -12,13 +12,13 @@ struct output_list : public item_printer
 {
 	output_list();
 	~output_list();
-	void set_output(std::function<void(const std::string& n, const std::string& v)> _fn);
-	void show(const std::string& iname, const std::string& val);
+	void set_output(std::function<void(const text& n, const text& v)> _fn);
+	void show(const text& iname, const text& val);
 	void reset();
 	bool cond_enable;
 	GC::pointer<mathexpr::mathexpr> enabled;
 	//State variables.
-	std::function<void(const std::string& n, const std::string& v)> fn;
+	std::function<void(const text& n, const text& v)> fn;
 };
 }
 

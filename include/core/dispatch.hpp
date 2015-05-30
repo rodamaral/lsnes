@@ -18,7 +18,7 @@ struct emulator_dispatch
 	dispatch::source<unsigned, unsigned, unsigned, bool> autohold_update;
 	dispatch::source<unsigned, unsigned, unsigned, unsigned, unsigned> autofire_update;
 	dispatch::source<> close;
-	dispatch::source<std::pair<std::string, std::string>> sound_change;
+	dispatch::source<std::pair<text, text>> sound_change;
 	dispatch::source<> screen_update;
 	dispatch::source<> status_update;
 	dispatch::source<bool> sound_unmute;

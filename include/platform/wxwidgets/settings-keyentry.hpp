@@ -17,17 +17,17 @@
 class press_button_dialog: public wxDialog
 {
 public:
-	press_button_dialog(wxWindow* parent, emulator_instance& _inst, const std::string& title, bool axis);
-	std::string getkey() { return key; }
+	press_button_dialog(wxWindow* parent, emulator_instance& _inst, const text& title, bool axis);
+	text getkey() { return key; }
 	void on_mouse(wxMouseEvent& e);
 	void on_keyboard_up(wxKeyEvent& e);
 	void on_keyboard_down(wxKeyEvent& e);
-	void dismiss_with(const std::string& k);
+	void dismiss_with(const text& k);
 private:
 	bool handle_mousebtn(wxMouseEvent& e, bool(wxMouseEvent::*down)()const, bool(wxMouseEvent::*up)()const,
-		const std::string& k, int flag);
+		const text& k, int flag);
 	emulator_instance& inst;
-	std::string key;
+	text key;
 	int mouseflag;
 	int lastkbdkey;
 	bool axis;
@@ -36,32 +36,32 @@ private:
 class key_entry_dialog : public wxDialog
 {
 public:
-	key_entry_dialog(wxWindow* parent, emulator_instance& _inst, const std::string& title,
-		const std::string& spec, bool clearable);
+	key_entry_dialog(wxWindow* parent, emulator_instance& _inst, const text& title,
+		const text& spec, bool clearable);
 	void on_change_setting(wxCommandEvent& e);
 	void on_ok(wxCommandEvent& e);
 	void on_cancel(wxCommandEvent& e);
 	void on_clear(wxCommandEvent& e);
 	void on_pressbutton(wxCommandEvent& e);
 	void on_classchange(wxCommandEvent& e);
-	std::string getkey();
+	text getkey();
 private:
 	struct keyentry_mod_data
 	{
 		wxComboBox* pressed;
 		unsigned tmpflags;
 	};
-	void set_mask(const std::string& mod);
-	void set_mod(const std::string& mod);
-	void set_set(const std::string& mset,
-		void (key_entry_dialog::*fn)(const std::string& mod));
-	void load_spec(const std::string& spec);
-	void set_class(const std::string& _class);
+	void set_mask(const text& mod);
+	void set_mod(const text& mod);
+	void set_set(const text& mset,
+		void (key_entry_dialog::*fn)(const text& mod));
+	void load_spec(const text& spec);
+	void set_class(const text& _class);
 	emulator_instance& inst;
-	std::map<std::string, keyentry_mod_data> modifiers;
-	std::map<std::string, std::set<std::string>> classes;
-	std::string wtitle;
-	std::string currentclass;
+	std::map<text, keyentry_mod_data> modifiers;
+	std::map<text, std::set<text>> classes;
+	text wtitle;
+	text currentclass;
 	wxFlexGridSizer* top_s;
 	wxFlexGridSizer* t_s;
 	wxComboBox* mainclass;
@@ -73,7 +73,7 @@ private:
 	bool cleared;
 };
 
-std::string clean_keystring(const std::string& in);
+text clean_keystring(const text& in);
 
 
 #endif

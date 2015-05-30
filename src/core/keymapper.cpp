@@ -57,18 +57,18 @@ void lsnes_gamepads_init()
 	});
 	lsnes_gamepads.set_newitem_cb([](unsigned jnum, unsigned num, int type) {
 		if(type == 0) {
-			std::string name = (stringfmt() << "joystick" << jnum << "axis" << num).str();
+			text name = (stringfmt() << "joystick" << jnum << "axis" << num).str();
 			int mode = lsnes_gamepads[jnum].get_mode(num);
 			axes()[std::make_pair(jnum, num)] = new keyboard::key_axis(*lsnes_instance.keyboard, name,
 				"joystick", mode);
 			//Axis.
 		} else if(type == 1) {
-			std::string name = (stringfmt() << "joystick" << jnum << "button" << num).str();
+			text name = (stringfmt() << "joystick" << jnum << "button" << num).str();
 			buttons()[std::make_pair(jnum, num)] = new keyboard::key_key(*lsnes_instance.keyboard, name,
 				"joystick");
 			//Button.
 		} else if(type == 2) {
-			std::string name = (stringfmt() << "joystick" << jnum << "hat" << num).str();
+			text name = (stringfmt() << "joystick" << jnum << "hat" << num).str();
 			hats()[std::make_pair(jnum, num)] = new keyboard::key_hat(*lsnes_instance.keyboard, name,
 				"joystick");
 			//Hat.
@@ -76,7 +76,7 @@ void lsnes_gamepads_init()
 	});
 	try {
 		auto cfg = zip::readrel(get_config_path() + "/gamepads.json", "");
-		std::string _cfg(cfg.begin(), cfg.end());
+		text _cfg(&cfg[0], cfg.size());
 		JSON::node config(_cfg);
 		lsnes_gamepads.load(config);
 	} catch(...) {
@@ -85,8 +85,8 @@ void lsnes_gamepads_init()
 
 void lsnes_gamepads_deinit()
 {
-	std::string tmpname = get_config_path() + "/gamepads.json.tmp";
-	std::string finalname = get_config_path() + "/gamepads.json";
+	text tmpname = get_config_path() + "/gamepads.json.tmp";
+	text finalname = get_config_path() + "/gamepads.json";
 	std::ofstream cfg(get_config_path() + "/gamepads.json.tmp");
 	JSON::printer_indenting printer;
 	if(cfg)

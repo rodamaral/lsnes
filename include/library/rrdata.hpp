@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <set>
+#include "text.hpp"
 
 
 class rrdata_set
@@ -30,7 +31,7 @@ public:
 /**
  * Create load id from string (mainly intended for debugging).
  */
-		instance(const std::string& id) throw();
+		instance(const text& id) throw();
 /**
  * The load ID.
  */
@@ -127,7 +128,7 @@ public:
  * parameter lazy: If true, just switch to project, don't read the IDs.
  * throws std::bad_alloc: Not enough memory
  */
-	void read_base(const std::string& projectfile, bool lazy) throw(std::bad_alloc);
+	void read_base(const text& projectfile, bool lazy) throw(std::bad_alloc);
 /**
  * Is lazy?
  */
@@ -196,7 +197,7 @@ public:
 /**
  * Debugging functions.
  */
-	std::string debug_dump();
+	text debug_dump();
 	bool debug_add(const instance& b) { return _add(b); }
 	void debug_add(const instance& b, const instance& e) { return _add(b, e); }
 	bool debug_in_set(const instance& b) { return _in_set(b); }
@@ -214,7 +215,7 @@ private:
 	std::set<std::pair<instance, instance>> data;
 	std::ofstream ohandle;
 	bool handle_open;
-	std::string current_projectfile;
+	text current_projectfile;
 	bool lazy_mode;
 	uint64_t rcount;
 };

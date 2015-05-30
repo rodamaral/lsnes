@@ -11,7 +11,7 @@ struct output_null : public item_printer
 {
 	output_null();
 	~output_null();
-	void show(const std::string& iname, const std::string& val);
+	void show(const text& iname, const text& val);
 	void reset();
 };
 }

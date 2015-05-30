@@ -12,7 +12,7 @@
 
 namespace
 {
-	void fill_namemap(project_info& p, uint64_t id, std::map<uint64_t, std::string>& namemap,
+	void fill_namemap(project_info& p, uint64_t id, std::map<uint64_t, text>& namemap,
 		std::map<uint64_t, std::set<uint64_t>>& childmap)
 	{
 		namemap[id] = p.get_branch_name(id);
@@ -22,13 +22,13 @@ namespace
 		childmap[id] = s;
 	}
 
-	void update_dumperinfo(emulator_instance& inst, std::map<std::string, dumper_information_1>& new_dumpers,
+	void update_dumperinfo(emulator_instance& inst, std::map<text, dumper_information_1>& new_dumpers,
 		dumper_factory_base* d)
 	{
 		struct dumper_information_1 inf;
 		inf.factory = d;
 		inf.name = d->name();
-		std::set<std::string> mset = d->list_submodes();
+		std::set<text> mset = d->list_submodes();
 		for(auto i : mset)
 			inf.modes[i] = d->modename(i);
 		inf.active = inst.mdumper->busy(d);
@@ -39,7 +39,7 @@ namespace
 
 void do_flush_slotinfo();
 
-void UI_get_branch_map(emulator_instance& inst, uint64_t& cur, std::map<uint64_t, std::string>& namemap,
+void UI_get_branch_map(emulator_instance& inst, uint64_t& cur, std::map<uint64_t, text>& namemap,
 	std::map<uint64_t, std::set<uint64_t>>& childmap)
 {
 	auto project = inst.project;
@@ -60,7 +60,7 @@ void UI_call_flush(emulator_instance& inst, std::function<void(std::exception&)>
 	}, onerror);
 }
 
-void UI_create_branch(emulator_instance& inst, uint64_t id, const std::string& name,
+void UI_create_branch(emulator_instance& inst, uint64_t id, const text& name,
 	std::function<void(std::exception&)> onerror)
 {
 	auto project = inst.project;
@@ -72,7 +72,7 @@ void UI_create_branch(emulator_instance& inst, uint64_t id, const std::string& n
 	}, onerror);
 }
 
-void UI_rename_branch(emulator_instance& inst, uint64_t id, const std::string& name,
+void UI_rename_branch(emulator_instance& inst, uint64_t id, const text& name,
 	std::function<void(std::exception&)> onerror)
 {
 	auto project = inst.project;
@@ -153,8 +153,8 @@ void UI_save_author_info(emulator_instance& inst, project_author_info& info)
 {
 	inst.iqueue->run([&inst, info]() {
 		project_info* proj = inst.project->get();
-		std::set<std::string> oldscripts;
-		std::vector<std::pair<std::string, std::string>> _authors(info.authors.begin(), info.authors.end());
+		std::set<text> oldscripts;
+		std::vector<std::pair<text, text>> _authors(info.authors.begin(), info.authors.end());
 		if(proj) {
 			for(auto i : proj->luascripts)
 				oldscripts.insert(i);
@@ -192,8 +192,8 @@ dumper_information UI_get_dumpers(emulator_instance& inst)
 	return x;
 }
 
-void UI_start_dump(emulator_instance& inst, dumper_factory_base& factory, const std::string& mode,
-	const std::string& prefix)
+void UI_start_dump(emulator_instance& inst, dumper_factory_base& factory, const text& mode,
+	const text& prefix)
 {
 	lsnes_instance.iqueue->run([&inst, &factory, mode, prefix]() {
 		inst.mdumper->start(factory, mode, prefix);
@@ -239,10 +239,10 @@ void UI_save_movie(emulator_instance& inst, std::ostringstream& stream)
 	});
 }
 
-std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instance& inst)
+std::pair<text, text> UI_lookup_platform_and_game(emulator_instance& inst)
 {
-	std::string plat;
-	std::string game;
+	text plat;
+	text game;
 	lsnes_instance.iqueue->run([&inst, &plat, &game]() {
 		auto prj = inst.project->get();
 		if(prj)
@@ -254,18 +254,18 @@ std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instanc
 	return std::make_pair(plat, game);
 }
 
-std::string UI_get_project_otherpath(emulator_instance& inst)
+text UI_get_project_otherpath(emulator_instance& inst)
 {
-	std::string path;
+	text path;
 	lsnes_instance.iqueue->run([&inst, &path]() {
 		path = inst.project->otherpath();
 	});
 	return path;
 }
 
-std::string UI_get_project_moviepath(emulator_instance& inst)
+text UI_get_project_moviepath(emulator_instance& inst)
 {
-	std::string path;
+	text path;
 	lsnes_instance.iqueue->run([&inst, &path]() {
 		path = inst.project->moviepath();
 	});

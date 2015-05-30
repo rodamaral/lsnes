@@ -208,12 +208,12 @@ struct button
 	};
 	enum _type type;
 	char32_t symbol;
-	std::string name;
+	text name;
 	bool shadow;
 	int16_t rmin;		//Range min.
 	int16_t rmax;		//Range max.
 	bool centers;
-	std::string macro;	//Name in macro (must be prefix-free).
+	text macro;	//Name in macro (must be prefix-free).
 	char msymbol;		//Symbol in movie.
 /**
  * Is analog?
@@ -227,8 +227,8 @@ struct button
  */
 struct controller
 {
-	std::string cclass;				//Controller class.
-	std::string type;				//Controller type.
+	text cclass;				//Controller class.
+	text type;				//Controller type.
 	std::vector<button> buttons;	//Buttons.
 /**
  * Count number of analog actions on this controller.
@@ -254,9 +254,9 @@ struct controller
  */
 struct controller_set
 {
-	std::string iname;
-	std::string hname;
-	std::string symbol;
+	text iname;
+	text hname;
+	text symbol;
 	std::vector<controller> controllers;	//Controllers.
 	std::set<unsigned> legal_for;			//Ports this is legal for
 /**
@@ -288,7 +288,7 @@ public:
  * Parameter ssize: The storage size in bytes.
  * Throws std::bad_alloc: Not enough memory.
  */
-	type(const std::string& iname, const std::string& hname, size_t ssize) throw(std::bad_alloc);
+	type(const text& iname, const text& hname, size_t ssize) throw(std::bad_alloc);
 /**
  * Unregister a port type.
  */
@@ -360,7 +360,7 @@ public:
 /**
  * Human-readable name.
  */
-	std::string hname;
+	text hname;
 /**
  * Number of bytes it takes to store this.
  */
@@ -368,7 +368,7 @@ public:
 /**
  * Name of port type.
  */
-	std::string name;
+	text name;
 /**
  * Is given controller present?
  */
@@ -1387,7 +1387,7 @@ struct macro_data
 	struct axis_transform
 	{
 		axis_transform() { coeffs[0] = coeffs[3] = 1; coeffs[1] = coeffs[2] = coeffs[4] = coeffs[5] = 0; }
-		axis_transform(const std::string& expr);
+		axis_transform(const text& expr);
 		double coeffs[6];
 		int16_t transform(const button& b, int16_t v);
 		std::pair<int16_t, int16_t> transform(const button& b1,
@@ -1402,14 +1402,14 @@ struct macro_data
 		AM_XOR
 	};
 	macro_data() { buttons = 0; }
-	macro_data(const std::string& spec, const JSON::node& desc, unsigned i);
+	macro_data(const text& spec, const JSON::node& desc, unsigned i);
 	macro_data(const JSON::node& ser, unsigned i);
 	void serialize(JSON::node& v);
 	static JSON::node make_descriptor(const controller& ctrl);
 	const JSON::node& get_descriptor() { return _descriptor; }
-	static bool syntax_check(const std::string& spec, const JSON::node& ctrl);
+	static bool syntax_check(const text& spec, const JSON::node& ctrl);
 	void write(frame& frame, unsigned port, unsigned controller, int64_t nframe, apply_mode amode);
-	std::string dump(const controller& ctrl); //Mainly for debugging.
+	text dump(const controller& ctrl); //Mainly for debugging.
 	size_t get_frames() { return data.size() / get_stride(); }
 	size_t get_stride() { return buttons; }
 	size_t buttons;
@@ -1417,7 +1417,7 @@ struct macro_data
 	std::vector<std::pair<unsigned, unsigned>> aaxes;
 	std::vector<unsigned> btnmap;
 	std::vector<axis_transform> adata;
-	std::string orig;
+	text orig;
 	JSON::node _descriptor;
 	bool enabled;
 	bool autoterminate;

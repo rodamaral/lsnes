@@ -73,7 +73,7 @@ public:
 /**
  * Take a screenshot to specified file.
  */
-	void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error);
+	void take_screenshot(const text& file) throw(std::bad_alloc, std::runtime_error);
 /**
  * Kill pending requests associated with object.
  */

@@ -9,11 +9,12 @@
 #include <map>
 #include <functional>
 #include "minmax.hpp"
+#include "text.hpp"
 #include <cstring>
 
 namespace streamcompress
 {
-std::map<std::string, std::string> parse_attributes(const std::string& val);
+std::map<text, text> parse_attributes(const text& val);
 
 class base
 {
@@ -31,11 +32,11 @@ public:
  */
 	virtual bool process(uint8_t*& in, size_t& insize, uint8_t*& out, size_t& outsize, bool final) = 0;
 
-	static std::set<std::string> get_compressors();
-	static base* create_compressor(const std::string& name, const std::string& args);
-	static void do_register(const std::string& name,
-		std::function<base*(const std::string&)> ctor);
-	static void do_unregister(const std::string& name);
+	static std::set<text> get_compressors();
+	static base* create_compressor(const text& name, const text& args);
+	static void do_register(const text& name,
+		std::function<base*(const text&)> ctor);
+	static void do_unregister(const text& name);
 };
 
 class iostream

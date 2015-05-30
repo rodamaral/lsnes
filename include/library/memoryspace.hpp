@@ -28,7 +28,7 @@ public:
 /**
  * Name of the region (mainly for debugging and showing to user).
  */
-		std::string name;
+		text name;
 /**
  * Base address of the region.
  */
@@ -101,7 +101,7 @@ public:
  * Parameter size: Size of the region.
  * Parameter _readonly: If true, region is readonly.
  */
-		region_direct(const std::string& name, uint64_t base, int endian, unsigned char* memory,
+		region_direct(const text& name, uint64_t base, int endian, unsigned char* memory,
 			size_t size, bool _readonly = false);
 /**
  * Destructor.
@@ -247,7 +247,7 @@ public:
  * Parameter addr: The address to get textual form for.
  * Returns: The textual address.
  */
-	std::string address_to_textual(uint64_t addr);
+	text address_to_textual(uint64_t addr);
 private:
 	threads::lock mlock;
 	std::vector<region*> u_regions;

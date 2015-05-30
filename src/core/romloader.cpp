@@ -50,7 +50,7 @@ namespace
 		}
 	}
 
-	std::string call_rom(unsigned i, bool bios)
+	text call_rom(unsigned i, bool bios)
 	{
 		if(i == 0 && bios)
 			return "BIOS";
@@ -59,7 +59,7 @@ namespace
 		if(bios) i--;
 		char j[2] = {0, 0};
 		j[0] = 'A' + i;
-		return std::string("ROM ") + j;
+		return text("ROM ") + j;
 	}
 
 	void print_missing(core_type& t, unsigned present)
@@ -69,7 +69,7 @@ namespace
 		for(unsigned i = 0; i < t.get_image_count(); i++)
 			total |= t.get_image_info(i).mandatory;
 		unsigned bit = 1;
-		std::string need = "";
+		text need = "";
 		bool first = false;
 		while(bit) {
 			first = true;
@@ -93,7 +93,7 @@ bool _load_new_rom(const romload_request& req)
 {
 	auto& core = CORE();
 	if(core.project->get()) {
-		std::string msg = "Can't switch ROM with project active.";
+		text msg = "Can't switch ROM with project active.";
 		platform::error_message(msg);
 		messages << msg << std::endl;
 		return false;
@@ -109,7 +109,7 @@ bool _load_new_rom(const romload_request& req)
 				core.mlogic->get_mfile().namehint[i] = img.namehint;
 			}
 	} catch(std::exception& e) {
-		platform::error_message(std::string("Can't load ROM: ") + e.what());
+		platform::error_message(text("Can't load ROM: ") + e.what());
 		messages << "Can't reload ROM: " << e.what() << std::endl;
 		return false;
 	}
@@ -129,7 +129,7 @@ bool reload_active_rom()
 		return false;
 	}
 	//Single-file ROM?
-	std::string loadfile = core.rom->get_pack_filename();
+	text loadfile = core.rom->get_pack_filename();
 	if(loadfile != "") {
 		req.packfile = loadfile;
 		return _load_new_rom(req);
@@ -143,7 +143,7 @@ bool reload_active_rom()
 	return _load_new_rom(req);
 }
 
-regex_results get_argument(const std::vector<std::string>& cmdline, const std::string& regexp)
+regex_results get_argument(const std::vector<text>& cmdline, const text& regexp)
 {
 	for(auto i : cmdline) {
 		regex_results r;
@@ -153,7 +153,7 @@ regex_results get_argument(const std::vector<std::string>& cmdline, const std::s
 	return regex_results();
 }
 
-std::string get_requested_core(const std::vector<std::string>& cmdline)
+text get_requested_core(const std::vector<text>& cmdline)
 {
 	regex_results r;
 	if(r = get_argument(cmdline, "--core=(.+)"))
@@ -162,19 +162,19 @@ std::string get_requested_core(const std::vector<std::string>& cmdline)
 };
 
 rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brief_info& info,
-	const std::vector<std::string>& cmdline, bool have_movie)
+	const std::vector<text>& cmdline, bool have_movie)
 {
 	auto& core = CORE();
-	std::string roms[ROM_SLOT_COUNT];
-	std::string realcore = ctype->get_core_identifier();
-	std::string realtype = ctype->get_iname();
-	std::string bios = ctype->get_biosname();
+	text roms[ROM_SLOT_COUNT];
+	text realcore = ctype->get_core_identifier();
+	text realtype = ctype->get_iname();
+	text bios = ctype->get_biosname();
 	uint32_t pmand = 0, tmand = 0;
 	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
-		std::string optregex;
+		text optregex;
 		bool isbios = false;
-		std::string psetting;
-		std::string romid;
+		text psetting;
+		text romid;
 		if(bios != "" && i == 0) {
 			optregex = "--bios=(.*)";
 			isbios = true;
@@ -185,12 +185,12 @@ rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brie
 			j[0] = i - ((bios != "") ? 1 : 0) + 'a';
 			if(j[0] == 'a' + 26)
 				j[0] = '@';
-			optregex = std::string("--rom-") + j + "=(.*)";
+			optregex = text("--rom-") + j + "=(.*)";
 			psetting = "rompath";
 			j[0] = i - ((bios != "") ? 1 : 0) + 'A';
 			if(j[0] == 'A' + 26)
 				j[0] = '@';
-			romid = std::string("ROM ") + j;
+			romid = text("ROM ") + j;
 		}
 		regex_results r = get_argument(cmdline, optregex);
 		if(i >= ctype->get_image_count()) {
@@ -209,9 +209,9 @@ rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brie
 			roms[i] = r[1];
 		} else if(info.hint[i] != "") {
 			//Try to use hint.
-			std::set<std::string> exts = img.extensions;
+			std::set<text> exts = img.extensions;
 			for(auto j : exts) {
-				std::string candidate = core.setcache->get(psetting) + "/" + info.hint[i] +
+				text candidate = core.setcache->get(psetting) + "/" + info.hint[i] +
 					"." + j;
 				if(zip::file_exists(candidate)) {
 					roms[i] = candidate;
@@ -237,9 +237,9 @@ rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brie
 	return new rom_image(roms, realcore, realtype, "");
 }
 
-rom_image_handle construct_rom_nofile(const std::vector<std::string>& cmdline)
+rom_image_handle construct_rom_nofile(const std::vector<text>& cmdline)
 {
-	std::string requested_core = get_requested_core(cmdline);
+	text requested_core = get_requested_core(cmdline);
 	//Handle bundle / single-file ROMs.
 	for(auto i : cmdline) {
 		regex_results r;
@@ -275,12 +275,12 @@ valid:	;
 }
 
 
-rom_image_handle construct_rom(const std::string& movie_filename, const std::vector<std::string>& cmdline)
+rom_image_handle construct_rom(const text& movie_filename, const std::vector<text>& cmdline)
 {
 	if(movie_filename == "")
 		return construct_rom_nofile(cmdline);
 	moviefile::brief_info info(movie_filename);
-	std::string requested_core = get_requested_core(cmdline);
+	text requested_core = get_requested_core(cmdline);
 	auto sysregs = core_sysregion::find_matching(info.sysregion);
 	if(sysregs.empty())
 		throw std::runtime_error("No core supports '" + info.sysregion + "'");

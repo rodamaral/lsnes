@@ -2,6 +2,7 @@
 #define _library__httpauth__hpp__included__
 
 #include "skein.hpp"
+#include "text.hpp"
 #include <string>
 #include <cstring>
 #include <list>
@@ -22,7 +23,7 @@ public:
 /**
  * Construct.
  */
-		request_hash(const std::string& _id, const uint8_t* _key, unsigned _nonce, skein::hash _h,
+		request_hash(const text& _id, const uint8_t* _key, unsigned _nonce, skein::hash _h,
 			const uint8_t* _prereq)
 			: id(_id), nonce(_nonce), h(_h)
 		{
@@ -39,9 +40,9 @@ public:
 /**
  * Read the final Authorization header.
  */
-		std::string get_authorization();
+		text get_authorization();
 	private:
-		std::string id;
+		text id;
 		uint8_t pubkey[32];
 		uint8_t prereq[8];
 		unsigned nonce;
@@ -62,20 +63,20 @@ public:
  *
  * Returns: The value for Authorization header.
  */
-	std::string format_get_session_request();
+	text format_get_session_request();
 /**
  * Start request hash computation. Hashes in the shared secret and nonce. The nonce is incremented.
  *
  * Parameter url: The notional URL.
  * Returns: The skein hash instance.
  */
-	request_hash start_request(const std::string& url, const std::string& verb);
+	request_hash start_request(const text& url, const text& verb);
 /**
  * Parse session auth response. If it contains new session parameters, the session is updated.
  *
  * Parameter response: The response from server (WWW-Authenticate).
  */
-	void parse_auth_response(const std::string& response);
+	void parse_auth_response(const text& response);
 /**
  * Is the session ready?
  */
@@ -85,11 +86,11 @@ public:
  */
 	void get_pubkey(uint8_t* pubkey);
 private:
-	void parse_auth_response(std::map<std::string, std::string> pparse);
+	void parse_auth_response(std::map<text, text> pparse);
 	unsigned char privkey[32];
 	unsigned char pubkey[32];
 	unsigned char ssecret[32];
-	std::string id;
+	text id;
 	unsigned nonce;
 	bool ready; //id&ssecret is valid.
 };

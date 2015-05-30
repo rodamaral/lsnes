@@ -4,6 +4,7 @@
 #include <wx/string.h>
 #include <wx/wx.h>
 #include <map>
+#include "library/text.hpp"
 
 class dumper_menu_monitor;
 class dumper_info;
@@ -22,7 +23,7 @@ private:
 	wxWindow* pwin;
 	int wxid_range_low;
 	int wxid_range_high;
-	std::map<std::string, dumper_information_1> existing_dumpers;
+	std::map<text, dumper_information_1> existing_dumpers;
 	emulator_instance& inst;
 };
 

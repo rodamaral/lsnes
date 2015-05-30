@@ -5,12 +5,12 @@
 
 namespace mathexpr
 {
-std::string format_bool(bool v, _format fmt);
-std::string format_unsigned(uint64_t v, _format fmt);
-std::string format_signed(int64_t v, _format fmt);
-std::string format_float(double v, _format fmt);
-std::string format_complex(double vr, double vi, _format fmt);
-std::string format_string(std::string v, _format fmt);
+text format_bool(bool v, _format fmt);
+text format_unsigned(uint64_t v, _format fmt);
+text format_signed(int64_t v, _format fmt);
+text format_float(double v, _format fmt);
+text format_complex(double vr, double vi, _format fmt);
+text format_string(text v, _format fmt);
 }
 
 #endif

@@ -34,20 +34,20 @@ public:
 	subtitle_commentary(movie_logic& _mlogic, emu_framebuffer& _fbuf, emulator_dispatch& _dispatch,
 		command::group& _cmd);
 	std::set<std::pair<uint64_t, uint64_t>> get_all();
-	std::string get(uint64_t f, uint64_t l);
-	void set(uint64_t f, uint64_t l, const std::string& x);
-	static std::string s_unescape(std::string x);
-	static std::string s_escape(std::string x);
+	text get(uint64_t f, uint64_t l);
+	void set(uint64_t f, uint64_t l, const text& x);
+	static text s_unescape(text x);
+	static text s_escape(text x);
 	void render(lua::render_context& ctx);
 private:
-	void do_editsub(const std::string& a);
+	void do_editsub(const text& a);
 	void do_listsub();
-	void do_savesub(const std::string& a);
+	void do_savesub(const text& a);
 	movie_logic& mlogic;
 	emu_framebuffer& fbuf;
 	emulator_dispatch& edispatch;
 	command::group& cmd;
-	command::_fnptr<const std::string&> editsub;
+	command::_fnptr<const text&> editsub;
 	command::_fnptr<> listsub;
 	command::_fnptr<command::arg_filename> savesub;
 };

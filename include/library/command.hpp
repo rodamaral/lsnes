@@ -7,6 +7,7 @@
 #include <set>
 #include <map>
 #include <list>
+#include "text.hpp"
 
 namespace command
 {
@@ -33,11 +34,11 @@ public:
 /**
  * New item in set.
  */
-		virtual void create(set& s, const std::string& name, factory_base& cmd) = 0;
+		virtual void create(set& s, const text& name, factory_base& cmd) = 0;
 /**
  * Deleted item from set.
  */
-		virtual void destroy(set& s, const std::string& name) = 0;
+		virtual void destroy(set& s, const text& name) = 0;
 /**
  * Destroyed the entiere set.
  */
@@ -54,11 +55,11 @@ public:
 /**
  * Add a command to set.
  */
-	void do_register(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
+	void do_register(const text& name, factory_base& cmd) throw(std::bad_alloc);
 /**
  * Remove a command from set.
  */
-	void do_unregister(const std::string& name, factory_base& cmd) throw(std::bad_alloc);
+	void do_unregister(const text& name, factory_base& cmd) throw(std::bad_alloc);
 /**
  * Add a notification callback and call ccb on all.
  *
@@ -94,38 +95,38 @@ public:
  *
  * parameter cmd: Command to exeucte.
  */
-	void invoke(const std::string& cmd) throw();
+	void invoke(const text& cmd) throw();
 /**
  * Look up and invoke a command. No alias expansion is performed, but recursion checking is.
  *
  * parameter cmd: Command to execute.
  * parameter args: The parameters for command.
  */
-	void invoke(const std::string& cmd, const std::string& args) throw();
+	void invoke(const text& cmd, const text& args) throw();
 /**
  * Get set of aliases.
  */
-	std::set<std::string> get_aliases() throw(std::bad_alloc);
+	std::set<text> get_aliases() throw(std::bad_alloc);
 /**
  * Get alias
  */
-	std::string get_alias_for(const std::string& aname) throw(std::bad_alloc);
+	text get_alias_for(const text& aname) throw(std::bad_alloc);
 /**
  * Set alias
  */
-	void set_alias_for(const std::string& aname, const std::string& avalue) throw(std::bad_alloc);
+	void set_alias_for(const text& aname, const text& avalue) throw(std::bad_alloc);
 /**
  * Is alias name valid.
  */
-	bool valid_alias_name(const std::string& aname) throw(std::bad_alloc);
+	bool valid_alias_name(const text& aname) throw(std::bad_alloc);
 /**
  * Register a command.
  */
-	void do_register(const std::string& name, base& cmd) throw(std::bad_alloc);
+	void do_register(const text& name, base& cmd) throw(std::bad_alloc);
 /**
  * Unregister a command.
  */
-	void do_unregister(const std::string& name, base& cmd) throw(std::bad_alloc);
+	void do_unregister(const text& name, base& cmd) throw(std::bad_alloc);
 /**
  * Add all commands (including future ones) in given set.
  */
@@ -148,14 +149,14 @@ private:
 	public:
 		listener(group& _grp);
 		~listener();
-		void create(set& s, const std::string& name, factory_base& cmd);
-		void destroy(set& s, const std::string& name);
+		void create(set& s, const text& name, factory_base& cmd);
+		void destroy(set& s, const text& name);
 		void kill(set& s);
 	private:
 		group& grp;
 	} _listener;
-	std::set<std::string> command_stack;
-	std::map<std::string, std::list<std::string>> aliases;
+	std::set<text> command_stack;
+	std::map<text, std::list<text>> aliases;
 	std::ostream* output;
 	void (*oom_panic_routine)();
 	base* builtin[1];
@@ -175,7 +176,7 @@ public:
  * parameter dynamic: Should the object be freed when its parent group dies?
  * throws std::bad_alloc: Not enough memory.
  */
-	base(group& group, const std::string& cmd, bool dynamic) throw(std::bad_alloc);
+	base(group& group, const text& cmd, bool dynamic) throw(std::bad_alloc);
 
 /**
  * Deregister a command.
@@ -189,20 +190,20 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Command execution failed.
  */
-	virtual void invoke(const std::string& arguments) throw(std::bad_alloc, std::runtime_error) = 0;
+	virtual void invoke(const text& arguments) throw(std::bad_alloc, std::runtime_error) = 0;
 /**
  * Get short help for command.
  */
-	virtual std::string get_short_help() throw(std::bad_alloc);
+	virtual text get_short_help() throw(std::bad_alloc);
 
 /**
  * Get long help for command.
  */
-	virtual std::string get_long_help() throw(std::bad_alloc);
+	virtual text get_long_help() throw(std::bad_alloc);
 /**
  * Get name of command.
  */
-	const std::string& get_name() { return commandname; }
+	const text& get_name() { return commandname; }
 /**
  * Notify that the parent group died.
  *
@@ -212,7 +213,7 @@ public:
 private:
 	base(const base&);
 	base& operator=(const base&);
-	std::string commandname;
+	text commandname;
 	group* in_group;
 	bool is_dynamic;
 };
@@ -231,7 +232,7 @@ public:
  * parameter cmd: The command to register.
  * throws std::bad_alloc: Not enough memory.
  */
-	void _factory_base(set& _set, const std::string& cmd) throw(std::bad_alloc);
+	void _factory_base(set& _set, const text& cmd) throw(std::bad_alloc);
 /**
  * Destructor.
  */
@@ -249,7 +250,7 @@ public:
 private:
 	factory_base(const factory_base&);
 	factory_base& operator=(const factory_base&);
-	std::string commandname;
+	text commandname;
 	set* in_set;
 };
 
@@ -280,13 +281,13 @@ struct arg_filename
 /**
  * The filename itself.
  */
-	std::string v;
+	text v;
 /**
  * Return the filename.
  *
  * returns: The filename.
  */
-	operator std::string() { return v; }
+	operator text() { return v; }
 };
 
 /**
@@ -296,7 +297,7 @@ struct arg_filename
  * parameter a: The arguments to pass.
  */
 template<typename... args>
-void invoke_fn(std::function<void(args... arguments)> fn, const std::string& a);
+void invoke_fn(std::function<void(args... arguments)> fn, const text& a);
 
 /**
  * Warp function pointer as command.
@@ -315,8 +316,8 @@ public:
  * parameter fn: Function to call on command.
  * parameter dynamic: Should the object be freed when its parent group dies?
  */
-	_fnptr(group& group, const std::string& name, const std::string& _description,
-		const std::string& _help, void (*_fn)(args... arguments), bool dynamic = false) throw(std::bad_alloc)
+	_fnptr(group& group, const text& name, const text& _description,
+		const text& _help, void (*_fn)(args... arguments), bool dynamic = false) throw(std::bad_alloc)
 		: base(group, name, dynamic)
 	{
 		shorthelp = _description;
@@ -349,7 +350,7 @@ public:
  *
  * parameter a: Arguments to function.
  */
-	void invoke(const std::string& a) throw(std::bad_alloc, std::runtime_error)
+	void invoke(const text& a) throw(std::bad_alloc, std::runtime_error)
 	{
 		invoke_fn(fn, a);
 	}
@@ -359,7 +360,7 @@ public:
  * returns: Description.
  * throw std::bad_alloc: Not enough memory.
  */
-	std::string get_short_help() throw(std::bad_alloc)
+	text get_short_help() throw(std::bad_alloc)
 	{
 		return shorthelp;
 	}
@@ -369,14 +370,14 @@ public:
  * returns: help.
  * throw std::bad_alloc: Not enough memory.
  */
-	std::string get_long_help() throw(std::bad_alloc)
+	text get_long_help() throw(std::bad_alloc)
 	{
 		return help;
 	}
 private:
 	std::function<void(args... arguments)> fn;
-	std::string shorthelp;
-	std::string help;
+	text shorthelp;
+	text help;
 };
 
 /**
@@ -410,8 +411,8 @@ public:
  * parameter help: Help for the command.
  * parameter fn: Function to call on command.
  */
-	fnptr(set& _set, const std::string& _name, const std::string& _description,
-		const std::string& _help, void (*_fn)(args... arguments)) throw(std::bad_alloc)
+	fnptr(set& _set, const text& _name, const text& _description,
+		const text& _help, void (*_fn)(args... arguments)) throw(std::bad_alloc)
 	{
 		shorthelp = _description;
 		name = _name;
@@ -434,9 +435,9 @@ public:
 	}
 private:
 	void (*fn)(args... arguments);
-	std::string shorthelp;
-	std::string help;
-	std::string name;
+	text shorthelp;
+	text help;
+	text name;
 };
 
 /**
@@ -449,7 +450,7 @@ public:
 /**
  * Create a new factory.
  */
-	byname_factory(set& s, const std::string& _name)
+	byname_factory(set& s, const text& _name)
 	{
 		name = _name;
 		_factory_base(s, name);
@@ -468,7 +469,7 @@ public:
 		return new T(grp, name);
 	}
 private:
-	std::string name;
+	text name;
 };
 }
 #endif

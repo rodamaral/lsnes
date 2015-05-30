@@ -17,7 +17,7 @@ multitrack_edit::multitrack_edit(movie_logic& _mlogic, controller_state& _contro
 	cmd(_cmd),
 	mt_f(cmd, CMULTITRACK::f, [this]() { this->do_mt_fwd(); }),
 	mt_b(cmd, CMULTITRACK::b, [this]() { this->do_mt_bw(); }),
-	mt_s(cmd, CMULTITRACK::s, [this](const std::string& a) { this->do_mt_set(a); })
+	mt_s(cmd, CMULTITRACK::s, [this](const text& a) { this->do_mt_set(a); })
 {
 }
 
@@ -177,7 +177,7 @@ bool multitrack_edit::any_records()
 	return any_need;
 }
 
-void multitrack_edit::do_mt_set(const std::string& args)
+void multitrack_edit::do_mt_set(const text& args)
 {
 	regex_results r = regex("(.*)[ \t]+(.*)", args);
 	if(!r)

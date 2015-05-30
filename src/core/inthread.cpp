@@ -1780,9 +1780,9 @@ void voice_commentary::kill()
 	internal = NULL;
 }
 
-uint64_t voice_commentary::parse_timebase(const std::string& n)
+uint64_t voice_commentary::parse_timebase(const text& n)
 {
-	std::string x = n;
+	text x = n;
 	if(x.length() > 0 && x[x.length() - 1] == 's') {
 		x = x.substr(0, x.length() - 1);
 		return 48000 * parse_value<double>(x);
@@ -1842,7 +1842,7 @@ void voice_commentary::play_stream(uint64_t id)
 	s->put_ref();
 }
 
-void voice_commentary::export_stream(uint64_t id, const std::string& filename,
+void voice_commentary::export_stream(uint64_t id, const text& filename,
 	voice_commentary::external_stream_format fmt)
 {
 	auto _internal = get_state(internal);
@@ -1866,7 +1866,7 @@ void voice_commentary::export_stream(uint64_t id, const std::string& filename,
 	st->put_ref();
 }
 
-uint64_t voice_commentary::import_stream(uint64_t ts, const std::string& filename,
+uint64_t voice_commentary::import_stream(uint64_t ts, const text& filename,
 	voice_commentary::external_stream_format fmt)
 {
 	auto _internal = get_state(internal);
@@ -1900,7 +1900,7 @@ void voice_commentary::delete_stream(uint64_t id)
 	edispatch.voice_stream_change();
 }
 
-void voice_commentary::export_superstream(const std::string& filename)
+void voice_commentary::export_superstream(const text& filename)
 {
 	auto _internal = get_state(internal);
 	threads::alock m2(_internal->current_collection_lock);
@@ -1912,7 +1912,7 @@ void voice_commentary::export_superstream(const std::string& filename)
 	_internal->current_collection->export_superstream(s);
 }
 
-void voice_commentary::load_collection(const std::string& filename)
+void voice_commentary::load_collection(const text& filename)
 {
 	auto _internal = get_state(internal);
 	threads::alock m2(_internal->current_collection_lock);

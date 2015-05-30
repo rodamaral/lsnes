@@ -30,42 +30,42 @@ struct skipped_parameter_tag
 {
 };
 
-template<typename T> static void arg_helper(state& L, T& x, int idx, const std::string& fname)
+template<typename T> static void arg_helper(state& L, T& x, int idx, const text& fname)
 {
 	x = L.get_numeric_argument<T>(idx, fname);
 }
 
-template<> void arg_helper(state& L, bool& x, int idx, const std::string& fname)
+template<> void arg_helper(state& L, bool& x, int idx, const text& fname)
 {
 	x = L.get_bool(idx, fname);
 }
 
-template<> void arg_helper(state& L, std::string& x, int idx, const std::string& fname)
+template<> void arg_helper(state& L, text& x, int idx, const text& fname)
 {
 	x = L.get_string(idx, fname);
 }
 
-template<typename T> void arg_helper(state& L, T*& x, int idx, const std::string& fname)
+template<typename T> void arg_helper(state& L, T*& x, int idx, const text& fname)
 {
 	x = _class<T>::get(L, idx, fname);
 }
 
-template<typename T> void arg_helper(state& L, lua::objpin<T>& x, int idx, const std::string& fname)
+template<typename T> void arg_helper(state& L, lua::objpin<T>& x, int idx, const text& fname)
 {
 	x = _class<T>::pin(L, idx, fname);
 }
 
-template<> void arg_helper(state& L, framebuffer::color& x, int idx, const std::string& fname)
+template<> void arg_helper(state& L, framebuffer::color& x, int idx, const text& fname)
 {
 	x = get_fb_color(L, idx, fname);
 }
 
-template<> void arg_helper(state& L, skipped_parameter_tag& x, int idx, const std::string& fname)
+template<> void arg_helper(state& L, skipped_parameter_tag& x, int idx, const text& fname)
 {
 	delete &x;
 }
 
-template<> void arg_helper(state& L, function_parameter_tag& x, int idx, const std::string& fname)
+template<> void arg_helper(state& L, function_parameter_tag& x, int idx, const text& fname)
 {
 	if(L.type(idx) != LUA_TFUNCTION)
 		(stringfmt() << "Expected function as argument #" << idx << " to " << fname).throwex();
@@ -73,7 +73,7 @@ template<> void arg_helper(state& L, function_parameter_tag& x, int idx, const s
 	delete &x;
 }
 
-template<> void arg_helper(state& L, table_parameter_tag& x, int idx, const std::string& fname)
+template<> void arg_helper(state& L, table_parameter_tag& x, int idx, const text& fname)
 {
 	if(L.type(idx) != LUA_TTABLE)
 		(stringfmt() << "Expected table as argument #" << idx << " to " << fname).throwex();
@@ -82,35 +82,35 @@ template<> void arg_helper(state& L, table_parameter_tag& x, int idx, const std:
 }
 
 template<typename T, typename U> void arg_helper(state& L, optional_parameter_tag<T, U>& x, int idx,
-	const std::string& fname)
+	const text& fname)
 {
 	x.target = x.dflt;
 	L.get_numeric_argument<T>(idx, x.target, fname);
 	delete &x;
 }
 
-template<typename U> void arg_helper(state& L, optional_parameter_tag<bool, U>& x, int idx, const std::string& fname)
+template<typename U> void arg_helper(state& L, optional_parameter_tag<bool, U>& x, int idx, const text& fname)
 {
 	x.target = (L.type(idx) == LUA_TNIL || L.type(idx) == LUA_TNONE) ? x.dflt : L.get_bool(idx, fname);
 	delete &x;
 }
 
-template<typename U> void arg_helper(state& L, optional_parameter_tag<std::string, U>& x, int idx,
-	const std::string& fname)
+template<typename U> void arg_helper(state& L, optional_parameter_tag<text, U>& x, int idx,
+	const text& fname)
 {
 	x.target = (L.type(idx) == LUA_TNIL || L.type(idx) == LUA_TNONE) ? x.dflt : L.get_string(idx, fname);
 	delete &x;
 }
 
 template<typename U> void arg_helper(state& L, optional_parameter_tag<framebuffer::color, U>& x, int idx,
-	const std::string& fname)
+	const text& fname)
 {
 	x.target = get_fb_color(L, idx, fname, x.dflt);
 	delete &x;
 }
 
 template<typename T, typename U> void arg_helper(state& L, optional_parameter_tag<T*, U>& x, int idx,
-	const std::string& fname)
+	const text& fname)
 {
 	x.target = _class<T>::get(L, idx, fname, true);
 	delete &x;
@@ -125,7 +125,7 @@ public:
 /**
  * Make
  */
-	parameters(state& _L, const std::string& _fname)
+	parameters(state& _L, const text& _fname)
 		: L(_L), fname(_fname), next(1)
 	{
 	}
@@ -188,7 +188,7 @@ public:
 /**
  * Get name.
  */
-	const std::string& get_fname() { return fname; }
+	const text& get_fname() { return fname; }
 /**
  * More arguments remain?
  */
@@ -210,7 +210,7 @@ public:
 /**
  * Throw an error.
  */
-	void expected(const std::string& what, int i = 0)
+	void expected(const text& what, int i = 0)
 	{
 		(stringfmt() << "Expected " << what << " as argument #" << (i ? i : next) << " of "
 			<< fname).throwex();
@@ -259,7 +259,7 @@ public:
 	state& get_state() { return L; }
 private:
 	state& L;
-	std::string fname;
+	text fname;
 	int next;
 };
 }

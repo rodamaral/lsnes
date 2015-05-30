@@ -16,7 +16,7 @@ namespace
 		}
 		static int create(lua::state& L, lua::parameters& P);
 		int call(lua::state& L, lua::parameters& P);
-		std::string print()
+		text print()
 		{
 			std::ostringstream x;
 			x << "addr=0x" << std::hex << addr << " rows=" << rows << " size=0x" << std::hex << size

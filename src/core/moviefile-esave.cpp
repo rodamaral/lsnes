@@ -64,18 +64,26 @@ namespace
 	{
 		emerg_write_bytes(handle, &byte, 1);
 	}
-	size_t string_size(const std::string& str)
+	size_t string_size(const text& str)
 	{
-		return number_size(str.length()) + str.length();
+		size_t len = str.length_utf8();
+		return number_size(len) + len;
 	}
-	void emerg_write_string_implicit(int handle, const std::string& str)
+	void emerg_write_string_implicit(int handle, const text& str)
 	{
-		for(size_t i = 0; i < str.length(); i++)
-			emerg_write_byte(handle, str[i]);
+		char buffer[4096];
+		size_t pos = 0;
+		size_t len = str.length();
+		while(pos < len) {
+			std::pair<size_t, size_t> frag = str.output_utf8_fragment(pos, buffer, sizeof(buffer));
+			pos += frag.first;
+			for(size_t i = 0; i < frag.second; i++)
+				emerg_write_byte(handle, buffer[i]);
+		}
 	}
-	void emerg_write_string(int handle, const std::string& str)
+	void emerg_write_string(int handle, const text& str)
 	{
-		emerg_write_number(handle, str.length());
+		emerg_write_number(handle, str.length_utf8());
 		emerg_write_string_implicit(handle, str);
 	}
 	void emerg_write_movie(int handle, const portctrl::frame_vector& v, uint32_t tag)
@@ -107,17 +115,6 @@ namespace
 		}
 		ptr[digits] = 0;
 		return digits;
-	}
-	template<typename T>
-	uint64_t map_index(const std::map<std::string, T>& b, const std::string& n)
-	{
-		uint64_t idx = 0;
-		for(auto& i : b) {
-			if(i.first == n)
-				return idx;
-			idx++;
-		}
-		return 0xFFFFFFFFFFFFFFFFULL;
 	}
 }
 
@@ -203,7 +200,7 @@ name_again:
 		}
 	}
 	//Game name.
-	emerg_write_member(fd, TAG_GAMENAME, mv.gamename.size());
+	emerg_write_member(fd, TAG_GAMENAME, mv.gamename.length_utf8());
 	emerg_write_string_implicit(fd, mv.gamename);
 	//Subtitles.
 	for(auto& i : mv.subtitles) {
@@ -215,7 +212,7 @@ name_again:
 	}
 	//Authors.
 	for(auto& i : mv.authors) {
-		emerg_write_member(fd, TAG_AUTHOR, string_size(i.first) + i.second.size());
+		emerg_write_member(fd, TAG_AUTHOR, string_size(i.first) + i.second.length_utf8());
 		emerg_write_string(fd, i.first);
 		emerg_write_string_implicit(fd, i.second);
 

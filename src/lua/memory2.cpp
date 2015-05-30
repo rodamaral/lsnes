@@ -64,12 +64,12 @@ namespace
 		int writeregion(lua::state& L, lua::parameters& P);
 		int cheat(lua::state& L, lua::parameters& P);
 		template<debug_context::etype type, bool reg> int registerX(lua::state& L, lua::parameters& P);
-		std::string print()
+		text print()
 		{
 			return vma;
 		}
 	private:
-		std::string vma;
+		text vma;
 		uint64_t vmabase;
 		uint64_t vmasize;
 		bool ro;
@@ -84,7 +84,7 @@ namespace
 		int index(lua::state& L, lua::parameters& P);
 		int newindex(lua::state& L, lua::parameters& P);
 		int call(lua::state& L, lua::parameters& P);
-		std::string print()
+		text print()
 		{
 			return "";
 		}
@@ -100,7 +100,7 @@ namespace
 		{
 			h.write(reinterpret_cast<uint8_t*>(b), s);
 		}
-		static std::string read(sha256& h)
+		static text read(sha256& h)
 		{
 			return h.read();
 		}
@@ -116,7 +116,7 @@ namespace
 		{
 			h.write(reinterpret_cast<uint8_t*>(b), s);
 		}
-		static std::string read(skein::hash& h)
+		static text read(skein::hash& h)
 		{
 			uint8_t buf[32];
 			h.read(buf);
@@ -475,7 +475,7 @@ namespace
 
 	int lua_vma_list::index(lua::state& L, lua::parameters& P)
 	{
-		std::string vma;
+		text vma;
 
 		P(P.skipped(), vma);
 

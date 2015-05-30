@@ -23,7 +23,7 @@ public:
 		int watch_flag;
 		size_t previous_size;
 	};
-	wxwin_status(int flag, emulator_instance& _inst, const std::string& title);
+	wxwin_status(int flag, emulator_instance& _inst, const text& title);
 	~wxwin_status();
 	bool ShouldPreventAppExit() const;
 	void notify_update() throw();

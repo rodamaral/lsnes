@@ -22,7 +22,7 @@
 
 namespace
 {
-	unsigned next_id_from_map(std::map<std::string, unsigned>& map, const std::string& key, unsigned base)
+	unsigned next_id_from_map(std::map<text, unsigned>& map, const text& key, unsigned base)
 	{
 		if(!map.count(key))
 			return (map[key] = base);
@@ -35,15 +35,15 @@ button_mapping::button_mapping(controller_state& _controls, keyboard::mapper& _m
 	emu_framebuffer& _fbuf, emulator_dispatch& _dispatch, lua_state& _lua2, command::group& _cmd)
 	: controls(_controls), mapper(_mapper), keyboard(_keyboard), fbuf(_fbuf), edispatch(_dispatch),
 	lua2(_lua2), cmd(_cmd),
-	button_p(cmd, CBUTTON::p, [this](const std::string& a) { this->do_action(a, 1, 0); }),
-	button_r(cmd, CBUTTON::r, [this](const std::string& a) { this->do_action(a, 0, 0); }),
-	button_h(cmd, CBUTTON::h, [this](const std::string& a) { this->do_action(a, 1, 1); }),
-	button_t(cmd, CBUTTON::t, [this](const std::string& a) { this->do_action(a, 1, 2); }),
-	button_d(cmd, CBUTTON::d, [this](const std::string& a) { this->do_action(a, 0, 3); }),
-	button_ap(cmd, CBUTTON::ap, [this](const std::string& a) { this->do_autofire_action(a, 1); }),
-	button_ar(cmd, CBUTTON::ar, [this](const std::string& a) { this->do_autofire_action(a, 0); }),
-	button_at(cmd, CBUTTON::at, [this](const std::string& a) { this->do_autofire_action(a, -1); }),
-	button_a(cmd, CBUTTON::a, [this](const std::string& a) { this->do_analog_action(a); })
+	button_p(cmd, CBUTTON::p, [this](const text& a) { this->do_action(a, 1, 0); }),
+	button_r(cmd, CBUTTON::r, [this](const text& a) { this->do_action(a, 0, 0); }),
+	button_h(cmd, CBUTTON::h, [this](const text& a) { this->do_action(a, 1, 1); }),
+	button_t(cmd, CBUTTON::t, [this](const text& a) { this->do_action(a, 1, 2); }),
+	button_d(cmd, CBUTTON::d, [this](const text& a) { this->do_action(a, 0, 3); }),
+	button_ap(cmd, CBUTTON::ap, [this](const text& a) { this->do_autofire_action(a, 1); }),
+	button_ar(cmd, CBUTTON::ar, [this](const text& a) { this->do_autofire_action(a, 0); }),
+	button_at(cmd, CBUTTON::at, [this](const text& a) { this->do_autofire_action(a, -1); }),
+	button_a(cmd, CBUTTON::a, [this](const text& a) { this->do_analog_action(a); })
 {
 	ncore.set(notify_new_core, [this]() { this->init(); });
 }
@@ -60,7 +60,7 @@ void button_mapping::reinit()
 
 void button_mapping::reread()
 {
-	std::map<std::string, unsigned> classnum;
+	std::map<text, unsigned> classnum;
 	active_buttons.clear();
 	for(unsigned i = 0;; i++) {
 		auto x = controls.lcid_to_pcid(i);
@@ -73,7 +73,7 @@ void button_mapping::reread()
 		else
 			classnum[ctrl.cclass]++;
 		for(unsigned j = 0; j < ctrl.buttons.size(); j++) {
-			std::string name = (stringfmt() << ctrl.cclass << "-" << classnum[ctrl.cclass] << "-"
+			text name = (stringfmt() << ctrl.cclass << "-" << classnum[ctrl.cclass] << "-"
 				<< ctrl.buttons[j].name).str();
 			if(all_buttons.count(name)) {
 				button_mapping::active_bind a;
@@ -85,12 +85,12 @@ void button_mapping::reread()
 		}
 		bool multi = (ctrl.analog_actions() > 1);
 		for(unsigned j = 0; j < ctrl.analog_actions(); j++) {
-			std::string name;
+			text name;
 			if(multi)
 				name = (stringfmt() << "analog" << (j + 1)).str();
 			else
 				name = "analog";
-			std::string cname = (stringfmt() << ctrl.cclass << "-" << classnum[ctrl.cclass] << "-"
+			text cname = (stringfmt() << ctrl.cclass << "-" << classnum[ctrl.cclass] << "-"
 				<< name).str();
 			if(all_buttons.count(cname)) {
 				button_mapping::active_bind a;
@@ -153,10 +153,10 @@ void button_mapping::cleanup()
 	macro_binds2.clear();
 }
 
-std::pair<int, int> button_mapping::byname(const std::string& name)
+std::pair<int, int> button_mapping::byname(const text& name)
 {
 	for(auto i : active_buttons) {
-		std::string _name = (stringfmt() << i.second.bind.cclass << "-" << i.second.bind.number).str();
+		text _name = (stringfmt() << i.second.bind.cclass << "-" << i.second.bind.number).str();
 		if(name != _name)
 			continue;
 		return std::make_pair(i.second.port, i.second.controller);
@@ -166,7 +166,7 @@ std::pair<int, int> button_mapping::byname(const std::string& name)
 
 void button_mapping::promote_key(keyboard::ctrlrkey& k)
 {
-	std::string name = k.get_command();
+	text name = k.get_command();
 	if(added_keys.count(name)) {
 		//Already exists.
 		delete &k;
@@ -180,7 +180,7 @@ void button_mapping::promote_key(keyboard::ctrlrkey& k)
 	button_keys.erase(name);
 }
 
-void button_mapping::add_button(const std::string& name, const button_mapping::controller_bind& binding)
+void button_mapping::add_button(const text& name, const button_mapping::controller_bind& binding)
 {
 	keyboard::ctrlrkey* k;
 	if(binding.mode == 0) {
@@ -228,7 +228,7 @@ void button_mapping::process_controller(portctrl::controller& controller, unsign
 			continue;
 		if(controller.buttons[i].type != portctrl::button::TYPE_BUTTON)
 			continue;
-		std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
+		text name = (stringfmt() << controller.cclass << "-" << number << "-"
 			<< controller.buttons[i].name).str();
 		button_mapping::controller_bind b;
 		b.cclass = controller.cclass;
@@ -248,7 +248,7 @@ void button_mapping::process_controller(portctrl::controller& controller, unsign
 			continue;
 		if(!controller.buttons[i].is_analog())
 			continue;
-		std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
+		text name = (stringfmt() << controller.cclass << "-" << number << "-"
 			<< controller.buttons[i].name).str();
 		button_mapping::controller_bind b;
 		b.cclass = controller.cclass;
@@ -269,7 +269,7 @@ void button_mapping::process_controller(portctrl::controller& controller, unsign
 	for(unsigned i = 0; i < controller.analog_actions(); i++) {
 		auto g = controller.analog_action(i);
 		auto raxis = portctrl::button::TYPE_RAXIS;
-		std::string name;
+		text name;
 		button_mapping::controller_bind b;
 		if(multi_analog)
 			b.name = (stringfmt() << "analog" << analog_num).str();
@@ -299,7 +299,7 @@ void button_mapping::process_controller(portctrl::controller& controller, unsign
 //The rules for class number allocations are:
 //- Different cores allocate numbers independently.
 //- Within the same core, the allocations for higher port start after the previous port ends.
-void button_mapping::process_controller(std::map<std::string, unsigned>& allocated,
+void button_mapping::process_controller(std::map<text, unsigned>& allocated,
 	std::map<controller_triple, unsigned>& assigned,  portctrl::controller& controller, unsigned port,
 	unsigned number_in_port)
 {
@@ -314,12 +314,12 @@ void button_mapping::process_controller(std::map<std::string, unsigned>& allocat
 	process_controller(controller, n);
 }
 
-void button_mapping::process_port(std::map<std::string, unsigned>& allocated,
+void button_mapping::process_port(std::map<text, unsigned>& allocated,
 	std::map<controller_triple, unsigned>& assigned, unsigned port, portctrl::type& ptype)
 {
 	//What makes this nasty: Separate ports are always processed, but the same controllers can come
 	//multiple times, including with partial reprocessing.
-	std::map<std::string, unsigned> counts;
+	std::map<text, unsigned> counts;
 	for(unsigned i = 0; i < ptype.controller_info->controllers.size(); i++) {
 		//No, n might not equal i + 1, since some ports have heterogenous controllers (e.g.
 		//gameboy-gambatte system port).
@@ -334,7 +334,7 @@ void button_mapping::init()
 	for(auto k : core_core::all_cores()) {
 		if(cores_done.count(k))
 			continue;
-		std::map<std::string, unsigned> allocated;
+		std::map<text, unsigned> allocated;
 		std::map<button_mapping::controller_triple, unsigned> assigned;
 		auto ptypes = k->get_port_types();
 		for(unsigned i = 0; i < ptypes.size(); i++) {
@@ -353,7 +353,7 @@ void button_mapping::init()
 }
 
 //Check that button is active.
-bool button_mapping::check_button_active(const std::string& name)
+bool button_mapping::check_button_active(const text& name)
 {
 	if(active_buttons.count(name))
 		return true;
@@ -377,7 +377,7 @@ bool button_mapping::check_button_active(const std::string& name)
 }
 
 //Do button action.
-void button_mapping::do_button_action(const std::string& name, short newstate, int mode)
+void button_mapping::do_button_action(const text& name, short newstate, int mode)
 {
 	if(!all_buttons.count(name)) {
 		messages << "No such button " << name << std::endl;
@@ -413,7 +413,7 @@ void button_mapping::do_button_action(const std::string& name, short newstate, i
 	}
 }
 
-void button_mapping::send_analog(const std::string& name, int32_t x, int32_t y)
+void button_mapping::send_analog(const text& name, int32_t x, int32_t y)
 {
 	if(!all_buttons.count(name)) {
 		messages << "No such action " << name << std::endl;
@@ -439,7 +439,7 @@ void button_mapping::send_analog(const std::string& name, int32_t x, int32_t y)
 		controls.analog(z.port, z.controller, z.bind.control2, y);
 }
 
-void button_mapping::do_action(const std::string& name, short state, int mode)
+void button_mapping::do_action(const text& name, short state, int mode)
 {
 	if(mode < 3)
 		do_button_action(name, state, mode);
@@ -454,11 +454,11 @@ void button_mapping::do_action(const std::string& name, short state, int mode)
 	}
 }
 
-void button_mapping::do_analog_action(const std::string& a)
+void button_mapping::do_analog_action(const text& a)
 {
 	int _value;
 	regex_results r = regex("([^ \t]+)[ \t]+(-?[0-9]+)[ \t]*", a, "Invalid analog action");
-	std::string name = r[1];
+	text name = r[1];
 	int value = parse_value<int>(r[2]);
 	if(!all_buttons.count(name)) {
 		messages << "No such button " << name << std::endl;
@@ -480,13 +480,13 @@ void button_mapping::do_analog_action(const std::string& a)
 	controls.analog(x.port, x.controller, x.bind.control1, _value);
 }
 
-void button_mapping::do_autofire_action(const std::string& a, int mode)
+void button_mapping::do_autofire_action(const text& a, int mode)
 {
 	regex_results r = regex("([^ \t]+)(([ \t]+([0-9]+))?[ \t]+([0-9]+))?[ \t]*", a,
 		"Invalid autofire parameters");
-	std::string name = r[1];
-	std::string _duty = r[4];
-	std::string _cyclelen = r[5];
+	text name = r[1];
+	text _duty = r[4];
+	text _cyclelen = r[5];
 	if(_duty == "") _duty = "1";
 	if(_cyclelen == "") _cyclelen = "2";
 	uint32_t duty = parse_value<uint32_t>(_duty);

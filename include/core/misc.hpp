@@ -20,7 +20,7 @@ void fatal_error() throw();
  * \return The config directory path.
  * \throw std::bad_alloc Not enough memory.
  */
-std::string get_config_path() throw(std::bad_alloc);
+text get_config_path() throw(std::bad_alloc);
 
 /**
  * \brief Panic on OOM.
@@ -33,7 +33,7 @@ uint32_t gcd(uint32_t a, uint32_t b) throw();
 /**
  * Return hexadecimal representation of address
  */
-std::string format_address(void* addr);
+text format_address(void* addr);
 
 /**
  * Get state of running global ctors flag.
@@ -47,16 +47,16 @@ void reached_main();
 /**
  * Clean up filename from dangerous chars
  */
-std::string safe_filename(const std::string& str);
+text safe_filename(const text& str);
 
 /**
  * Mangle some characters ()|/
  */
-std::string mangle_name(const std::string& orig);
+text mangle_name(const text& orig);
 
 /**
  * Return a new temporary file. The file will be created.
  */
-std::string get_temp_file();
+text get_temp_file();
 
 #endif

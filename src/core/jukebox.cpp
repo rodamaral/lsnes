@@ -33,7 +33,7 @@ private:
 
 save_jukebox::save_jukebox(settingvar::group& _settings, command::group& _cmd)
 	: settings(_settings), cmd(_cmd),
-	slotsel(cmd, CJUKEBOX::sel, [this](const std::string& a) { this->do_slotsel(a); }),
+	slotsel(cmd, CJUKEBOX::sel, [this](const text& a) { this->do_slotsel(a); }),
 	cycleprev(cmd, CJUKEBOX::prev, [this]() { this->cycle_prev(); }),
 	cyclenext(cmd, CJUKEBOX::next, [this]() { this->cycle_next(); })
 {
@@ -87,7 +87,7 @@ bool save_jukebox::save_binary()
 	return SET_jukebox_dflt_binary(settings);
 }
 
-std::string save_jukebox::get_slot_name()
+text save_jukebox::get_slot_name()
 {
 	return (stringfmt() << "$SLOT:" << (get_slot() + 1)).str();
 }
@@ -110,7 +110,7 @@ void save_jukebox::unset_update()
 	update = std::function<void()>();
 }
 
-void save_jukebox::do_slotsel(const std::string& args)
+void save_jukebox::do_slotsel(const text& args)
 {
 	if(!regex_match("[1-9][0-9]{0,8}", args))
 		throw std::runtime_error("Bad slot number");

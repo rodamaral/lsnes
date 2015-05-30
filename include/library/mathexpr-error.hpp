@@ -3,6 +3,7 @@
 
 #include <string>
 #include <stdexcept>
+#include "text.hpp"
 
 namespace mathexpr
 {
@@ -24,7 +25,7 @@ public:
 		FORMAT,			//Bad format string.
 		UNKNOWN,		//Unknown error.
 	};
-	error(errorcode code, const std::string& message);
+	error(errorcode code, const text& message);
 	errorcode get_code();
 	const char* get_short_error();
 private:

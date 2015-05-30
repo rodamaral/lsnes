@@ -6,6 +6,7 @@
 #include <cstdint>
 #include "library/command.hpp"
 #include "library/dispatch.hpp"
+#include "library/text.hpp"
 
 class emulator_dispatch;
 class loaded_rom;
@@ -131,7 +132,7 @@ public:
 /**
  * Set tracelog file.
  */
-	void tracelog(uint64_t cpu, const std::string& filename);
+	void tracelog(uint64_t cpu, const text& filename);
 /**
  * Tracelogging on?
  */
@@ -157,8 +158,8 @@ public:
 	std::map<uint64_t, cb_list> frame_cb;
 private:
 	void do_showhooks();
-	void do_genevent(const std::string& a);
-	void do_tracecmd(const std::string& a);
+	void do_genevent(const text& a);
+	void do_tracecmd(const text& a);
 	cb_list dummy_cb;  //Always empty.
 	uint64_t xmask = 1;
 	std::function<void()> tracelog_change_cb;
@@ -170,13 +171,13 @@ private:
 	bool corechange_r = false;
 	bool requesting_break = false;
 	command::_fnptr<> showhooks;
-	command::_fnptr<const std::string&> genevent;
-	command::_fnptr<const std::string&> tracecmd;
+	command::_fnptr<const text&> genevent;
+	command::_fnptr<const text&> tracecmd;
 
 	struct tracelog_file : public callback_base
 	{
 		std::ofstream stream;
-		std::string full_filename;
+		text full_filename;
 		unsigned refcnt;
 		tracelog_file(debug_context& parent);
 		~tracelog_file();

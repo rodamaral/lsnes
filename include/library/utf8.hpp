@@ -30,6 +30,13 @@ int32_t parse_byte(int ch, uint16_t& state) throw();
  * Returns: The length in codepoints.
  */
 size_t strlen(const std::string& str) throw();
+/**
+ * Return length of string in UTF-8 codepoints and bytes.
+ *
+ * Parameter str: The string.
+ * Returns: The length in codepoints (first) and bytes (second).
+ */
+std::pair<size_t,size_t> strlen_c(const char* str) throw();
 
 /**
  * Transform UTF-8 into UTF-32.
@@ -40,6 +47,11 @@ std::u32string to32(const std::string& utf8);
  * Transform UTF-32 into UTF-8.
  */
 std::string to8(const std::u32string& utf32);
+
+/**
+ * Transform UTF-32 into UTF-8.
+ */
+std::string to8(const char32_t* ptr, size_t len);
 
 /**
  * Iterator copy from UTF-8 to UTF-32

@@ -18,11 +18,11 @@ namespace
 	{
 	public:
 		struct empty_font_tag {};
-		lua_customfont(lua::state& L, const std::string& filename, const std::string& filename2);
+		lua_customfont(lua::state& L, const text& filename, const text& filename2);
 		lua_customfont(lua::state& L);
 		lua_customfont(lua::state& L, empty_font_tag tag);
 		static size_t overcommit() { return 0; }
-		static size_t overcommit(const std::string& filename, const std::string& filename2) { return 0; }
+		static size_t overcommit(const text& filename, const text& filename2) { return 0; }
 		static size_t overcommit(empty_font_tag tag) { return 0; }
 		~lua_customfont() throw();
 		static int create(lua::state& L, lua::parameters& P);
@@ -30,12 +30,12 @@ namespace
 		int draw(lua::state& L, lua::parameters& P);
 		int edit(lua::state& L, lua::parameters& P);
 		const framebuffer::font2& get_font() { return font; }
-		std::string print()
+		text print()
 		{
 			return orig_filename;
 		}
 	private:
-		std::string orig_filename;
+		text orig_filename;
 		framebuffer::font2 font;
 	};
 
@@ -49,16 +49,15 @@ namespace
 
 	struct render_object_text_cf : public framebuffer::object
 	{
-		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, framebuffer::color _fg,
+		render_object_text_cf(int32_t _x, int32_t _y, const text& _txt, framebuffer::color _fg,
 			framebuffer::color _bg, framebuffer::color _hl, lua::objpin<lua_customfont>& _font) throw()
-			: x(_x), y(_y), text(_text), fg(_fg), bg(_bg), hl(_hl), font(_font) {}
+			: x(_x), y(_y), _text(_txt), fg(_fg), bg(_bg), hl(_hl), font(_font) {}
 		~render_object_text_cf() throw()
 		{
 		}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
 			const framebuffer::font2& fdata = font->get_font();
-			std::u32string _text = utf8::to32(text);
 
 			auto size = fdata.get_metrics(_text, x);
 			//Enlarge size by 2 in each dimension, in order to accomodiate halo, if any.
@@ -77,13 +76,13 @@ namespace
 			}
 		}
 		template<bool X> void op_with(struct framebuffer::fb<X>& scr, unsigned char* mem,
-			std::pair<size_t, size_t> size, const std::u32string& _text, const framebuffer::font2& fdata)
+			std::pair<size_t, size_t> size, const text& _txt, const framebuffer::font2& fdata)
 			throw()
 		{
 			memset(mem, 0, size.first * size.second);
 			int32_t rx = x + scr.get_origin_x();
 			int32_t ry = y + scr.get_origin_y();
-			fdata.for_each_glyph(_text, x, [mem, size](uint32_t x, uint32_t y,
+			fdata.for_each_glyph(_txt, x, [mem, size](uint32_t x, uint32_t y,
 				const framebuffer::font2::glyph& glyph) {
 				x++;
 				y++;
@@ -101,14 +100,14 @@ namespace
 	private:
 		int32_t x;
 		int32_t y;
-		std::string text;
+		text _text;
 		framebuffer::color fg;
 		framebuffer::color bg;
 		framebuffer::color hl;
 		lua::objpin<lua_customfont> font;
 	};
 
-	lua_customfont::lua_customfont(lua::state& L, const std::string& filename, const std::string& filename2)
+	lua_customfont::lua_customfont(lua::state& L, const text& filename, const text& filename2)
 		: orig_filename(zip::resolverel(filename, filename2)), font(orig_filename)
 	{
 	}
@@ -129,7 +128,7 @@ namespace
 		auto& core = CORE();
 		int32_t _x, _y;
 		framebuffer::color fg, bg, hl;
-		std::string text;
+		text text;
 		lua::objpin<lua_customfont> f;
 
 		if(!core.lua2->render_ctx)
@@ -148,7 +147,7 @@ namespace
 
 	int lua_customfont::edit(lua::state& L, lua::parameters& P)
 	{
-		std::string text;
+		text text;
 		lua_bitmap* _glyph;
 
 		P(P.skipped(), text, _glyph);
@@ -180,7 +179,7 @@ namespace
 
 	int lua_customfont::load(lua::state& L, lua::parameters& P)
 	{
-		std::string filename, filename2;
+		text filename, filename2;
 		if(P.is_novalue()) {
 			lua::_class<lua_customfont>::create(L);
 			return 1;

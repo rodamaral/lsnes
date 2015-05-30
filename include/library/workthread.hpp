@@ -104,7 +104,7 @@ private:
 	volatile bool exception_oom;
 	volatile uint64_t waitamt_busy;
 	volatile uint64_t waitamt_work;
-	std::string exception_text;
+	text exception_text;
 };
 
 #endif

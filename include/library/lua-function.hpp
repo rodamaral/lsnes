@@ -23,21 +23,21 @@ public:
 /**
  * Add a function to group.
  */
-	void do_register(const std::string& name, function& fun);
+	void do_register(const text& name, function& fun);
 /**
  * Drop a function from group.
  */
-	void do_unregister(const std::string& name, function& dummy);
+	void do_unregister(const text& name, function& dummy);
 /**
  * Request callbacks on all currently registered functions.
  */
-	void request_callback(std::function<void(std::string, function*)> cb);
+	void request_callback(std::function<void(text, function*)> cb);
 /**
  * Bind a callback.
  *
  * Callbacks for all registered functions are immediately called.
  */
-	int add_callback(std::function<void(std::string, function*)> cb,
+	int add_callback(std::function<void(text, function*)> cb,
 		std::function<void(function_group*)> dcb);
 /**
  * Unbind a calback.
@@ -56,7 +56,7 @@ public:
 /**
  * Register function.
  */
-	function(function_group& group, const std::string& name) throw(std::bad_alloc);
+	function(function_group& group, const text& name) throw(std::bad_alloc);
 /**
  * Unregister function.
  */
@@ -67,7 +67,7 @@ public:
  */
 	virtual int invoke(state& L) = 0;
 protected:
-	std::string fname;
+	text fname;
 	function_group& group;
 };
 
@@ -82,7 +82,7 @@ public:
  */
 	struct entry
 	{
-		const std::string& name;
+		const text& name;
 		std::function<int(state& L, parameters& P)> func;
 	};
 /**
@@ -92,7 +92,7 @@ public:
  * Parameter basetable: The base table to interpret function names relative to.
  * Parameter fnlist: The list of functions to register.
  */
-	functions(function_group& grp, const std::string& basetable, std::initializer_list<entry> fnlist);
+	functions(function_group& grp, const text& basetable, std::initializer_list<entry> fnlist);
 /**
  * Dtor.
  */
@@ -101,7 +101,7 @@ private:
 	class fn : public function
 	{
 	public:
-		fn(function_group& grp, const std::string& name, std::function<int(state& L, parameters& P)> _func);
+		fn(function_group& grp, const text& name, std::function<int(state& L, parameters& P)> _func);
 		~fn() throw();
 		int invoke(state& L);
 	private:

@@ -5,9 +5,11 @@
 #include <vector>
 #include <cstdlib>
 #include <map>
+#include "library/text.hpp"
 #include "video/avi/structure.hpp"
 #include "video/avi/samplequeue.hpp"
 #include "video/avi/timer.hpp"
+
 
 /**
  * AVI packet.
@@ -121,7 +123,7 @@ struct avi_codec_type
  *
  * Parameter iname: Iname of instance to find.
  */
-	static avi_codec_type<T>* find(const std::string& iname);
+	static avi_codec_type<T>* find(const text& iname);
 /**
  * Find next codec type.
  *
@@ -132,20 +134,20 @@ struct avi_codec_type
 /**
  * Get iname field of codec.
  */
-	std::string get_iname();
+	text get_iname();
 /**
  * Get hname field of codec.
  */
-	std::string get_hname();
+	text get_hname();
 /**
  * Get instance of codec.
  */
 	T* get_instance();
 private:
-	std::string iname;
-	std::string hname;
+	text iname;
+	text hname;
 	T* (*instance)();
-	static std::map<std::string, avi_codec_type<T>*>& codecs();
+	static std::map<text, avi_codec_type<T>*>& codecs();
 };
 
 /**

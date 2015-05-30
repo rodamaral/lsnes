@@ -67,7 +67,7 @@ const char* asciinames[] = {
 	"DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB", "CAN", "EM", "SUB", "ESC", "FS", "GS", "RS", "US"
 };
 
-bool parse_size_t(const std::u32string& s, size_t& x)
+bool parse_size_t(const text& s, size_t& x)
 {
 	x = 0;
 	for(size_t i = 0; i < s.length(); i++) {
@@ -112,7 +112,7 @@ const char* error::what() const throw()
 	}
 }
 
-std::string error::extended_error(const std::string& doc)
+text error::extended_error(const std::string& doc)
 {
 	if(state == PARSE_NOT_PARSING)
 		return error_desc[code];
@@ -162,8 +162,7 @@ std::string error::extended_error(const std::string& doc)
 node number_tag::operator()(double v) const { return node(*this, v); }
 node number_tag::operator()(uint64_t v) const { return node(*this, v); }
 node number_tag::operator()(int64_t v) const { return node(*this, v); }
-node string_tag::operator()(const std::string& s) const { return node(*this, s); }
-node string_tag::operator()(const std::u32string& s) const { return node(*this, s); }
+node string_tag::operator()(const text& s) const { return node(*this, s); }
 node boolean_tag::operator()(bool v)  { return node(*this, v); }
 node array_tag::operator()() const { return node(*this); }
 node object_tag::operator()() const { return node(*this); }
@@ -173,8 +172,7 @@ node i(int64_t n) { return number(n); }
 node u(uint64_t n) { return number(n); }
 node f(double n) { return number(n); }
 node b(bool bl) { return boolean(bl); }
-node s(const std::string& st) { return string(st); }
-node s(const std::u32string& st) { return string(st); }
+node s(const text& st) { return string(st); }
 node n() { return null(); }
 
 number_tag number;
@@ -315,8 +313,7 @@ bool node::number_holder::operator==(const number_holder& h) const
 node::node() throw() : node(null) {}
 node::node(null_tag) throw() { vtype = null; }
 node::node(boolean_tag, bool b) throw() { vtype = boolean; _boolean = b; }
-node::node(string_tag, const std::u32string& str) throw(std::bad_alloc) { vtype = string; _string = str; }
-node::node(string_tag, const std::string& str) throw(std::bad_alloc) { vtype = string; _string = utf8::to32(str); }
+node::node(string_tag, const text& str) throw(std::bad_alloc) { vtype = string; _string = str; }
 node::node(number_tag, double n) throw() { vtype = number; _number.from<double>(n); }
 node::node(number_tag, int64_t n) throw() { vtype = number; _number.from<int64_t>(n); }
 node::node(number_tag, uint64_t n) throw() { vtype = number; _number.from<uint64_t>(n); }
@@ -330,9 +327,9 @@ node& node::set(number_tag, double n) throw() { set_helper<double>(n); return *t
 node& node::set(number_tag, int64_t n) throw() { set_helper<int64_t>(n); return *this; }
 node& node::set(number_tag, uint64_t n) throw() { set_helper<int64_t>(n); return *this; }
 
-node& node::set(string_tag, const std::u32string& key) throw(std::bad_alloc)
+node& node::set(string_tag, const text& key) throw(std::bad_alloc)
 {
-	std::u32string tmp = key;
+	text tmp = key;
 	std::swap(_string, tmp);
 	vtype = string;
 	xarray.clear();
@@ -355,7 +352,7 @@ uint64_t node::as_uint() const throw(error)
 	return get_number_helper<uint64_t>();
 }
 
-const std::u32string& node::as_string() const throw(std::bad_alloc, error)
+const text& node::as_string() const throw(std::bad_alloc, error)
 {
 	if(vtype != string)
 		throw error(ERR_NOT_A_STRING);
@@ -396,7 +393,7 @@ errorcode node::index_soft(size_t index, node*& out) throw()
 	return ERR_OK;
 }
 
-size_t node::field_count(const std::u32string& key) const throw(error)
+size_t node::field_count(const text& key) const throw(error)
 {
 	if(vtype != object)
 		throw error(ERR_NOT_AN_OBJECT);
@@ -405,12 +402,12 @@ size_t node::field_count(const std::u32string& key) const throw(error)
 	return xobject.find(key)->second.size();
 }
 
-bool node::field_exists(const std::u32string& key) const throw(error)
+bool node::field_exists(const text& key) const throw(error)
 {
 	return (field_count(key) > 0);
 }
 
-errorcode node::field_soft(const std::u32string& key, size_t subindex, const node*& out) const throw()
+errorcode node::field_soft(const text& key, size_t subindex, const node*& out) const throw()
 {
 	if(vtype != object)
 		return ERR_NOT_AN_OBJECT;
@@ -427,7 +424,7 @@ errorcode node::field_soft(const std::u32string& key, size_t subindex, const nod
 	return ERR_INSTANCE_INVALID;
 }
 
-errorcode node::field_soft(const std::u32string& key, size_t subindex, node*& out) throw()
+errorcode node::field_soft(const text& key, size_t subindex, node*& out) throw()
 {
 	if(vtype != object)
 		return ERR_NOT_AN_OBJECT;
@@ -446,9 +443,9 @@ errorcode node::field_soft(const std::u32string& key, size_t subindex, node*& ou
 
 node::node(const node& _node) throw(std::bad_alloc)
 {
-	std::u32string tmp1 = _node._string;
+	text tmp1 = _node._string;
 	std::list<node> tmp2 = _node.xarray;
-	std::map<std::u32string, std::list<node>> tmp3 = _node.xobject;
+	std::map<text, std::list<node>> tmp3 = _node.xobject;
 	std::vector<node*> tmp4 = _node.xarray_index;
 
 	vtype = _node.vtype;
@@ -465,9 +462,9 @@ node& node::operator=(const node& _node) throw(std::bad_alloc)
 {
 	if(this == &_node)
 		return *this;
-	std::u32string tmp1 = _node._string;
+	text tmp1 = _node._string;
 	std::list<node> tmp2 = _node.xarray;
-	std::map<std::u32string, std::list<node>> tmp3 = _node.xobject;
+	std::map<text, std::list<node>> tmp3 = _node.xobject;
 	std::vector<node*> tmp4 = _node.xarray_index;
 
 	vtype = _node.vtype;
@@ -499,7 +496,7 @@ node& node::append(const node& _node) throw(std::bad_alloc, error)
 	}
 }
 
-node& node::insert(const std::u32string& key, const node& _node) throw(std::bad_alloc, error)
+node& node::insert(const text& key, const node& _node) throw(std::bad_alloc, error)
 {
 	if(vtype != object)
 		throw error(ERR_NOT_AN_OBJECT);
@@ -515,7 +512,7 @@ node& node::insert(const std::u32string& key, const node& _node) throw(std::bad_
 
 namespace
 {
-	errorcode jsonptr_unescape_soft(const std::u32string& c, size_t start, size_t end, std::u32string& _out)
+	errorcode jsonptr_unescape_soft(const text& c, size_t start, size_t end, text& _out)
 	{
 		std::basic_ostringstream<char32_t> out;
 		for(size_t ptr = start; ptr < end; ptr++) {
@@ -536,9 +533,9 @@ namespace
 		return ERR_OK;
 	}
 
-	std::u32string jsonptr_unescape(const std::u32string& c, size_t start, size_t end)
+	text jsonptr_unescape(const text& c, size_t start, size_t end)
 	{
-		std::u32string o;
+		text o;
 		auto e = jsonptr_unescape_soft(c, start, end, o);
 		if(e != ERR_OK) throw error(e);
 		return o;
@@ -546,7 +543,7 @@ namespace
 
 }
 
-errorcode node::follow_soft(const std::u32string& pointer, const node*& current) const throw(std::bad_alloc)
+errorcode node::follow_soft(const text& pointer, const node*& current) const throw(std::bad_alloc)
 {
 	current = this;
 	size_t ptr = 0;
@@ -554,7 +551,7 @@ errorcode node::follow_soft(const std::u32string& pointer, const node*& current)
 		size_t p = pointer.find_first_of(U"/", ptr);
 		if(p > pointer.length())
 			p = pointer.length();
-		std::u32string c;
+		text c;
 		auto e = jsonptr_unescape_soft(pointer, ptr, p, c);
 		if(e != ERR_OK) return e;
 		if(current->vtype == array) {
@@ -575,7 +572,7 @@ errorcode node::follow_soft(const std::u32string& pointer, const node*& current)
 	return ERR_OK;
 }
 
-errorcode node::follow_soft(const std::u32string& pointer, node*& current) throw(std::bad_alloc)
+errorcode node::follow_soft(const text& pointer, node*& current) throw(std::bad_alloc)
 {
 	current = this;
 	size_t ptr = 0;
@@ -583,7 +580,7 @@ errorcode node::follow_soft(const std::u32string& pointer, node*& current) throw
 		size_t p = pointer.find_first_of(U"/", ptr);
 		if(p > pointer.length())
 			p = pointer.length();
-		std::u32string c;
+		text c;
 		auto e = jsonptr_unescape_soft(pointer, ptr, p, c);
 		if(e != ERR_OK) return e;
 		if(current->vtype == array) {
@@ -611,8 +608,8 @@ namespace
 		enum ttype { TSTRING, TNUMBER, TOBJECT, TARRAY, TINVALID, TCOMMA, TOBJECT_END, TARRAY_END, TCOLON,
 			TEOF, TTRUE, TFALSE, TNULL };
 		ttype type;
-		std::u32string value;
-		json_token(enum ttype t, const std::u32string& v) { type = t; value = v; }
+		text value;
+		json_token(enum ttype t, const text& v) { type = t; value = v; }
 		json_token(enum ttype t) { type = t; }
 	};
 
@@ -758,12 +755,13 @@ namespace
 		return i;
 	}
 
-	void read_string(std::u32string& target, const std::string& doc, size_t& ptr, size_t len)
+	void read_string(text& target, const std::string& doc, size_t& ptr, size_t len)
 	{
 		size_t cpcnt;
 		read_string_impl(iterator_counter(cpcnt), doc, ptr, len);
 		target.resize(cpcnt);
-		ptr = read_string_impl(target.begin(), doc, ptr, len) + 1;
+		char32_t* tptr = (cpcnt > 0) ? &target[0] : NULL;
+		ptr = read_string_impl(tptr, doc, ptr, len) + 1;
 	}
 
 	json_token parse_token(const std::string& doc, size_t& ptr, size_t len)
@@ -831,7 +829,7 @@ bad:
 		return json_token(json_token::TINVALID);
 	};
 
-	std::string json_string_escape(const std::u32string& c)
+	std::string json_string_escape(const text& c)
 	{
 		std::ostringstream out;
 		out << "\"";
@@ -875,10 +873,11 @@ bad:
 		}
 	}
 
-	std::u32string pointer_escape_field(const std::u32string& orig) throw(std::bad_alloc)
+	text pointer_escape_field(const text& orig) throw(std::bad_alloc)
 	{
 		std::basic_stringstream<char32_t> x;
-		for(auto i : orig) {
+		std::u32string _orig = orig;
+		for(auto i : _orig) {
 			if(i == U'~')
 				x << U"~0";
 			else if(i == U'/')
@@ -889,7 +888,7 @@ bad:
 		return x.str();
 	}
 
-	std::u32string pointer_escape_index(uint64_t idx) throw(std::bad_alloc)
+	text pointer_escape_index(uint64_t idx) throw(std::bad_alloc)
 	{
 		std::string orig = (stringfmt() << idx).str();
 		std::basic_ostringstream<char32_t> x;
@@ -996,7 +995,7 @@ void node::ctor(const std::string& doc, size_t& ptr, size_t len) throw(std::bad_
 				throw error(ERR_TRUNCATED_JSON, PARSE_OBJECT_NAME, ptr);
 			if(t2.type != json_token::TSTRING)
 				throw error(ERR_EXPECTED_STRING_KEY, PARSE_OBJECT_NAME, tmp3);
-			std::u32string key;
+			text key;
 			read_string(key, doc, ptr, len);
 			tmp3 = ptr;
 			t2 = parse_token(doc, ptr, len);
@@ -1043,7 +1042,7 @@ node::node(const std::string& doc, size_t& ptr, size_t len) throw(std::bad_alloc
 	ctor(doc, ptr, len);
 }
 
-node& node::operator[](const std::u32string& pointer) throw(std::bad_alloc, error)
+node& node::operator[](const text& pointer) throw(std::bad_alloc, error)
 {
 	node* current = this;
 	size_t ptr = 0;
@@ -1051,7 +1050,7 @@ node& node::operator[](const std::u32string& pointer) throw(std::bad_alloc, erro
 		size_t p = pointer.find_first_of(U"/", ptr);
 		if(p > pointer.length())
 			p = pointer.length();
-		std::u32string c = jsonptr_unescape(pointer, ptr, p);
+		text c = jsonptr_unescape(pointer, ptr, p);
 		if(current->vtype == array) {
 			if(c == U"-") {
 				//End-of-array.
@@ -1078,11 +1077,11 @@ node& node::operator[](const std::u32string& pointer) throw(std::bad_alloc, erro
 	return *current;
 }
 
-node& node::insert_node(const std::u32string& pointer, const node& nwn) throw(std::bad_alloc, error)
+node& node::insert_node(const text& pointer, const node& nwn) throw(std::bad_alloc, error)
 {
 	size_t s = pointer.find_last_of(U"/");
 	node* base;
-	std::u32string rest;
+	text rest;
 	size_t ptrlen = pointer.length();
 	if(s < ptrlen) {
 		base = &follow(pointer.substr(0, s));
@@ -1129,11 +1128,11 @@ node& node::insert_node(const std::u32string& pointer, const node& nwn) throw(st
 		throw error(ERR_NOT_ARRAY_NOR_OBJECT);
 }
 
-node node::delete_node(const std::u32string& pointer) throw(std::bad_alloc, error)
+node node::delete_node(const text& pointer) throw(std::bad_alloc, error)
 {
 	size_t s = pointer.find_last_of(U"/");
 	node* base;
-	std::u32string rest;
+	text rest;
 	size_t ptrlen = pointer.length();
 	if(s < ptrlen) {
 		base = &follow(pointer.substr(0, s));
@@ -1178,7 +1177,7 @@ node node::patch(const node& patch) const throw(std::bad_alloc, error)
 	for(auto& i : patch) {
 		if(i.type() != object || i.field_count(U"op") != 1 || i.field(U"op").type() != string)
 			throw error(ERR_PATCH_BAD);
-		std::u32string op = i.field(U"op").as_string();
+		text op = i.field(U"op").as_string();
 		if(op == U"test") {
 			if(i.field_count(U"path") != 1 || i.field(U"path").type() != string)
 				throw error(ERR_PATCH_BAD);
@@ -1208,8 +1207,8 @@ node node::patch(const node& patch) const throw(std::bad_alloc, error)
 				throw error(ERR_PATCH_BAD);
 			if(i.field_count(U"path") != 1 || i.field(U"path").type() != string)
 				throw error(ERR_PATCH_BAD);
-			std::u32string from = i.field(U"from").as_string();
-			std::u32string to = i.field(U"path").as_string();
+			text from = i.field(U"from").as_string();
+			text to = i.field(U"path").as_string();
 			if(to.substr(0, from.length()) == from) {
 				if(to.length() == from.length())
 					continue;
@@ -1250,7 +1249,7 @@ node::iterator::iterator(node& _n) throw(error)
 		throw error(ERR_NOT_ARRAY_NOR_OBJECT);
 }
 
-std::u32string node::iterator::key() throw(std::bad_alloc, error)
+text node::iterator::key() throw(std::bad_alloc, error)
 {
 	if(!n)
 		throw error(ERR_ITERATOR_END);
@@ -1347,7 +1346,7 @@ node::const_iterator::const_iterator(const node& _n) throw(error)
 		throw error(ERR_NOT_ARRAY_NOR_OBJECT);
 }
 
-std::u32string node::const_iterator::key() throw(std::bad_alloc, error)
+text node::const_iterator::key() throw(std::bad_alloc, error)
 {
 	if(!n)
 		throw error(ERR_ITERATOR_END);
@@ -1442,7 +1441,7 @@ void node::erase_index(size_t idx) throw(error)
 		throw error(ERR_NOT_AN_ARRAY);
 }
 
-void node::erase_field(const std::u32string& fld, size_t idx) throw(error)
+void node::erase_field(const text& fld, size_t idx) throw(error)
 {
 	if(type() == object) {
 		if(xobject.count(fld)) {
@@ -1460,7 +1459,7 @@ void node::erase_field(const std::u32string& fld, size_t idx) throw(error)
 		throw error(ERR_NOT_AN_OBJECT);
 }
 
-void node::erase_field_all(const std::u32string& fld) throw(error)
+void node::erase_field_all(const text& fld) throw(error)
 {
 	if(type() == object) {
 		if(xobject.count(fld))
@@ -1555,7 +1554,7 @@ bool node::operator==(const node& n) const
 	}
 }
 
-int node::type_of(const std::u32string& pointer) const throw(std::bad_alloc)
+int node::type_of(const text& pointer) const throw(std::bad_alloc)
 {
 	try {
 		const node* n;
@@ -1570,7 +1569,7 @@ int node::type_of(const std::u32string& pointer) const throw(std::bad_alloc)
 	}
 }
 
-int node::type_of_indirect(const std::u32string& pointer) const throw(std::bad_alloc)
+int node::type_of_indirect(const text& pointer) const throw(std::bad_alloc)
 {
 	try {
 		const node* n;
@@ -1588,7 +1587,7 @@ int node::type_of_indirect(const std::u32string& pointer) const throw(std::bad_a
 	}
 }
 
-std::u32string node::resolve_indirect(const std::u32string& pointer) const throw(std::bad_alloc)
+text node::resolve_indirect(const text& pointer) const throw(std::bad_alloc)
 {
 	try {
 		const node& n = follow(pointer);
@@ -1607,12 +1606,7 @@ pointer::pointer()
 {
 }
 
-pointer::pointer(const std::string& ptr) throw(std::bad_alloc)
-{
-	_pointer = utf8::to32(ptr);
-}
-
-pointer::pointer(const std::u32string& ptr) throw(std::bad_alloc)
+pointer::pointer(const text& ptr) throw(std::bad_alloc)
 {
 	_pointer = ptr;
 }
@@ -1634,7 +1628,7 @@ pointer& pointer::index_inplace(uint64_t idx) throw(std::bad_alloc)
 	return *this;
 }
 
-pointer pointer::field(const std::u32string& fld) const throw(std::bad_alloc)
+pointer pointer::field(const text& fld) const throw(std::bad_alloc)
 {
 	if(_pointer.length())
 		return pointer(_pointer + U"/" + pointer_escape_field(fld));
@@ -1642,7 +1636,7 @@ pointer pointer::field(const std::u32string& fld) const throw(std::bad_alloc)
 		return pointer(pointer_escape_field(fld));
 }
 
-pointer& pointer::field_inplace(const std::u32string& fld) throw(std::bad_alloc)
+pointer& pointer::field_inplace(const text& fld) throw(std::bad_alloc)
 {
 	if(_pointer.length())
 		_pointer = _pointer + U"/" + pointer_escape_field(fld);
@@ -1684,12 +1678,12 @@ printer::~printer() throw()
 {
 }
 
-std::string printer::value_val(const std::string& val)
+std::string printer::value_val(const text& val)
 {
 	return val;
 }
 
-std::string printer::value_string(const std::u32string& s)
+std::string printer::value_string(const text& s)
 {
 	return json_string_escape(s);
 }
@@ -1714,7 +1708,7 @@ std::string printer::object_begin()
 	return "{";
 }
 
-std::string printer::object_key(const std::u32string& s)
+std::string printer::object_key(const text& s)
 {
 	return json_string_escape(s) + ":";
 }
@@ -1748,7 +1742,7 @@ std::string printer_indenting::linestart(size_t _depth)
 	return s.str();
 }
 
-std::string printer_indenting::value_val(const std::string& val)
+std::string printer_indenting::value_val(const text& val)
 {
 	if(depth == 0)
 		return val + "\n";
@@ -1763,7 +1757,7 @@ std::string printer_indenting::value_val(const std::string& val)
 	}
 }
 
-std::string printer_indenting::value_string(const std::u32string& s)
+std::string printer_indenting::value_string(const text& s)
 {
 	if(depth == 0)
 		return json_string_escape(s) + "\n";
@@ -1857,7 +1851,7 @@ std::string printer_indenting::object_begin()
 	return "<WTF?>"; //NOTREACHED.
 }
 
-std::string printer_indenting::object_key(const std::u32string& s)
+std::string printer_indenting::object_key(const text& s)
 {
 	switch(state) {
 	case S_START:

@@ -12,13 +12,13 @@ class pad
 {
 public:
 	pad(const JSON::node& state, unsigned jnum);
-	pad(const std::string& _name, unsigned jnum);
+	pad(const text& _name, unsigned jnum);
 	~pad();
-	unsigned add_axis(uint64_t id, int64_t min, int64_t max, bool pressure, const std::string& name);
-	unsigned add_button(uint64_t id, const std::string& name);
-	unsigned add_hat(uint64_t id, const std::string& name);
-	unsigned add_hat(uint64_t idx, uint64_t idy, int64_t mindev, const std::string& namex,
-		const std::string& namey);
+	unsigned add_axis(uint64_t id, int64_t min, int64_t max, bool pressure, const text& name);
+	unsigned add_button(uint64_t id, const text& name);
+	unsigned add_hat(uint64_t id, const text& name);
+	unsigned add_hat(uint64_t idx, uint64_t idy, int64_t mindev, const text& namex,
+		const text& namey);
 	unsigned axes() { return next_axis; }
 	unsigned buttons() { return next_button; }
 	unsigned hats() { return next_hat; }
@@ -39,7 +39,7 @@ public:
 	void report_hat(uint64_t id, int angle);
 	void set_online(bool status);
 	bool online() { return online_flag; }
-	const std::string& name() { return _name; }
+	const text& name() { return _name; }
 	void set_axis_cb(std::function<void(unsigned jnum, unsigned num, int16_t val)> fn)
 	{
 		axis_fn = fn;
@@ -53,7 +53,7 @@ public:
 	void set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int type)> fn) { newitem_fn = fn; }
 	void load(const JSON::node& state);
 	JSON::node save();
-	std::string get_summary();
+	text get_summary();
 private:
 	struct axis_info
 	{
@@ -67,7 +67,7 @@ private:
 		bool pressure;
 		bool disabled;
 		bool online;
-		std::string name;
+		text name;
 		int16_t state;
 		int64_t rstate;
 	};
@@ -75,7 +75,7 @@ private:
 	{
 		uint64_t id;
 		unsigned num;
-		std::string name;
+		text name;
 		bool online;
 		bool state;
 	};
@@ -86,8 +86,8 @@ private:
 		uint64_t id2;
 		unsigned num;
 		int64_t mindev;
-		std::string name;
-		std::string name2;
+		text name;
+		text name2;
 		unsigned state;
 		bool online;
 	};
@@ -99,7 +99,7 @@ private:
 	std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> amode_fn;
 	std::function<void(unsigned jnum, unsigned num, int type)> newitem_fn;
 	bool online_flag;
-	std::string _name;
+	text _name;
 	std::map<uint64_t, axis_info> _axes;
 	std::map<uint64_t, hat_info*> _axes_hat;
 	std::map<uint64_t, button_info> _buttons;
@@ -120,13 +120,13 @@ public:
 	JSON::node save();
 	unsigned gamepads();
 	pad& operator[](unsigned gpnum);
-	unsigned add(const std::string& name);
+	unsigned add(const text& name);
 	void set_axis_cb(std::function<void(unsigned jnum, unsigned num, int16_t val)> fn);
 	void set_button_cb(std::function<void(unsigned jnum, unsigned num, bool val)> fn);
 	void set_hat_cb(std::function<void(unsigned jnum, unsigned num, unsigned val)> fn);
 	void set_axismode_cb(std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> fn);
 	void set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int type)> fn);
-	std::string get_summary();
+	text get_summary();
 	void offline_all();
 private:
 	set(const set&);

@@ -100,12 +100,12 @@ emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::gr
 
 void emu_framebuffer::do_screenshot(command::arg_filename file)
 {
-	std::string fn = file;
+	text fn = file;
 	take_screenshot(fn);
 	messages << "Saved PNG screenshot to '" << fn << "'" << std::endl;
 }
 
-void emu_framebuffer::take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)
+void emu_framebuffer::take_screenshot(const text& file) throw(std::bad_alloc, std::runtime_error)
 {
 	render_info& ri = buffering.get_read();
 	ri.fbuf.save_png(file);

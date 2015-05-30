@@ -7,16 +7,16 @@
 class wxwindow_romload
 {
 public:
-	wxwindow_romload(const std::string& path);
+	wxwindow_romload(const text& path);
 	bool show(wxWindow* parent);
-	std::string get_core() { return core; }
-	std::string get_type() { return type; }
-	std::string get_filename() { return filename; }
+	text get_core() { return core; }
+	text get_type() { return type; }
+	text get_filename() { return filename; }
 private:
-	std::string path;
-	std::string core;
-	std::string type;
-	std::string filename;
+	text path;
+	text core;
+	text type;
+	text filename;
 };
 
 #endif

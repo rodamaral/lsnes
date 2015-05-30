@@ -17,9 +17,9 @@ struct rom_request
 	//Filename selected (on entry, filename hint).
 	bool has_slot[ROM_SLOT_COUNT];
 	bool guessed[ROM_SLOT_COUNT];
-	std::string filename[ROM_SLOT_COUNT];
-	std::string hash[ROM_SLOT_COUNT];
-	std::string hashxml[ROM_SLOT_COUNT];
+	text filename[ROM_SLOT_COUNT];
+	text hash[ROM_SLOT_COUNT];
+	text hashxml[ROM_SLOT_COUNT];
 	//Canceled flag.
 	bool canceled;
 };
@@ -42,18 +42,18 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Loading ROM file failed.
  */
-	rom_image(const std::string& file, const std::string& tmpprefer = "") throw(std::bad_alloc,
+	rom_image(const text& file, const text& tmpprefer = "") throw(std::bad_alloc,
 		std::runtime_error);
 /**
  * Take a ROM and load it.
  */
-	rom_image(const std::string& file, const std::string& core, const std::string& type,
-		const std::string& region);
+	rom_image(const text& file, const text& core, const text& type,
+		const text& region);
 /**
  * Load a multi-file ROM.
  */
-	rom_image(const std::string file[ROM_SLOT_COUNT], const std::string& core, const std::string& type,
-		const std::string& region);
+	rom_image(const text file[ROM_SLOT_COUNT], const text& core, const text& type,
+		const text& region);
 /**
  * Take in ROM filename and load it to memory with specified type.
  *
@@ -62,7 +62,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Loading ROM file failed.
  */
-	rom_image(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error);
+	rom_image(const text& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error);
 /**
  * Destroy ROM image.
  */
@@ -95,11 +95,11 @@ public:
 /**
  * Get filename of ROM pack, if any.
  */
-	const std::string& get_pack_filename() { return load_filename; }
+	const text& get_pack_filename() { return load_filename; }
 /**
  * Get MSU-1 base fileaname.
  */
-	const std::string& get_msu1_base() { return msu1_base; }
+	const text& get_msu1_base() { return msu1_base; }
 /**
  * Is same ROM type?
  */
@@ -111,10 +111,10 @@ public:
  * retruns: True if gamepak, false if not.
  * throws std::runtime_error: No such file.
  */
-	static bool is_gamepak(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
+	static bool is_gamepak(const text& filename) throw(std::bad_alloc, std::runtime_error);
 	//ROM functions.
 	std::list<core_region*> get_regions() { return rtype->get_regions(); }
-	const std::string& get_hname() { return rtype->get_hname(); }
+	const text& get_hname() { return rtype->get_hname(); }
 private:
 	rom_image(const rom_image&);
 	rom_image& operator=(const rom_image&);
@@ -127,9 +127,9 @@ private:
 	//Loaded ROM XML (markup) images.
 	fileimage::image romxml[ROM_SLOT_COUNT];
 	//MSU-1 base filename.
-	std::string msu1_base;
+	text msu1_base;
 	//Load filename.
-	std::string load_filename;
+	text load_filename;
 	//ROM type.
 	core_type* rtype;
 	//ROM region.
@@ -143,7 +143,7 @@ private:
 	bool put() { threads::alock l(usage_lock); return !--usage_count; }
 	friend class rom_image_handle;
 	//Handle bundle load case.
-	void load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer)
+	void load_bundle(const text& file, std::istream& spec, const text& tmpprefer)
 		throw(std::bad_alloc, std::runtime_error);
 	//Tracker.
 	memtracker::autorelease tracker;
@@ -218,12 +218,12 @@ private:
 };
 
 
-void record_filehash(const std::string& file, uint64_t prefix, const std::string& hash);
+void record_filehash(const text& file, uint64_t prefix, const text& hash);
 void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb);
-rom_image_handle construct_rom(const std::string& movie_filename, const std::vector<std::string>& cmdline);
+rom_image_handle construct_rom(const text& movie_filename, const std::vector<text>& cmdline);
 
 //Map of preferred cores for each extension and type.
-extern std::map<std::string, core_type*> preferred_core;
+extern std::map<text, core_type*> preferred_core;
 //Main hasher
 extern fileimage::hash lsnes_image_hasher;
 

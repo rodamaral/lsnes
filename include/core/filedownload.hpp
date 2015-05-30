@@ -3,6 +3,7 @@
 
 #include "library/threads.hpp"
 #include "library/httpreq.hpp"
+#include "library/text.hpp"
 #include "library/urirewrite.hpp"
 #include <string>
 #include <list>
@@ -13,8 +14,8 @@ class loaded_rom;
 struct file_download
 {
 	//Variables.
-	std::string url;
-	std::string target_slot;
+	text url;
+	text target_slot;
 	//Ctor
 	file_download();
 	~file_download();
@@ -23,15 +24,15 @@ struct file_download
 	void cancel();
 	//Status.
 	volatile bool finished;  //This signals download finishing, call finish().
-	std::string errormsg;
+	text errormsg;
 	http_async_request req;
-	std::string statusmsg();
+	text statusmsg();
 	threads::cv cond;
 	threads::lock m;
 	//Internal.
 	void _do_async(loaded_rom& rom);
-	std::string tempname;
-	std::string tempname2;
+	text tempname;
+	text tempname2;
 };
 
 extern urirewrite::rewriter lsnes_uri_rewrite;

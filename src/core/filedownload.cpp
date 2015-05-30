@@ -17,7 +17,7 @@ namespace
 	class file_download_handler : public http_request::output_handler
 	{
 	public:
-		file_download_handler(const std::string& filename)
+		file_download_handler(const text& filename)
 		{
 			fp.open(filename, std::ios::binary);
 			tsize = 0;
@@ -25,7 +25,7 @@ namespace
 		~file_download_handler()
 		{
 		}
-		void header(const std::string& name, const std::string& content)
+		void header(const text& name, const text& content)
 		{
 			//Ignore headers.
 		}
@@ -77,7 +77,7 @@ void file_download::do_async(loaded_rom& rom)
 	}
 }
 
-std::string file_download::statusmsg()
+text file_download::statusmsg()
 {
 	int64_t dn, dt, un, ut;
 	if(finished)

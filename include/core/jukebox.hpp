@@ -57,7 +57,7 @@ public:
  *
  * Throws std::runtime_exception: No slot selected.
  */
-	std::string get_slot_name();
+	text get_slot_name();
 /**
  * Set size of jukebox.
  *
@@ -73,14 +73,14 @@ public:
  */
 	void unset_update();
 private:
-	void do_slotsel(const std::string& arg);
+	void do_slotsel(const text& arg);
 	settingvar::group& settings;
 	size_t current_slot;
 	size_t current_size;
 	std::function<void()> update;
 	save_jukebox_listener* listener;
 	command::group& cmd;
-	command::_fnptr<const std::string&> slotsel;
+	command::_fnptr<const text&> slotsel;
 	command::_fnptr<> cycleprev;
 	command::_fnptr<> cyclenext;
 };

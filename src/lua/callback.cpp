@@ -17,12 +17,12 @@ namespace
 	class lua_callback_obj
 	{
 	public:
-		lua_callback_obj(lua::state& L, const std::string& name);
-		static size_t overcommit(const std::string& name) { return 0; }
+		lua_callback_obj(lua::state& L, const text& name);
+		static size_t overcommit(const text& name) { return 0; }
 		int _register(lua::state& L, lua::parameters& P);
 		int _unregister(lua::state& L, lua::parameters& P);
 		int _call(lua::state& L, lua::parameters& P);
-		std::string print()
+		text print()
 		{
 			if(special == 1)
 				return "global register";
@@ -62,7 +62,7 @@ namespace
 
 	int lua_callbacks_list::index(lua::state& L, lua::parameters& P)
 	{
-		std::string name;
+		text name;
 
 		P(P.skipped(), name);
 
@@ -75,7 +75,7 @@ namespace
 		throw std::runtime_error("Writing is not allowed");
 	}
 
-	lua_callback_obj::lua_callback_obj(lua::state& L, const std::string& name)
+	lua_callback_obj::lua_callback_obj(lua::state& L, const text& name)
 	{
 		callback = NULL;
 		special = 0;
@@ -126,7 +126,7 @@ namespace
 
 	int lua_callback_obj::_call(lua::state& L, lua::parameters& P)
 	{
-		std::string name;
+		text name;
 		int lfn;
 
 		if(!special) throw std::runtime_error("Need to specify operation to do to callback");

@@ -6,6 +6,7 @@
 #include <set>
 #include <cstdint>
 #include <string>
+#include "text.hpp"
 
 class messagebuffer
 {
@@ -42,7 +43,7 @@ public:
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Thrown through from update handler.
  */
-	void add_message(const std::string& msg) throw(std::bad_alloc, std::runtime_error);
+	void add_message(const text& msg) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Read a message.
@@ -52,7 +53,7 @@ public:
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::logic_error: Invalid message number.
  */
-	const std::string& get_message(size_t msgnum) throw(std::bad_alloc, std::logic_error);
+	const text& get_message(size_t msgnum) throw(std::bad_alloc, std::logic_error);
 
 /**
  * Get the number of first message present.
@@ -191,10 +192,10 @@ public:
 /**
  * Read the last message.
  */
-	std::string get_last_message();
+	text get_last_message();
 private:
 	void send_notifications();
-	std::map<uint64_t, std::string> messages_buf;
+	std::map<uint64_t, text> messages_buf;
 	uint64_t first_present_message;
 	uint64_t next_message_number;
 	uint64_t window_start;

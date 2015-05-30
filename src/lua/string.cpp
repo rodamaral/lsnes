@@ -5,8 +5,8 @@ namespace
 {
 	int l_regex(lua::state& L, lua::parameters& P)
 	{
-		std::string regexp;
-		std::string against;
+		text regexp;
+		text against;
 
 		P(regexp, against);
 
@@ -40,7 +40,7 @@ namespace
 	template<bool right>
 	int l_pad(lua::state& L, lua::parameters& P)
 	{
-		std::string x;
+		text x;
 		uint64_t l;
 
 		P(x, l);
@@ -48,9 +48,9 @@ namespace
 		if(x.length() >= l)
 			L.pushlstring(x);
 		else if(right)
-			L.pushlstring(x + std::string(l - x.length(), ' '));
+			L.pushlstring(x + text(l - x.length(), ' '));
 		else
-			L.pushlstring(std::string(l - x.length(), ' ') + x);
+			L.pushlstring(text(l - x.length(), ' ') + x);
 		return 1;
 	}
 

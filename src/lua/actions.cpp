@@ -10,7 +10,7 @@ namespace
 	int action(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		std::string name;
+		text name;
 
 		P(name);
 
@@ -56,13 +56,13 @@ namespace
 					throw std::runtime_error("Parameter out of limits.");
 				}
 			} else if(r = regex("enum:(.*)", i.model)) {
-				std::string p;
+				text p;
 				P(p);
 				unsigned num = 0;
 				try {
 					JSON::node e(r[1]);
 					for(auto i2 : e) {
-						std::string n;
+						text n;
 						if(i2.type() == JSON::string)
 							n = i2.as_string8();
 						else if(i2.type() == JSON::array)
@@ -101,7 +101,7 @@ out:
 	int action_flags(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		std::string name;
+		text name;
 
 		P(name);
 

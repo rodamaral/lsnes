@@ -249,17 +249,14 @@ namespace
 	int flagdecode_core(lua::state& L, lua::parameters& P)
 	{
 		uint64_t a, b;
-		std::string on, off;
+		text on, off;
 
 		P(a, b, P.optional(on, ""), P.optional(off, ""));
 
-		auto on32 = utf8::to32(on);
-		auto off32 = utf8::to32(off);
-
-		size_t onl = on32.length();
-		size_t offl = off32.length();
-		auto onc = onl ? on32[onl - 1] : '*';
-		auto offc = offl ? off32[offl - 1] : '-';
+		size_t onl = on.length();
+		size_t offl = off.length();
+		auto onc = onl ? on[onl - 1] : '*';
+		auto offc = offl ? off[offl - 1] : '-';
 		char32_t buffer[65];
 		unsigned i;
 		size_t bias = min(b, (uint64_t)64) - 1;

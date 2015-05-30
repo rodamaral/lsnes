@@ -24,7 +24,7 @@ public:
  *
  * Parameters backingfile: The backing file name.
  */
-	filesystem(const std::string& backingfile);
+	filesystem(const text& backingfile);
 /**
  * Allocate a new file.
  *
@@ -96,7 +96,7 @@ public:
  *
  * Parameters backingfile: The backing file.
  */
-		ref(const std::string& backingfile)
+		ref(const text& backingfile)
 		{
 			refcnt = NULL;
 			mlock = NULL;

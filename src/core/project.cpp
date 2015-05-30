@@ -36,7 +36,7 @@ namespace
 		std::copy(app.begin(), app.end(), data.begin() + dsize);
 	}
 
-	std::vector<char> base_decode(const std::string& str)
+	std::vector<char> base_decode(const text& str)
 	{
 		std::vector<char> r;
 		size_t len = str.length();
@@ -84,7 +84,7 @@ namespace
 		chars -= (x + 1);
 	}
 
-	std::pair<std::string, size_t> base_encode(const std::vector<char>& data, size_t ptr, size_t chars)
+	std::pair<text, size_t> base_encode(const std::vector<char>& data, size_t ptr, size_t chars)
 	{
 		std::ostringstream s;
 		while(chars >= 5 && ptr + 4 <= data.size())
@@ -97,7 +97,7 @@ namespace
 			blockcode<1>(s, data, ptr, chars);
 		return std::make_pair(s.str(), ptr);
 	}
-	std::string eq_escape(const std::string& str)
+	text eq_escape(const text& str)
 	{
 		std::ostringstream s;
 		size_t len = str.length();
@@ -112,7 +112,7 @@ namespace
 		return s.str();
 	}
 
-	std::string eq_unescape(const std::string& str)
+	text eq_unescape(const text& str)
 	{
 		std::ostringstream s;
 		size_t len = str.length();
@@ -134,7 +134,7 @@ namespace
 		return s.str();
 	}
 
-	void save_binary(std::ostream& s, const std::string& key, const std::vector<char>& value)
+	void save_binary(std::ostream& s, const text& key, const std::vector<char>& value)
 	{
 		size_t ptr = 0;
 		while(ptr < value.size()) {
@@ -176,14 +176,13 @@ namespace
 		}
 	}
 
-	std::string project_getname(const std::string& id)
+	text project_getname(const text& id)
 	{
-		std::string file = get_config_path() + "/" + id + ".prj";
+		text file = get_config_path() + "/" + id + ".prj";
 		std::ifstream f(file);
 		if(!f)
 			throw std::runtime_error("Can't open project file");
-		std::string name;
-		std::getline(f, name);
+		text name = text::getline(f);
 		if(!f)
 			throw std::runtime_error("Can't read project name");
 		return name;
@@ -196,11 +195,11 @@ project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatc
 	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache),
 	buttons(_buttons), edispatch(_edispatch), iqueue(_iqueue), rom(_rom), supdater(_supdater),
 	branch_ls(command, CPROJECT::bls, [this]() { this->do_branch_ls(); }),
-	branch_mk(command, CPROJECT::bmk, [this](const std::string& a) { this->do_branch_mk(a); }),
-	branch_rm(command, CPROJECT::brm, [this](const std::string& a) { this->do_branch_rm(a); }),
-	branch_set(command, CPROJECT::bset, [this](const std::string& a) { this->do_branch_set(a); }),
-	branch_rp(command, CPROJECT::brp, [this](const std::string& a) { this->do_branch_rp(a); }),
-	branch_mv(command, CPROJECT::bmv, [this](const std::string& a) { this->do_branch_mv(a); })
+	branch_mk(command, CPROJECT::bmk, [this](const text& a) { this->do_branch_mk(a); }),
+	branch_rm(command, CPROJECT::brm, [this](const text& a) { this->do_branch_rm(a); }),
+	branch_set(command, CPROJECT::bset, [this](const text& a) { this->do_branch_set(a); }),
+	branch_rp(command, CPROJECT::brp, [this](const text& a) { this->do_branch_rp(a); }),
+	branch_mv(command, CPROJECT::bmv, [this](const text& a) { this->do_branch_mv(a); })
 {
 	active_project = NULL;
 }
@@ -209,9 +208,9 @@ project_state::~project_state()
 {
 }
 
-project_info& project_state::load(const std::string& id)
+project_info& project_state::load(const text& id)
 {
-	std::string file = get_config_path() + "/" + id + ".prj";
+	text file = get_config_path() + "/" + id + ".prj";
 	std::ifstream f(file);
 	if(!f)
 		throw std::runtime_error("Can't open project file");
@@ -223,14 +222,13 @@ project_info& project_state::load(const std::string& id)
 	pi.next_branch = 0;
 	pi.filename = file;
 	//First line is always project name.
-	std::getline(f, pi.name);
+	pi.name = text::getline(f);
 	if(!f || pi.name == "") {
 		delete &pi;
 		throw std::runtime_error("Can't read project file");
 	}
 	while(f) {
-		std::string tmp;
-		std::getline(f, tmp);
+		text tmp = text::getline(f);
 		regex_results r;
 		if(r = regex("rom=(.+)", tmp))
 			pi.rom = r[1];
@@ -397,7 +395,7 @@ skip_rom_movie:
 		active_project = p;
 		switched = true;
 		//Calculate union of old and new.
-		std::set<std::string> _watches = mwatch.enumerate();
+		std::set<text> _watches = mwatch.enumerate();
 		for(auto i : p->watches) _watches.insert(i.first);
 
 		for(auto i : _watches)
@@ -417,7 +415,7 @@ skip_rom_movie:
 	} catch(std::exception& e) {
 		if(newmovie && !used)
 			delete newmovie;
-		platform::error_message(std::string("Can't switch projects: ") + e.what());
+		platform::error_message(text("Can't switch projects: ") + e.what());
 		messages << "Can't switch projects: " << e.what() << std::endl;
 	}
 	if(switched) {
@@ -429,19 +427,19 @@ skip_rom_movie:
 	return switched;
 }
 
-std::map<std::string, std::string> project_state::enumerate()
+std::map<text, text> project_state::enumerate()
 {
-	std::set<std::string> projects;
-	std::map<std::string, std::string> projects2;
+	std::set<text> projects;
+	std::map<text, text> projects2;
 
 	projects = directory::enumerate(get_config_path(), ".*\\.prj");
 	for(auto i : projects) {
-		std::string id = i;
+		text id = i;
 		size_t split;
 #ifdef FUCKED_SYSTEM
-		split = id.find_last_of("\\/");
+		split = id.find_last_of(U"\\/");
 #else
-		split = id.find_last_of("/");
+		split = id.find_last_of(U"/");
 #endif
 		if(split < id.length())
 			id = id.substr(split + 1);
@@ -455,7 +453,7 @@ std::map<std::string, std::string> project_state::enumerate()
 	return projects2;
 }
 
-std::string project_state::moviepath()
+text project_state::moviepath()
 {
 	if(active_project)
 		return active_project->directory;
@@ -463,7 +461,7 @@ std::string project_state::moviepath()
 		return setcache.get("moviepath");
 }
 
-std::string project_state::otherpath()
+text project_state::otherpath()
 {
 	if(active_project)
 		return active_project->directory;
@@ -471,7 +469,7 @@ std::string project_state::otherpath()
 		return ".";
 }
 
-std::string project_state::savestate_ext()
+text project_state::savestate_ext()
 {
 	return active_project ? "lss" : "lsmv";
 }
@@ -516,9 +514,9 @@ void project_info::set_current_branch(uint64_t bid)
 	messages << "Set current slot branch to " << get_branch_string() << std::endl;
 }
 
-const std::string& project_info::get_branch_name(uint64_t bid)
+const text& project_info::get_branch_name(uint64_t bid)
 {
-	static std::string rootname = "(root)";
+	static text rootname = "(root)";
 	if(!bid)
 		return rootname;
 	if(!branches.count(bid))
@@ -526,7 +524,7 @@ const std::string& project_info::get_branch_name(uint64_t bid)
 	return branches[bid].name;
 }
 
-void project_info::set_branch_name(uint64_t bid, const std::string& name)
+void project_info::set_branch_name(uint64_t bid, const text& name)
 {
 	if(!bid)
 		throw std::runtime_error("Root branch name can't be set");
@@ -569,7 +567,7 @@ std::set<uint64_t> project_info::branch_children(uint64_t bid)
 	return r;
 }
 
-uint64_t project_info::create_branch(uint64_t pbid, const std::string& name)
+uint64_t project_info::create_branch(uint64_t pbid, const text& name)
 {
 	if(pbid && !branches.count(pbid))
 		throw std::runtime_error("Invalid parent branch ID");
@@ -598,9 +596,9 @@ void project_info::delete_branch(uint64_t bid)
 	edispatch.branch_change();
 }
 
-std::string project_info::get_branch_string()
+text project_info::get_branch_string()
 {
-	std::string r;
+	text r;
 	uint64_t j = active_branch;
 	if(!j)
 		return "(root)";
@@ -616,9 +614,9 @@ std::string project_info::get_branch_string()
 
 void project_info::flush()
 {
-	std::string file = get_config_path() + "/" + id + ".prj";
-	std::string tmpfile = get_config_path() + "/" + id + ".prj.tmp";
-	std::string bakfile = get_config_path() + "/" + id + ".prj.bak";
+	text file = get_config_path() + "/" + id + ".prj";
+	text tmpfile = get_config_path() + "/" + id + ".prj.tmp";
+	text bakfile = get_config_path() + "/" + id + ".prj.bak";
 	std::ofstream f(tmpfile);
 	if(!f)
 		throw std::runtime_error("Can't write project file");
@@ -633,8 +631,7 @@ void project_info::flush()
 		if(!f3)
 			throw std::runtime_error("Can't backup project file");
 		while(f2) {
-			std::string tmp;
-			std::getline(f2, tmp);
+			text tmp = text::getline(f2);
 			f3 << tmp << std::endl;
 		}
 		f2.close();
@@ -710,7 +707,7 @@ void project_info::write(std::ostream& s)
 	s << "branchnext=" << next_branch << std::endl;
 }
 
-void project_state::do_branch_mk(const std::string& args)
+void project_state::do_branch_mk(const text& args)
 {
 	regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
 	if(!r) {
@@ -730,7 +727,7 @@ void project_state::do_branch_mk(const std::string& args)
 	}
 }
 
-void project_state::do_branch_rm(const std::string& args)
+void project_state::do_branch_rm(const text& args)
 {
 	regex_results r = regex("([0-9]+)[ \t]*", args);
 	if(!r) {
@@ -750,7 +747,7 @@ void project_state::do_branch_rm(const std::string& args)
 	}
 }
 
-void project_state::do_branch_set(const std::string& args)
+void project_state::do_branch_set(const text& args)
 {
 	regex_results r = regex("([0-9]+)[ \t]*", args);
 	if(!r) {
@@ -771,7 +768,7 @@ void project_state::do_branch_set(const std::string& args)
 	}
 }
 
-void project_state::do_branch_rp(const std::string& args)
+void project_state::do_branch_rp(const text& args)
 {
 	regex_results r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]*", args);
 	if(!r) {
@@ -793,7 +790,7 @@ void project_state::do_branch_rp(const std::string& args)
 	}
 }
 
-void project_state::do_branch_mv(const std::string& args)
+void project_state::do_branch_mv(const text& args)
 {
 	regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
 	if(!r) {
@@ -828,7 +825,7 @@ void project_state::recursive_list_branch(uint64_t bid, std::set<unsigned>& dset
 		return;
 	}
 	std::set<uint64_t> children = prj->branch_children(bid);
-	std::string prefix;
+	text prefix;
 	for(unsigned i = 0; i + 1 < depth; i++)
 		prefix += (dset.count(i) ? "\u2502" : " ");
 	prefix += (dset.count(depth - 1) ? (last_of ? "\u2514" : "\u251c") : " ");

@@ -31,7 +31,7 @@
 
 namespace
 {
-	globalwrap<std::map<std::string, std::pair<framebuffer::font2*, size_t>>> S_fonts_in_use;
+	globalwrap<std::map<text, std::pair<framebuffer::font2*, size_t>>> S_fonts_in_use;
 
 	framebuffer::font2& get_builtin_font2()
 	{
@@ -39,12 +39,12 @@ namespace
 		return f;
 	}
 
-	framebuffer::font2* get_font(const std::string filename)
+	framebuffer::font2* get_font(const text filename)
 	{
 		//Handle NULL font.
 		if(filename == "")
 			return &get_builtin_font2();
-		std::string abs_filename = directory::absolute_path(filename);
+		text abs_filename = directory::absolute_path(filename);
 		if(S_fonts_in_use().count(abs_filename)) {
 			S_fonts_in_use()[abs_filename].second++;
 			return S_fonts_in_use()[abs_filename].first;
@@ -64,7 +64,7 @@ namespace
 		if(!font)
 			return;
 		//Find font using this.
-		std::string filename;
+		text filename;
 		for(auto& i : S_fonts_in_use())
 			if(i.second.first == font)
 				filename = i.first;
@@ -77,27 +77,27 @@ namespace
 		}
 	}
 
-	std::string json_string_default(const JSON::node& node, const std::string& pointer, const std::string& dflt)
+	text json_string_default(const JSON::node& node, const text& pointer, const text& dflt)
 	{
 		return (node.type_of(pointer) == JSON::string) ? node[pointer].as_string8() : dflt;
 	}
 
-	uint64_t json_unsigned_default(const JSON::node& node, const std::string& pointer, uint64_t dflt)
+	uint64_t json_unsigned_default(const JSON::node& node, const text& pointer, uint64_t dflt)
 	{
 		return (node.type_of(pointer) == JSON::number) ? node[pointer].as_uint() : dflt;
 	}
 
-	int64_t json_signed_default(const JSON::node& node, const std::string& pointer, int64_t dflt)
+	int64_t json_signed_default(const JSON::node& node, const text& pointer, int64_t dflt)
 	{
 		return (node.type_of(pointer) == JSON::number) ? node[pointer].as_int() : dflt;
 	}
 
-	bool json_boolean_default(const JSON::node& node, const std::string& pointer, bool dflt)
+	bool json_boolean_default(const JSON::node& node, const text& pointer, bool dflt)
 	{
 		return (node.type_of(pointer) == JSON::boolean) ? node[pointer].as_bool() : dflt;
 	}
 
-	void dummy_target_fn(const std::string& n, const std::string& v) {}
+	void dummy_target_fn(const text& n, const text& v) {}
 
 
 	struct regread_oper : public mathexpr::operinfo
@@ -124,7 +124,7 @@ namespace
 	{
 		if(promises.size() != 1)
 			throw mathexpr::error(mathexpr::error::ARGCOUNT, "register read operator takes 1 argument");
-		std::string rname;
+		text rname;
 		try {
 			mathexpr::value val = promises[0]();
 			void* res = val._value;
@@ -195,7 +195,7 @@ JSON::node memwatch_printer::serialize()
 
 void memwatch_printer::unserialize(const JSON::node& node)
 {
-	std::string _position = json_string_default(node, "position", "");
+	text _position = json_string_default(node, "position", "");
 	if(_position == "disabled") position = PC_DISABLED;
 	else if(_position == "memorywatch") position = PC_MEMORYWATCH;
 	else if(_position == "onscreen") position = PC_ONSCREEN;
@@ -215,13 +215,13 @@ void memwatch_printer::unserialize(const JSON::node& node)
 }
 
 GC::pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
-	std::function<GC::pointer<mathexpr::mathexpr>(const std::string& n)> vars)
+	std::function<GC::pointer<mathexpr::mathexpr>(const text& n)> vars)
 {
 	GC::pointer<memorywatch::item_printer> ptr;
 	memorywatch::output_list* l;
 	memorywatch::output_fb* f;
 
-	std::string _enabled = (enabled != "") ? enabled : "true";
+	text _enabled = (enabled != "") ? enabled : "true";
 
 	switch(position) {
 	case PC_DISABLED:
@@ -247,7 +247,7 @@ GC::pointer<memorywatch::item_printer> memwatch_printer::get_printer_obj(
 		f->font = NULL;
 		f->set_dtor_cb([](memorywatch::output_fb& obj) { put_font(obj.font); });
 		f->cond_enable = cond_enable;
-		std::string while_parsing = "(unknown)";
+		text while_parsing = "(unknown)";
 		try {
 			while_parsing = "conditional";
 			if(f->cond_enable)
@@ -346,14 +346,14 @@ mathexpr::operinfo* memwatch_item::get_memread_oper(memory_space& memory, loaded
 	return o;
 }
 
-void memwatch_item::compatiblity_unserialize(memory_space& memory, const std::string& item)
+void memwatch_item::compatiblity_unserialize(memory_space& memory, const text& item)
 {
 	regex_results r;
 	if(!(r = regex("C0x([0-9A-Fa-f]{1,16})z([bBwWoOdDqQfF])(H([0-9A-Ga-g]))?", item)))
 		throw std::runtime_error("Unknown compatiblity memory watch");
-	std::string _addr = r[1];
-	std::string _type = r[2];
-	std::string _hext = r[4];
+	text _addr = r[1];
+	text _type = r[2];
+	text _hext = r[4];
 	uint64_t addr = strtoull(_addr.c_str(), NULL, 16);
 	char type = _type[0];
 	char hext = (_hext != "") ? _hext[0] : 0;
@@ -415,17 +415,17 @@ memwatch_set::memwatch_set(memory_space& _memory, project_state& _project, emu_f
 {
 }
 
-std::set<std::string> memwatch_set::enumerate()
+std::set<text> memwatch_set::enumerate()
 {
-	std::set<std::string> r;
+	std::set<text> r;
 	for(auto& i : items)
 		r.insert(i.first);
 	return r;
 }
 
-void memwatch_set::clear(const std::string& name)
+void memwatch_set::clear(const text& name)
 {
-	std::map<std::string, memwatch_item> nitems = items;
+	std::map<text, memwatch_item> nitems = items;
 	nitems.erase(name);
 	rebuild(nitems);
 	std::swap(items, nitems);
@@ -437,7 +437,7 @@ void memwatch_set::clear(const std::string& name)
 	fbuf.redraw_framebuffer();
 }
 
-void memwatch_set::set(const std::string& name, const std::string& item)
+void memwatch_set::set(const text& name, const text& item)
 {
 	memwatch_item _item;
 	if(item != "" && item[0] != '{') {
@@ -453,14 +453,14 @@ void memwatch_set::set(const std::string& name, const std::string& item)
 	set(name, _item);
 }
 
-memwatch_item& memwatch_set::get(const std::string& name)
+memwatch_item& memwatch_set::get(const text& name)
 {
 	if(!items.count(name))
 		throw std::runtime_error("No such memory watch named '" + name + "'");
 	return items.find(name)->second;
 }
 
-std::string memwatch_set::get_string(const std::string& name, JSON::printer* printer)
+text memwatch_set::get_string(const text& name, JSON::printer* printer)
 {
 	auto& x = get(name);
 	auto y = x.serialize();
@@ -480,9 +480,9 @@ void memwatch_set::watch(struct framebuffer::queue& rq)
 	erase_unused_watches();
 }
 
-bool memwatch_set::rename(const std::string& oldname, const std::string& newname)
+bool memwatch_set::rename(const text& oldname, const text& newname)
 {
-	std::map<std::string, memwatch_item> nitems = items;
+	std::map<text, memwatch_item> nitems = items;
 	if(nitems.count(newname))
 		return false;
 	if(!nitems.count(oldname))
@@ -501,9 +501,9 @@ bool memwatch_set::rename(const std::string& oldname, const std::string& newname
 	return true;
 }
 
-void memwatch_set::set(const std::string& name, memwatch_item& item)
+void memwatch_set::set(const text& name, memwatch_item& item)
 {
-	std::map<std::string, memwatch_item> nitems = items;
+	std::map<text, memwatch_item> nitems = items;
 	nitems.erase(name); //Insert does not insert if already existing.
 	nitems.insert(std::make_pair(name, item));
 	rebuild(nitems);
@@ -516,14 +516,14 @@ void memwatch_set::set(const std::string& name, memwatch_item& item)
 	fbuf.redraw_framebuffer();
 }
 
-std::string memwatch_set::get_value(const std::string& name)
+text memwatch_set::get_value(const text& name)
 {
 	return watch_set.get(name).get_value();
 }
 
-void memwatch_set::set_multi(std::list<std::pair<std::string, memwatch_item>>& list)
+void memwatch_set::set_multi(std::list<std::pair<text, memwatch_item>>& list)
 {
-	std::map<std::string, memwatch_item> nitems = items;
+	std::map<text, memwatch_item> nitems = items;
 	for(auto& i : list)
 		nitems.insert(i);
 	rebuild(nitems);
@@ -537,9 +537,9 @@ void memwatch_set::set_multi(std::list<std::pair<std::string, memwatch_item>>& l
 	fbuf.redraw_framebuffer();
 }
 
-void memwatch_set::set_multi(std::list<std::pair<std::string, std::string>>& list)
+void memwatch_set::set_multi(std::list<std::pair<text, text>>& list)
 {
-	std::list<std::pair<std::string, memwatch_item>> _list;
+	std::list<std::pair<text, memwatch_item>> _list;
 	for(auto& i: list) {
 		memwatch_item it;
 		it.unserialize(JSON::node(i.second));
@@ -548,9 +548,9 @@ void memwatch_set::set_multi(std::list<std::pair<std::string, std::string>>& lis
 	set_multi(_list);
 }
 
-void memwatch_set::clear_multi(const std::set<std::string>& names)
+void memwatch_set::clear_multi(const std::set<text>& names)
 {
-	std::map<std::string, memwatch_item> nitems = items;
+	std::map<text, memwatch_item> nitems = items;
 	for(auto& i : names)
 		nitems.erase(i);
 	rebuild(nitems);
@@ -564,12 +564,12 @@ void memwatch_set::clear_multi(const std::set<std::string>& names)
 	fbuf.redraw_framebuffer();
 }
 
-void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
+void memwatch_set::rebuild(std::map<text, memwatch_item>& nitems)
 {
 	{
 		memorywatch::set new_set;
-		std::map<std::string, GC::pointer<mathexpr::mathexpr>> vars;
-		auto vars_fn = [&vars](const std::string& n) -> GC::pointer<mathexpr::mathexpr> {
+		std::map<text, GC::pointer<mathexpr::mathexpr>> vars;
+		auto vars_fn = [&vars](const text& n) -> GC::pointer<mathexpr::mathexpr> {
 			if(!vars.count(n))
 				vars[n] = GC::pointer<mathexpr::mathexpr>(GC::obj_tag(),
 					mathexpr::expression_value());
@@ -599,7 +599,7 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 				//Set final callback for list objects (since it wasn't known on creation).
 				auto list_obj = dynamic_cast<memorywatch::output_list*>(rt_printer.as_pointer());
 				if(list_obj)
-					list_obj->set_output([this](const std::string& n, const std::string& v) {
+					list_obj->set_output([this](const text& n, const text& v) {
 						this->watch_output(n, v);
 					});
 
@@ -619,7 +619,7 @@ void memwatch_set::rebuild(std::map<std::string, memwatch_item>& nitems)
 	GC::item::do_gc();
 }
 
-void memwatch_set::watch_output(const std::string& name, const std::string& value)
+void memwatch_set::watch_output(const text& name, const text& value)
 {
 	used_memorywatches[name] = true;
 	window_vars[name] = utf8::to32(value);

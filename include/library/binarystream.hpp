@@ -52,7 +52,7 @@ public:
  * Parameter string: The string to query.
  * Return: The number of bytes needed.
  */
-	size_t stringbytes(const std::string& string);
+	size_t stringbytes(const text& string);
 /**
  * Output a 32-bit number to stream (4 byte).
  *
@@ -66,7 +66,7 @@ public:
  *
  * Parameter string: The number to output.
  */
-	void string(const std::string& string);
+	void string(const text& string);
 /**
  * Output a string without length indication to the stream.
  *
@@ -74,7 +74,7 @@ public:
  *
  * Parameter string: The number to output.
  */
-	void string_implicit(const std::string& string);
+	void string_implicit(const text& string);
 /**
  * Output a octet string without length indication to the stream.
  *
@@ -128,7 +128,7 @@ public:
  *
  * Returns: The internal buffer contents.
  */
-	std::string get();
+	text get();
 private:
 	inline void write(const char* buf, size_t size);
 	int strm;
@@ -191,7 +191,7 @@ public:
  *
  * Returns: The read string.
  */
-	std::string string();
+	text string();
 /**
  * Read a string without explicit length indication, quitting when reaching end of extension substream.
  *
@@ -199,7 +199,7 @@ public:
  *
  * Returns: The read string.
  */
-	std::string string_implicit();
+	text string_implicit();
 /**
  * Read a octet string without explicit length indication, quitting when reaching end of extension substream.
  *

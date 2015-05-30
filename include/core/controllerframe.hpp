@@ -18,6 +18,7 @@
 #include "library/portctrl-data.hpp"
 #include "library/command.hpp"
 #include "library/threads.hpp"
+#include "library/text.hpp"
 
 class project_state;
 class movie_logic;
@@ -200,18 +201,18 @@ public:
  * TODO: Document.
  */
 	bool is_present(unsigned port, unsigned controller) throw();
-	void erase_macro(const std::string& macro);
-	std::set<std::string> enumerate_macro();
-	portctrl::macro& get_macro(const std::string& macro);
-	void set_macro(const std::string& macro, const portctrl::macro& m);
+	void erase_macro(const text& macro);
+	std::set<text> enumerate_macro();
+	portctrl::macro& get_macro(const text& macro);
+	void set_macro(const text& macro, const portctrl::macro& m);
 	void apply_macro(portctrl::frame& f);
-	void rename_macro(const std::string& old, const std::string& newn);
-	std::set<std::string> active_macro_set();
+	void rename_macro(const text& old, const text& newn);
+	std::set<text> active_macro_set();
 	void advance_macros();
-	std::map<std::string, uint64_t> get_macro_frames();
-	void set_macro_frames(const std::map<std::string, uint64_t>& f);
+	std::map<text, uint64_t> get_macro_frames();
+	void set_macro_frames(const std::map<text, uint64_t>& f);
 private:
-	void do_macro(const std::string& a, int mode);
+	void do_macro(const text& a, int mode);
 	struct autofire_info
 	{
 		uint64_t first_frame;
@@ -233,7 +234,7 @@ private:
 	std::map<unsigned, tasinput_info> _tasinput;
 	bool tasinput_enaged;
 	portctrl::frame _committed;
-	std::map<std::string, portctrl::macro> all_macros;
+	std::map<text, portctrl::macro> all_macros;
 	std::list<std::pair<uint64_t, portctrl::macro*>> active_macros;
 	threads::lock macro_lock;
 	project_state& project;
@@ -242,9 +243,9 @@ private:
 	emulator_dispatch& edispatch;
 	status_updater& supdater;
 	command::group& cmd;
-	command::_fnptr<const std::string&> macro_p;
-	command::_fnptr<const std::string&> macro_r;
-	command::_fnptr<const std::string&> macro_t;
+	command::_fnptr<const text&> macro_p;
+	command::_fnptr<const text&> macro_r;
+	command::_fnptr<const text&> macro_t;
 };
 
 #endif

@@ -40,7 +40,7 @@ void moviefile::brief_info::binary_io(int _stream)
 			this->rerecords = rrdata_set::count(c_rrdata);
 		}},{TAG_ROMHASH, [this](binarystream::input& s) {
 			uint8_t n = s.byte();
-			std::string h = s.string_implicit();
+			text h = s.string_implicit();
 			if(n > 2 * ROM_SLOT_COUNT)
 				return;
 			if(n & 1)
@@ -49,7 +49,7 @@ void moviefile::brief_info::binary_io(int _stream)
 				this->hash[n >> 1] = h;
 		}},{TAG_ROMHINT, [this](binarystream::input& s) {
 			uint8_t n = s.byte();
-			std::string h = s.string_implicit();
+			text h = s.string_implicit();
 			if(n > ROM_SLOT_COUNT)
 				return;
 			this->hint[n] = h;
@@ -62,7 +62,7 @@ void moviefile::binary_io(int _stream, rrdata_set& rrd, bool as_state) throw(std
 	binarystream::output out(_stream);
 	out.string(gametype->get_name());
 	moviefile_write_settings<binarystream::output>(out, settings, gametype->get_type().get_settings(),
-		[](binarystream::output& s, const std::string& name, const std::string& value) -> void {
+		[](binarystream::output& s, const text& name, const text& value) -> void {
 			s.byte(0x01);
 			s.string(name);
 			s.string(value);
@@ -179,7 +179,7 @@ void moviefile::binary_io(int _stream, rrdata_set& rrd, bool as_state) throw(std
 	}
 
 	int64_t next_bnum = 0;
-	std::map<std::string, uint64_t> branch_table;
+	std::map<text, uint64_t> branch_table;
 	for(auto& i : branches) {
 		branch_table[i.first] = next_bnum++;
 		out.extension(TAG_BRANCH_NAME, [&i](binarystream::output& s) {
@@ -195,9 +195,9 @@ void moviefile::binary_io(int _stream, rrdata_set& rrd, bool as_state) throw(std
 void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 {
 	binarystream::input in(_stream);
-	std::string tmp = in.string();
-	std::string next_branch;
-	std::map<uint64_t, std::string> branch_table;
+	text tmp = in.string();
+	text next_branch;
+	std::map<uint64_t, text> branch_table;
 	uint64_t next_bnum = 0;
 	try {
 		gametype = &romtype.lookup_sysregion(tmp);
@@ -207,7 +207,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 		throw std::runtime_error("Illegal game type '" + tmp + "'");
 	}
 	while(in.byte()) {
-		std::string name = in.string();
+		text name = in.string();
 		settings[name] = in.string();
 	}
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
@@ -219,8 +219,8 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 		{TAG_ANCHOR_SAVE, [this](binarystream::input& s) {
 			s.blob_implicit(this->anchor_savestate);
 		}},{TAG_AUTHOR, [this](binarystream::input& s) {
-			std::string a = s.string();
-			std::string b = s.string_implicit();
+			text a = s.string();
+			text b = s.string_implicit();
 			this->authors.push_back(std::make_pair(a, b));
 		}},{TAG_CORE_VERSION, [this](binarystream::input& s) {
 			this->coreversion = s.string_implicit();
@@ -241,10 +241,10 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 			branches[next_branch].clear(ports);
 			branches[next_branch].load_binary(s);
 		}},{TAG_MOVIE_SRAM, [this](binarystream::input& s) {
-			std::string a = s.string();
+			text a = s.string();
 			s.blob_implicit(this->movie_sram[a]);
 		}},{TAG_RAMCONTENT, [this](binarystream::input& s) {
-			std::string a = s.string();
+			text a = s.string();
 			s.blob_implicit(this->ramcontent[a]);
 		}},{TAG_MOVIE_TIME, [this](binarystream::input& s) {
 			this->movie_rtc_second = s.number();
@@ -253,7 +253,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 			this->projectid = s.string_implicit();
 		}},{TAG_ROMHASH, [this](binarystream::input& s) {
 			uint8_t n = s.byte();
-			std::string h = s.string_implicit();
+			text h = s.string_implicit();
 			if(n > 2 * ROM_SLOT_COUNT)
 				return;
 			if(n & 1)
@@ -262,7 +262,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 				romimg_sha256[n >> 1] = h;
 		}},{TAG_ROMHINT, [this](binarystream::input& s) {
 			uint8_t n = s.byte();
-			std::string h = s.string_implicit();
+			text h = s.string_implicit();
 			if(n > ROM_SLOT_COUNT)
 				return;
 			namehint[n] = h;
@@ -270,7 +270,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 			s.blob_implicit(this->c_rrdata);
 			this->rerecords = (stringfmt() << rrdata_set::count(c_rrdata)).str();
 		}},{TAG_SAVE_SRAM, [this](binarystream::input& s) {
-			std::string a = s.string();
+			text a = s.string();
 			s.blob_implicit(this->dyn.sram[a]);
 		}},{TAG_SAVESTATE, [this](binarystream::input& s) {
 			this->dyn.save_frame = s.number();
@@ -287,7 +287,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 		}},{TAG_SUBTITLE, [this](binarystream::input& s) {
 			uint64_t f = s.number();
 			uint64_t l = s.number();
-			std::string x = s.string_implicit();
+			text x = s.string_implicit();
 			this->subtitles[moviefile_subtiming(f, l)] = x;
 		}}
 	}, binarystream::null_default);
@@ -295,7 +295,7 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 	create_default_branch(ports);
 }
 
-moviefile_branch_extractor_binary::moviefile_branch_extractor_binary(const std::string& filename)
+moviefile_branch_extractor_binary::moviefile_branch_extractor_binary(const text& filename)
 {
 	s = open(filename.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
 	if(s < 0) {
@@ -308,10 +308,10 @@ moviefile_branch_extractor_binary::~moviefile_branch_extractor_binary()
 {
 }
 
-std::set<std::string> moviefile_branch_extractor_binary::enumerate()
+std::set<text> moviefile_branch_extractor_binary::enumerate()
 {
-	std::set<std::string> r;
-	std::string name;
+	std::set<text> r;
+	text name;
 	if(lseek(s, 5, SEEK_SET) < 0) {
 		int err = errno;
 		(stringfmt() << "Can't read the file: " << strerror(err)).throwex();
@@ -337,9 +337,9 @@ std::set<std::string> moviefile_branch_extractor_binary::enumerate()
 	return r;
 }
 
-void moviefile_branch_extractor_binary::read(const std::string& name, portctrl::frame_vector& v)
+void moviefile_branch_extractor_binary::read(const text& name, portctrl::frame_vector& v)
 {
-	std::string mname;
+	text mname;
 	if(lseek(s, 5, SEEK_SET) < 0) {
 		int err = errno;
 		(stringfmt() << "Can't read the file: " << strerror(err)).throwex();
@@ -374,7 +374,7 @@ void moviefile_branch_extractor_binary::read(const std::string& name, portctrl::
 		(stringfmt() << "Can't find branch '" << name << "' in file.").throwex();
 }
 
-moviefile_sram_extractor_binary::moviefile_sram_extractor_binary(const std::string& filename)
+moviefile_sram_extractor_binary::moviefile_sram_extractor_binary(const text& filename)
 {
 	s = open(filename.c_str(), O_RDONLY | EXTRA_OPENFLAGS);
 	if(s < 0) {
@@ -387,10 +387,10 @@ moviefile_sram_extractor_binary::~moviefile_sram_extractor_binary()
 {
 }
 
-std::set<std::string> moviefile_sram_extractor_binary::enumerate()
+std::set<text> moviefile_sram_extractor_binary::enumerate()
 {
-	std::set<std::string> r;
-	std::string name;
+	std::set<text> r;
+	text name;
 	if(lseek(s, 5, SEEK_SET) < 0) {
 		int err = errno;
 		(stringfmt() << "Can't read the file: " << strerror(err)).throwex();
@@ -414,11 +414,11 @@ std::set<std::string> moviefile_sram_extractor_binary::enumerate()
 	return r;
 }
 
-void moviefile_sram_extractor_binary::read(const std::string& name, std::vector<char>& v)
+void moviefile_sram_extractor_binary::read(const text& name, std::vector<char>& v)
 {
 	//Char and uint8_t are the same representation, right?
 	std::vector<char>* _v = &v;
-	std::string mname = name;
+	text mname = name;
 	if(lseek(s, 5, SEEK_SET) < 0) {
 		int err = errno;
 		(stringfmt() << "Can't read the file: " << strerror(err)).throwex();
@@ -448,7 +448,7 @@ void moviefile_sram_extractor_binary::read(const std::string& name, std::vector<
 				done = true;
 			}
 		}},{TAG_SAVE_SRAM, [this, mname, _v, &done](binarystream::input& s) {
-			std::string sname = s.string();
+			text sname = s.string();
 			if(sname == mname) {
 				//This SRAM.
 				s.blob_implicit(*_v);

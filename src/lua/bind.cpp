@@ -8,7 +8,7 @@ namespace
 {
 	int kbd_bind(lua::state& L, lua::parameters& P)
 	{
-		std::string mod, mask, key, cmd;
+		text mod, mask, key, cmd;
 
 		P(mod, mask, key, cmd);
 
@@ -18,7 +18,7 @@ namespace
 
 	int kbd_unbind(lua::state& L, lua::parameters& P)
 	{
-		std::string mod, mask, key;
+		text mod, mask, key;
 
 		P(mod, mask, key);
 
@@ -29,7 +29,7 @@ namespace
 	int kbd_alias(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		std::string alias, cmds;
+		text alias, cmds;
 
 		P(alias, cmds);
 

@@ -45,14 +45,14 @@ void input_queue::queue(const keypress_info& k) throw(std::bad_alloc)
 	queue_condition.notify_all();
 }
 
-void input_queue::queue(const std::string& c) throw(std::bad_alloc)
+void input_queue::queue(const text& c) throw(std::bad_alloc)
 {
 	threads::alock h(queue_lock);
 	commands.push_back(std::make_pair(nullptr, c));
 	queue_condition.notify_all();
 }
 
-void input_queue::queue(const char* c, const std::string& a) throw(std::bad_alloc)
+void input_queue::queue(const char* c, const text& a) throw(std::bad_alloc)
 {
 	threads::alock h(queue_lock);
 	commands.push_back(std::make_pair(c, a));

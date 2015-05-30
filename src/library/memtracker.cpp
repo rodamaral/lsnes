@@ -1,9 +1,10 @@
+#include "text.hpp"
 #include "memtracker.hpp"
 
 void memtracker::operator()(const char* category, ssize_t change)
 {
 	if(invalid) return;
-	std::string cat = category;
+	cstr_container cat(category);
 	threads::alock h(mut);
 	if(change > 0) {
 		if(data.count(cat))
@@ -21,17 +22,19 @@ void memtracker::operator()(const char* category, ssize_t change)
 void memtracker::reset(const char* category, size_t value)
 {
 	if(invalid) return;
-	std::string cat = category;
+	cstr_container cat(category);
 	threads::alock h(mut);
 	data[cat] = value;
 }
 
-std::map<std::string, size_t> memtracker::report()
+std::map<text, size_t> memtracker::report()
 {
-	std::map<std::string, size_t> ret;
+	std::map<text, size_t> ret;
 	if(!invalid) {
 		threads::alock h(mut);
-		ret = data;
+		for(auto& i : data) {
+			ret.insert(std::make_pair(text(i.first.as_str()), i.second));
+		}
 	}
 	return ret;
 }

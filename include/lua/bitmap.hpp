@@ -25,7 +25,7 @@ struct lua_palette
 	}
 	~lua_palette();
 	threads::lock palette_mutex;
-	std::string print();
+	text print();
 	static int create(lua::state& L, lua::parameters& P);
 	static int load(lua::state& L, lua::parameters& P);
 	static int load_str(lua::state& L, lua::parameters& P);
@@ -49,7 +49,7 @@ struct lua_bitmap
 	size_t height;
 	uint16_t* pixels;
 	std::vector<char> save_png(const lua_palette& pal) const;
-	std::string print();
+	text print();
 	static int create(lua::state& L, lua::parameters& P);
 	template<bool outside, bool clip> int draw(lua::state& L, lua::parameters& P);
 	int pset(lua::state& L, lua::parameters& P);
@@ -73,7 +73,7 @@ struct lua_dbitmap
 	size_t height;
 	framebuffer::color* pixels;
 	std::vector<char> save_png() const;
-	std::string print();
+	text print();
 	static int create(lua::state& L, lua::parameters& P);
 	template<bool outside, bool clip> int draw(lua::state& L, lua::parameters& P);
 	int pset(lua::state& L, lua::parameters& P);
@@ -94,7 +94,7 @@ struct lua_loaded_bitmap
 	std::vector<int64_t> bitmap;
 	std::vector<int64_t> palette;
 	static struct lua_loaded_bitmap load(std::istream& stream);
-	static struct lua_loaded_bitmap load(const std::string& name);
+	static struct lua_loaded_bitmap load(const text& name);
 	template<bool png> static int load(lua::state& L, lua::parameters& P);
 	template<bool png> static int load_str(lua::state& L, lua::parameters& P);
 };

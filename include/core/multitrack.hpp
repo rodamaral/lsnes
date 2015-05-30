@@ -32,7 +32,7 @@ public:
 private:
 	void do_mt_fwd();
 	void do_mt_bw();
-	void do_mt_set(const std::string& args);
+	void do_mt_set(const text& args);
 	threads::lock mlock;
 	bool enabled;
 	std::map<std::pair<unsigned, unsigned>, state> controllerstate;
@@ -44,7 +44,7 @@ private:
 	command::group& cmd;
 	command::_fnptr<> mt_f;
 	command::_fnptr<> mt_b;
-	command::_fnptr<const std::string&> mt_s;
+	command::_fnptr<const text&> mt_s;
 };
 
 #endif

@@ -30,9 +30,9 @@ slotinfo_cache::slotinfo_cache(movie_logic& _mlogic, command::group& _cmd)
 {
 }
 
-std::string slotinfo_cache::get(const std::string& _filename)
+text slotinfo_cache::get(const text& _filename)
 {
-	std::string filename = resolve_relative_path(_filename);
+	text filename = resolve_relative_path(_filename);
 	if(!cache.count(filename)) {
 		std::ostringstream out;
 		try {
@@ -51,7 +51,7 @@ std::string slotinfo_cache::get(const std::string& _filename)
 	return cache[filename];
 }
 
-void slotinfo_cache::flush(const std::string& _filename)
+void slotinfo_cache::flush(const text& _filename)
 {
 	cache.erase(resolve_relative_path(_filename));
 }
@@ -130,7 +130,7 @@ void status_updater::update()
 		try {
 			_status.saveslot_valid = true;
 			int tmp = -1;
-			std::string sfilen = translate_name_mprefix(jukebox.get_slot_name(), tmp, -1);
+			text sfilen = translate_name_mprefix(jukebox.get_slot_name(), tmp, -1);
 			_status.saveslot = jukebox.get_slot() + 1;
 			_status.slotinfo = utf8::to32(slotcache.get(sfilen));
 		} catch(...) {
@@ -139,8 +139,7 @@ void status_updater::update()
 		_status.branch_valid = (p != NULL);
 		if(p) _status.branch = utf8::to32(p->get_branch_string());
 
-		std::string cur_branch = mlogic ? mlogic.get_mfile().current_branch() :
-			"";
+		text cur_branch = mlogic ? mlogic.get_mfile().current_branch() : "";
 		_status.mbranch_valid = (cur_branch != "");
 		_status.mbranch = utf8::to32(cur_branch);
 
@@ -165,7 +164,7 @@ void status_updater::update()
 			mss << i;
 			mfirst = false;
 		}
-		_status.macros = utf8::to32(mss.str());
+		_status.macros = text(mss.str());
 
 		portctrl::frame c;
 		if(!mteditor.any_records())

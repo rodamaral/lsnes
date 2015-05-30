@@ -62,7 +62,7 @@ loaded_rom::loaded_rom(rom_image_handle _image) throw(std::bad_alloc, std::runti
 	region = &image->get_region();
 }
 
-void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
+void loaded_rom::load(std::map<text, text>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	auto& core = CORE();
@@ -108,10 +108,10 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	core.dispatch->core_changed(old_type != current_rom_type);
 }
 
-std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)
+std::map<text, std::vector<char>> load_sram_commandline(const std::vector<text>& cmdline)
 	throw(std::bad_alloc, std::runtime_error)
 {
-	std::map<std::string, std::vector<char>> ret;
+	std::map<text, std::vector<char>> ret;
 	regex_results opt;
 	for(auto i : cmdline) {
 		if(opt = regex("--continue=(.+)", i)) {

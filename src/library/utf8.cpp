@@ -160,6 +160,18 @@ size_t strlen(const std::string& str) throw()
 	return r;
 }
 
+std::pair<size_t,size_t> strlen_c(const char* str) throw()
+{
+	uint16_t s = initial_state;
+	std::pair<size_t,size_t> r = std::make_pair(0, 0);
+	for(r.second = 0; str[r.second]; r.second++)
+		if(parse_byte(static_cast<uint8_t>(str[r.second]), s) >= 0)
+			r.first++;
+	if(parse_byte(-1, s) >= 0)
+		r.first++;
+	return r;
+}
+
 std::u32string to32(const std::string& utf8)
 {
 	std::u32string x;
@@ -168,10 +180,11 @@ std::u32string to32(const std::string& utf8)
 	return x;
 }
 
-std::string to8(const std::u32string& utf32)
+template<typename T> std::string to8i(T itr, T end)
 {
 	std::ostringstream s;
-	for(auto i : utf32) {
+	while(itr != end) {
+		char32_t i = *itr;
 		if(i < 0x80)
 			s << (unsigned char)i;
 		else if(i < 0x800)
@@ -183,9 +196,21 @@ std::string to8(const std::u32string& utf32)
 			s << (unsigned char)(0xF0 + (i >> 18)) << (unsigned char)(0x80 + ((i >> 12) & 0x3F))
 				<< (unsigned char)(0x80 + ((i >> 6) & 0x3F))
 				<< (unsigned char)(0x80 + (i & 0x3F));
+		++itr;
 	}
 	return s.str();
 }
+
+std::string to8(const std::u32string& utf32)
+{
+	return to8i(utf32.begin(), utf32.end());
+}
+
+std::string to8(const char32_t* ptr, size_t len)
+{
+	return to8i(ptr, ptr + len);
+}
+
 }
 
 #ifdef TEST_UTF8

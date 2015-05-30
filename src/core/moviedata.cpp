@@ -26,7 +26,7 @@
 #include <iomanip>
 #include <fstream>
 
-std::string last_save;
+text last_save;
 
 namespace
 {
@@ -35,10 +35,10 @@ namespace
 	settingvar::supervariable<settingvar::model_bool<settingvar::yes_no>> SET_readonly_load_preserves(
 		lsnes_setgrp, "preserve_on_readonly_load", "Movie‣Loading‣Preserve on readonly load", true);
 	threads::lock mprefix_lock;
-	std::string mprefix;
+	text mprefix;
 	bool mprefix_valid;
 
-	std::string get_mprefix()
+	text get_mprefix()
 	{
 		threads::alock h(mprefix_lock);
 		if(!mprefix_valid)
@@ -47,14 +47,14 @@ namespace
 			return mprefix + "-";
 	}
 
-	command::fnptr<const std::string&> test4(lsnes_cmds, CMOVIEDATA::panic,
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<const text&> test4(lsnes_cmds, CMOVIEDATA::panic,
+		[](const text& args) throw(std::bad_alloc, std::runtime_error) {
 		auto& core = CORE();
 		if(*core.mlogic) emerg_save_movie(core.mlogic->get_mfile(), core.mlogic->get_rrdata());
 	});
 
-	command::fnptr<const std::string&> CMD_dump_coresave(lsnes_cmds, CMOVIEDATA::dumpcore,
-		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<const text&> CMD_dump_coresave(lsnes_cmds, CMOVIEDATA::dumpcore,
+		[](const text& name) throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			auto x = core.rom->save_core_state();
 			x.resize(x.size() - 32);
@@ -64,8 +64,8 @@ namespace
 			messages << "Saved core state to " << name << std::endl;
 		});
 
-	bool warn_hash_mismatch(const std::string& mhash, const fileimage::image& slot,
-		const std::string& name, bool fatal)
+	bool warn_hash_mismatch(const text& mhash, const fileimage::image& slot,
+		const text& name, bool fatal)
 	{
 		if(mhash == slot.sha_256.read())
 			return true;
@@ -83,7 +83,7 @@ namespace
 		}
 	}
 
-	void set_mprefix(const std::string& pfx)
+	void set_mprefix(const text& pfx)
 	{
 		auto& core = CORE();
 		{
@@ -94,14 +94,13 @@ namespace
 		core.supdater->update();
 	}
 
-	std::string get_mprefix_for_project(const std::string& prjid)
+	text get_mprefix_for_project(const text& prjid)
 	{
-		std::string filename = get_config_path() + "/" + safe_filename(prjid) + ".pfx";
+		text filename = get_config_path() + "/" + safe_filename(prjid) + ".pfx";
 		std::ifstream strm(filename);
 		if(!strm)
 			return "";
-		std::string pfx;
-		std::getline(strm, pfx);
+		text pfx = text::getline(strm);
 		return strip_CR(pfx);
 	}
 
@@ -132,27 +131,27 @@ namespace
 	} lsnes_pflag_handler;
 }
 
-std::string get_mprefix_for_project()
+text get_mprefix_for_project()
 {
 	auto& core = CORE();
 	return get_mprefix_for_project(*core.mlogic ? core.mlogic->get_mfile().projectid : "");
 }
 
-void set_mprefix_for_project(const std::string& prjid, const std::string& pfx)
+void set_mprefix_for_project(const text& prjid, const text& pfx)
 {
-	std::string filename = get_config_path() + "/" + safe_filename(prjid) + ".pfx";
+	text filename = get_config_path() + "/" + safe_filename(prjid) + ".pfx";
 	std::ofstream strm(filename);
 	strm << pfx << std::endl;
 }
 
-void set_mprefix_for_project(const std::string& pfx)
+void set_mprefix_for_project(const text& pfx)
 {
 	auto& core = CORE();
 	set_mprefix_for_project(*core.mlogic ? core.mlogic->get_mfile().projectid : "", pfx);
 	set_mprefix(pfx);
 }
 
-std::string translate_name_mprefix(std::string original, int& binary, int save)
+text translate_name_mprefix(text original, int& binary, int save)
 {
 	auto& core = CORE();
 	auto p = core.project->get();
@@ -162,8 +161,8 @@ std::string translate_name_mprefix(std::string original, int& binary, int save)
 			binary = core.jukebox->save_binary() ? 1 : 0;
 		if(p) {
 			uint64_t branch = p->get_current_branch();
-			std::string branch_str;
-			std::string filename;
+			text branch_str;
+			text filename;
 			if(branch) branch_str = (stringfmt() << "--" << branch).str();
 			filename = p->directory + "/" + p->prefix + "-" + r[1] + branch_str + ".lss";
 			while(save < 0 && branch) {
@@ -175,7 +174,7 @@ std::string translate_name_mprefix(std::string original, int& binary, int save)
 			}
 			return filename;
 		} else {
-			std::string pprf = core.setcache->get("slotpath") + "/";
+			text pprf = core.setcache->get("slotpath") + "/";
 			return pprf + get_mprefix() + r[1] + ".lsmv";
 		}
 	} else {
@@ -186,13 +185,13 @@ std::string translate_name_mprefix(std::string original, int& binary, int save)
 	}
 }
 
-std::pair<std::string, std::string> split_author(const std::string& author) throw(std::bad_alloc,
+std::pair<text, text> split_author(const text& author) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	std::string _author = author;
-	std::string fullname;
-	std::string nickname;
-	size_t split = _author.find_first_of("|");
+	text _author = author;
+	text fullname;
+	text nickname;
+	size_t split = _author.find_first_of(U"|");
 	if(split >= _author.length()) {
 		fullname = _author;
 	} else {
@@ -205,7 +204,7 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 }
 
 //Resolve relative path.
-std::string resolve_relative_path(const std::string& path)
+text resolve_relative_path(const text& path)
 {
 	try {
 		return directory::absolute_path(path);
@@ -215,7 +214,7 @@ std::string resolve_relative_path(const std::string& path)
 }
 
 //Save state.
-void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc,
+void do_save_state(const text& filename, int binary) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	auto& core = CORE();
@@ -225,7 +224,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		return;
 	}
 	auto& target = core.mlogic->get_mfile();
-	std::string filename2 = translate_name_mprefix(filename, binary, 1);
+	text filename2 = translate_name_mprefix(filename, binary, 1);
 	core.lua2->callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = framerate_regulator::get_utime();
@@ -251,14 +250,14 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		target.save(filename2, SET_savecompression(*core.settings), binary > 0,
 			core.mlogic->get_rrdata(), true);
 		uint64_t took = framerate_regulator::get_utime() - origtime;
-		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
+		text kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved state " << kind << " '" << filename2 << "' in " << took << " microseconds."
 			<< std::endl;
 		core.lua2->callback_post_save(filename2, true);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
-		platform::error_message(std::string("Save failed: ") + e.what());
+		platform::error_message(text("Save failed: ") + e.what());
 		messages << "Save failed: " << e.what() << std::endl;
 		core.lua2->callback_err_save(filename2);
 	}
@@ -271,7 +270,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 }
 
 //Save movie.
-void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc, std::runtime_error)
+void do_save_movie(const text& filename, int binary) throw(std::bad_alloc, std::runtime_error)
 {
 	auto& core = CORE();
 	if(!*core.mlogic || !core.mlogic->get_mfile().gametype) {
@@ -280,7 +279,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 		return;
 	}
 	auto& target = core.mlogic->get_mfile();
-	std::string filename2 = translate_name_mprefix(filename, binary, 0);
+	text filename2 = translate_name_mprefix(filename, binary, 0);
 	core.lua2->callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = framerate_regulator::get_utime();
@@ -292,14 +291,14 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 		target.save(filename2, SET_savecompression(*core.settings), binary > 0,
 			core.mlogic->get_rrdata(), false);
 		uint64_t took = framerate_regulator::get_utime() - origtime;
-		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
+		text kind = (binary > 0) ? "(binary format)" : "(zip format)";
 		messages << "Saved movie " << kind << " '" << filename2 << "' in " << took << " microseconds."
 			<< std::endl;
 		core.lua2->callback_post_save(filename2, false);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		platform::error_message(std::string("Save failed: ") + e.what());
+		platform::error_message(text("Save failed: ") + e.what());
 		messages << "Save failed: " << e.what() << std::endl;
 		core.lua2->callback_err_save(filename2);
 	}
@@ -330,7 +329,7 @@ namespace
 		}
 	}
 
-	std::string format_length(uint64_t mlength)
+	text format_length(uint64_t mlength)
 	{
 		std::ostringstream x;
 		if(mlength >= 3600000ULL) {
@@ -350,9 +349,9 @@ namespace
 		if(!rom.isnull())
 			messages << "ROM Type " << rom.get_hname() << " region " << rom.region_get_hname()
 				<< std::endl;
-		std::string len, rerecs;
+		text len, rerecs;
 		len = format_length(mov.get_movie_length());
-		std::string rerecords = mov.dyn.save_frame ? (stringfmt() << rrd.count()).str() : mov.rerecords;
+		text rerecords = mov.dyn.save_frame ? text((stringfmt() << rrd.count()).str()) : mov.rerecords;
 		messages << "Rerecords " << rerecords << " length " << format_length(mov.get_movie_length())
 			<< " (" << mov.get_frame_count() << " frames)" << std::endl;
 		if(mov.gamename != "")
@@ -367,11 +366,11 @@ namespace
 					<< mov.authors[i].second << ")" << std::endl;
 	}
 
-	void warn_coretype(const std::string& mov_core, loaded_rom& against, bool loadstate)
+	void warn_coretype(const text& mov_core, loaded_rom& against, bool loadstate)
 	{
 		if(against.isnull())
 			return;
-		std::string rom_core = against.get_core_identifier();
+		text rom_core = against.get_core_identifier();
 		if(mov_core == rom_core)
 			return;
 		std::ostringstream x;
@@ -444,7 +443,7 @@ namespace
 				populate_volatile_ram(_movie, vmas);
 			}
 			core.rom->set_pflag(0);
-			core.controls->set_macro_frames(std::map<std::string, uint64_t>());
+			core.controls->set_macro_frames(std::map<text, uint64_t>());
 		}
 	}
 }
@@ -702,7 +701,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 		auto& newm = _movie.branches;
 		auto oldd = core.mlogic->get_mfile().input;
 		auto newd = _movie.input;
-		std::string dflt_name;
+		text dflt_name;
 		//What was the old default name?
 		for(auto& i : oldm)
 			if(&i.second == oldd)
@@ -795,7 +794,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 }
 
 
-void try_request_rom(const std::string& moviefile)
+void try_request_rom(const text& moviefile)
 {
 	auto& core = CORE();
 	moviefile::brief_info info(moviefile);
@@ -840,11 +839,11 @@ void try_request_rom(const std::string& moviefile)
 }
 
 //Load state
-bool do_load_state(const std::string& filename, int lmode)
+bool do_load_state(const text& filename, int lmode)
 {
 	auto& core = CORE();
 	int tmp = -1;
-	std::string filename2 = translate_name_mprefix(filename, tmp, -1);
+	text filename2 = translate_name_mprefix(filename, tmp, -1);
 	uint64_t origtime = framerate_regulator::get_utime();
 	core.lua2->callback_pre_load(filename2);
 	struct moviefile* mfile = NULL;
@@ -856,7 +855,7 @@ bool do_load_state(const std::string& filename, int lmode)
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		platform::error_message(std::string("Can't read movie/savestate: ") + e.what());
+		platform::error_message(text("Can't read movie/savestate: ") + e.what());
 		messages << "Can't read movie/savestate '" << filename2 << "': " << e.what() << std::endl;
 		core.lua2->callback_err_load(filename2);
 		return false;
@@ -871,7 +870,7 @@ bool do_load_state(const std::string& filename, int lmode)
 	} catch(std::exception& e) {
 		if(!used)
 			delete mfile;
-		platform::error_message(std::string("Can't load movie/savestate: ") + e.what());
+		platform::error_message(text("Can't load movie/savestate: ") + e.what());
 		messages << "Can't load movie/savestate '" << filename2 << "': " << e.what() << std::endl;
 		core.lua2->callback_err_load(filename2);
 		return false;
@@ -902,7 +901,7 @@ rrdata_set::instance rrdata::operator()()
 	return next++;
 }
 
-std::string rrdata::filename(const std::string& projectid)
+text rrdata::filename(const text& projectid)
 {
 	return get_config_path() + "/" + projectid + ".rr";
 }

@@ -27,7 +27,7 @@ extern lua::class_group lua_class_fileio;
 void push_keygroup_parameters(lua::state& L, keyboard::key& p);
 
 void lua_renderq_run(lua::render_context* ctx, void* synchronous_paint_ctx);
-uint64_t lua_get_vmabase(const std::string& vma);
+uint64_t lua_get_vmabase(const text& vma);
 uint64_t lua_get_read_address(lua::parameters& P);
 
 #endif

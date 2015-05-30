@@ -16,8 +16,8 @@ namespace
 {
 	portctrl::type_set dummytypes;
 
-	command::fnptr<const std::string&> macro_test(lsnes_cmds, CMACRO::test,
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<const text&> macro_test(lsnes_cmds, CMACRO::test,
+		[](const text& args) throw(std::bad_alloc, std::runtime_error) {
 			auto& core = CORE();
 			regex_results r = regex("([0-9]+)[ \t](.*)", args);
 			if(!r) {
@@ -52,9 +52,9 @@ controller_state::controller_state(project_state& _project, movie_logic& _mlogic
 	emulator_dispatch& _dispatch, status_updater& _supdater, command::group& _cmd) throw()
 	: project(_project), mlogic(_mlogic), buttons(_buttons), edispatch(_dispatch), supdater(_supdater),
 	cmd(_cmd),
-	macro_p(cmd, CMACRO::p, [this](const std::string& a) { this->do_macro(a, 5); }),
-	macro_r(cmd, CMACRO::r, [this](const std::string& a) { this->do_macro(a, 2); }),
-	macro_t(cmd, CMACRO::t, [this](const std::string& a) { this->do_macro(a, 7); })
+	macro_p(cmd, CMACRO::p, [this](const text& a) { this->do_macro(a, 5); }),
+	macro_r(cmd, CMACRO::r, [this](const text& a) { this->do_macro(a, 2); }),
+	macro_t(cmd, CMACRO::t, [this](const text& a) { this->do_macro(a, 7); })
 {
 	types = &dummytypes;
 	tasinput_enaged = false;
@@ -249,7 +249,7 @@ bool controller_state::is_present(unsigned port, unsigned controller) throw()
 	return _input.is_present(port, controller);
 }
 
-void controller_state::erase_macro(const std::string& macro)
+void controller_state::erase_macro(const text& macro)
 {
 	{
 		threads::alock h(macro_lock);
@@ -272,16 +272,16 @@ void controller_state::erase_macro(const std::string& macro)
 	buttons.load(*this);
 }
 
-std::set<std::string> controller_state::enumerate_macro()
+std::set<text> controller_state::enumerate_macro()
 {
 	threads::alock h(macro_lock);
-	std::set<std::string> r;
+	std::set<text> r;
 	for(auto i : all_macros)
 		r.insert(i.first);
 	return r;
 }
 
-portctrl::macro& controller_state::get_macro(const std::string& macro)
+portctrl::macro& controller_state::get_macro(const text& macro)
 {
 	threads::alock h(macro_lock);
 	if(!all_macros.count(macro))
@@ -289,7 +289,7 @@ portctrl::macro& controller_state::get_macro(const std::string& macro)
 	return all_macros[macro];
 }
 
-void controller_state::set_macro(const std::string& macro, const portctrl::macro& m)
+void controller_state::set_macro(const text& macro, const portctrl::macro& m)
 {
 	{
 		threads::alock h(macro_lock);
@@ -326,10 +326,10 @@ void controller_state::advance_macros()
 		i.first++;
 }
 
-std::map<std::string, uint64_t> controller_state::get_macro_frames()
+std::map<text, uint64_t> controller_state::get_macro_frames()
 {
 	threads::alock h(macro_lock);
-	std::map<std::string, uint64_t> r;
+	std::map<text, uint64_t> r;
 	for(auto i : active_macros) {
 		for(auto& j : all_macros)
 			if(i.second == &j.second) {
@@ -339,7 +339,7 @@ std::map<std::string, uint64_t> controller_state::get_macro_frames()
 	return r;
 }
 
-void controller_state::set_macro_frames(const std::map<std::string, uint64_t>& f)
+void controller_state::set_macro_frames(const std::map<text, uint64_t>& f)
 {
 	threads::alock h(macro_lock);
 	std::list<std::pair<uint64_t, portctrl::macro*>> new_active_macros;
@@ -351,7 +351,7 @@ void controller_state::set_macro_frames(const std::map<std::string, uint64_t>& f
 	std::swap(active_macros, new_active_macros);
 }
 
-void controller_state::rename_macro(const std::string& old, const std::string& newn)
+void controller_state::rename_macro(const text& old, const text& newn)
 {
 	{
 		threads::alock h(macro_lock);
@@ -379,7 +379,7 @@ void controller_state::rename_macro(const std::string& old, const std::string& n
 	buttons.load(*this);
 }
 
-void controller_state::do_macro(const std::string& a, int mode) {
+void controller_state::do_macro(const text& a, int mode) {
 	{
 		threads::alock h(macro_lock);
 		if(!all_macros.count(a)) {
@@ -400,10 +400,10 @@ end:
 	edispatch.status_update();
 }
 
-std::set<std::string> controller_state::active_macro_set()
+std::set<text> controller_state::active_macro_set()
 {
 	threads::alock h(macro_lock);
-	std::set<std::string> r;
+	std::set<text> r;
 	for(auto i : active_macros) {
 		for(auto& j : all_macros)
 			if(i.second == &j.second) {

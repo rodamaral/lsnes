@@ -30,19 +30,18 @@
 #define SAVE_STATE 0
 #define SAVE_MOVIE 1
 
-std::string resolve_relative_path(const std::string& path);
-std::pair<std::string, std::string> split_author(const std::string& author) throw(std::bad_alloc,
-	std::runtime_error);
+text resolve_relative_path(const text& path);
+std::pair<text, text> split_author(const text& author) throw(std::bad_alloc, std::runtime_error);
 
-void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc, std::runtime_error);
-void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc, std::runtime_error);
+void do_save_state(const text& filename, int binary) throw(std::bad_alloc, std::runtime_error);
+void do_save_movie(const text& filename, int binary) throw(std::bad_alloc, std::runtime_error);
 void do_load_rom() throw(std::bad_alloc, std::runtime_error);
 void do_load_rewind() throw(std::bad_alloc, std::runtime_error);
 void do_load_state(struct moviefile& _movie, int lmode, bool& used);
-bool do_load_state(const std::string& filename, int lmode);
-std::string translate_name_mprefix(std::string original, int& binary, int save);
+bool do_load_state(const text& filename, int lmode);
+text translate_name_mprefix(text original, int& binary, int save);
 
-extern std::string last_save;
+extern text last_save;
 
 /**
  * Restore the actual core state from quicksave. Only call in rewind callback.
@@ -53,16 +52,16 @@ extern std::string last_save;
  */
 void mainloop_restore_state(const dynamic_state& state);
 
-std::string get_mprefix_for_project();
-void set_mprefix_for_project(const std::string& pfx);
-void set_mprefix_for_project(const std::string& prjid, const std::string& pfx);
+text get_mprefix_for_project();
+void set_mprefix_for_project(const text& pfx);
+void set_mprefix_for_project(const text& prjid, const text& pfx);
 
 class rrdata
 {
 public:
 	rrdata();
 	rrdata_set::instance operator()();
-	static std::string filename(const std::string& projectid);
+	static text filename(const text& projectid);
 private:
 	bool init;
 	rrdata_set::instance next;

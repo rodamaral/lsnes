@@ -14,8 +14,8 @@ class emulator_instance;
 class projects_menu : public wxMenu
 {
 public:
-	projects_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high, const std::string& cfg,
-		std::function<void(const std::string& id)> cb);
+	projects_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high, const text& cfg,
+		std::function<void(const text& id)> cb);
 	~projects_menu();
 	void on_select(wxCommandEvent& e);
 	void update();
@@ -36,7 +36,7 @@ private:
 	int wxid_range_high;
 	std::map<int, wxMenuItem*> items;
 	std::map<int, recentfiles::namedobj> entries;
-	std::function<void(std::string id)> selected_cb;
+	std::function<void(text id)> selected_cb;
 	recentfiles::set<recentfiles::namedobj> rfiles;
 };
 

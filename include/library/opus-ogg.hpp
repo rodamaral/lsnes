@@ -4,6 +4,7 @@
 #include <functional>
 #include <cstdint>
 #include "ogg.hpp"
+#include "text.hpp"
 
 namespace opus
 {
@@ -42,8 +43,8 @@ struct ogg_header
  */
 struct ogg_tags
 {
-	std::string vendor;
-	std::vector<std::string> comments;
+	text vendor;
+	std::vector<text> comments;
 /**
  * Parse Ogg packet as OggOpus comment.
  *

@@ -7,35 +7,41 @@
 
 const char* hexes = "0123456789abcdef";
 
-std::string quote_c_string(const std::string& raw)
+text quote_c_string(const text& raw)
 {
 	std::ostringstream out;
 	out << "\"";
-	for(auto i : raw) {
-		unsigned char ch = i;
-		if(ch == '\n')
+	for(size_t i = 0; i < raw.length(); i++) {
+		char32_t ch = raw[i];
+		if(ch == 10)		//Linefeed.
 			out << "\\n";
-		else if(ch == '\"')
+		else if(ch == 34)	//Quote
 			out << "\\\"";
-		else if(ch == '\\')
+		else if(ch == 92)	//Backslash
 			out << "\\\\";
-		else if(ch < 32 || ch == 127)
+		else if(ch < 32 || ch == 127)	//Controls or DEL.
 			out << "\\x" << hexes[ch / 16] << hexes[ch % 16];
-		else
+		else if(ch >= 128 && ch < 160) {
+			//The contination range is 80-BF, so this is right.
+			out << "\\xC2\\x" << hexes[ch / 16] << hexes[ch % 16];
+		} else {
+			char buf[4] = {0};
+			raw.output_utf8_fragment(i, buf, 4);
 			out << ch;
+		}
 	}
 	out << "\"";
 	return out.str();
 }
 
-void process_command_inverse(JSON::node& n, std::string name, std::ostream& imp)
+void process_command_inverse(JSON::node& n, text name, std::ostream& imp)
 {
 	if(name == "__mod" || n.index_count() < 4)
 		return;
 	auto& inv = n.index(3);
 	for(auto i = inv.begin(); i != inv.end(); i++) {
-		std::string args = i.key8();
-		std::string desc = i->as_string8();
+		text args = i.key();
+		text desc = i->as_string();
 		if(args != "")
 			imp << "\t" << quote_c_string(name + " " + args) << ", " << quote_c_string(desc) << ","
 				<< std::endl;
@@ -44,7 +50,7 @@ void process_command_inverse(JSON::node& n, std::string name, std::ostream& imp)
 	}
 }
 
-bool is_crap_filename(const std::string& arg)
+bool is_crap_filename(const text& arg)
 {
 	if(arg.length() >= 4 && arg.substr(arg.length() - 4) == ".exe") return true;
 	if(arg.length() >= 9 && arg.substr(arg.length() - 9) == "/mkstubsi") return true;
@@ -73,7 +79,7 @@ int main(int argc, char** argv)
 		}
 		JSON::node n(in_json);
 		for(auto j = n.begin(); j != n.end(); j++)
-			process_command_inverse(*j, j.key8(), impl);
+			process_command_inverse(*j, j.key(), impl);
 	}
 
 	impl << "\t0\n};" << std::endl;

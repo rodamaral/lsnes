@@ -13,7 +13,7 @@
 
 namespace
 {
-	std::string luavalue_to_string(lua::state& L, int index, std::set<const void*>& printed, bool quote)
+	text luavalue_to_string(lua::state& L, int index, std::set<const void*>& printed, bool quote)
 	{
 		switch(L.type(index)) {
 		case LUA_TNONE:
@@ -32,9 +32,9 @@ namespace
 			size_t len;
 			tmp2 = L.tolstring(index, &len);
 			if(quote)
-				return "\"" + std::string(tmp2, tmp2 + len) + "\"";
+				return "\"" + text(tmp2, len) + "\"";
 			else
-				return std::string(tmp2, tmp2 + len);
+				return text(tmp2, len);
 		}
 		case LUA_TLIGHTUSERDATA:
 			return (stringfmt() << "Lightuserdata:" << L.touserdata(index)).str();
@@ -84,19 +84,19 @@ namespace
 	int tostringx(lua::state& L, lua::parameters& P)
 	{
 		std::set<const void*> tmp2;
-		std::string y = luavalue_to_string(L, 1, tmp2, false);
+		text y = luavalue_to_string(L, 1, tmp2, false);
 		L.pushlstring(y);
 		return 1;
 	}
 
 	int print2(lua::state& L, lua::parameters& P)
 	{
-		std::string toprint;
+		text toprint;
 		bool first = true;
 		while(P.more()) {
 			int i = P.skip();
 			std::set<const void*> tmp2;
-			std::string tmp = luavalue_to_string(L, i, tmp2, false);
+			text tmp = luavalue_to_string(L, i, tmp2, false);
 			if(first)
 				toprint = tmp;
 			else
@@ -109,7 +109,7 @@ namespace
 
 	int exec(lua::state& L, lua::parameters& P)
 	{
-		std::string text;
+		text text;
 
 		P(text);
 
@@ -119,7 +119,7 @@ namespace
 
 	int lookup_class(lua::state& L, lua::parameters& P)
 	{
-		std::string clazz;
+		text clazz;
 
 		P(clazz);
 
@@ -233,7 +233,7 @@ namespace
 	int lsnes_features(lua::state& L, lua::parameters& P)
 	{
 		bool ok = false;
-		std::string arg;
+		text arg;
 		P(arg);
 		if(arg == "text-halos") ok = true;
 		L.pushboolean(ok);

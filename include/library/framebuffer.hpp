@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include "framebuffer-pixfmt.hpp"
+#include "text.hpp"
 #include "threads.hpp"
 #include "memtracker.hpp"
 
@@ -141,7 +142,7 @@ struct raw
  * parameter file: The filename to save to.
  * throws std::runtime_error: Can't save the PNG.
  */
-	void save_png(const std::string& file) throw(std::bad_alloc, std::runtime_error);
+	void save_png(const text& file) throw(std::bad_alloc, std::runtime_error);
 /**
  * Get width.
  *
@@ -422,8 +423,8 @@ struct color
 		set_palette(default_shift_r << 1, default_shift_g << 1, default_shift_b << 1, true);
 		//std::cerr << "Color " << color << " -> hi=" << hi << " lo=" << lo << " inv=" << inv << std::endl;
 	}
-	color(const std::string& color) throw(std::bad_alloc, std::runtime_error);
-	static std::string stringify(int64_t number);
+	color(const text& color) throw(std::bad_alloc, std::runtime_error);
+	static text stringify(int64_t number);
 	void set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw();
 	template<bool X> void set_palette(struct fb<X>& s) throw()
 	{
@@ -470,7 +471,7 @@ int64_t color_adjust_lightness(int64_t color, double adjust);
  */
 struct basecolor
 {
-	basecolor(const std::string& name, int64_t value);
+	basecolor(const text& name, int64_t value);
 };
 
 /**
@@ -478,7 +479,7 @@ struct basecolor
  */
 struct color_mod
 {
-	color_mod(const std::string& name, std::function<void(int64_t&)> fn);
+	color_mod(const text& name, std::function<void(int64_t&)> fn);
 };
 
 /**
@@ -540,7 +541,7 @@ struct font
  * Parameter string: The string to get metrics of.
  * Returns: A pair. First element is width of string, the second is height of string.
  */
-	std::pair<size_t, size_t> get_metrics(const std::string& string, uint32_t xalign, bool xdbl, bool ydbl)
+	std::pair<size_t, size_t> get_metrics(const text& string, uint32_t xalign, bool xdbl, bool ydbl)
 		throw();
 /**
  * Layout a string.
@@ -548,14 +549,14 @@ struct font
  * Parameter string: The string to get layout of.
  * Returns: String layout.
  */
-	std::vector<layout> dolayout(const std::string& string) throw(std::bad_alloc);
+	std::vector<layout> dolayout(const text& string) throw(std::bad_alloc);
 /**
  * Get width of string.
  *
  * Parameter string: The string to get width of.
  * Returns: The width.
  */
-	uint32_t get_width(const std::string& string);
+	uint32_t get_width(const text& string);
 /**
  * Get set of all glyph numbers.
  */
@@ -576,7 +577,7 @@ struct font
  * Parameter hdbl: If set, double width horizontally.
  * Parameter vdbl: If set, double height vertically.
  */
-	template<bool X> void render(struct fb<X>& scr, int32_t x, int32_t y, const std::string& text,
+	template<bool X> void render(struct fb<X>& scr, int32_t x, int32_t y, const text& _text,
 		color fg, color bg, bool hdbl, bool vdbl) throw();
 /**
  * Call function on every glyph.
@@ -585,7 +586,7 @@ struct font
  * Parameter alignx: The x alignment.
  * Parameter cb: The callback to call.
  */
-	void for_each_glyph(const std::string& str, uint32_t alignx, bool xdbl, bool ydbl,
+	void for_each_glyph(const text& str, uint32_t alignx, bool xdbl, bool ydbl,
 		std::function<void(uint32_t x, uint32_t y, const glyph& g, bool xdbl, bool ydbl)> cb);
 /**
  * Render to bitmap.
@@ -597,7 +598,7 @@ struct font
  * Parameter hdbl: If set, double width horizontally.
  * Parameter vdbl: If set, double height vertically.
  */
-	void render(uint8_t* buf, size_t stride, const std::string& str, uint32_t alignx, bool hdbl, bool vdbl);
+	void render(uint8_t* buf, size_t stride, const text& str, uint32_t alignx, bool hdbl, bool vdbl);
 private:
 	glyph bad_glyph;
 	uint32_t bad_glyph_data[4];

@@ -200,11 +200,11 @@ public:
 /**
  * Get debugging info for stream this page is from.
  */
-	std::string stream_debug_id() const throw(std::bad_alloc);
+	text stream_debug_id() const throw(std::bad_alloc);
 /**
  * Get debugging info for this page.
  */
-	std::string page_debug_id() const throw(std::bad_alloc);
+	text page_debug_id() const throw(std::bad_alloc);
 /**
  * The special granule pos for nothing.
  */

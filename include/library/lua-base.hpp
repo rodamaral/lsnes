@@ -14,6 +14,7 @@
 #include "string.hpp"
 #include "utf8.hpp"
 #include "lua-version.hpp"
+#include "text.hpp"
 
 namespace lua
 {
@@ -40,8 +41,8 @@ public:
 	//Auxillary type for vararg-tag.
 	struct vararg_tag
 	{
-		std::list<std::string> args;
-		vararg_tag(std::list<std::string>& _args) : args(_args) {}
+		std::list<text> args;
+		vararg_tag(std::list<text>& _args) : args(_args) {}
 		int pushargs(state& L);
 	};
 
@@ -117,7 +118,7 @@ public:
 	 *
 	 * Parameter v: The string value to pass.
 	 */
-	struct string_tag { std::string val; string_tag(const std::string& v) : val(v) {}};
+	struct string_tag { text val; string_tag(const text& v) : val(v) {}};
 
 	/**
 	 * Callback parameter: Pass nil argument.
@@ -307,7 +308,7 @@ public:
  * Returns: The string.
  * Throws std::runtime_error: The specified argument is not a string.
  */
-	std::string get_string(int argindex, const std::string& fname) throw(std::runtime_error, std::bad_alloc)
+	text get_string(int argindex, const text& fname) throw(std::runtime_error, std::bad_alloc)
 	{
 		if(isnone(argindex))
 			(stringfmt() << "argument #" << argindex << " to " << fname << " must be string").throwex();
@@ -315,7 +316,7 @@ public:
 		const char* f = lua_tolstring(lua_handle, argindex, &len);
 		if(!f)
 			(stringfmt() << "argument #" << argindex << " to " << fname << " must be string").throwex();
-		return std::string(f, f + len);
+		return text(f, len);
 	}
 /**
  * Get a boolean argument.
@@ -325,7 +326,7 @@ public:
  * Returns: The string.
  * Throws std::runtime_error: The specified argument is not a boolean.
  */
-	bool get_bool(int argindex, const std::string& fname) throw(std::runtime_error, std::bad_alloc)
+	bool get_bool(int argindex, const text& fname) throw(std::runtime_error, std::bad_alloc)
 	{
 		if(isnone(argindex) || !isboolean(argindex))
 			(stringfmt() << "argument #" << argindex << " to " << fname << " must be boolean").throwex();
@@ -340,7 +341,7 @@ public:
  * Throws std::runtime_error: Bad type.
  */
 	template<typename T>
-	T get_numeric_argument(int argindex, const std::string& fname)
+	T get_numeric_argument(int argindex, const text& fname)
 	{
 		if(std::numeric_limits<T>::is_integer) {
 			if(isnone(argindex) || !isinteger(argindex))
@@ -363,7 +364,7 @@ public:
  * Throws std::runtime_error: Bad type.
  */
 	template<typename T>
-	void get_numeric_argument(unsigned argindex, T& value, const std::string& fname)
+	void get_numeric_argument(unsigned argindex, T& value, const text& fname)
 	{
 		if(isnoneornil(argindex))
 			return;
@@ -386,7 +387,7 @@ public:
  * Parameter args: Arguments to pass to the callback.
  */
 	template<typename... T>
-	bool callback(const std::string& name, T... args)
+	bool callback(const text& name, T... args)
 	{
 		getglobal(name.c_str());
 		int t = type(-1);
@@ -431,11 +432,11 @@ public:
 /**
  * Function callback.
  */
-	void function_callback(const std::string& name, function* func);
+	void function_callback(const text& name, function* func);
 /**
  * Class callback.
  */
-	void class_callback(const std::string& name, class_base* func);
+	void class_callback(const text& name, class_base* func);
 /**
  * Do something just once per VM.
  *
@@ -449,7 +450,7 @@ public:
 	class callback_list
 	{
 	public:
-		callback_list(state& L, const std::string& name, const std::string& fn_cbname = "");
+		callback_list(state& L, const text& name, const text& fn_cbname = "");
 		~callback_list();
 		void _register(state& L);	//Reads callback from top of lua stack.
 		void _unregister(state& L);	//Reads callback from top of lua stack.
@@ -459,15 +460,15 @@ public:
 				any = true;
 			return any;
 		}
-		const std::string& get_name() { return name; }
+		const text& get_name() { return name; }
 		void clear() { callbacks.clear(); }
 	private:
 		callback_list(const callback_list&);
 		callback_list& operator=(const callback_list&);
 		std::list<char> callbacks;
 		state& L;
-		std::string name;
-		std::string fn_cbname;
+		text name;
+		text fn_cbname;
 	};
 /**
  * Enumerate all callbacks.
@@ -476,8 +477,8 @@ public:
 /**
  * Register/Unregister a callback list.
  */
-	void do_register(const std::string& name, callback_list& callback);
-	void do_unregister(const std::string& name, callback_list& callback);
+	void do_register(const text& name, callback_list& callback);
+	void do_unregister(const text& name, callback_list& callback);
 
 	//All kinds of Lua API functions.
 	void pop(int n) { lua_pop(lua_handle, n); }
@@ -522,7 +523,7 @@ public:
 	const char* tostring(int index) { return lua_tostring(lua_handle, index); }
 	const char* tolstring(int index, size_t& len) { return lua_tolstring(lua_handle, index, &len); }
 	void pushlstring(const char* s, size_t len) { lua_pushlstring(lua_handle, s, len); }
-	void pushlstring(const std::string& s) { lua_pushlstring(lua_handle, s.c_str(), s.length()); }
+	void pushlstring(const text& s) { lua_pushlstring(lua_handle, s.c_str(), s.length_utf8()); }
 	void pushlstring(const char32_t* s, size_t len) { pushlstring(utf8::to8(std::u32string(s, len))); }
 	int pcall(int nargs, int nresults, int errfunc)
 	{

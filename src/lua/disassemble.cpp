@@ -12,7 +12,7 @@ namespace
 {
 	int disassemble(lua::state& L, lua::parameters& P)
 	{
-		std::string kind;
+		text kind;
 		uint64_t addr, count;
 
 		P(kind, addr, P.optional(count, 1));
@@ -50,7 +50,7 @@ namespace
 	int getregister(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		std::string r;
+		text r;
 
 		P(r);
 
@@ -95,7 +95,7 @@ namespace
 	int setregister(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		std::string r;
+		text r;
 
 		P(r);
 

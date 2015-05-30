@@ -16,20 +16,20 @@ public:
  *
  * Returns: The known schemes.
  */
-	std::set<std::string> get_schemes();
+	std::set<text> get_schemes();
 /**
  * Delete rewrite pattern.
  *
  * Parameter scheme: The scheme to delete.
  */
-	void delete_rewrite(const std::string& scheme);
+	void delete_rewrite(const text& scheme);
 /**
  * Set rewrite pattern
  *
  * Parameter scheme: The scheme to rewrite.
  * Parameter pattern: The target pattern to rewrite to.
  */
-	void set_rewrite(const std::string& scheme, const std::string& pattern);
+	void set_rewrite(const text& scheme, const text& pattern);
 /**
  * Get rewrite pattern
  *
@@ -37,29 +37,29 @@ public:
  * Returns: The current rewrite pattern.
  * Throws std::runtime_error: No pattern for scheme.
  */
-	std::string get_rewrite(const std::string& scheme);
+	text get_rewrite(const text& scheme);
 /**
  * Rewrite URI.
  *
  * Parameter uri: The URI to rewrite.
  * Returns: The rewritten URI.
  */
-	std::string operator()(const std::string& uri);
+	text operator()(const text& uri);
 /**
  * Save URI rewrite patterns to file.
  *
  * Parameter filename: The name of the file.
  */
-	void save(const std::string& filename);
+	void save(const text& filename);
 /**
  * Load URI rewrite pattern from file.
  *
  * Parameter filename: The name of the file.
  */
-	void load(const std::string& filename);
+	void load(const text& filename);
 private:
 	threads::lock mlock;
-	std::map<std::string, std::string> rewrites;
+	std::map<text, text> rewrites;
 };
 }
 

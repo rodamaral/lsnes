@@ -10,6 +10,7 @@
 #include "core/subtitles.hpp"
 #include "interface/romtype.hpp"
 #include "library/rrdata.hpp"
+#include "library/text.hpp"
 #include "library/zip.hpp"
 
 class loaded_rom;
@@ -26,7 +27,7 @@ struct dynamic_state
 /**
  * Contents of SRAM on time of savestate (if is_savestate is true).
  */
-	std::map<std::string, std::vector<char>> sram;
+	std::map<text, std::vector<char>> sram;
 /**
  * Core savestate (if is_savestate is true).
  */
@@ -66,11 +67,11 @@ struct dynamic_state
 /**
  * Active macros at savestate.
  */
-	std::map<std::string, uint64_t> active_macros;
+	std::map<text, uint64_t> active_macros;
 /**
  * Clear the state to power-on defaults.
  */
-	void clear(int64_t sec, int64_t ssec, const std::map<std::string, std::vector<char>>& initsram);
+	void clear(int64_t sec, int64_t ssec, const std::map<text, std::vector<char>>& initsram);
 /**
  * Swap the dynamic state with another.
  */
@@ -88,13 +89,13 @@ struct moviefile
 	struct brief_info
 	{
 		brief_info() { current_frame = 0; rerecords = 0; }
-		brief_info(const std::string& filename);
-		std::string sysregion;
-		std::string corename;
-		std::string projectid;
-		std::string hash[ROM_SLOT_COUNT];
-		std::string hashxml[ROM_SLOT_COUNT];
-		std::string hint[ROM_SLOT_COUNT];
+		brief_info(const text& filename);
+		text sysregion;
+		text corename;
+		text projectid;
+		text hash[ROM_SLOT_COUNT];
+		text hashxml[ROM_SLOT_COUNT];
+		text hint[ROM_SLOT_COUNT];
 		uint64_t current_frame;
 		uint64_t rerecords;
 	private:
@@ -106,10 +107,10 @@ struct moviefile
  */
 	struct branch_extractor
 	{
-		branch_extractor(const std::string& filename);
+		branch_extractor(const text& filename);
 		virtual ~branch_extractor();
-		virtual std::set<std::string> enumerate() { return real->enumerate(); }
-		virtual void read(const std::string& name, portctrl::frame_vector& v) { real->read(name, v); }
+		virtual std::set<text> enumerate() { return real->enumerate(); }
+		virtual void read(const text& name, portctrl::frame_vector& v) { real->read(name, v); }
 	protected:
 		branch_extractor() { real = NULL; }
 	private:
@@ -120,10 +121,10 @@ struct moviefile
  */
 	struct sram_extractor
 	{
-		sram_extractor(const std::string& filename);
+		sram_extractor(const text& filename);
 		virtual ~sram_extractor();
-		virtual std::set<std::string> enumerate() { return real->enumerate(); }
-		virtual void read(const std::string& name, std::vector<char>& v) { real->read(name, v); }
+		virtual std::set<text> enumerate() { return real->enumerate(); }
+		virtual void read(const text& name, std::vector<char>& v) { real->read(name, v); }
 	protected:
 		sram_extractor() { real = NULL; }
 	private:
@@ -132,7 +133,7 @@ struct moviefile
 /**
  * Identify if file is movie/savestate file or not.
  */
-	static bool is_movie_or_savestate(const std::string& filename);
+	static bool is_movie_or_savestate(const text& filename);
 /**
  * This constructor construct movie structure with default settings.
  *
@@ -148,7 +149,7 @@ struct moviefile
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't load the movie file
  */
-	moviefile(const std::string& filename, core_type& romtype) throw(std::bad_alloc, std::runtime_error);
+	moviefile(const text& filename, core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Fill a stub movie with specified loaded ROM.
@@ -158,7 +159,7 @@ struct moviefile
  * Parameter rtc_sec: The RTC seconds value.
  * Parameter rtc_subsec: The RTC subseconds value.
  */
-	moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_settings, uint64_t rtc_sec,
+	moviefile(loaded_rom& rom, std::map<text, text>& c_settings, uint64_t rtc_sec,
 		uint64_t rtc_subsec);
 
 /**
@@ -171,7 +172,7 @@ struct moviefile
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't save the movie file.
  */
-	void save(const std::string& filename, unsigned compression, bool binary, rrdata_set& rrd, bool as_state)
+	void save(const text& filename, unsigned compression, bool binary, rrdata_set& rrd, bool as_state)
 		throw(std::bad_alloc, std::runtime_error);
 /**
  * Reads this movie structure and saves it to stream (uncompressed ZIP).
@@ -188,23 +189,23 @@ struct moviefile
 /**
  * Settings.
  */
-	std::map<std::string, std::string> settings;
+	std::map<text, text> settings;
 /**
  * Emulator Core version string.
  */
-	std::string coreversion;
+	text coreversion;
 /**
  * Name of the game
  */
-	std::string gamename;
+	text gamename;
 /**
  * Project ID (used to identify if two movies are from the same project).
  */
-	std::string projectid;
+	text projectid;
 /**
  * Rerecord count (only saved).
  */
-	std::string rerecords;
+	text rerecords;
 /**
  * Rerecord count (memory saves only).
  */
@@ -212,27 +213,27 @@ struct moviefile
 /**
  * SHA-256 of ROM (empty string if none).
  */
-	std::string romimg_sha256[ROM_SLOT_COUNT];
+	text romimg_sha256[ROM_SLOT_COUNT];
 /**
  * SHA-256 of ROM XML (empty string if none).
  */
-	std::string romxml_sha256[ROM_SLOT_COUNT];
+	text romxml_sha256[ROM_SLOT_COUNT];
 /**
  * ROM name hint (empty string if none).
  */
-	std::string namehint[ROM_SLOT_COUNT];
+	text namehint[ROM_SLOT_COUNT];
 /**
  * Authors of the run, first in each pair is full name, second is nickname.
  */
-	std::vector<std::pair<std::string, std::string>> authors;
+	std::vector<std::pair<text, text>> authors;
 /**
  * Contents of SRAM on time of initial powerup.
  */
-	std::map<std::string, std::vector<char>> movie_sram;
+	std::map<text, std::vector<char>> movie_sram;
 /**
  * Contents of RAM on time of initial powerup.
  */
-	std::map<std::string, std::vector<char>> ramcontent;
+	std::map<text, std::vector<char>> ramcontent;
 /**
  * Anchoring core savestate (if not empty).
  */
@@ -248,7 +249,7 @@ struct moviefile
 /**
  * Branches.
  */
-	std::map<std::string, portctrl::frame_vector> branches;
+	std::map<text, portctrl::frame_vector> branches;
 /**
  * Movie starting RTC second.
  */
@@ -268,7 +269,7 @@ struct moviefile
 /**
  * Subtitles.
  */
-	std::map<moviefile_subtiming, std::string> subtitles;
+	std::map<moviefile_subtiming, text> subtitles;
 /**
  * Dynamic state.
  */
@@ -288,7 +289,7 @@ struct moviefile
 /**
  * Return reference to memory slot.
  */
-	static moviefile*& memref(const std::string& slot);
+	static moviefile*& memref(const text& slot);
 
 /**
  * Copy data.
@@ -302,11 +303,11 @@ struct moviefile
 /**
  * Get name of current branch.
  */
-	const std::string& current_branch();
+	const text& current_branch();
 /**
  * Fork a branch.
  */
-	void fork_branch(const std::string& oldname, const std::string& newname);
+	void fork_branch(const text& oldname, const text& newname);
 /**
  * Fixup input pointer post-copy.
  */

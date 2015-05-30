@@ -7,6 +7,7 @@
 #include <list>
 #include <string>
 #include <sstream>
+#include "library/text.hpp"
 
 /*********************************************************************************************************************
 UI services.
@@ -26,19 +27,19 @@ struct project_author_info
 	//True if this is a project, false if not. Ignored when saving.
 	bool is_project;
 	//Lua scripts. Ignored when saving if not in project context.
-	std::list<std::string> luascripts;
+	std::list<text> luascripts;
 	//Autorun new lua scripts. Ignored when saving if not in project context, always loaded as false.
 	bool autorunlua;
 	//Authors. First of each pair is full name, second is nickname.
-	std::list<std::pair<std::string, std::string>> authors;
+	std::list<std::pair<text, text>> authors;
 	//Name of the game.
-	std::string gamename;
+	text gamename;
 	//Project Directory. Ignored if not in project context.
-	std::string directory;
+	text directory;
 	//Project name. Ignored if not in project context.
-	std::string projectname;
+	text projectname;
 	//Save prefix.
-	std::string prefix;
+	text prefix;
 };
 
 struct dumper_information_1
@@ -46,24 +47,24 @@ struct dumper_information_1
 	//The factory for this dumper.
 	dumper_factory_base* factory;
 	//Name of this dumper.
-	std::string name;
+	text name;
 	//Is this dumper active?
 	bool active;
 	//Hidden?
 	bool hidden;
 	//Modes available (first is internal name, second is human-readable one).
-	std::map<std::string, std::string> modes;
+	std::map<text, text> modes;
 };
 
 struct dumper_information
 {
-	std::map<std::string, dumper_information_1> dumpers;
+	std::map<text, dumper_information_1> dumpers;
 };
 
 /**
  * Fill branch name map.
  */
-void UI_get_branch_map(emulator_instance& instance, uint64_t& cur, std::map<uint64_t, std::string>& namemap,
+void UI_get_branch_map(emulator_instance& instance, uint64_t& cur, std::map<uint64_t, text>& namemap,
 	std::map<uint64_t, std::set<uint64_t>>& childmap);
 /**
  * Arrange current project to be flushed.
@@ -72,12 +73,12 @@ void UI_call_flush(emulator_instance& instance, std::function<void(std::exceptio
 /**
  * Arrage branch to be created.
  */
-void UI_create_branch(emulator_instance& instance, uint64_t id, const std::string& name,
+void UI_create_branch(emulator_instance& instance, uint64_t id, const text& name,
 	std::function<void(std::exception&)> onerror);
 /**
  * Arrage branch to be renamed.
  */
-void UI_rename_branch(emulator_instance& instance, uint64_t id, const std::string& name,
+void UI_rename_branch(emulator_instance& instance, uint64_t id, const text& name,
 	std::function<void(std::exception&)> onerror);
 /**
  * Arrage branch to be reparented.
@@ -107,8 +108,8 @@ dumper_information UI_get_dumpers(emulator_instance& instance);
 /**
  * Start dumping.
  */
-void UI_start_dump(emulator_instance& inst, dumper_factory_base& factory, const std::string& mode,
-	const std::string& prefix);
+void UI_start_dump(emulator_instance& inst, dumper_factory_base& factory, const text& mode,
+	const text& prefix);
 /**
  * End dumping.
  */
@@ -129,15 +130,15 @@ void UI_save_movie(emulator_instance& inst, std::ostringstream& buffer);
 /**
  * Look up (platform,game) pair.
  */
-std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instance& inst);
+std::pair<text, text> UI_lookup_platform_and_game(emulator_instance& inst);
 /**
  * Get otherpath of current project.
  */
-std::string UI_get_project_otherpath(emulator_instance& inst);
+text UI_get_project_otherpath(emulator_instance& inst);
 /**
  * Get moviepath of current project.
  */
-std::string UI_get_project_moviepath(emulator_instance& inst);
+text UI_get_project_moviepath(emulator_instance& inst);
 /**
  * Is in project context?
  */

@@ -26,21 +26,21 @@ namespace
 
 	struct upload_output_handler : http_request::output_handler
 	{
-		upload_output_handler(std::function<void(std::string&)> _output_cb)
+		upload_output_handler(std::function<void(text&)> _output_cb)
 		{
 			output_cb = _output_cb;
 		}
 		~upload_output_handler() {}
-		void header(const std::string& name, const std::string& content)
+		void header(const text& name, const text& content)
 		{
 			if(http_strlower(name) == "location") location = content;
 		}
 		void write(const char* source, size_t srcsize)
 		{
-			std::string x(source, srcsize);
-			while(x.find_first_of("\n") < x.length()) {
-				size_t split = x.find_first_of("\n");
-				std::string line = x.substr(0, split);
+			text x(source, srcsize);
+			while(x.find_first_of(U"\n") < x.length()) {
+				size_t split = x.find_first_of(U"\n");
+				text line = x.substr(0, split);
 				x = x.substr(split + 1);
 				incomplete_line += line;
 				while(incomplete_line.length() > 0 &&
@@ -55,17 +55,17 @@ namespace
 		{
 			if(incomplete_line != "") output_cb(incomplete_line);
 		}
-		std::string get_location()
+		text get_location()
 		{
 			return location;
 		}
 	private:
-		std::function<void(std::string&)> output_cb;
-		std::string location;
-		std::string incomplete_line;
+		std::function<void(text&)> output_cb;
+		text location;
+		text incomplete_line;
 	};
 
-	void compress(std::vector<char>& buf, std::string& output, std::string& compression)
+	void compress(std::vector<char>& buf, text& output, text& compression)
 	{
 		streamcompress::base* X = NULL;
 		try {
@@ -91,12 +91,12 @@ namespace
 		boost::iostreams::copy(*s, rd);
 		delete s;
 		if(X) delete X;
-		output = std::string(&out[0], out.size());
+		output = text(&out[0], out.size());
 	}
 
 	void load_dh25519_key(uint8_t* out)
 	{
-		std::string path = get_config_path() + "/dh25519.key";
+		text path = get_config_path() + "/dh25519.key";
 		std::ifstream fp(path, std::ios::binary);
 		if(!fp)
 			throw std::runtime_error("Can't open dh25519 keyfile");
@@ -146,7 +146,7 @@ void file_upload::_do_async()
 		}
 		http_request::null_input_handler nullinput;
 		auto auth = dh25519;
-		http_request::www_authenticate_extractor extractor([auth](const std::string& content) {
+		http_request::www_authenticate_extractor extractor([auth](const text& content) {
 			auth->parse_auth_response(content);
 		});
 		obtainkey.ihandler = &nullinput;
@@ -188,7 +188,7 @@ void file_upload::_do_async()
 			req = &upload;
 		}
 		property_upload_request input;
-		upload_output_handler output([this](const std::string& msg) { add_msg(msg); });
+		upload_output_handler output([this](const text& msg) { add_msg(msg); });
 
 		input.data["filename"] = filename;
 		if(title != "") input.data["title"] = title;
@@ -244,10 +244,10 @@ void file_upload::cancel()
 	if(req) req->cancel();
 }
 
-std::list<std::string> file_upload::get_messages()
+std::list<text> file_upload::get_messages()
 {
 	threads::alock h(m);
-	std::list<std::string> x = msgs;
+	std::list<text> x = msgs;
 	msgs.clear();
 	return x;
 }
@@ -265,7 +265,7 @@ int file_upload::get_progress_ppm()
 	return ppm;
 }
 
-void file_upload::add_msg(const std::string& msg)
+void file_upload::add_msg(const text& msg)
 {
 	threads::alock h(m);
 	msgs.push_back(msg);

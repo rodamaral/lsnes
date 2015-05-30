@@ -46,7 +46,7 @@ public:
  * returns: The movie rerecord count
  * throws std::bad_alloc: Not enough memory.
  */
-	std::string rerecord_count() throw(std::bad_alloc);
+	text rerecord_count() throw(std::bad_alloc);
 
 /**
  * Sets the movie rerecord count (this is not the same thing as global rerecord count).
@@ -54,7 +54,7 @@ public:
  * parameter count: The new rerecord count
  * throws std::bad_alloc: Not enough memory.
  */
-	void rerecord_count(const std::string& count) throw(std::bad_alloc);
+	void rerecord_count(const text& count) throw(std::bad_alloc);
 
 /**
  * Read project ID
@@ -62,7 +62,7 @@ public:
  * returns: The project ID
  * throws std::bad_alloc: Not enough memory.
  */
-	std::string project_id() throw(std::bad_alloc);
+	text project_id() throw(std::bad_alloc);
 
 /**
  * brief Set project ID
@@ -70,7 +70,7 @@ public:
  * parameter id: New project ID.
  * throws std::bad_alloc: Not enough memory.
  */
-	void project_id(const std::string& id) throw(std::bad_alloc);
+	void project_id(const text& id) throw(std::bad_alloc);
 
 /**
  * Get number of frames in movie
@@ -154,7 +154,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Bad movie data.
  */
-	void load(const std::string& rerecs, const std::string& project_id, portctrl::frame_vector& input)
+	void load(const text& rerecs, const text& project_id, portctrl::frame_vector& input)
 		throw(std::bad_alloc, std::runtime_error);
 
 /**
@@ -166,7 +166,7 @@ public:
  * Parameter pcounters: Poll counters are written here.
  * throws std::bad_alloc: Not enough memory.
  */
-	void save_state(std::string& proj_id, uint64_t& curframe, uint64_t& lagframes,
+	void save_state(text& proj_id, uint64_t& curframe, uint64_t& lagframes,
 		std::vector<uint32_t>& pcounters) throw(std::bad_alloc);
 
 /**
@@ -183,7 +183,7 @@ public:
  * Throws std::runtime_error: Movie check failure.
  */
 	size_t restore_state(uint64_t curframe, uint64_t lagframe, const std::vector<uint32_t>& pcounters, bool ro,
-		portctrl::frame_vector* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
+		portctrl::frame_vector* old_movie, const text& old_projectid) throw(std::bad_alloc,
 		std::runtime_error);
 /**
  * Reset the state of movie to initial state.
@@ -301,9 +301,9 @@ private:
 	//TRUE if movie is latched to end.
 	bool latch_end;
 	//Movie (not global!) rerecord count.
-	std::string rerecords;
+	text rerecords;
 	//Project ID.
-	std::string _project_id;
+	text _project_id;
 	//The actual controller data.
 	portctrl::frame_vector* movie_data;
 	//Current frame + 1 (0 before next_frame() has been called.

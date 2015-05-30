@@ -33,7 +33,7 @@ namespace
 	uint64_t hashing_left = 0;
 	int64_t last_update = 0;
 
-	std::string do_download_movie(const std::string& origname)
+	text do_download_movie(const text& origname)
 	{
 		if(!regex_match("[A-Za-z][A-Za-z0-9+.-]*:.+", origname))
 			return origname;	//File.
@@ -52,7 +52,7 @@ namespace
 			usleep(1000000);
 		}
 		if(download_in_progress->errormsg != "") {
-			std::string err = download_in_progress->errormsg;
+			text err = download_in_progress->errormsg;
 			delete download_in_progress;
 			throw std::runtime_error(err);
 		}
@@ -136,7 +136,7 @@ namespace
 		dumper_base& dumper;
 	};
 
-	void dumper_startup(dumper_factory_base& dumper, const std::string& mode, const std::string& prefix,
+	void dumper_startup(dumper_factory_base& dumper, const text& mode, const text& prefix,
 		uint64_t length)
 	{
 		dumper_base* _dumper;
@@ -157,17 +157,17 @@ namespace
 		d->on_gameinfo_change(lsnes_instance.mdumper->get_gameinfo());
 	}
 
-	void startup_lua_scripts(const std::vector<std::string>& cmdline)
+	void startup_lua_scripts(const std::vector<text>& cmdline)
 	{
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
-			std::string a = *i;
+			text a = *i;
 			if(a.length() > 6 && a.substr(0, 6) == "--lua=") {
 				lsnes_instance.lua2->add_startup_script(a.substr(6));
 			}
 		}
 	}
 
-	struct dumper_factory_base& locate_dumper(const std::string& name)
+	struct dumper_factory_base& locate_dumper(const text& name)
 	{
 		dumper_factory_base* _dumper = NULL;
 		std::set<dumper_factory_base*> dumpers = dumper_factory_base::get_dumper_set();
@@ -181,9 +181,9 @@ namespace
 		return *_dumper;
 	}
 
-	std::string format_details(unsigned detail)
+	text format_details(unsigned detail)
 	{
-		std::string r;
+		text r;
 		if((detail & dumper_factory_base::target_type_mask) == dumper_factory_base::target_type_file)
 			r = r + "TARGET_FILE";
 		else if((detail & dumper_factory_base::target_type_mask) == dumper_factory_base::target_type_prefix)
@@ -195,18 +195,18 @@ namespace
 		return r;
 	}
 
-	dumper_factory_base& get_dumper(const std::vector<std::string>& cmdline, std::string& mode,
-		std::string& prefix, uint64_t& length, bool& overdump_mode, uint64_t& overdump_length)
+	dumper_factory_base& get_dumper(const std::vector<text>& cmdline, text& mode,
+		text& prefix, uint64_t& length, bool& overdump_mode, uint64_t& overdump_length)
 	{
 		bool dumper_given = false;
-		std::string dumper;
+		text dumper;
 		bool mode_given = false;
 		prefix = "avidump";
 		length = 0;
 		overdump_mode = false;
 		overdump_length = 0;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
-			std::string a = *i;
+			text a = *i;
 			if(a.length() >= 9 && a.substr(0, 9) == "--dumper=") {
 				dumper_given = true;
 				dumper = a.substr(9);
@@ -239,14 +239,14 @@ namespace
 					exit(1);
 				}
 			else if(a.length() >= 9 && a.substr(0, 9) == "--option=") {
-				std::string nameval = a.substr(9);
-				size_t s = nameval.find_first_of("=");
+				text nameval = a.substr(9);
+				size_t s = nameval.find_first_of(U"=");
 				if(s >= nameval.length()) {
 					std::cerr << "Invalid option syntax (expected --option=foo=bar)" << std::endl;
 					exit(1);
 				}
-				std::string name = nameval.substr(0, s);
-				std::string val = nameval.substr(s + 1);
+				text name = nameval.substr(0, s);
+				text val = nameval.substr(s + 1);
 				try {
 					lsnes_instance.setcache->set(name, val);
 				} catch(std::exception& e) {
@@ -278,7 +278,7 @@ namespace
 		if(mode == "list") {
 			//Help on modes.
 			dumper_factory_base& _dumper = locate_dumper(dumper);
-			std::set<std::string> modes = _dumper.list_submodes();
+			std::set<text> modes = _dumper.list_submodes();
 			if(modes.empty()) {
 				unsigned d = _dumper.mode_details("");
 				std::cout << "No modes available for " << dumper << " (" << format_details(d) << ")"
@@ -325,12 +325,12 @@ int main(int argc, char** argv)
 	}
 
 	reached_main();
-	std::vector<std::string> cmdline;
+	std::vector<text> cmdline;
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);
 	uint64_t length, overdump_length;
 	bool overdump_mode;
-	std::string mode, prefix;
+	text mode, prefix;
 
 	dumper_factory_base& dumper = get_dumper(cmdline, mode, prefix, length, overdump_mode, overdump_length);
 
@@ -346,7 +346,7 @@ int main(int argc, char** argv)
 		messages << "\"" << *k << "\" ";
 	messages << std::endl;
 
-	std::string cfgpath = get_config_path();
+	text cfgpath = get_config_path();
 	autoload_libraries();
 
 	lsnes_uri_rewrite.load(cfgpath + "/lsnesurirewrite.cfg");
@@ -372,7 +372,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	std::string movfn;
+	text movfn;
 	for(auto i : cmdline) {
 		if(i.length() > 0 && i[0] != '-') {
 			movfn = i;
@@ -396,7 +396,7 @@ int main(int argc, char** argv)
 	messages << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
 	try {
-		std::map<std::string, std::string> tmp;
+		std::map<text, text> tmp;
 		r = construct_rom(movfn, cmdline);
 		r.load(tmp, 1000000000, 0);
 		messages << "Using core: " << r.get_core_identifier() << std::endl;

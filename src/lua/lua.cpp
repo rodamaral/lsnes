@@ -44,21 +44,21 @@ namespace
 	settingvar::supervariable<mb_model> SET_lua_maxmem(lsnes_setgrp, "lua-maxmem",
 		"Lua‣Maximum memory use (MB)", 128);
 
-	void pushpair(lua::state& L, std::string key, double value)
+	void pushpair(lua::state& L, text key, double value)
 	{
 		L.pushstring(key.c_str());
 		L.pushnumber(value);
 		L.settable(-3);
 	}
 
-	void pushpair(lua::state& L, std::string key, std::string value)
+	void pushpair(lua::state& L, text key, text value)
 	{
 		L.pushstring(key.c_str());
 		L.pushstring(value.c_str());
 		L.settable(-3);
 	}
 
-	std::string get_mode_str(int mode)
+	text get_mode_str(int mode)
 	{
 		if(mode < 0)
 			return "disabled";
@@ -179,8 +179,8 @@ void lua_state::set_memory_limit(size_t limit_mb)
 lua_state::lua_state(lua::state& _L, command::group& _command, settingvar::group& settings)
 	: L(_L), command(_command),
 	resetcmd(command, CLUA::reset, [this]() { this->do_reset(); }),
-	evalcmd(command, CLUA::eval, [this](const std::string& a) { this->do_eval_lua(a); }),
-	evalcmd2(command, CLUA::eval2, [this](const std::string& a) { this->do_eval_lua(a); }),
+	evalcmd(command, CLUA::eval, [this](const text& a) { this->do_eval_lua(a); }),
+	evalcmd2(command, CLUA::eval2, [this](const text& a) { this->do_eval_lua(a); }),
 	runcmd(command, CLUA::run, [this](command::arg_filename a) { this->do_run_lua(a); }),
 	listener(settings, *this)
 {
@@ -318,32 +318,32 @@ void lua_state::callback_do_readwrite() throw()
 	run_callback(*on_readwrite);
 }
 
-void lua_state::callback_pre_load(const std::string& name) throw()
+void lua_state::callback_pre_load(const text& name) throw()
 {
 	run_callback(*on_pre_load, lua::state::string_tag(name));
 }
 
-void lua_state::callback_err_load(const std::string& name) throw()
+void lua_state::callback_err_load(const text& name) throw()
 {
 	run_callback(*on_err_load, lua::state::string_tag(name));
 }
 
-void lua_state::callback_post_load(const std::string& name, bool was_state) throw()
+void lua_state::callback_post_load(const text& name, bool was_state) throw()
 {
 	run_callback(*on_post_load, lua::state::string_tag(name), lua::state::boolean_tag(was_state));
 }
 
-void lua_state::callback_pre_save(const std::string& name, bool is_state) throw()
+void lua_state::callback_pre_save(const text& name, bool is_state) throw()
 {
 	run_callback(*on_pre_save, lua::state::string_tag(name), lua::state::boolean_tag(is_state));
 }
 
-void lua_state::callback_err_save(const std::string& name) throw()
+void lua_state::callback_err_save(const text& name) throw()
 {
 	run_callback(*on_err_save, lua::state::string_tag(name));
 }
 
-void lua_state::callback_post_save(const std::string& name, bool is_state) throw()
+void lua_state::callback_post_save(const text& name, bool is_state) throw()
 {
 	run_callback(*on_post_save, lua::state::string_tag(name), lua::state::boolean_tag(is_state));
 }
@@ -387,7 +387,7 @@ void lua_state::do_reset()
 	messages << "Lua VM reset" << std::endl;
 }
 
-void lua_state::do_evaluate(const std::string& a)
+void lua_state::do_evaluate(const text& a)
 {
 	if(a == "")
 		throw std::runtime_error("Expected expression to evaluate");
@@ -399,7 +399,7 @@ void lua_state::callback_quit() throw()
 	run_callback(*on_quit);
 }
 
-void lua_state::callback_keyhook(const std::string& key, keyboard::key& p) throw()
+void lua_state::callback_keyhook(const text& key, keyboard::key& p) throw()
 {
 	run_callback(*on_keyhook, lua::state::string_tag(key), lua::state::fnptr_tag(push_keygroup_parameters2, &p));
 }
@@ -486,10 +486,10 @@ void lua_state::callback_do_unsafe_rewind(movie& mov, void* u)
 
 void lua_state::callback_movie_lost(const char* what)
 {
-	run_callback(*on_movie_lost, std::string(what));
+	run_callback(*on_movie_lost, text(what));
 }
 
-void lua_state::callback_do_latch(std::list<std::string>& args)
+void lua_state::callback_do_latch(std::list<text>& args)
 {
 	run_callback(*on_latch, lua::state::vararg_tag(args));
 }
@@ -506,12 +506,12 @@ void lua_state::run_startup_scripts()
 	}
 }
 
-void lua_state::add_startup_script(const std::string& file)
+void lua_state::add_startup_script(const text& file)
 {
 	startup_scripts.push_back(file);
 }
 
-const std::map<std::string, std::u32string>& lua_state::get_watch_vars()
+const std::map<text, std::u32string>& lua_state::get_watch_vars()
 {
 	return watch_vars;
 }
@@ -566,7 +566,7 @@ bool lua_state::run_lua_fragment() throw(std::bad_alloc)
 	return result;
 }
 
-void lua_state::do_eval_lua(const std::string& c) throw(std::bad_alloc)
+void lua_state::do_eval_lua(const text& c) throw(std::bad_alloc)
 {
 	L.pushlstring(c.c_str(), c.length());
 	L.setglobal(TEMPORARY);
@@ -574,7 +574,7 @@ void lua_state::do_eval_lua(const std::string& c) throw(std::bad_alloc)
 	run_lua_fragment();
 }
 
-void lua_state::do_run_lua(const std::string& c) throw(std::bad_alloc)
+void lua_state::do_run_lua(const text& c) throw(std::bad_alloc)
 {
 	L.pushlstring(c.c_str(), c.length());
 	L.setglobal(TEMPORARY);

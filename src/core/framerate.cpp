@@ -23,7 +23,7 @@ framerate_regulator::framerate_regulator(command::group& _cmd)
 	turbo_p(cmd, CTURBO::p, [this]() { this->turboed = true; }),
 	turbo_r(cmd, CTURBO::r, [this]() { this->turboed = false; }),
 	turbo_t(cmd, CTURBO::t, [this]() { this->turboed = !this->turboed; }),
-	setspeed_t(cmd, CTURBO::ss, [this](const std::string& args) { this->set_speed_cmd(args); })
+	setspeed_t(cmd, CTURBO::ss, [this](const text& args) { this->set_speed_cmd(args); })
 {
 	last_time_update = 0;
 	time_at_last_update = 0;
@@ -164,7 +164,7 @@ std::pair<bool, double> framerate_regulator::read_fps()
 		return std::make_pair(false, n * m);
 }
 
-void framerate_regulator::set_speed_cmd(const std::string& args)
+void framerate_regulator::set_speed_cmd(const text& args)
 {
 	if(args == "turbo") {
 		set_speed_multiplier(std::numeric_limits<double>::infinity());

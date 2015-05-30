@@ -18,7 +18,7 @@
 
 namespace
 {
-	void write_active_macros(zip::writer& w, const std::string& member, const std::map<std::string, uint64_t>& ma)
+	void write_active_macros(zip::writer& w, const text& member, const std::map<text, uint64_t>& ma)
 	{
 		if(ma.empty())
 			return;
@@ -35,13 +35,13 @@ namespace
 		}
 	}
 
-	template<typename T> std::string pick_a_name(const std::map<std::string, T>& map, bool prefer_unnamed)
+	template<typename T> text pick_a_name(const std::map<text, T>& map, bool prefer_unnamed)
 	{
 		if(prefer_unnamed && !map.count(""))
 			return "";
 		size_t count = 1;
 		while(true) {
-			std::string c = (stringfmt() << "(unnamed branch #" << count++ << ")").str();
+			text c = (stringfmt() << "(unnamed branch #" << count++ << ")").str();
 			if(!map.count(c))
 				return c;
 		}
@@ -65,7 +65,7 @@ namespace
 		}
 	}
 
-	void write_authors_file(zip::writer& w, std::vector<std::pair<std::string, std::string>>& authors)
+	void write_authors_file(zip::writer& w, std::vector<std::pair<text, text>>& authors)
 		throw(std::bad_alloc, std::runtime_error)
 	{
 		std::ostream& m = w.create_file("authors");
@@ -84,7 +84,7 @@ namespace
 		}
 	}
 
-	void write_input(zip::writer& w, const std::string& mname, portctrl::frame_vector& input)
+	void write_input(zip::writer& w, const text& mname, portctrl::frame_vector& input)
 		throw(std::bad_alloc, std::runtime_error)
 	{
 		std::ostream& m = w.create_file(mname);
@@ -103,7 +103,7 @@ namespace
 		}
 	}
 
-	void write_subtitles(zip::writer& w, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
+	void write_subtitles(zip::writer& w, const text& file, std::map<moviefile_subtiming, text>& x)
 	{
 		std::ostream& m = w.create_file(file);
 		try {
@@ -119,7 +119,7 @@ namespace
 		}
 	}
 
-	void write_pollcounters(zip::writer& w, const std::string& file, const std::vector<uint32_t>& pctr)
+	void write_pollcounters(zip::writer& w, const text& file, const std::vector<uint32_t>& pctr)
 	{
 		std::ostream& m = w.create_file(file);
 		try {
@@ -143,7 +143,7 @@ void moviefile::save(zip::writer& w, rrdata_set& rrd, bool as_state) throw(std::
 {
 	w.write_linefile("gametype", gametype->get_name());
 	moviefile_write_settings<zip::writer>(w, settings, gametype->get_type().get_settings(), [](zip::writer& w,
-		const std::string& name, const std::string& value) -> void {
+		const text& name, const text& value) -> void {
 			if(regex_match("port[0-9]+", name))
 				w.write_linefile(name, value);
 			else
@@ -192,7 +192,7 @@ void moviefile::save(zip::writer& w, rrdata_set& rrd, bool as_state) throw(std::
 		w.write_raw_file("initram." + i.first, i.second);
 	write_authors_file(w, authors);
 
-	std::map<std::string, uint64_t> branch_table;
+	std::map<text, uint64_t> branch_table;
 	uint64_t next_branch = 1;
 	for(auto& i : branches) {
 		uint64_t id;

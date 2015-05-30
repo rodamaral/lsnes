@@ -13,15 +13,15 @@ namespace portctrl
 class controller_set;
 class type;
 
-struct controller_set* pcs_from_json(const JSON::node& root, const std::string& ptr);
-std::vector<controller_set*> pcs_from_json_array(const JSON::node& root, const std::string& ptr);
-std::string pcs_write_class(const struct controller_set& pset, unsigned& tmp_idx);
-std::string pcs_write_trailer(const std::vector<controller_set*>& p);
-std::string pcs_write_classes(const std::vector<controller_set*>& p, unsigned& tmp_idx);
+struct controller_set* pcs_from_json(const JSON::node& root, const text& ptr);
+std::vector<controller_set*> pcs_from_json_array(const JSON::node& root, const text& ptr);
+text pcs_write_class(const struct controller_set& pset, unsigned& tmp_idx);
+text pcs_write_trailer(const std::vector<controller_set*>& p);
+text pcs_write_classes(const std::vector<controller_set*>& p, unsigned& tmp_idx);
 
 struct type_generic : public type
 {
-	type_generic(const JSON::node& root, const std::string& ptr) throw(std::exception);
+	type_generic(const JSON::node& root, const text& ptr) throw(std::exception);
 	~type_generic() throw();
 	struct ser_instruction
 	{
@@ -46,9 +46,9 @@ private:
 	std::vector<idxinfo> indexinfo;
 	void* dyncode_block;
 	mutable std::vector<ser_instruction> serialize_instructions;
-	std::string port_iname(const JSON::node& root, const std::string& ptr);
-	std::string port_hname(const JSON::node& root, const std::string& ptr);
-	size_t port_size(const JSON::node& root, const std::string& ptr);
+	text port_iname(const JSON::node& root, const text& ptr);
+	text port_hname(const JSON::node& root, const text& ptr);
+	size_t port_size(const JSON::node& root, const text& ptr);
 	static void _write(const type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x);
 	static short _read(const type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl);
 	static size_t _serialize(const type* _this, const unsigned char* buffer, char* textbuf);

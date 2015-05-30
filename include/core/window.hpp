@@ -18,7 +18,7 @@ struct _graphics_driver
 	void (*init)();
 	void (*quit)();
 	void (*notify_message)();
-	void (*error_message)(const std::string& text);
+	void (*error_message)(const text& text);
 	void (*fatal_error)();
 	const char* (*name)();
 	void (*request_rom)(rom_request& req);
@@ -52,7 +52,7 @@ void graphics_driver_notify_message() throw();
  *
  * Parameter text: The text for dialog.
  */
-void graphics_driver_error_message(const std::string& text) throw();
+void graphics_driver_error_message(const text& text) throw();
 /**
  * Displays fatal error message.
  *
@@ -110,7 +110,7 @@ struct platform
  * parameter msg: The messages to add (split by '\n').
  * throws std::bad_alloc: Not enough memory.
  */
-	static void message(const std::string& msg) throw(std::bad_alloc);
+	static void message(const text& msg) throw(std::bad_alloc);
 /**
  * Displays fatal error message, quitting after the user acks it (called by fatal_error()).
  *
@@ -132,23 +132,23 @@ struct platform
 /**
  * Set sound device.
  */
-	static void set_sound_device(const std::string& pdev, const std::string& rdev) throw();
+	static void set_sound_device(const text& pdev, const text& rdev) throw();
 /**
  * Set sound device by description.
  */
-	static void set_sound_device_by_description(const std::string& pdev, const std::string& rdev) throw();
+	static void set_sound_device_by_description(const text& pdev, const text& rdev) throw();
 /**
  * Get sound device description.
  */
-	static std::string get_sound_device_description(bool rec) throw(std::bad_alloc);
+	static text get_sound_device_description(bool rec) throw(std::bad_alloc);
 /**
  * Show error message dialog after UI thread becomes free.
  *
  * Parameter text: The text for dialog.
  */
-	static void error_message(const std::string& text) throw()
+	static void error_message(const text& _text) throw()
 	{
-		return graphics_driver_error_message(text);
+		return graphics_driver_error_message(_text);
 	}
 /**
  * Process command and keypress queues.

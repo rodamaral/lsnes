@@ -5,6 +5,7 @@
 #include <map>
 #include "library/dispatch.hpp"
 #include "library/command.hpp"
+#include "library/text.hpp"
 
 struct project_info;
 struct controller_state;
@@ -24,9 +25,9 @@ class button_mapping
 public:
 	struct controller_bind
 	{
-		std::string cclass;
+		text cclass;
 		unsigned number;
-		std::string name;
+		text name;
 		int mode;	//0 => Button, 1 => Axis pair, 2 => Single axis.
 		bool xrel;
 		bool yrel;
@@ -44,7 +45,7 @@ public:
 	};
 	struct controller_triple
 	{
-		std::string cclass;
+		text cclass;
 		unsigned port;
 		unsigned controller;
 		bool operator<(const struct controller_triple& t) const throw()
@@ -94,32 +95,32 @@ public:
 /**
  * Lookup button by name.
  */
-	std::pair<int, int> byname(const std::string& name);
+	std::pair<int, int> byname(const text& name);
 /**
  * Map of button keys.
  */
-	std::map<std::string, std::string> button_keys;
+	std::map<text, text> button_keys;
 private:
-	void do_analog_action(const std::string& a);
-	void do_autofire_action(const std::string& a, int mode);
-	void do_action(const std::string& name, short state, int mode);
+	void do_analog_action(const text& a);
+	void do_autofire_action(const text& a, int mode);
+	void do_action(const text& name, short state, int mode);
 	void promote_key(keyboard::ctrlrkey& k);
-	void add_button(const std::string& name, const controller_bind& binding);
+	void add_button(const text& name, const controller_bind& binding);
 	void process_controller(portctrl::controller& controller, unsigned number);
-	void process_controller(std::map<std::string, unsigned>& allocated,
+	void process_controller(std::map<text, unsigned>& allocated,
 		std::map<controller_triple, unsigned>& assigned,  portctrl::controller& controller, unsigned port,
 		unsigned number_in_port);
-	void process_port(std::map<std::string, unsigned>& allocated,
+	void process_port(std::map<text, unsigned>& allocated,
 		std::map<controller_triple, unsigned>& assigned, unsigned port, portctrl::type& ptype);
 	void init();
-	bool check_button_active(const std::string& name);
-	void do_button_action(const std::string& name, short newstate, int mode);
-	void send_analog(const std::string& name, int32_t x, int32_t y);
-	std::map<std::string, keyboard::invbind*> macro_binds;
-	std::map<std::string, keyboard::invbind*> macro_binds2;
-	std::map<std::string, controller_bind> all_buttons;
-	std::map<std::string, active_bind> active_buttons;
-	std::map<std::string, keyboard::ctrlrkey*> added_keys;
+	bool check_button_active(const text& name);
+	void do_button_action(const text& name, short newstate, int mode);
+	void send_analog(const text& name, int32_t x, int32_t y);
+	std::map<text, keyboard::invbind*> macro_binds;
+	std::map<text, keyboard::invbind*> macro_binds2;
+	std::map<text, controller_bind> all_buttons;
+	std::map<text, active_bind> active_buttons;
+	std::map<text, keyboard::ctrlrkey*> added_keys;
 	std::set<core_core*> cores_done;
 	controller_state& controls;
 	keyboard::mapper& mapper;
@@ -129,15 +130,15 @@ private:
 	lua_state& lua2;
 	command::group& cmd;
 	struct dispatch::target<> ncore;
-	command::_fnptr<const std::string&> button_p;
-	command::_fnptr<const std::string&> button_r;
-	command::_fnptr<const std::string&> button_h;
-	command::_fnptr<const std::string&> button_t;
-	command::_fnptr<const std::string&> button_d;
-	command::_fnptr<const std::string&> button_ap;
-	command::_fnptr<const std::string&> button_ar;
-	command::_fnptr<const std::string&> button_at;
-	command::_fnptr<const std::string&> button_a;
+	command::_fnptr<const text&> button_p;
+	command::_fnptr<const text&> button_r;
+	command::_fnptr<const text&> button_h;
+	command::_fnptr<const text&> button_t;
+	command::_fnptr<const text&> button_d;
+	command::_fnptr<const text&> button_ap;
+	command::_fnptr<const text&> button_ar;
+	command::_fnptr<const text&> button_at;
+	command::_fnptr<const text&> button_a;
 };
 
 

@@ -19,14 +19,14 @@
 
 namespace
 {
-	std::map<std::string, std::string> read_settings(zip::reader& r)
+	std::map<text, text> read_settings(zip::reader& r)
 	{
-		std::map<std::string, std::string> x;
+		std::map<text, text> x;
 		for(auto i : r) {
 			if(!regex_match("port[0-9]+|setting\\..+", i))
 				continue;
-			std::string s;
-			std::string v;
+			text s;
+			text v;
 			if(i.substr(0, 4) == "port")
 				s = i;
 			else
@@ -37,17 +37,16 @@ namespace
 		return x;
 	}
 
-	std::map<std::string, uint64_t> read_active_macros(zip::reader& r, const std::string& member)
+	std::map<text, uint64_t> read_active_macros(zip::reader& r, const text& member)
 	{
-		std::map<std::string, uint64_t> x;
+		std::map<text, uint64_t> x;
 		if(!r.has_member(member))
 			return x;
 		std::istream& m = r[member];
 		try {
 			while(m) {
-				std::string out;
-				std::getline(m, out);
-				istrip_CR(out);
+				text out = text::getline(m);
+				text::istrip_CR(out);
 				if(out == "")
 					continue;
 				regex_results rx = regex("([0-9]+) +(.*)", out);
@@ -69,26 +68,26 @@ namespace
 		return x;
 	}
 
-	template<typename T> std::string pick_a_name(const std::map<std::string, T>& map, bool prefer_unnamed)
+	template<typename T> text pick_a_name(const std::map<text, T>& map, bool prefer_unnamed)
 	{
 		if(prefer_unnamed && !map.count(""))
 			return "";
 		size_t count = 1;
 		while(true) {
-			std::string c = (stringfmt() << "(unnamed branch #" << count++ << ")").str();
+			text c = (stringfmt() << "(unnamed branch #" << count++ << ")").str();
 			if(!map.count(c))
 				return c;
 		}
 	}
 
-	void read_authors_file(zip::reader& r, std::vector<std::pair<std::string, std::string>>& authors)
+	void read_authors_file(zip::reader& r, std::vector<std::pair<text, text>>& authors)
 		throw(std::bad_alloc, std::runtime_error)
 	{
 		std::istream& m = r["authors"];
 		try {
-			std::string x;
-			while(std::getline(m, x)) {
-				istrip_CR(x);
+			while(m) {
+				text x = text::getline(m);
+				text::istrip_CR(x);
 				auto g = split_author(x);
 				authors.push_back(g);
 			}
@@ -99,7 +98,7 @@ namespace
 		}
 	}
 
-	std::string read_rrdata(zip::reader& r, std::vector<char>& out) throw(std::bad_alloc, std::runtime_error)
+	text read_rrdata(zip::reader& r, std::vector<char>& out) throw(std::bad_alloc, std::runtime_error)
 	{
 		r.read_raw_file("rrdata", out);
 		uint64_t count = rrdata_set::count(out);
@@ -108,7 +107,7 @@ namespace
 		return x.str();
 	}
 
-	void read_subtitles(zip::reader& r, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
+	void read_subtitles(zip::reader& r, const text& file, std::map<moviefile_subtiming, text>& x)
 	{
 		x.clear();
 		if(!r.has_member(file))
@@ -116,9 +115,8 @@ namespace
 		std::istream& m = r[file];
 		try {
 			while(m) {
-				std::string out;
-				std::getline(m, out);
-				istrip_CR(out);
+				text out = text::getline(m);
+				text::istrip_CR(out);
 				auto r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]+(.*)", out);
 				if(!r)
 					continue;
@@ -132,7 +130,7 @@ namespace
 		}
 	}
 
-	void read_input(zip::reader& r, const std::string& mname, portctrl::frame_vector& input)
+	void read_input(zip::reader& r, const text& mname, portctrl::frame_vector& input)
 		throw(std::bad_alloc, std::runtime_error)
 	{
 		portctrl::frame tmp = input.blank_frame(false);
@@ -153,7 +151,7 @@ namespace
 		}
 	}
 
-	void read_pollcounters(zip::reader& r, const std::string& file, std::vector<uint32_t>& pctr)
+	void read_pollcounters(zip::reader& r, const text& file, std::vector<uint32_t>& pctr)
 	{
 		std::istream& m = r[file];
 		try {
@@ -179,7 +177,7 @@ namespace
 		}
 	}
 
-	std::string get_namefile(const std::string& input)
+	text get_namefile(const text& input)
 	{
 		regex_results s;
 		if(input == "input")
@@ -193,7 +191,7 @@ namespace
 
 void moviefile::brief_info::load(zip::reader& r)
 {
-	std::string tmp;
+	text tmp;
 	r.read_linefile("systemid", tmp);
 	if(tmp.substr(0, 8) != "lsnes-rr")
 		throw std::runtime_error("Not lsnes movie");
@@ -223,7 +221,7 @@ void moviefile::brief_info::load(zip::reader& r)
 
 void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 {
-	std::string tmp;
+	text tmp;
 	r.read_linefile("systemid", tmp);
 	if(tmp.substr(0, 8) != "lsnes-rr")
 		throw std::runtime_error("Not lsnes movie");
@@ -295,13 +293,13 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 			 r.read_raw_file(name, ramcontent[name.substr(8)]);
 	if(dyn.rtc_subsecond < 0 || movie_rtc_subsecond < 0)
 		throw std::runtime_error("Invalid RTC subsecond value");
-	std::string name = r.find_first();
+	text name = r.find_first();
 	for(auto name : r)
 		if(name.length() >= 10 && name.substr(0, 10) == "moviesram.")
 			r.read_raw_file(name, movie_sram[name.substr(10)]);
 	read_authors_file(r, authors);
 
-	std::map<uint64_t, std::string> branch_table;
+	std::map<uint64_t, text> branch_table;
 	//Load branch names.
 	for(auto name : r) {
 		regex_results s;
@@ -315,13 +313,13 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	for(auto name : r) {
 		regex_results s;
 		if(name == "input") {
-			std::string bname = branch_table.count(0) ? branch_table[0] : pick_a_name(branches, true);
+			text bname = branch_table.count(0) ? branch_table[0] : pick_a_name(branches, true);
 			if(!branches.count(bname)) branches[bname].clear(ports);
 			read_input(r, name, branches[bname]);
 			input = &branches[bname];
 		} else if(s = regex("input\\.([1-9][0-9]*)", name)) {
 			uint64_t n = parse_value<uint64_t>(s[1]);
-			std::string bname = branch_table.count(n) ? branch_table[n] : pick_a_name(branches, false);
+			text bname = branch_table.count(n) ? branch_table[n] : pick_a_name(branches, false);
 			if(!branches.count(bname)) branches[bname].clear(ports);
 			read_input(r, name, branches[bname]);
 		}
@@ -330,7 +328,7 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 	create_default_branch(ports);
 }
 
-moviefile_branch_extractor_text::moviefile_branch_extractor_text(const std::string& filename)
+moviefile_branch_extractor_text::moviefile_branch_extractor_text(const text& filename)
 	: z(filename)
 {
 }
@@ -339,12 +337,12 @@ moviefile_branch_extractor_text::~moviefile_branch_extractor_text()
 {
 }
 
-std::set<std::string> moviefile_branch_extractor_text::enumerate()
+std::set<text> moviefile_branch_extractor_text::enumerate()
 {
-	std::set<std::string> r;
+	std::set<text> r;
 	for(auto& i : z) {
-		std::string bname;
-		std::string n = get_namefile(i);
+		text bname;
+		text n = get_namefile(i);
 		if(n != "") {
 			if(z.has_member(n)) {
 				z.read_linefile(n, bname);
@@ -356,15 +354,15 @@ std::set<std::string> moviefile_branch_extractor_text::enumerate()
 	return r;
 }
 
-void moviefile_branch_extractor_text::read(const std::string& name, portctrl::frame_vector& v)
+void moviefile_branch_extractor_text::read(const text& name, portctrl::frame_vector& v)
 {
-	std::set<std::string> r;
+	std::set<text> r;
 	bool done = false;
 	for(auto& i : z) {
-		std::string bname;
-		std::string n = get_namefile(i);
+		text bname;
+		text n = get_namefile(i);
 		if(n != "") {
-			std::string bname;
+			text bname;
 			if(z.has_member(n))
 				z.read_linefile(n, bname);
 			if(name == bname) {
@@ -379,7 +377,7 @@ void moviefile_branch_extractor_text::read(const std::string& name, portctrl::fr
 }
 
 
-moviefile_sram_extractor_text::moviefile_sram_extractor_text(const std::string& filename)
+moviefile_sram_extractor_text::moviefile_sram_extractor_text(const text& filename)
 	: z(filename)
 {
 }
@@ -388,9 +386,9 @@ moviefile_sram_extractor_text::~moviefile_sram_extractor_text()
 {
 }
 
-std::set<std::string> moviefile_sram_extractor_text::enumerate()
+std::set<text> moviefile_sram_extractor_text::enumerate()
 {
-	std::set<std::string> r;
+	std::set<text> r;
 	for(auto& i : z) {
 		regex_results rgx;
 		if(i == "savestate")
@@ -401,10 +399,10 @@ std::set<std::string> moviefile_sram_extractor_text::enumerate()
 	return r;
 }
 
-void moviefile_sram_extractor_text::read(const std::string& name, std::vector<char>& v)
+void moviefile_sram_extractor_text::read(const text& name, std::vector<char>& v)
 {
-	std::set<std::string> r;
-	std::string realname;
+	std::set<text> r;
+	text realname;
 	if(name == "") {
 		//Try to read savestate.
 		realname = "savestate";

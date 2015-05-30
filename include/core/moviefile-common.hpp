@@ -6,9 +6,9 @@
 #define DEFAULT_RTC_SUBSECOND 0ULL
 
 template<typename target>
-static void moviefile_write_settings(target& w, const std::map<std::string, std::string>& settings,
-	core_setting_group& sgroup, std::function<void(target& w, const std::string& name,
-	const std::string& value)> writefn)
+static void moviefile_write_settings(target& w, const std::map<text, text>& settings,
+	core_setting_group& sgroup, std::function<void(target& w, const text& name,
+	const text& value)> writefn)
 {
 	for(auto i : settings) {
 		if(!sgroup.settings.count(i.first))
@@ -21,40 +21,40 @@ static void moviefile_write_settings(target& w, const std::map<std::string, std:
 
 struct moviefile_branch_extractor_text : public moviefile::branch_extractor
 {
-	moviefile_branch_extractor_text(const std::string& filename);
+	moviefile_branch_extractor_text(const text& filename);
 	~moviefile_branch_extractor_text();
-	std::set<std::string> enumerate();
-	void read(const std::string& name, portctrl::frame_vector& v);
+	std::set<text> enumerate();
+	void read(const text& name, portctrl::frame_vector& v);
 private:
 	zip::reader z;
 };
 
 struct moviefile_branch_extractor_binary : public moviefile::branch_extractor
 {
-	moviefile_branch_extractor_binary(const std::string& filename);
+	moviefile_branch_extractor_binary(const text& filename);
 	~moviefile_branch_extractor_binary();
-	std::set<std::string> enumerate();
-	void read(const std::string& name, portctrl::frame_vector& v);
+	std::set<text> enumerate();
+	void read(const text& name, portctrl::frame_vector& v);
 private:
 	int s;
 };
 
 struct moviefile_sram_extractor_text : public moviefile::sram_extractor
 {
-	moviefile_sram_extractor_text(const std::string& filename);
+	moviefile_sram_extractor_text(const text& filename);
 	~moviefile_sram_extractor_text();
-	std::set<std::string> enumerate();
-	void read(const std::string& name, std::vector<char>& v);
+	std::set<text> enumerate();
+	void read(const text& name, std::vector<char>& v);
 private:
 	zip::reader z;
 };
 
 struct moviefile_sram_extractor_binary : public moviefile::sram_extractor
 {
-	moviefile_sram_extractor_binary(const std::string& filename);
+	moviefile_sram_extractor_binary(const text& filename);
 	~moviefile_sram_extractor_binary();
-	std::set<std::string> enumerate();
-	void read(const std::string& name, std::vector<char>& v);
+	std::set<text> enumerate();
+	void read(const text& name, std::vector<char>& v);
 private:
 	int s;
 };

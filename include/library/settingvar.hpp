@@ -6,6 +6,7 @@
 #include <set>
 #include "threads.hpp"
 #include "string.hpp"
+#include "text.hpp"
 #include <string>
 
 namespace settingvar
@@ -52,11 +53,11 @@ public:
 /**
  * New item in set.
  */
-		virtual void create(set& s, const std::string& name, superbase& svar) = 0;
+		virtual void create(set& s, const text& name, superbase& svar) = 0;
 /**
  * Deleted item from set.
  */
-		virtual void destroy(set& s, const std::string& name) = 0;
+		virtual void destroy(set& s, const text& name) = 0;
 /**
  * Destroyed the entiere set.
  */
@@ -73,11 +74,11 @@ public:
 /**
  * Register a supervariable.
  */
-	void do_register(const std::string& name, superbase& info);
+	void do_register(const text& name, superbase& info);
 /**
  * Unregister a supervariable.
  */
-	void do_unregister(const std::string& name, superbase& info);
+	void do_unregister(const text& name, superbase& info);
 /**
  * Add a callback on new supervariable.
  */
@@ -107,11 +108,11 @@ public:
 /**
  * Get all settings.
  */
-	std::set<std::string> get_settings_set() throw(std::bad_alloc);
+	std::set<text> get_settings_set() throw(std::bad_alloc);
 /**
  * Get setting.
  */
-	base& operator[](const std::string& name);
+	base& operator[](const text& name);
 /**
  * Add a listener.
  */
@@ -123,11 +124,11 @@ public:
 /**
  * Register a setting.
  */
-	void do_register(const std::string& name, base& _setting) throw(std::bad_alloc);
+	void do_register(const text& name, base& _setting) throw(std::bad_alloc);
 /**
  * Unregister a setting.
  */
-	void do_unregister(const std::string& name, base& _setting) throw(std::bad_alloc);
+	void do_unregister(const text& name, base& _setting) throw(std::bad_alloc);
 /**
  * Fire listener.
  */
@@ -149,8 +150,8 @@ private:
 	public:
 		xlistener(group& _grp);
 		~xlistener();
-		void create(set& s, const std::string& name, superbase& sb);
-		void destroy(set& s, const std::string& name);
+		void create(set& s, const text& name, superbase& sb);
+		void destroy(set& s, const text& name);
 		void kill(set& s);
 	private:
 		group& grp;
@@ -172,13 +173,13 @@ public:
  *
  * Note: This reads cached values in perference to actual values.
  */
-	std::map<std::string, std::string> get_all();
+	std::map<text, text> get_all();
 /**
  * Enumerate valid keys.
  *
  * Returns: The set of actually valid keys.
  */
-	std::set<std::string> get_keys();
+	std::set<text> get_keys();
 /**
  * Set a value.
  *
@@ -189,7 +190,7 @@ public:
  *
  * Note: If setting has cached value and setting it succeeds, the cached value is cleared.
  */
-	void set(const std::string& name, const std::string& value, bool allow_invalid = false) throw(std::bad_alloc,
+	void set(const text& name, const text& value, bool allow_invalid = false) throw(std::bad_alloc,
 		std::runtime_error);
 /**
  * Get a value.
@@ -198,11 +199,11 @@ public:
  * Return: Actual value of the setting.
  * Throws std::runtime_error: Setting doesn't exist.
  */
-	std::string get(const std::string& name) throw(std::bad_alloc, std::runtime_error);
+	text get(const text& name) throw(std::bad_alloc, std::runtime_error);
 /**
  * Get descriptor for.
  */
-	const description& get_description(const std::string& name) throw(std::bad_alloc,
+	const description& get_description(const text& name) throw(std::bad_alloc,
 		std::runtime_error);
 /**
  * Get human-readable name.
@@ -211,10 +212,10 @@ public:
  * Return: Human-readable name of the setting.
  * Throws std::runtime_error: Setting doesn't exist.
  */
-	std::string get_hname(const std::string& name) throw(std::bad_alloc, std::runtime_error);
+	text get_hname(const text& name) throw(std::bad_alloc, std::runtime_error);
 private:
 	group& grp;
-	std::map<std::string, std::string> badcache;
+	std::map<text, text> badcache;
 };
 
 /**
@@ -229,10 +230,10 @@ struct enumeration
 			values[bound = x++] = i;
 		}
 	}
-	std::string get(unsigned val) { return values.count(val) ? values[val] : ""; }
+	text get(unsigned val) { return values.count(val) ? values[val] : ""; }
 	unsigned max_val() { return bound; }
 private:
-	std::map<unsigned, std::string> values;
+	std::map<unsigned, text> values;
 	unsigned bound;
 };
 
@@ -269,7 +270,7 @@ public:
 /**
  * Constructor.
  */
-	void _superbase(set& _s, const std::string& iname) throw(std::bad_alloc);
+	void _superbase(set& _s, const text& iname) throw(std::bad_alloc);
 /**
  * Destructor.
  */
@@ -284,7 +285,7 @@ public:
 	void set_died();
 private:
 	set* s;
-	std::string iname;
+	text iname;
 };
 
 /**
@@ -296,7 +297,7 @@ public:
 /**
  * Constructor.
  */
-	base(group& _group, const std::string& iname, const std::string& hname, bool dynamic) throw(std::bad_alloc);
+	base(group& _group, const text& iname, const text& hname, bool dynamic) throw(std::bad_alloc);
 /**
  * Destructor.
  */
@@ -304,16 +305,16 @@ public:
 /**
  * Set setting.
  */
-	virtual void str(const std::string& val) throw(std::runtime_error, std::bad_alloc) = 0;
+	virtual void str(const text& val) throw(std::runtime_error, std::bad_alloc) = 0;
 /**
  * Get setting.
  */
-	virtual std::string str() const throw(std::runtime_error, std::bad_alloc) = 0;
+	virtual text str() const throw(std::runtime_error, std::bad_alloc) = 0;
 /**
  * Get setting name.
  */
-	const std::string& get_iname() const throw() { return iname; }
-	const std::string& get_hname() const throw() { return hname; }
+	const text& get_iname() const throw() { return iname; }
+	const text& get_hname() const throw() { return hname; }
 /**
  * Get setting description.
  */
@@ -326,8 +327,8 @@ protected:
 	base(const base&);
 	base& operator=(const base&);
 	group* sgroup;
-	std::string iname;
-	std::string hname;
+	text iname;
+	text hname;
 	bool is_dynamic;
 };
 
@@ -343,7 +344,7 @@ public:
 /**
  * Constructor.
  */
-	variable(group& sgroup, const std::string& iname, const std::string& hname,
+	variable(group& sgroup, const text& iname, const text& hname,
 		valtype_t defaultvalue, bool dynamic = false)
 		: base(sgroup, iname, hname, dynamic)
 	{
@@ -358,7 +359,7 @@ public:
 /**
  * Set setting.
  */
-	void str(const std::string& val) throw(std::runtime_error, std::bad_alloc)
+	void str(const text& val) throw(std::runtime_error, std::bad_alloc)
 	{
 		{
 			threads::arlock h(get_setting_lock());
@@ -369,7 +370,7 @@ public:
 /**
  * Get setting.
  */
-	std::string str() const throw(std::runtime_error, std::bad_alloc)
+	text str() const throw(std::runtime_error, std::bad_alloc)
 	{
 		threads::arlock h(get_setting_lock());
 		return model::write(value);
@@ -426,7 +427,7 @@ public:
 /**
  * Constructor.
  */
-	supervariable(set& _s, const std::string& _iname, const std::string& _hname, valtype_t _defaultvalue)
+	supervariable(set& _s, const text& _iname, const text& _hname, valtype_t _defaultvalue)
 		throw(std::bad_alloc)
 		: s(_s)
 	{
@@ -472,8 +473,8 @@ public:
 	}
 private:
 	set& s;
-	std::string iname;
-	std::string hname;
+	text iname;
+	text hname;
 	valtype_t defaultvalue;
 };
 
@@ -493,14 +494,14 @@ template<typename values> struct model_bool
 {
 	typedef bool valtype_t;
 	static bool valid(bool val) { return true; /* Any boolean is valid boolean. */ }
-	static bool read(const std::string& val)
+	static bool read(const text& val)
 	{
 		int x = string_to_bool(val);
 		if(x < 0)
 			throw std::runtime_error("Invalid boolean value");
 		return (x != 0);
 	}
-	static std::string write(bool val)
+	static text write(bool val)
 	{
 		return val ? values::enable : values::disable;
 	}
@@ -526,14 +527,14 @@ template<int32_t minimum, int32_t maximum> struct model_int
 {
 	typedef int32_t valtype_t;
 	static bool valid(int32_t val) { return (val >= minimum && val <= maximum); }
-	static int32_t read(const std::string& val)
+	static int32_t read(const text& val)
 	{
 		int x = parse_value<int32_t>(val);
 		if(x < minimum || x > maximum)
 			(stringfmt() << "Value out of range (" << minimum << " to " << maximum << ")").throwex();
 		return x;
 	}
-	static std::string write(int32_t val)
+	static text write(int32_t val)
 	{
 		return (stringfmt() << val).str();
 	}
@@ -558,17 +559,17 @@ template<int32_t m, int32_t M> description& description_get(model_int<m, M> X)
  */
 struct model_path
 {
-	typedef std::string valtype_t;
-	static bool valid(std::string val) { return true; /* Any boolean is valid boolean. */ }
-	static std::string read(const std::string& val)
+	typedef text valtype_t;
+	static bool valid(text val) { return true; /* Any boolean is valid boolean. */ }
+	static text read(const text& val)
 	{
 		return val;
 	}
-	static std::string write(std::string val)
+	static text write(text val)
 	{
 		return val;
 	}
-	static std::string transform(std::string val)
+	static text transform(text val)
 	{
 		return (val != "") ? val : ".";
 	}
@@ -592,7 +593,7 @@ template<enumeration* e> struct model_enumerated
 {
 	typedef unsigned valtype_t;
 	static bool valid(unsigned val) { return (val <= e->max_val()); }
-	static unsigned read(const std::string& val)
+	static unsigned read(const text& val)
 	{
 		for(unsigned i = 0; i <= e->max_val(); i++)
 			if(val == e->get(i))
@@ -602,7 +603,7 @@ template<enumeration* e> struct model_enumerated
 			(stringfmt() << "Value out of range (0  to " << e->max_val() << ")").throwex();
 		return x;
 	}
-	static std::string write(unsigned val)
+	static text write(unsigned val)
 	{
 		return e->get(val);
 	}

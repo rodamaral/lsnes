@@ -8,7 +8,7 @@ namespace
 {
 	int ss_set(lua::state& L, lua::parameters& P)
 	{
-		std::string name, value;
+		text name, value;
 
 		P(name, value);
 
@@ -25,12 +25,12 @@ namespace
 
 	int ss_get(lua::state& L, lua::parameters& P)
 	{
-		std::string name;
+		text name;
 
 		P(name);
 
 		try {
-			std::string value = CORE().setcache->get(name);
+			text value = CORE().setcache->get(name);
 			L.pushlstring(value.c_str(), value.length());
 			return 1;
 		} catch(std::exception& e) {
@@ -67,7 +67,7 @@ namespace
 	int ss_setspeed(lua::state& L, lua::parameters& P)
 	{
 		double spd = 0;
-		std::string special;
+		text special;
 		bool is_string = false;
 
 		if(P.is_string()) {

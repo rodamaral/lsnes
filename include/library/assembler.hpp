@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include "serialization.hpp"
+#include "text.hpp"
 #include <cstdint>
 #include <stdexcept>
 #include <functional>
@@ -163,7 +164,7 @@ struct assembler
 	void operator()() {}
 
 	void _label(label& l);
-	void _label(label& l, const std::string& globalname);
+	void _label(label& l, const text& globalname);
 	void byte(uint8_t b);
 	void byte(std::initializer_list<uint8_t> b);
 	void byte(const uint8_t* b, size_t l);
@@ -172,8 +173,8 @@ struct assembler
 	void align(size_t multiple);
 	void pad(size_t amount);
 	size_t size();
-	void dump(const std::string& basename, const std::string& name, void* base, std::map<std::string, void*> map);
-	std::map<std::string, void*> flush(void* base);
+	void dump(const text& basename, const text& name, void* base, std::map<text, void*> map);
+	std::map<text, void*> flush(void* base);
 private:
 	struct reloc
 	{
@@ -183,7 +184,7 @@ private:
 	};
 	std::vector<uint8_t> data;
 	std::list<reloc> relocs;
-	std::map<std::string, const label*> globals;
+	std::map<text, const label*> globals;
 };
 
 class dynamic_code

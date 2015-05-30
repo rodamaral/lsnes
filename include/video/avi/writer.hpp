@@ -16,7 +16,7 @@ public:
  * Parameter _vcodec: The video codec.
  * Parameter _acodec: The audio codec.
  */
-	avi_writer(const std::string& _prefix, struct avi_video_codec& _vcodec, struct avi_audio_codec& _acodec,
+	avi_writer(const text& _prefix, struct avi_video_codec& _vcodec, struct avi_audio_codec& _acodec,
 		uint32_t samplerate, uint16_t audiochannels);
 /**
  * Destructor.
@@ -41,7 +41,7 @@ public:
 private:
 	void flush(bool force);
 	bool closed;
-	std::string prefix;
+	text prefix;
 	uint64_t next_segment;
 	std::deque<frame_object> vqueue;
 	sample_queue aqueue;

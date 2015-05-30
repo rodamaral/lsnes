@@ -7,15 +7,15 @@ namespace
 	class lua_zip_writer
 	{
 	public:
-		lua_zip_writer(lua::state& L, const std::string& filename, unsigned compression);
-		static size_t overcommit(const std::string& filename, unsigned compression) { return 0; }
+		lua_zip_writer(lua::state& L, const text& filename, unsigned compression);
+		static size_t overcommit(const text& filename, unsigned compression) { return 0; }
 		~lua_zip_writer()
 		{
 			if(w) delete w;
 		}
 		static int create(lua::state& L, lua::parameters& P)
 		{
-			std::string filename;
+			text filename;
 			unsigned compression;
 
 			P(filename, P.optional(compression, 9));
@@ -56,7 +56,7 @@ namespace
 		}
 		int create_file(lua::state& L, lua::parameters& P)
 		{
-			std::string filename;
+			text filename;
 
 			if(!w) throw std::runtime_error("Zip writer already finished");
 
@@ -71,7 +71,7 @@ namespace
 		}
 		int write(lua::state& L, lua::parameters& P)
 		{
-			std::string _data;
+			text _data;
 
 			if(!w) throw std::runtime_error("Zip writer already finished");
 			if(!file_open) throw std::runtime_error("Zip writer doesn't have file open");
@@ -83,14 +83,14 @@ namespace
 			file_open->write(&data[0], data.size());
 			return 0;
 		}
-		std::string print()
+		text print()
 		{
 			return file;
 		}
 	private:
 		zip::writer* w;
 		std::ostream* file_open;
-		std::string file;
+		text file;
 	};
 
 	lua::_class<lua_zip_writer> LUA_class_zipwriter(lua_class_fileio, "ZIPWRITER", {
@@ -103,7 +103,7 @@ namespace
 		{"write", &lua_zip_writer::write}
 	}, &lua_zip_writer::print);
 
-	lua_zip_writer::lua_zip_writer(lua::state& L, const std::string& filename, unsigned compression)
+	lua_zip_writer::lua_zip_writer(lua::state& L, const text& filename, unsigned compression)
 	{
 		file = filename;
 		w = new zip::writer(filename, compression);
@@ -112,7 +112,7 @@ namespace
 
 	int zip_enumerate(lua::state& L, lua::parameters& P)
 	{
-		std::string filename;
+		text filename;
 		bool invert;
 
 		P(filename, P.optional(invert, false));

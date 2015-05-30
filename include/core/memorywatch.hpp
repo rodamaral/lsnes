@@ -34,7 +34,7 @@ struct memwatch_printer
  * Get a printer object corresponding to this object.
  */
 	GC::pointer<memorywatch::item_printer> get_printer_obj(
-		std::function<GC::pointer<mathexpr::mathexpr>(const std::string& n)> vars);
+		std::function<GC::pointer<mathexpr::mathexpr>(const text& n)> vars);
 	//Fields.
 	enum position_category {
 		PC_DISABLED,
@@ -42,14 +42,14 @@ struct memwatch_printer
 		PC_ONSCREEN
 	} position;
 	bool cond_enable;			//Ignored for disabled.
-	std::string enabled;			//Ignored for disabled.
-	std::string onscreen_xpos;
-	std::string onscreen_ypos;
+	text enabled;			//Ignored for disabled.
+	text onscreen_xpos;
+	text onscreen_ypos;
 	bool onscreen_alt_origin_x;
 	bool onscreen_alt_origin_y;
 	bool onscreen_cliprange_x;
 	bool onscreen_cliprange_y;
-	std::string onscreen_font;		//"" is system default.
+	text onscreen_font;		//"" is system default.
 	int64_t onscreen_fg_color;
 	int64_t onscreen_bg_color;
 	int64_t onscreen_halo_color;
@@ -81,11 +81,11 @@ struct memwatch_item
 /**
  * Translate compatiblity item.
  */
-	void compatiblity_unserialize(memory_space& memory, const std::string& item);
+	void compatiblity_unserialize(memory_space& memory, const text& item);
 	//Fields
 	memwatch_printer printer;	//The printer.
-	std::string expr;			//The main expression.
-	std::string format;			//Format.
+	text expr;			//The main expression.
+	text format;			//Format.
 	unsigned bytes;				//Number of bytes to read (0 => Not memory read operator).
 	bool signed_flag;			//Is signed?
 	bool float_flag;			//Is float?
@@ -102,40 +102,40 @@ struct memwatch_set
 /**
  * Get the specified memory watch item.
  */
-	memwatch_item& get(const std::string& name);
+	memwatch_item& get(const text& name);
 /**
  * Get the specified memory watch item as JSON serialization.
  *
  * Parameter name: The item name.
  * Parameter printer: JSON pretty-printer to use.
  */
-	std::string get_string(const std::string& name, JSON::printer* printer = NULL);
+	text get_string(const text& name, JSON::printer* printer = NULL);
 /**
  * Set the specified memory watch item. Fills the runtime variables.
  *
  * Parameter name: The name of the new item.
  * Parameter item: The item to insert. Fields are shallow-copied.
  */
-	void set(const std::string& name, memwatch_item& item);
+	void set(const text& name, memwatch_item& item);
 /**
  * Set the specified memory watch item from JSON serialization. Fills the runtime variables.
  *
  * Parameter name: The name of the new item.
  * Parameter item: The serialization of item to insert.
  */
-	void set(const std::string& name, const std::string& item);
+	void set(const text& name, const text& item);
 /**
  * Set multiple items at once.
  *
  * Parameter list: The list of items.
  */
-	void set_multi(std::list<std::pair<std::string, memwatch_item>>& list);
+	void set_multi(std::list<std::pair<text, memwatch_item>>& list);
 /**
  * Set multiple items at once from JSON descriptions.
  *
  * Parameter list: The list of items.
  */
-	void set_multi(std::list<std::pair<std::string, std::string>>& list);
+	void set_multi(std::list<std::pair<text, text>>& list);
 /**
  * Rename a memory watch item.
  *
@@ -143,27 +143,27 @@ struct memwatch_set
  * Parameter newname: The new name.
  * Returns: True on success, false if failed (new item already exists).
  */
-	bool rename(const std::string& oname, const std::string& newname);
+	bool rename(const text& oname, const text& newname);
 /**
  * Delete an item.
  *
  * Parameter name: The name of the item to delete.
  */
-	void clear(const std::string& name);
+	void clear(const text& name);
 /**
  * Delete multiple items.
  *
  * Parameter names: The names of the items to delete.
  */
-	void clear_multi(const std::set<std::string>& name);
+	void clear_multi(const std::set<text>& name);
 /**
  * Enumerate item names.
  */
-	std::set<std::string> enumerate();
+	std::set<text> enumerate();
 /**
  * Get value of specified memory watch as a string.
  */
-	std::string get_value(const std::string& name);
+	text get_value(const text& name);
 /**
  * Watch all the items.
  *
@@ -173,14 +173,14 @@ struct memwatch_set
 /**
  * Get memory watch vars that go to window.
  */
-	const std::map<std::string, std::u32string>& get_window_vars() { return window_vars; }
+	const std::map<text, text>& get_window_vars() { return window_vars; }
 private:
-	void rebuild(std::map<std::string, memwatch_item>& nitems);
-	std::map<std::string, memwatch_item> items;
-	std::map<std::string, std::u32string> window_vars;
-	std::map<std::string, bool> used_memorywatches;
+	void rebuild(std::map<text, memwatch_item>& nitems);
+	std::map<text, memwatch_item> items;
+	std::map<text, text> window_vars;
+	std::map<text, bool> used_memorywatches;
 	void erase_unused_watches();
-	void watch_output(const std::string& name, const std::string& value);
+	void watch_output(const text& name, const text& value);
 	memorywatch::set watch_set;
 	memory_space& memory;
 	project_state& project;

@@ -7,7 +7,7 @@ namespace
 {
 	int screenshot(lua::state& L, lua::parameters& P)
 	{
-		std::string filename;
+		text filename;
 
 		P(filename);
 

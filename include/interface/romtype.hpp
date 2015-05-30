@@ -10,6 +10,7 @@
 #include "library/framebuffer.hpp"
 #include "library/threads.hpp"
 #include "library/loadlib.hpp"
+#include "library/text.hpp"
 
 struct core_region;
 struct core_type;
@@ -55,7 +56,7 @@ struct interface_action_param
  */
 struct interface_action_paramval
 {
-	std::string s;
+	text s;
 	int64_t i;
 	bool b;
 };
@@ -69,8 +70,8 @@ struct interface_action
 	const char* _title;
 	const char* _symbol;
 	std::list<interface_action_param> params;
-	std::string get_title() const { return _title; }
-	std::string get_symbol() const { return _symbol; }
+	text get_title() const { return _title; }
+	text get_symbol() const { return _symbol; }
 	bool is_toggle() const;
 };
 
@@ -151,12 +152,12 @@ struct core_romimage_info_params
 struct core_romimage_info
 {
 	core_romimage_info(const core_romimage_info_params& params);
-	std::string iname;
-	std::string hname;
+	text iname;
+	text hname;
 	unsigned mandatory;
 	int pass_mode;
 	unsigned headersize;
-	std::set<std::string> extensions;
+	std::set<text> extensions;
 	size_t get_headnersize(size_t imagesize);
 };
 
@@ -192,7 +193,7 @@ struct core_vma_info
 /**
  * Name of the VMA.
  */
-	std::string name;
+	text name;
 /**
  * Base address of the VMA.
  */
@@ -287,8 +288,8 @@ struct core_region
 public:
 	core_region(const core_region_params& params);
 	core_region(std::initializer_list<core_region_params> p) : core_region(*p.begin()) {}
-	const std::string& get_iname();
-	const std::string& get_hname();
+	const text& get_iname();
+	const text& get_hname();
 	unsigned get_priority();
 	unsigned get_handle();
 	bool is_multi();
@@ -298,8 +299,8 @@ public:
 private:
 	core_region(const core_region&);
 	core_region& operator=(const core_region&);
-	std::string iname;
-	std::string hname;
+	text iname;
+	text hname;
 	bool multi;
 	unsigned handle;
 	unsigned priority;
@@ -323,9 +324,9 @@ struct core_core
 	std::pair<uint32_t, uint32_t> get_video_rate();
 	double get_PAR();
 	std::pair<uint32_t, uint32_t> get_audio_rate();
-	std::string get_core_identifier() const;
-	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
-	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
+	text get_core_identifier() const;
+	std::map<text, std::vector<char>> save_sram() throw(std::bad_alloc);
+	void load_sram(std::map<text, std::vector<char>>& sram) throw(std::bad_alloc);
 	void serialize(std::vector<char>& out);
 	void unserialize(const char* in, size_t insize);
 	core_region& get_region();
@@ -340,13 +341,13 @@ struct core_core
 	void set_pflag(bool pflag);
 	framebuffer::raw& draw_cover();
 	std::vector<portctrl::type*> get_port_types() { return port_types; }
-	std::string get_core_shortname() const;
+	text get_core_shortname() const;
 	void pre_emulate_frame(portctrl::frame& cf);
 	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p);
 	unsigned action_flags(unsigned id);
 	std::pair<uint64_t, uint64_t> get_bus_map();
 	std::list<core_vma_info> vma_list();
-	std::set<std::string> srams();
+	std::set<text> srams();
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
@@ -359,7 +360,7 @@ struct core_core
 	std::pair<unsigned, unsigned> lightgun_scale();
 	void set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear);
 	void set_cheat(uint64_t addr, uint64_t value, bool set);
-	std::vector<std::string> get_trace_cpus();
+	std::vector<text> get_trace_cpus();
 	void debug_reset();
 	bool isnull() const;
 	void reset_to_load() { c_reset_to_load(); }
@@ -368,7 +369,7 @@ protected:
 /**
  * Get the name of the core.
  */
-	virtual std::string c_core_identifier() const = 0;
+	virtual text c_core_identifier() const = 0;
 /**
  * Set the current region.
  *
@@ -393,13 +394,13 @@ protected:
 /**
  * Save all SRAMs.
  */
-	virtual std::map<std::string, std::vector<char>> c_save_sram() throw(std::bad_alloc) = 0;
+	virtual std::map<text, std::vector<char>> c_save_sram() throw(std::bad_alloc) = 0;
 /**
  * Load all SRAMs.
  *
  * Note: Must handle SRAM being missing or shorter or longer than expected.
  */
-	virtual void c_load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) = 0;
+	virtual void c_load_sram(std::map<text, std::vector<char>>& sram) throw(std::bad_alloc) = 0;
 /**
  * Serialize the system state.
  */
@@ -461,7 +462,7 @@ protected:
 /**
  * Get shortened name of the core.
  */
-	virtual std::string c_get_core_shortname() const = 0;
+	virtual text c_get_core_shortname() const = 0;
 /**
  * Set the system controls to appropriate values for next frame.
  *
@@ -507,7 +508,7 @@ protected:
  *
  * Returns: The list of SRAMs.
  */
-	virtual std::set<std::string> c_srams() = 0;
+	virtual std::set<text> c_srams() = 0;
 /**
  * Get lightgun scale (only cores that have lightguns need to define this).
  */
@@ -526,7 +527,7 @@ protected:
 /**
  * Get list of trace processor names.
  */
-	virtual std::vector<std::string> c_get_trace_cpus() = 0;
+	virtual std::vector<text> c_get_trace_cpus() = 0;
 /**
  * Reset all debug hooks.
  */
@@ -542,7 +543,7 @@ protected:
 private:
 	std::vector<portctrl::type*> port_types;
 	bool hidden;
-	std::map<std::string, interface_action> actions;
+	std::map<text, interface_action> actions;
 	threads::lock actions_lock;
 };
 
@@ -556,30 +557,30 @@ public:
 	core_region& get_preferred_region() const;
 	std::list<core_region*> get_regions() const;
 	core_sysregion& combine_region(core_region& reg) const;
-	const std::string& get_iname() const;
-	const std::string& get_hname() const;
-	std::list<std::string> get_extensions() const;
-	bool is_known_extension(const std::string& ext) const;
-	core_sysregion& lookup_sysregion(const std::string& sysreg) const;
-	std::string get_biosname() const;
+	const text& get_iname() const;
+	const text& get_hname() const;
+	std::list<text> get_extensions() const;
+	bool is_known_extension(const text& ext) const;
+	core_sysregion& lookup_sysregion(const text& sysreg) const;
+	text get_biosname() const;
 	unsigned get_id() const;
 	unsigned get_image_count() const;
 	core_romimage_info get_image_info(unsigned index) const;
-	bool load(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
+	bool load(core_romimage* images, std::map<text, text>& settings, uint64_t rtc_sec,
 		uint64_t rtc_subsec);
-	controller_set controllerconfig(std::map<std::string, std::string>& settings);
+	controller_set controllerconfig(std::map<text, text>& settings);
 	core_setting_group& get_settings();
 	std::pair<uint64_t, uint64_t> get_bus_map() { return core->get_bus_map(); }
 	std::list<core_vma_info> vma_list() { return core->vma_list(); }
-	std::set<std::string> srams() { return core->srams(); }
+	std::set<text> srams() { return core->srams(); }
 	core_core* get_core() { return core; }
 	bool set_region(core_region& region) { return core->set_region(region); }
 	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
 	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
-	std::string get_core_identifier() { return core->get_core_identifier(); }
-	std::string get_core_shortname() const { return core->get_core_shortname(); }
-	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return core->save_sram(); }
-	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
+	text get_core_identifier() { return core->get_core_identifier(); }
+	text get_core_shortname() const { return core->get_core_shortname(); }
+	std::map<text, std::vector<char>> save_sram() throw(std::bad_alloc) { return core->save_sram(); }
+	void load_sram(std::map<text, std::vector<char>>& sram) throw(std::bad_alloc)
 	{
 		core->load_sram(sram);
 	}
@@ -599,7 +600,7 @@ public:
 	bool get_pflag() { return core->get_pflag(); }
 	void set_pflag(bool pflag) { core->set_pflag(pflag); }
 	framebuffer::raw& draw_cover() { return core->draw_cover(); }
-	std::string get_systemmenu_name() { return sysname; }
+	text get_systemmenu_name() { return sysname; }
 	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 	{
 		return core->execute_action(id, p);
@@ -620,7 +621,7 @@ public:
 	{
 		return core->set_cheat(addr, value, set);
 	}
-	std::vector<std::string> get_trace_cpus() { return core->get_trace_cpus(); }
+	std::vector<text> get_trace_cpus() { return core->get_trace_cpus(); }
 	void debug_reset() { core->debug_reset(); }
 	bool isnull() const { return core->isnull(); }
 	void reset_to_load() { return core->reset_to_load(); }
@@ -635,7 +636,7 @@ protected:
  * Parameter rtc_subsec: The initial RTC subseconds value.
  * Returns: -1 on failure, 0 on success.
  */
-	virtual int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
+	virtual int t_load_rom(core_romimage* images, std::map<text, text>& settings, uint64_t rtc_sec,
 		uint64_t rtc_subsec) = 0;
 /**
  * Obtain controller config for given settings.
@@ -643,15 +644,15 @@ protected:
  * Parameter settings: The settings to use.
  * Returns: The controller configuration.
  */
-	virtual controller_set t_controllerconfig(std::map<std::string, std::string>& settings) = 0;
+	virtual controller_set t_controllerconfig(std::map<text, text>& settings) = 0;
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
 	unsigned id;
-	std::string iname;
-	std::string hname;
-	std::string biosname;
-	std::string sysname;
+	text iname;
+	text hname;
+	text biosname;
+	text sysname;
 	std::list<core_region*> regions;
 	std::vector<core_romimage_info> imageinfo;
 	core_setting_group settings;
@@ -673,9 +674,9 @@ public:
  * Parameter type: The system.
  * Parameter region: The region.
  */
-	core_sysregion(const std::string& name, core_type& type, core_region& region);
+	core_sysregion(const text& name, core_type& type, core_region& region);
 	~core_sysregion() throw();
-	const std::string& get_name() const;
+	const text& get_name() const;
 	core_region& get_region();
 	core_type& get_type();
 	void fill_framerate_magic(uint64_t* magic);	//4 elements filled.
@@ -685,18 +686,18 @@ public:
  * Parameter name: The name of system region.
  * Returns: Sysregions matching the specified.
  */
-	static std::set<core_sysregion*> find_matching(const std::string& name);
+	static std::set<core_sysregion*> find_matching(const text& name);
 private:
 	core_sysregion(const core_sysregion&);
 	core_sysregion& operator=(const core_sysregion&);
-	std::string name;
+	text name;
 	core_type& type;
 	core_region& region;
 };
 
 //Register a sysregion to name mapping.
-void register_sysregion_mapping(std::string from, std::string to);
-std::string lookup_sysregion_mapping(std::string from);
+void register_sysregion_mapping(text from, text to);
+text lookup_sysregion_mapping(text from);
 
 //Set to true if new core is detected.
 extern bool new_core_flag;

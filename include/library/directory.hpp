@@ -4,17 +4,18 @@
 #include <set>
 #include <string>
 #include <cstdlib>
+#include "text.hpp"
 
 namespace directory
 {
-std::set<std::string> enumerate(const std::string& dir, const std::string& match);
-std::string absolute_path(const std::string& relative);
-uintmax_t size(const std::string& path);
-time_t mtime(const std::string& path);
-bool exists(const std::string& filename);
-bool is_regular(const std::string& filename);
-bool is_directory(const std::string& filename);
-bool ensure_exists(const std::string& path);
+std::set<text> enumerate(const text& dir, const text& match);
+text absolute_path(const text& relative);
+uintmax_t size(const text& path);
+time_t mtime(const text& path);
+bool exists(const text& filename);
+bool is_regular(const text& filename);
+bool is_directory(const text& filename);
+bool ensure_exists(const text& path);
 int rename_overwrite(const char* oldname, const char* newname);
 }
 

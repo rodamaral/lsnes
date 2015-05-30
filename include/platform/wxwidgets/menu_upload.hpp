@@ -16,8 +16,8 @@ public:
 	void on_select(wxCommandEvent& e);
 	struct upload_entry
 	{
-		std::string name;
-		std::string url;
+		text name;
+		text url;
 		enum _auth
 		{
 			AUTH_DH25519

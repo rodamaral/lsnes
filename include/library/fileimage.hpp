@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <list>
 #include <vector>
+#include "text.hpp"
 #include "threads.hpp"
 
 namespace fileimage
@@ -24,7 +25,7 @@ public:
 /**
  * Construct a future, with value that is immediately resolved.
  */
-	hashval(const std::string& value, uint64_t _prefix = 0);
+	hashval(const text& value, uint64_t _prefix = 0);
 /**
  * Is the result known?
  */
@@ -32,7 +33,7 @@ public:
 /**
  * Read the result (or throw error). Waits until result is ready.
  */
-	std::string read() const;
+	text read() const;
 /**
  * Read the prefix value. Waits until result is ready.
  */
@@ -57,8 +58,8 @@ private:
 /**
  * Resolve a future.
  */
-	void resolve(unsigned id, const std::string& hash, uint64_t _prefix);
-	void resolve_error(unsigned id, const std::string& err);
+	void resolve(unsigned id, const text& hash, uint64_t _prefix);
+	void resolve_error(unsigned id, const text& err);
 
 	friend class hash;
 	mutable threads::lock mlock;
@@ -66,8 +67,8 @@ private:
 	bool is_ready;
 	unsigned cbid;
 	uint64_t prefixv;
-	std::string value;
-	std::string error;
+	text value;
+	text error;
 	hashval* prev;
 	hashval* next;
 	hash* hasher;
@@ -94,11 +95,11 @@ public:
 /**
  * Compute SHA-256 of file.
  */
-	hashval operator()(const std::string& filename, uint64_t prefixlen = 0);
+	hashval operator()(const text& filename, uint64_t prefixlen = 0);
 /**
  * Compute SHA-256 of file.
  */
-	hashval operator()(const std::string& filename, std::function<uint64_t(uint64_t)> prefixlen);
+	hashval operator()(const text& filename, std::function<uint64_t(uint64_t)> prefixlen);
 /**
  * Thread entrypoint.
  */
@@ -112,7 +113,7 @@ private:
 	friend class hashval;
 	struct queue_job
 	{
-		std::string filename;
+		text filename;
 		uint64_t prefix;
 		uint64_t size;
 		unsigned cbid;
@@ -173,7 +174,7 @@ struct image
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't load the data.
  */
-	image(hash& hasher, const std::string& filename, const std::string& base,
+	image(hash& hasher, const text& filename, const text& base,
 		const struct info& imginfo) throw(std::bad_alloc, std::runtime_error);
 
 /**
@@ -194,11 +195,11 @@ struct image
 /**
  * Filename this is loaded from.
  */
-	std::string filename;
+	text filename;
 /**
  * ROM name hint.
  */
-	std::string namehint;
+	text namehint;
 /**
  * The actual data for this slot.
  */

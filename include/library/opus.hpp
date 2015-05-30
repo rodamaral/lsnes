@@ -692,7 +692,7 @@ uint32_t packet_get_nb_samples(const unsigned char* packet, size_t len, samplera
 uint32_t packet_get_nb_channels(const unsigned char* packet);
 bandwidth packet_get_bandwidth(const unsigned char* packet);
 parsed_packet packet_parse(const unsigned char* packet, size_t len);
-std::string version();
+text version();
 
 /**
  * Get tick (2.5ms) count from opus packet.

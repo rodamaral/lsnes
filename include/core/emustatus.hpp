@@ -41,29 +41,29 @@ struct _lsnes_status
 	unsigned speed;					//Speed%
 	bool saveslot_valid;				//Save slot number/info valid.
 	uint64_t saveslot;				//Save slot number.
-	std::u32string slotinfo;			//Save slot info.
+	text slotinfo;			//Save slot info.
 	bool branch_valid;				//Branch info valid?
-	std::u32string branch;				//Current branch.
+	text branch;				//Current branch.
 	bool mbranch_valid;				//Movie branch info valid?
-	std::u32string mbranch;				//Current movie branch.
-	std::u32string macros;				//Currently active macros.
+	text mbranch;				//Current movie branch.
+	text macros;				//Currently active macros.
 	int pause;					//Pause mode.
 	char mode;					//Movie mode: C:Corrupt, R:Readwrite, P:Readonly, F:Finished.
 	bool rtc_valid;					//RTC time valid?
-	std::u32string rtc;				//RTC time.
-	std::vector<std::u32string> inputs;		//Input display.
-	std::map<std::string, std::u32string> mvars;	//Memory watches.
-	std::map<std::string, std::u32string> lvars;	//Lua variables.
+	text rtc;				//RTC time.
+	std::vector<text> inputs;		//Input display.
+	std::map<text, text> mvars;	//Memory watches.
+	std::map<text, text> lvars;	//Lua variables.
 };
 
 struct slotinfo_cache
 {
 	slotinfo_cache(movie_logic& _mlogic, command::group& _cmd);
-	std::string get(const std::string& _filename);
-	void flush(const std::string& _filename);
+	text get(const text& _filename);
+	void flush(const text& _filename);
 	void flush();
 private:
-	std::map<std::string, std::string> cache;
+	std::map<text, text> cache;
 	movie_logic& mlogic;
 	command::group& cmd;
 	command::_fnptr<> flushcmd;

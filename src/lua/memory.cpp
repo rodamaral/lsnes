@@ -67,7 +67,7 @@ public:
 			L.pushnil();
 			return 1;
 		}
-		std::string c2(c);
+		text c2(c);
 		if(!mappings.count(c2)) {
 			L.pushnil();
 			return 1;
@@ -81,7 +81,7 @@ public:
 		const char* c = L.tostring(2);
 		if(!c)
 			return 0;
-		std::string c2(c);
+		text c2(c);
 		if(!mappings.count(c2))
 			return 0;
 		auto& x = mappings[c2];
@@ -94,7 +94,7 @@ public:
 		return 1;
 	}
 	int map(lua::state& L, lua::parameters& P);
-	std::string print()
+	text print()
 	{
 		size_t s = mappings.size();
 		return (stringfmt() << s << " " << ((s != 1) ? "mappings" : "mapping")).str();
@@ -110,7 +110,7 @@ private:
 		uint64_t addr;
 		void (*rw)(lua::state& L, uint64_t addr, bool wrflag);
 	};
-	std::map<std::string, mapping> mappings;
+	std::map<text, mapping> mappings;
 };
 
 namespace
@@ -555,7 +555,7 @@ namespace
 				addr = laddr->get_offset();
 				//No continue, fall through.
 			} else if(P.is_string()) {
-				vmabase = lua_get_vmabase(P.arg<std::string>());
+				vmabase = lua_get_vmabase(P.arg<text>());
 				have_vmabase = true;
 				continue;
 			} else
@@ -645,11 +645,11 @@ namespace
 	}
 
 	template<typename H, void(*update)(H& state, const char* mem, size_t memsize),
-		std::string(*read)(H& state), bool extra>
+		text(*read)(H& state), bool extra>
 	int hash_core(H& state, lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		std::string hash;
+		text hash;
 		uint64_t addr, size, low, high;
 		uint64_t stride = 0, rows = 1;
 		bool mappable = true;
@@ -700,7 +700,7 @@ namespace
 		s.write(ptr, size);
 	}
 
-	std::string lua_sha256_read(sha256& s)
+	text lua_sha256_read(sha256& s)
 	{
 		return s.read();
 	}
@@ -710,7 +710,7 @@ namespace
 		s.write(reinterpret_cast<const uint8_t*>(ptr), size);
 	}
 
-	std::string lua_skein_read(skein::hash& s)
+	text lua_skein_read(skein::hash& s)
 	{
 		uint8_t buf[32];
 		s.read(buf);
@@ -912,7 +912,7 @@ namespace
 
 int lua_mmap_struct::map(lua::state& L, lua::parameters& P)
 {
-	std::string name, type;
+	text name, type;
 	uint64_t addr;
 
 	P(P.skipped(), name);

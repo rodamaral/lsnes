@@ -104,7 +104,7 @@ namespace
 	int to_rewind(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
-		std::string filename;
+		text filename;
 
 		P(filename);
 

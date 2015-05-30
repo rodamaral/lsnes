@@ -24,39 +24,39 @@ namespace
 	std::map<unsigned, loadlib::module*> modules;
 	unsigned next_mod = 0;
 
-	std::string get_name(std::string path)
+	text get_name(text path)
 	{
 #if defined(_WIN32) || defined(_WIN64)
-		const char* sep = "\\/";
+		const char32_t* sep = U"\\/";
 #else
-		const char* sep = "/";
+		const char32_t* sep = U"/";
 #endif
 		size_t p = path.find_last_of(sep);
-		std::string name;
-		if(p == std::string::npos)
+		text name;
+		if(p >= path.length())
 			name = path;
 		else
 			name = path.substr(p + 1);
 		return name;
 	}
 
-	std::string get_user_library_dir()
+	text get_user_library_dir()
 	{
 		return get_config_path() + "/autoload";
 	}
 
-	std::string get_system_library_dir()
+	text get_system_library_dir()
 	{
-		std::string path;
+		text path;
 		try {
 			path = running_executable();
 		} catch(...) {
 			return "";
 		}
 #if __WIN32__ || __WIN64__
-		const char* sep = "\\/";
+		const char32_t* sep = U"\\/";
 #else
-		const char* sep = "/";
+		const char32_t* sep = U"/";
 #endif
 		size_t p = path.find_last_of(sep);
 		if(p >= path.length())
@@ -126,11 +126,11 @@ bool with_unloaded_library(loadlib::module& l)
 
 namespace
 {
-	void load_libraries(std::set<std::string> libs, bool system,
-		void(*on_error)(const std::string& libname, const std::string& err, bool system))
+	void load_libraries(std::set<text> libs, bool system,
+		void(*on_error)(const text& libname, const text& err, bool system))
 	{
-		std::set<std::string> blacklist;
-		std::set<std::string> killlist;
+		std::set<text> blacklist;
+		std::set<text> killlist;
 		//System plugins can't be killlisted nor blacklisted.
 		if(!system) {
 			filelist _blacklist(get_user_library_dir() + "/blacklist", get_user_library_dir());
@@ -147,13 +147,13 @@ namespace
 				blacklist.insert(i);
 		}
 
-		std::string extension = loadlib::library::extension();
+		text extension = loadlib::library::extension();
 		for(auto i : libs) {
 			if(i.length() < extension.length() + 1)
 				continue;
 			if(i[i.length() - extension.length() - 1] != '.')
 				continue;
-			std::string tmp = i;
+			text tmp = i;
 			if(tmp.substr(i.length() - extension.length()) != extension)
 				continue;
 			if(blacklist.count(get_name(i)))
@@ -161,7 +161,7 @@ namespace
 			try {
 				with_loaded_library(*new loadlib::module(loadlib::library(i)));
 			} catch(std::exception& e) {
-				std::string x = "Can't load '" + i + "': " + e.what();
+				text x = "Can't load '" + i + "': " + e.what();
 
 				if(on_error)
 					on_error(get_name(i), e.what(), system);
@@ -176,8 +176,8 @@ namespace
 			handle_post_loadlibrary();
 		});
 
-	command::fnptr<const std::string&> CMD_unload_library(lsnes_cmds, CLOADLIB::unload,
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<const text&> CMD_unload_library(lsnes_cmds, CLOADLIB::unload,
+		[](const text& args) throw(std::bad_alloc, std::runtime_error) {
 			unsigned libid = parse_value<unsigned>(args);
 			if(!modules.count(libid))
 				throw std::runtime_error("No such library loaded");
@@ -192,7 +192,7 @@ namespace
 		});
 }
 
-void autoload_libraries(void(*on_error)(const std::string& libname, const std::string& err, bool system))
+void autoload_libraries(void(*on_error)(const text& libname, const text& err, bool system))
 {
 	try {
 		auto libs = directory::enumerate(get_user_library_dir(), ".*");

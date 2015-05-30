@@ -12,7 +12,7 @@ template<class T>
 class recent_menu : public wxMenu
 {
 public:
-	recent_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high, const std::string& cfg,
+	recent_menu(wxWindow* win, emulator_instance& _inst, int wxid_low, int wxid_high, const text& cfg,
 		void (*cb)(emulator_instance& inst, const T& name))  __attribute__((noinline));
 	void on_select(wxCommandEvent& e);
 	void update();

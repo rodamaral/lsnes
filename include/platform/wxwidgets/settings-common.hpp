@@ -36,14 +36,14 @@ private:
 
 struct settings_tab_factory
 {
-	settings_tab_factory(const std::string& tabname, std::function<settings_tab*(wxWindow* parent,
+	settings_tab_factory(const text& tabname, std::function<settings_tab*(wxWindow* parent,
 		emulator_instance& inst)> create_fn);
 	~settings_tab_factory();
 	settings_tab* create(wxWindow* parent, emulator_instance& inst) { return _create_fn(parent, inst); }
-	std::string get_name() { return _tabname; }
+	text get_name() { return _tabname; }
 	static std::list<settings_tab_factory*> factories();
 private:
-	std::string _tabname;
+	text _tabname;
 	std::function<settings_tab*(wxWindow* parent, emulator_instance& inst)> _create_fn;
 };
 
@@ -58,7 +58,7 @@ private:
 };
 
 void display_settings_dialog(wxWindow* parent, emulator_instance& inst, settings_tab_factory* singletab = NULL);
-void settings_activate_keygrab(emulator_instance& inst, std::function<void(std::string key)> callback);
+void settings_activate_keygrab(emulator_instance& inst, std::function<void(text key)> callback);
 void settings_deactivate_keygrab(emulator_instance& inst);
 
 #endif

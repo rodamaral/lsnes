@@ -9,6 +9,6 @@
  * Returns: Full path of current executable.
  * Throws std::runtime_error: Operation not supported!
  */
-std::string running_executable();
+text running_executable();
 
 #endif

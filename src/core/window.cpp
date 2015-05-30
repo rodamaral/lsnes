@@ -47,8 +47,8 @@ namespace
 			messages << "Joystick:\t" << joystick_driver_name() << std::endl;
 		});
 
-	command::fnptr<const std::string&> enable_sound(lsnes_cmds, CSOUND::enable,
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<const text&> enable_sound(lsnes_cmds, CSOUND::enable,
+		[](const text& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "toggle") {
 				if(!audioapi_driver_initialized())
 					throw std::runtime_error("Sound failed to initialize and is disabled");
@@ -70,10 +70,10 @@ namespace
 			}
 		});
 
-	bool fuzzy_search_list(std::map<std::string, std::string> map, std::string& term)
+	bool fuzzy_search_list(std::map<text, text> map, text& term)
 	{
 		if(term.length() > 0 && term[0] == '!') {
-			std::map<std::string, std::string> rmap;
+			std::map<text, text> rmap;
 			for(auto i : map) rmap[i.second] = i.first;
 			auto rterm = term.substr(1);
 			for(auto i : rmap) {
@@ -89,8 +89,8 @@ namespace
 			return true;
 	}
 
-	command::fnptr<const std::string&> change_playback_dev(lsnes_cmds, CSOUND::chpdev,
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<const text&> change_playback_dev(lsnes_cmds, CSOUND::chpdev,
+		[](const text& args) throw(std::bad_alloc, std::runtime_error) {
 			auto old_rec = audioapi_driver_get_device(true);
 			auto args2 = args;
 			if(!fuzzy_search_list(audioapi_driver_get_devices(false), args2)) {
@@ -100,8 +100,8 @@ namespace
 			platform::set_sound_device(args2, old_rec);
 		});
 
-	command::fnptr<const std::string&> change_record_dev(lsnes_cmds, CSOUND::chrdev,
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	command::fnptr<const text&> change_record_dev(lsnes_cmds, CSOUND::chrdev,
+		[](const text& args) throw(std::bad_alloc, std::runtime_error) {
 			auto old_play = audioapi_driver_get_device(false);
 			auto args2 = args;
 			if(!fuzzy_search_list(audioapi_driver_get_devices(true), args2)) {
@@ -171,7 +171,7 @@ namespace
 					}
 				if(lf == stream.size())
 					break;
-				std::string foo(stream.begin(), stream.begin() + lf);
+				text foo(&stream[0], lf);
 				platform::message(foo);
 				if(lf + 1 < stream.size())
 					memmove(&stream[0], &stream[lf + 1], stream.size() - lf - 1);
@@ -204,10 +204,10 @@ void platform::sound_enable(bool enable) throw()
 	CORE().dispatch->sound_unmute(enable);
 }
 
-void platform::set_sound_device(const std::string& pdev, const std::string& rdev) throw()
+void platform::set_sound_device(const text& pdev, const text& rdev) throw()
 {
-	std::string old_play = audioapi_driver_get_device(false);
-	std::string old_rec = audioapi_driver_get_device(true);
+	text old_play = audioapi_driver_get_device(false);
+	text old_rec = audioapi_driver_get_device(true);
 	try {
 		audioapi_driver_set_device(pdev, rdev);
 	} catch(std::exception& e) {
@@ -223,10 +223,10 @@ void platform::set_sound_device(const std::string& pdev, const std::string& rdev
 		audioapi_driver_get_device(false)));
 }
 
-void platform::set_sound_device_by_description(const std::string& pdev, const std::string& rdev) throw()
+void platform::set_sound_device_by_description(const text& pdev, const text& rdev) throw()
 {
-	std::string old_play = audioapi_driver_get_device(false);
-	std::string old_rec = audioapi_driver_get_device(true);
+	text old_play = audioapi_driver_get_device(false);
+	text old_rec = audioapi_driver_get_device(true);
 	auto pdevs = audioapi_driver_get_devices(false);
 	auto rdevs = audioapi_driver_get_devices(true);
 	for(auto i : pdevs)
@@ -242,7 +242,7 @@ void platform::set_sound_device_by_description(const std::string& pdev, const st
 	set_sound_device(old_play, old_rec);
 }
 
-std::string platform::get_sound_device_description(bool rec) throw(std::bad_alloc)
+text platform::get_sound_device_description(bool rec) throw(std::bad_alloc)
 {
 	auto dev = audioapi_driver_get_device(rec);
 	auto devs = audioapi_driver_get_devices(rec);
@@ -307,7 +307,7 @@ std::ostream& platform::out() throw(std::bad_alloc)
 messagebuffer platform::msgbuf(MAXMESSAGES, INIT_WIN_SIZE);
 
 
-void platform::message(const std::string& msg) throw(std::bad_alloc)
+void platform::message(const text& msg) throw(std::bad_alloc)
 {
 	threads::alock h(msgbuf_lock());
 	for(auto& forlog : token_iterator<char>::foreach(msg, {"\n"})) {

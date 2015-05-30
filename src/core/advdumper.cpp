@@ -11,7 +11,7 @@
 
 namespace
 {
-	globalwrap<std::map<std::string, dumper_factory_base*>> S_dumpers;
+	globalwrap<std::map<text, dumper_factory_base*>> S_dumpers;
 	globalwrap<std::set<dumper_factory_base::notifier*>> S_notifiers;
 }
 
@@ -21,7 +21,7 @@ master_dumper::gameinfo::gameinfo() throw(std::bad_alloc)
 	rerecords = "0";
 }
 
-std::string master_dumper::gameinfo::get_readable_time(unsigned digits) const throw(std::bad_alloc)
+text master_dumper::gameinfo::get_readable_time(unsigned digits) const throw(std::bad_alloc)
 {
 	double bias = 0.5 * pow(10, -static_cast<int>(digits));
 	double len = length + bias;
@@ -52,22 +52,22 @@ size_t master_dumper::gameinfo::get_author_count() const throw()
 	return authors.size();
 }
 
-std::string master_dumper::gameinfo::get_author_short(size_t idx) const throw(std::bad_alloc)
+text master_dumper::gameinfo::get_author_short(size_t idx) const throw(std::bad_alloc)
 {
 	if(idx >= authors.size())
 		return "";
-	const std::pair<std::string, std::string>& x = authors[idx];
+	const std::pair<text, text>& x = authors[idx];
 	if(x.second != "")
 		return x.second;
 	else
 		return x.first;
 }
 
-std::string master_dumper::gameinfo::get_author_long(size_t idx) const throw(std::bad_alloc)
+text master_dumper::gameinfo::get_author_long(size_t idx) const throw(std::bad_alloc)
 {
 	if(idx >= authors.size())
 		return "";
-	const std::pair<std::string, std::string>& x = authors[idx];
+	const std::pair<text, text>& x = authors[idx];
 	if(x.first != "") {
 		if(x.second != "")
 			return x.first + " (" + x.second + ")";
@@ -106,7 +106,7 @@ dumper_factory_base::notifier::~notifier() throw()
 {
 }
 
-const std::string& dumper_factory_base::id() throw()
+const text& dumper_factory_base::id() throw()
 {
 	return d_id;
 }
@@ -125,7 +125,7 @@ std::set<dumper_factory_base*> dumper_factory_base::get_dumper_set() throw(std::
 	return d;
 }
 
-dumper_factory_base::dumper_factory_base(const std::string& id) throw(std::bad_alloc)
+dumper_factory_base::dumper_factory_base(const text& id) throw(std::bad_alloc)
 {
 	d_id = id;
 	S_dumpers()[d_id] = this;
@@ -198,8 +198,8 @@ dumper_base* master_dumper::get_instance(dumper_factory_base* f) throw()
 	return dumpers.count(f) ? dumpers[f] : NULL;
 }
 
-dumper_base* master_dumper::start(dumper_factory_base& factory, const std::string& mode,
-	const std::string& targetname) throw(std::bad_alloc, std::runtime_error)
+dumper_base* master_dumper::start(dumper_factory_base& factory, const text& mode, const text& targetname)
+	throw(std::bad_alloc, std::runtime_error)
 {
 	threads::arlock h(lock);
 	auto f = factory.start(*this, mode, targetname);

@@ -40,11 +40,11 @@ struct _format
 
 struct operinfo
 {
-	operinfo(std::string funcname);
-	operinfo(std::string opername, unsigned _operands, int _percedence, bool _rtl = false);
+	operinfo(text funcname);
+	operinfo(text opername, unsigned _operands, int _percedence, bool _rtl = false);
 	virtual ~operinfo();
 	virtual void evaluate(value target, std::vector<std::function<value()>> promises) = 0;
-	const std::string fnname;
+	const text fnname;
 	const bool is_operator;
 	const unsigned  operands; 		//Only for operators (max 2 operands).
 	const int precedence;			//Higher binds more tightly.
@@ -55,7 +55,7 @@ struct typeinfo
 {
 	virtual ~typeinfo();
 	virtual void* allocate() = 0;
-	virtual void* parse(const std::string& str, bool string) = 0;
+	virtual void* parse(const text& str, bool string) = 0;
 	virtual void parse_u(void* obj, uint64_t v) = 0;
 	virtual void parse_s(void* obj, int64_t v) = 0;
 	virtual void parse_f(void* obj, double v) = 0;
@@ -63,8 +63,8 @@ struct typeinfo
 	virtual void scale(void* val, uint64_t scale) = 0;
 	virtual void deallocate(void* obj) = 0;
 	virtual void copy(void* target, void* source) = 0;
-	virtual std::string tostring(void* obj) = 0;
-	virtual std::string format(void* obj, _format fmt) = 0;
+	virtual text tostring(void* obj) = 0;
+	virtual text format(void* obj, _format fmt) = 0;
 	virtual uint64_t tounsigned(void* obj) = 0;
 	virtual int64_t tosigned(void* obj) = 0;
 	virtual bool toboolean(void* obj) = 0;
@@ -84,11 +84,11 @@ struct typeinfo
 
 template<class T> struct operinfo_wrapper : public operinfo
 {
-	operinfo_wrapper(std::string funcname, T (*_fn)(std::vector<std::function<T&()>> promises))
+	operinfo_wrapper(text funcname, T (*_fn)(std::vector<std::function<T&()>> promises))
 		: operinfo(funcname), fn(_fn)
 	{
 	}
-	operinfo_wrapper(std::string opername, unsigned _operands, int _percedence, bool _rtl,
+	operinfo_wrapper(text opername, unsigned _operands, int _percedence, bool _rtl,
 		T (*_fn)(std::vector<std::function<T&()>> promises))
 		: operinfo(opername, _operands, _percedence, _rtl), fn(_fn)
 	{
@@ -114,7 +114,7 @@ private:
 
 template<class T> struct opfun_info
 {
-	std::string name;
+	text name;
 	T (*_fn)(std::vector<std::function<T&()>> promises);
 	bool is_operator;
 	unsigned operands;
@@ -160,7 +160,7 @@ template<class T> struct typeinfo_wrapper : public typeinfo
 	{
 		return new T;
 	}
-	void* parse(const std::string& str, bool string)
+	void* parse(const text& str, bool string)
 	{
 		return new T(str, string);
 	}
@@ -188,11 +188,11 @@ template<class T> struct typeinfo_wrapper : public typeinfo
 	{
 		*(T*)target = *(T*)source;
 	}
-	std::string tostring(void* obj)
+	text tostring(void* obj)
 	{
 		return ((T*)obj)->tostring();
 	}
-	std::string format(void* obj, _format fmt)
+	text format(void* obj, _format fmt)
 	{
 		return ((T*)obj)->format(fmt);
 	}
@@ -244,7 +244,7 @@ public:
 	//Value of specified type.
 	mathexpr(value value);
 	//Value of specified type.
-	mathexpr(typeinfo* _type, const std::string& value, bool string);
+	mathexpr(typeinfo* _type, const text& value, bool string);
 	//Specified Operator.
 	mathexpr(typeinfo* _type, operinfo* fn, std::vector<GC::pointer<mathexpr>> _args,
 		bool _owns_operator = false);
@@ -260,18 +260,18 @@ public:
 	//Reset.
 	void reset();
 	//Parse an expression.
-	static GC::pointer<mathexpr> parse(typeinfo& _type, const std::string& expr,
-		std::function<GC::pointer<mathexpr>(const std::string&)> vars);
+	static GC::pointer<mathexpr> parse(typeinfo& _type, const text& expr,
+		std::function<GC::pointer<mathexpr>(const text&)> vars);
 protected:
 	void trace();
 private:
-	void mark_error_and_throw(error::errorcode _errcode, const std::string& _error);
+	void mark_error_and_throw(error::errorcode _errcode, const text& _error);
 	eval_state state;
 	typeinfo& type;				//Type of value.
 	void* _value;				//Value if state is EVALUATED or FIXED.
 	operinfo* fn;				//Function (if state is TO_BE_EVALUATED, EVALUATING or EVALUATED)
 	error::errorcode errcode;		//Error code if state is FAILED.
-	std::string _error;			//Error message if state is FAILED.
+	text _error;			//Error message if state is FAILED.
 	std::vector<mathexpr*> arguments;
 	mutable bool owns_operator;
 };

@@ -39,9 +39,9 @@ namespace
 		return choices[0];
 	}
 
-	core_type* find_core_by_extension(const std::string& ext, const std::string& tmpprefer)
+	core_type* find_core_by_extension(const text& ext, const text& tmpprefer)
 	{
-		std::string key = "ext:" + ext;
+		text key = "ext:" + ext;
 		std::list<core_type*> possible = core_type::get_core_types();
 		core_type* preferred = preferred_core.count(key) ? preferred_core[key] : NULL;
 		std::vector<core_type*> fallbacks;
@@ -61,9 +61,9 @@ namespace
 		return fallback;
 	}
 
-	core_type* find_core_by_name(const std::string& name, const std::string& tmpprefer)
+	core_type* find_core_by_name(const text& name, const text& tmpprefer)
 	{
-		std::string key = "type:" + name;
+		text key = "type:" + name;
 		std::list<core_type*> possible = core_type::get_core_types();
 		std::vector<core_type*> fallbacks;
 		core_type* preferred = preferred_core.count(key) ? preferred_core[key] : NULL;
@@ -83,17 +83,17 @@ namespace
 		return fallback;
 	}
 
-	bool filter_by_core(core_type& ctype, const std::string& core)
+	bool filter_by_core(core_type& ctype, const text& core)
 	{
 		return (core == "" || ctype.get_core_identifier() == core);
 	}
 
-	bool filter_by_type(core_type& ctype, const std::string& type)
+	bool filter_by_type(core_type& ctype, const text& type)
 	{
 		return (type == "" || ctype.get_iname() == type);
 	}
 
-	bool filter_by_region(core_type& ctype, const std::string& region)
+	bool filter_by_region(core_type& ctype, const text& region)
 	{
 		if(region == "")
 			return true;
@@ -103,16 +103,16 @@ namespace
 		return false;
 	}
 
-	bool filter_by_extension(core_type& ctype, const std::string& file)
+	bool filter_by_extension(core_type& ctype, const text& file)
 	{
 		regex_results tmp = regex(".*\\.([^.]*)", file);
 		if(!tmp)
 			return false;
-		std::string ext = tmp[1];
+		text ext = tmp[1];
 		return ctype.is_known_extension(ext);
 	}
 
-	bool filter_by_fileset(core_type& ctype, const std::string file[ROM_SLOT_COUNT])
+	bool filter_by_fileset(core_type& ctype, const text file[ROM_SLOT_COUNT])
 	{
 		uint32_t m = 0, t = 0;
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
@@ -126,7 +126,7 @@ namespace
 		return (m == t);
 	}
 
-	core_region* detect_region(core_type* t, const std::string& region)
+	core_region* detect_region(core_type* t, const text& region)
 	{
 		core_region* r = NULL;
 		for(auto i: t->get_regions())
@@ -184,20 +184,20 @@ rom_image::rom_image() throw()
 	account_images();
 }
 
-rom_image::rom_image(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error)
+rom_image::rom_image(const text& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error)
 	: tracker(memtracker::singleton(), romimage_id, sizeof(*this))
 {
 	rtype = &ctype;
 	orig_region = &rtype->get_preferred_region();
 	unsigned romidx = 0;
-	std::string bios;
+	text bios;
 	unsigned pmand = 0, tmand = 0;
 	for(unsigned i = 0; i < ctype.get_image_count(); i++)
 		tmand |= ctype.get_image_info(i).mandatory;
 	if((bios = ctype.get_biosname()) != "") {
 		//This thing has a BIOS.
 		romidx = 1;
-		std::string basename = CORE().setcache->get("firmwarepath") + "/" + bios;
+		text basename = CORE().setcache->get("firmwarepath") + "/" + bios;
 		romimg[0] = fileimage::image(lsnes_image_hasher, basename, "", xlate_info(ctype.get_image_info(0)));
 		if(zip::file_exists(basename + ".xml"))
 			romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
@@ -215,33 +215,32 @@ rom_image::rom_image(const std::string& file, core_type& ctype) throw(std::bad_a
 	return;
 }
 
-rom_image::rom_image(const std::string& file, const std::string& tmpprefer) throw(std::bad_alloc,
+rom_image::rom_image(const text& file, const text& tmpprefer) throw(std::bad_alloc,
 	std::runtime_error)
 	: tracker(memtracker::singleton(), romimage_id, sizeof(*this))
 {
 	std::istream& spec = zip::openrel(file, "");
-	std::string s;
-	std::getline(spec, s);
-	istrip_CR(s);
+	text s = text::getline(spec);
+	text::istrip_CR(s);
 	if(!spec || s != "[GAMEPACK FILE]") {
 		delete &spec;		//Close the file!
 		//This is a Raw ROM image.
 		regex_results tmp;
-		std::string ext = regex(".*\\.([^.]*)?", file, "Can't read file extension")[1];
+		text ext = regex(".*\\.([^.]*)?", file, "Can't read file extension")[1];
 		core_type* coretype = find_core_by_extension(ext, tmpprefer);
 		if(!coretype)
 			(stringfmt() << "Extension '" << ext << "' unknown").throwex();
 		rtype = coretype;
 		region = orig_region = &rtype->get_preferred_region();
 		unsigned romidx = 0;
-		std::string bios;
+		text bios;
 		unsigned pmand = 0, tmand = 0;
 		for(unsigned i = 0; i < rtype->get_image_count(); i++)
 			tmand |= rtype->get_image_info(i).mandatory;
 		if((bios = coretype->get_biosname()) != "") {
 			//This thing has a BIOS.
 			romidx = 1;
-			std::string basename = CORE().setcache->get("firmwarepath") + "/" + bios;
+			text basename = CORE().setcache->get("firmwarepath") + "/" + bios;
 			romimg[0] = fileimage::image(lsnes_image_hasher, basename, "",
 				xlate_info(coretype->get_image_info(0)));
 			if(zip::file_exists(basename + ".xml"))
@@ -265,17 +264,20 @@ rom_image::rom_image(const std::string& file, const std::string& tmpprefer) thro
 	account_images();
 }
 
-void rom_image::load_bundle(const std::string& file, std::istream& spec, const std::string& tmpprefer)
+void rom_image::load_bundle(const text& file, std::istream& spec, const text& tmpprefer)
 	throw(std::bad_alloc, std::runtime_error)
 {
-	std::string s;
+	text s;
 	load_filename = file;
-	std::vector<std::string> lines;
-	while(std::getline(spec, s))
-		lines.push_back(strip_CR(s));
+	std::vector<text> lines;
+	while(spec) {
+		s = text::getline(spec);
+		text::istrip_CR(s);
+		lines.push_back(s);
+	}
 	delete &spec;
-	std::string platname = "";
-	std::string platreg = "";
+	text platname = "";
+	text platreg = "";
 	for(auto i : lines) {
 		regex_results tmp;
 		if(tmp = regex("type[ \t]+(.+)", i))
@@ -302,8 +304,8 @@ void rom_image::load_bundle(const std::string& file, std::istream& spec, const s
 	region = orig_region;
 
 	//ROM files.
-	std::string cromimg[ROM_SLOT_COUNT];
-	std::string cromxml[ROM_SLOT_COUNT];
+	text cromimg[ROM_SLOT_COUNT];
+	text cromxml[ROM_SLOT_COUNT];
 	for(auto i : lines) {
 		regex_results tmp;
 		if(!(tmp = regex("(rom|xml)[ \t]+([^ \t]+)[ \t]+(.*)", i)))
@@ -369,8 +371,8 @@ void rom_image::load_bundle(const std::string& file, std::istream& spec, const s
 		msu1_base = zip::resolverel(cromimg[0], file);
 }
 
-rom_image::rom_image(const std::string& file, const std::string& core, const std::string& type,
-	const std::string& _region)
+rom_image::rom_image(const text& file, const text& core, const text& type,
+	const text& _region)
 	: tracker(memtracker::singleton(), romimage_id, sizeof(*this))
 {
 	core_type* t = NULL;
@@ -392,10 +394,10 @@ rom_image::rom_image(const std::string& file, const std::string& core, const std
 	unsigned pmand = 0, tmand = 0;
 	for(unsigned i = 0; i < t->get_image_count(); i++)
 		tmand |= t->get_image_info(i).mandatory;
-	std::string bios = t->get_biosname();
+	text bios = t->get_biosname();
 	unsigned romidx = (bios != "") ? 1 : 0;
 	if(bios != "") {
-		std::string basename = CORE().setcache->get("firmwarepath") + "/" + bios;
+		text basename = CORE().setcache->get("firmwarepath") + "/" + bios;
 		romimg[0] = fileimage::image(lsnes_image_hasher, basename, "", xlate_info(t->get_image_info(0)));
 		if(zip::file_exists(basename + ".xml"))
 			romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
@@ -414,8 +416,8 @@ rom_image::rom_image(const std::string& file, const std::string& core, const std
 	account_images();
 }
 
-rom_image::rom_image(const std::string file[ROM_SLOT_COUNT], const std::string& core, const std::string& type,
-	const std::string& _region)
+rom_image::rom_image(const text file[ROM_SLOT_COUNT], const text& core, const text& type,
+	const text& _region)
 	: tracker(memtracker::singleton(), romimage_id, sizeof(*this))
 {
 	core_type* t = NULL;
@@ -438,7 +440,7 @@ rom_image::rom_image(const std::string file[ROM_SLOT_COUNT], const std::string& 
 	}
 	if(!t) throw std::runtime_error("No matching core found");
 	r = detect_region(t, _region);
-	std::string bios = t->get_biosname();
+	text bios = t->get_biosname();
 	unsigned romidx = (bios != "") ? 1 : 0;
 	unsigned pmand = 0, tmand = 0;
 	for(unsigned i = 0; i < 27; i++) {
@@ -460,14 +462,13 @@ rom_image::rom_image(const std::string file[ROM_SLOT_COUNT], const std::string& 
 	account_images();
 }
 
-bool rom_image::is_gamepak(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
+bool rom_image::is_gamepak(const text& filename) throw(std::bad_alloc, std::runtime_error)
 {
 	std::istream* spec = NULL;
 	try {
 		spec = &zip::openrel(filename, "");
-		std::string line;
-		std::getline(*spec, line);
-		istrip_CR(line);
+		text line = text::getline(*spec);
+		text::istrip_CR(line);
 		bool ret = (line == "[GAMEPACK FILE]");
 		delete spec;
 		return ret;
@@ -498,4 +499,4 @@ void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb)
 	lsnes_image_hasher.set_callback(cb);
 }
 
-std::map<std::string, core_type*> preferred_core;
+std::map<text, core_type*> preferred_core;

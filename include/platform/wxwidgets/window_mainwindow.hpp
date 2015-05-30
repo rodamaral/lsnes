@@ -66,7 +66,7 @@ public:
 private:
 	void do_load_rom_image(core_type* t);
 	void handle_menu_click_cancelable(wxCommandEvent& e);
-	void project_selected(const std::string& id);
+	void project_selected(const text& id);
 	emulator_instance& inst;
 	panel* gpanel;
 	wxMenu* current_menu;

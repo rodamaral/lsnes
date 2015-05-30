@@ -2,6 +2,7 @@
 #define _command__hpp__included__
 
 #include "library/command.hpp"
+#include "library/text.hpp"
 #include "library/threads.hpp"
 #include <stdexcept>
 #include <string>
@@ -25,7 +26,7 @@ private:
 	keyboard::mapper& mapper;
 	command::group& command;
 	threads::lock mut;
-	std::map<std::string, keyboard::invbind*> alias_binds;
+	std::map<text, keyboard::invbind*> alias_binds;
 };
 
 #endif

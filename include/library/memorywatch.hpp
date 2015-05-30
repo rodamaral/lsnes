@@ -52,7 +52,7 @@ struct item_printer : public GC::item
 /**
  * Show the watched value.
  */
-	virtual void show(const std::string& iname, const std::string& val) = 0;
+	virtual void show(const text& iname, const text& val) = 0;
 /**
  * Reset the printer.
  */
@@ -78,17 +78,17 @@ struct item
 /**
  * Get the value as string.
  */
-	std::string get_value();
+	text get_value();
 /**
  * Print the value to specified printer.
  *
  * Parameter iname: The name of the watch.
  */
-	void show(const std::string& iname);
+	void show(const text& iname);
 	//Fields.
 	GC::pointer<item_printer> printer;		//Printer to use.
 	GC::pointer<mathexpr::mathexpr> expr;	//Expression to watch.
-	std::string format;				//Formatting to use.
+	text format;				//Formatting to use.
 };
 
 /**
@@ -113,7 +113,7 @@ struct set
  *
  * Returns: The longest nontrivial name, or "" if none.
  */
-	const std::string& get_longest_name()
+	const text& get_longest_name()
 	{
 		return get_longest_name(set::utflength_rate);
 	}
@@ -123,11 +123,11 @@ struct set
  * Parameter rate: Get length for name function.
  * Returns: The longest nontrivial name, or "" if none.
  */
-	const std::string& get_longest_name(std::function<size_t(const std::string& n)> rate);
+	const text& get_longest_name(std::function<size_t(const text& n)> rate);
 /**
  * Get the set of memory watch names.
  */
-	std::set<std::string> names_set();
+	std::set<text> names_set();
 /**
  * Get specified memory watch item.
  *
@@ -135,27 +135,27 @@ struct set
  * Returns: The item.
  * Throws std::runtime_error: No such item in set.
  */
-	item& get(const std::string& name);
+	item& get(const text& name);
 /**
  * Get specified memory watch item (without throwing).
  *
  * Parameter name: The name of the item.
  * Returns: The item, or NULL if no such item exists.
  */
-	item* get_soft(const std::string& name);
+	item* get_soft(const text& name);
 /**
  * Create a new memory watch item.
  *
  * Parameter name: The name of the new item.
  * Parameter item: The new item. All fields are shallow-copied.
  */
-	item* create(const std::string& name, item& item);
+	item* create(const text& name, item& item);
 /**
  * Destroy a memory watch item.
  *
  * Parameter name: The name of the item to destroy.
  */
-	void destroy(const std::string& name);
+	void destroy(const text& name);
 /**
  * Call routine for all roots.
  */
@@ -165,8 +165,8 @@ struct set
  */
 	void swap(set& s) throw();
 private:
-	static size_t utflength_rate(const std::string& s);
-	std::map<std::string, item> roots;
+	static size_t utflength_rate(const text& s);
+	std::map<text, item> roots;
 };
 }
 

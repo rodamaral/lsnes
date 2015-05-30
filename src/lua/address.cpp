@@ -19,7 +19,7 @@ namespace
 	}
 }
 
-uint64_t lua_get_vmabase(const std::string& vma)
+uint64_t lua_get_vmabase(const text& vma)
 {
 	for(auto i : CORE().memory->get_regions())
 		if(i->name == vma)
@@ -29,13 +29,13 @@ uint64_t lua_get_vmabase(const std::string& vma)
 
 uint64_t lua_get_read_address(lua::parameters& P)
 {
-	static std::map<std::string, char> deprecation_keys;
+	static std::map<text, char> deprecation_keys;
 	char* deprecation = &deprecation_keys[P.get_fname()];
 	uint64_t vmabase = 0;
 	if(P.is<lua_address>()) {
 		return P.arg<lua_address*>()->get();
 	} else if(P.is_string())
-		vmabase = lua_get_vmabase(P.arg<std::string>());
+		vmabase = lua_get_vmabase(P.arg<text>());
 	else {
 		//Deprecated.
 		if(P.get_state().do_once(deprecation))
@@ -56,7 +56,7 @@ int lua_address::create(lua::state& L, lua::parameters& P)
 	return 1;
 }
 
-std::string lua_address::print()
+text lua_address::print()
 {
 	return (stringfmt() << vma << "+0x" << std::hex << addr).str();
 }
@@ -73,7 +73,7 @@ uint64_t lua_address::get()
 	throw std::runtime_error("No such memory area '" + vma + "'");
 }
 
-std::string lua_address::get_vma()
+text lua_address::get_vma()
 {
 	return vma;
 }

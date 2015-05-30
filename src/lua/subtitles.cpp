@@ -1,3 +1,4 @@
+#include "library/text.hpp"
 #include "lua/internal.hpp"
 #include "core/instance.hpp"
 #include "core/subtitles.hpp"
@@ -23,7 +24,7 @@ namespace
 	{
 		auto frame = P.arg<uint64_t>();
 		auto length = P.arg<uint64_t>();
-		std::string x = CORE().subtitles->get(frame, length);
+		text x = CORE().subtitles->get(frame, length);
 		L.pushstring(x.c_str());
 		return 1;
 	}
@@ -32,8 +33,8 @@ namespace
 	{
 		auto frame = P.arg<uint64_t>();
 		auto length = P.arg<uint64_t>();
-		std::string text = P.arg<std::string>();
-		CORE().subtitles->set(frame, length, text);
+		text _text = P.arg<text>();
+		CORE().subtitles->set(frame, length, _text);
 		return 0;
 	}
 

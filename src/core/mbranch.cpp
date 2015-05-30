@@ -12,16 +12,16 @@ movie_branches::movie_branches(movie_logic& _mlogic, emulator_dispatch& _dispatc
 {
 }
 
-std::string movie_branches::name(const std::string& internal)
+text movie_branches::name(const text& internal)
 {
 	if(internal != "")
 		return internal;
 	return "(Default branch)";
 }
 
-std::set<std::string> movie_branches::enumerate()
+std::set<text> movie_branches::enumerate()
 {
-	std::set<std::string> r;
+	std::set<text> r;
 	if(!mlogic)
 		return r;
 	for(auto& i : mlogic.get_mfile().branches)
@@ -29,14 +29,14 @@ std::set<std::string> movie_branches::enumerate()
 	return r;
 }
 
-std::string movie_branches::get()
+text movie_branches::get()
 {
 	if(!mlogic)
 		return "";
 	return mlogic.get_mfile().current_branch();
 }
 
-void movie_branches::set(const std::string& branch)
+void movie_branches::set(const text& branch)
 {
 	moviefile& mf = mlogic.get_mfile();
 	if(!mlogic.get_movie().readonly_mode())
@@ -53,7 +53,7 @@ void movie_branches::set(const std::string& branch)
 	messages << "Switched to branch '" << name(branch) << "'" << std::endl;
 }
 
-void movie_branches::_new(const std::string& branch, const std::string& from)
+void movie_branches::_new(const text& branch, const text& from)
 {
 	moviefile& mf = mlogic.get_mfile();
 	if(mf.branches.count(branch))
@@ -63,7 +63,7 @@ void movie_branches::_new(const std::string& branch, const std::string& from)
 	edispatch.mbranch_change();
 }
 
-void movie_branches::rename(const std::string& oldn, const std::string& newn)
+void movie_branches::rename(const text& oldn, const text& newn)
 {
 	moviefile& mf = mlogic.get_mfile();
 	if(oldn == newn)
@@ -83,7 +83,7 @@ void movie_branches::rename(const std::string& oldn, const std::string& newn)
 	supdater.update();
 }
 
-void movie_branches::_delete(const std::string& branch)
+void movie_branches::_delete(const text& branch)
 {
 	moviefile& mf = mlogic.get_mfile();
 	if(!mf.branches.count(branch))
@@ -95,14 +95,14 @@ void movie_branches::_delete(const std::string& branch)
 	edispatch.mbranch_change();
 }
 
-std::set<std::string> movie_branches::_movie_branches(const std::string& filename)
+std::set<text> movie_branches::_movie_branches(const text& filename)
 {
 	moviefile::branch_extractor e(filename);
 	return e.enumerate();
 }
 
-void movie_branches::import_branch(const std::string& filename, const std::string& ibranch,
-	const std::string& branchname, int mode)
+void movie_branches::import_branch(const text& filename, const text& ibranch,
+	const text& branchname, int mode)
 {
 	auto& mv = mlogic.get_mfile();
 	if(mv.branches.count(branchname) && &mv.branches[branchname] == mv.input)
@@ -154,7 +154,7 @@ void movie_branches::import_branch(const std::string& filename, const std::strin
 	}
 }
 
-void movie_branches::export_branch(const std::string& filename, const std::string& branchname, bool binary)
+void movie_branches::export_branch(const text& filename, const text& branchname, bool binary)
 {
 	auto& mv = mlogic.get_mfile();
 	if(!mv.branches.count(branchname))

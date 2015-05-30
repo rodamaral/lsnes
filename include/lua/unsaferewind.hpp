@@ -13,7 +13,7 @@ struct lua_unsaferewind
 	dynamic_state console_state;
 	//Extra state variable involved in fast movie restore. It is not part of normal console state.
 	uint64_t ptr;
-	std::string print()
+	text print()
 	{
 		return (stringfmt() << "to frame " << console_state.save_frame).str();
 	}

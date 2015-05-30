@@ -26,21 +26,21 @@ public:
 /**
  * Add a class to group.
  */
-	void do_register(const std::string& name, class_base& fun);
+	void do_register(const text& name, class_base& fun);
 /**
  * Drop a class from group.
  */
-	void do_unregister(const std::string& name, class_base& fun);
+	void do_unregister(const text& name, class_base& fun);
 /**
  * Request callbacks on all currently registered functions.
  */
-	void request_callback(std::function<void(std::string, class_base*)> cb);
+	void request_callback(std::function<void(text, class_base*)> cb);
 /**
  * Bind a callback.
  *
  * Callbacks for all registered functions are immediately called.
  */
-	int add_callback(std::function<void(std::string, class_base*)> cb,
+	int add_callback(std::function<void(text, class_base*)> cb,
 		std::function<void(class_group*)> dcb);
 /**
  * Unbind a calback.
@@ -53,13 +53,13 @@ private:
 struct class_ops
 {
 	bool (*is)(state& _state, int index);
-	const std::string& (*name)();
-	std::string (*print)(state& _state, int index);
+	const text& (*name)();
+	text (*print)(state& _state, int index);
 };
 
 std::list<class_ops>& userdata_recogn_fns();
-std::string try_recognize_userdata(state& _state, int index);
-std::string try_print_userdata(state& _state, int index);
+text try_recognize_userdata(state& _state, int index);
+text try_print_userdata(state& _state, int index);
 std::unordered_map<std::type_index, void*>& class_types();
 
 /**
@@ -155,7 +155,7 @@ public:
  * Parameter _group: The group the class will be in.
  * Parameter _name: The name of the class.
  */
-	class_base(class_group& _group, const std::string& _name);
+	class_base(class_group& _group, const text& _name);
 /**
  * Dtor.
  */
@@ -167,15 +167,15 @@ public:
  * Parameter _name: The name of the class.
  * Returns: The class instance, or NULL if no match.
  */
-	static class_base* lookup(state& L, const std::string& _name);
+	static class_base* lookup(state& L, const text& _name);
 /**
  * Push class table to stack.
  */
-	static bool lookup_and_push(state& L, const std::string& _name);
+	static bool lookup_and_push(state& L, const text& _name);
 /**
  * Get set of all classes.
  */
-	static std::set<std::string> all_classes(state& L);
+	static std::set<text> all_classes(state& L);
 /**
  * Register in given Lua state.
  */
@@ -187,17 +187,17 @@ public:
 /**
  * Lookup class methods in class.
  */
-	virtual std::set<std::string> class_methods() = 0;
+	virtual std::set<text> class_methods() = 0;
 /**
  * Get name of class.
  */
-	const std::string& get_name() { return name; }
+	const text& get_name() { return name; }
 protected:
 	void delayed_register();
 	void register_static(state& L);
 private:
 	class_group& group;
-	std::string name;
+	text name;
 	bool registered;
 };
 
@@ -248,7 +248,7 @@ template<class T> class _class : public class_base
 		return (p->*(b->fn))(L, P);
 	}
 
-	T* _get(state& _state, int arg, const std::string& fname, bool optional = false)
+	T* _get(state& _state, int arg, const text& fname, bool optional = false)
 	{
 		if(_state.type(arg) == LUA_TNONE || _state.type(arg) == LUA_TNIL) {
 			if(optional)
@@ -282,7 +282,7 @@ badtype:
 		return ret;
 	}
 
-	objpin<T> _pin(state& _state, int arg, const std::string& fname)
+	objpin<T> _pin(state& _state, int arg, const text& fname)
 	{
 		T* obj = get(_state, arg, fname);
 		_state.pushvalue(arg);
@@ -295,13 +295,13 @@ badtype:
 	{
 		load_metatable(_state);
 		_state.pushstring(keyname);
-		std::string fname = name + std::string("::") + keyname;
-		void* ptr = _state.newuserdata(sizeof(class_binding<T>) + fname.length() + 1);
+		text fname = name + text("::") + keyname;
+		size_t utflen = fname.length_utf8();
+		void* ptr = _state.newuserdata(sizeof(class_binding<T>) + utflen + 1);
 		class_binding<T>* bdata = reinterpret_cast<class_binding<T>*>(ptr);
 		bdata->fn = fn;
 		bdata->_state = &_state.get_master();
-		std::copy(fname.begin(), fname.end(), bdata->fname);
-		bdata->fname[fname.length()] = 0;
+		memcpy(bdata->fname, fname.c_str(), utflen + 1);
 		_state.push_trampoline(class_bind_trampoline, 1);
 		_state.rawset(-3);
 		_state.pop(1);
@@ -325,8 +325,8 @@ public:
  * Parameter _cmethods: Class methods of the class.
  * Parameter _print: The print method.
  */
-	_class(class_group& _group, const std::string& _name, std::initializer_list<static_method> _smethods,
-		std::initializer_list<class_method<T>> _cmethods = {}, std::string (T::*_print)() = NULL)
+	_class(class_group& _group, const text& _name, std::initializer_list<static_method> _smethods,
+		std::initializer_list<class_method<T>> _cmethods = {}, text (T::*_print)() = NULL)
 		: class_base(_group, _name), smethods(_smethods), cmethods(_cmethods)
 	{
 		name = _name;
@@ -375,7 +375,7 @@ public:
  * Parameter optional: If true and argument is NIL or none, return NULL.
  * Throws std::runtime_error: Wrong type.
  */
-	static T* get(state& _state, int arg, const std::string& fname, bool optional = false)
+	static T* get(state& _state, int arg, const text& fname, bool optional = false)
 		throw(std::bad_alloc, std::runtime_error)
 	{
 		return objclass<T>()._get(_state, arg, fname, optional);
@@ -399,19 +399,19 @@ public:
 /**
  * Get name of class.
  */
-	static const std::string& get_name()
+	static const text& get_name()
 	{
 		try {
 			return objclass<T>().name;
 		} catch(...) {
-			static std::string foo = "???";
+			static text foo = "???";
 			return foo;
 		}
 	}
 /**
  * Format instance of this class as string.
  */
-	static std::string print(state& _state, int index)
+	static text print(state& _state, int index)
 	{
 		T* obj = get(_state, index, "__internal_print");
 		try {
@@ -432,7 +432,7 @@ public:
  * Parameter fname: Name of function for error message purposes.
  * Throws std::runtime_error: Wrong type.
  */
-	static objpin<T> pin(state& _state, int arg, const std::string& fname) throw(std::bad_alloc,
+	static objpin<T> pin(state& _state, int arg, const text& fname) throw(std::bad_alloc,
 		std::runtime_error)
 	{
 		return objclass<T>()._pin(_state, arg, fname);
@@ -447,9 +447,9 @@ public:
 /**
  * Lookup class methods.
  */
-	std::set<std::string> class_methods()
+	std::set<text> class_methods()
 	{
-		std::set<std::string> r;
+		std::set<text> r;
 		for(auto& i : cmethods)
 			r.insert(i.name);
 		return r;
@@ -473,7 +473,7 @@ private:
 		L.pushvalue(2);
 		L.rawget(-2);
 		if(L.type(-1) == LUA_TNIL) {
-			std::string err = std::string("Class '") + L.tostring(L.trampoline_upval(1)) +
+			text err = text("Class '") + L.tostring(L.trampoline_upval(1)) +
 				"' does not have class method '" + L.tostring(2) + "'";
 			throw std::runtime_error(err);
 		}
@@ -505,10 +505,10 @@ again:
 			goto again;
 		}
 	}
-	std::string name;
+	text name;
 	std::list<static_method> smethods;
 	std::list<class_method<T>> cmethods;
-	std::string (T::*printmeth)();
+	text (T::*printmeth)();
 	_class(const _class<T>&);
 	_class& operator=(const _class<T>&);
 };

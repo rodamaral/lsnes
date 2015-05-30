@@ -7,6 +7,7 @@
 #include <vector>
 #include <list>
 #include <stdexcept>
+#include "text.hpp"
 
 namespace keyboard
 {
@@ -41,14 +42,14 @@ public:
  * Returns: The modifier.
  * Throws std::runtime_error: No such modifier.
  */
-	modifier& lookup_modifier(const std::string& name) throw(std::runtime_error);
+	modifier& lookup_modifier(const text& name) throw(std::runtime_error);
 /**
  * Try lookup modifier by name.
  *
  * Parameter name: The name of the modifier.
  * Returns: The modifier, or NULL if not found.
  */
-	modifier* try_lookup_modifier(const std::string& name) throw();
+	modifier* try_lookup_modifier(const text& name) throw();
 /**
  * Look up all modifiers.
  *
@@ -61,13 +62,13 @@ public:
  * Parameter name: The name of the modifier.
  * Parameter mod: The modifier.
  */
-	void do_register(const std::string& name, modifier& mod) throw(std::bad_alloc);
+	void do_register(const text& name, modifier& mod) throw(std::bad_alloc);
 /**
  * Unregister a modifier.
  *
  * Parameter name: The name of the modifier.
  */
-	void do_unregister(const std::string& name, modifier& mod) throw();
+	void do_unregister(const text& name, modifier& mod) throw();
 /**
  * Lookup key by name.
  *
@@ -75,14 +76,14 @@ public:
  * Returns: The key.
  * Throws std::runtime_error: No such key.
  */
-	key& lookup_key(const std::string& name) throw(std::runtime_error);
+	key& lookup_key(const text& name) throw(std::runtime_error);
 /**
  * Try lookup key by name.
  *
  * Parameter name: The name of the key.
  * Returns: The key, or NULL if not found.
  */
-	key* try_lookup_key(const std::string& name) throw();
+	key* try_lookup_key(const text& name) throw();
 /**
  * Look up all keys.
  *
@@ -95,13 +96,13 @@ public:
  * Parameter name: The name of the key.
  * Parameter mod: The key.
  */
-	void do_register(const std::string& name, key& mod) throw(std::bad_alloc);
+	void do_register(const text& name, key& mod) throw(std::bad_alloc);
 /**
  * Unregister a key.
  *
  * Parameter name: The name of the key.
  */
-	void do_unregister(const std::string& name, key& mod) throw();
+	void do_unregister(const text& name, key& mod) throw();
 /**
  * Set exclusive listener for all keys at once.
  */
@@ -132,7 +133,7 @@ public:
  * Parameter keyb: The keyboard these will be on.
  * Parameter _name: The name of the modifier.
  */
-	modifier(keyboard& keyb, const std::string& _name) throw(std::bad_alloc)
+	modifier(keyboard& keyb, const text& _name) throw(std::bad_alloc)
 		: kbd(keyb), name(_name)
 	{
 		keyb.do_register(name, *this);
@@ -144,7 +145,7 @@ public:
  * Parameter _name: The name of the modifier.
  * Parameter _link: The name of the modifier group this is in.
  */
-	modifier(keyboard& keyb, const std::string& _name, const std::string& _link) throw(std::bad_alloc)
+	modifier(keyboard& keyb, const text& _name, const text& _link) throw(std::bad_alloc)
 		: kbd(keyb), name(_name), link(_link)
 	{
 		keyb.do_register(name, *this);
@@ -163,13 +164,13 @@ public:
 /**
  * Get name of the modifier.
  */
-	const std::string& get_name() const throw() { return name; }
+	const text& get_name() const throw() { return name; }
 /**
  * Get linked name of the modifier.
  *
  * Returns: The linked name, or "" if none.
  */
-	const std::string& get_link_name() const throw() { return link; }
+	const text& get_link_name() const throw() { return link; }
 /**
  * Get the linked modifier.
  *
@@ -178,8 +179,8 @@ public:
 	modifier* get_link() { return kbd.try_lookup_modifier(link); }
 private:
 	keyboard& kbd;
-	std::string name;
-	std::string link;
+	text name;
+	text link;
 };
 
 /**
@@ -213,7 +214,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Illegal modifier or wrong syntax.
  */
-	static modifier_set construct(keyboard& kbd, const std::string& modifiers) throw(std::bad_alloc,
+	static modifier_set construct(keyboard& kbd, const text& modifiers) throw(std::bad_alloc,
 		std::runtime_error);
 /**
  * Check modifier against its mask for validity.
@@ -240,7 +241,7 @@ public:
 /**
  * Stringify.
  */
-	operator std::string() const throw(std::bad_alloc);
+	operator text() const throw(std::bad_alloc);
 /**
  * Equality check.
  *
@@ -500,7 +501,7 @@ public:
  * Parameter clazz: The class of the key.
  * Parameter type: The type of key.
  */
-	key(keyboard& keyb, const std::string& name, const std::string& clazz, keytype type)
+	key(keyboard& keyb, const text& name, const text& clazz, keytype type)
 		throw(std::bad_alloc);
 /**
  * Destructor.
@@ -509,11 +510,11 @@ public:
 /**
  * Get class.
  */
-	const std::string& get_class() { return clazz; }
+	const text& get_class() { return clazz; }
 /**
  * Get name.
  */
-	const std::string& get_name() { return name; }
+	const text& get_name() { return name; }
 /**
  * Get keyboard this is on.
  */
@@ -559,7 +560,7 @@ public:
 /**
  * Get the subkey suffixes.
  */
-	virtual std::vector<std::string> get_subkeys() throw(std::bad_alloc) = 0;
+	virtual std::vector<text> get_subkeys() throw(std::bad_alloc) = 0;
 /**
  * Dynamic cast to axis type.
  */
@@ -580,8 +581,8 @@ private:
 	key(key&);
 	key& operator=(key&);
 	keyboard& kbd;
-	std::string clazz;
-	std::string name;
+	text clazz;
+	text name;
 	std::set<event_listener*> digital_listeners;
 	std::set<event_listener*> analog_listeners;
 	event_listener* exclusive_listener;
@@ -601,7 +602,7 @@ public:
  * Parameter name: The base name of the key.
  * Parameter clazz: The class of the key.
  */
-	key_key(keyboard& keyb, const std::string& name, const std::string& clazz) throw(std::bad_alloc);
+	key_key(keyboard& keyb, const text& name, const text& clazz) throw(std::bad_alloc);
 /**
  * Destructor.
  */
@@ -624,7 +625,7 @@ public:
 /**
  * Get the subkey suffixes.
  */
-	std::vector<std::string> get_subkeys() throw(std::bad_alloc);
+	std::vector<text> get_subkeys() throw(std::bad_alloc);
 private:
 	key_key(key_key&);
 	key_key& operator=(key_key&);
@@ -644,7 +645,7 @@ public:
  * Parameter name: The base name of the key.
  * Parameter clazz: The class of the key.
  */
-	key_hat(keyboard& keyb, const std::string& name, const std::string& clazz) throw(std::bad_alloc);
+	key_hat(keyboard& keyb, const text& name, const text& clazz) throw(std::bad_alloc);
 /**
  * Destructor.
  */
@@ -667,7 +668,7 @@ public:
 /**
  * Get the subkey suffixes.
  */
-	std::vector<std::string> get_subkeys() throw(std::bad_alloc);
+	std::vector<text> get_subkeys() throw(std::bad_alloc);
 private:
 	key_hat(key_hat&);
 	key_hat& operator=(key_hat&);
@@ -688,7 +689,7 @@ public:
  * Parameter clazz: The class of the key.
  * Parameter mode: Initial mode: -1 => disabled, 0 => axis, 1 => pressure
  */
-	key_axis(keyboard& keyb, const std::string& name, const std::string& clazz, int mode)
+	key_axis(keyboard& keyb, const text& name, const text& clazz, int mode)
 		throw(std::bad_alloc);
 /**
  * Destructor.
@@ -712,7 +713,7 @@ public:
 /**
  * Get the subkey suffixes.
  */
-	std::vector<std::string> get_subkeys() throw(std::bad_alloc);
+	std::vector<text> get_subkeys() throw(std::bad_alloc);
 /**
  * Get mode.
  */
@@ -744,7 +745,7 @@ public:
  * Parameter clazz: The class of the key.
  * Parameter cal: Initial calibration.
  */
-	key_mouse(keyboard& keyb, const std::string& name, const std::string& clazz,
+	key_mouse(keyboard& keyb, const text& name, const text& clazz,
 		mouse_calibration cal) throw(std::bad_alloc);
 /**
  * Destructor.
@@ -768,7 +769,7 @@ public:
 /**
  * Get the subkey suffixes. Returns empty list.
  */
-	std::vector<std::string> get_subkeys() throw(std::bad_alloc);
+	std::vector<text> get_subkeys() throw(std::bad_alloc);
 /**
  * Get calibration.
  */

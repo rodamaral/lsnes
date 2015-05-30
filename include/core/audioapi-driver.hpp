@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <map>
+#include "library/text.hpp"
 
 //All the following need to be implemented by the sound driver itself
 struct _audioapi_driver
@@ -13,9 +14,9 @@ struct _audioapi_driver
 	void (*quit)() throw();
 	void (*enable)(bool enable);
 	bool (*initialized)();
-	void (*set_device)(const std::string& pdev, const std::string& rdev);
-	std::string (*get_device)(bool rec);
-	std::map<std::string, std::string> (*get_devices)(bool rec);
+	void (*set_device)(const text& pdev, const text& rdev);
+	text (*get_device)(bool rec);
+	std::map<text, text> (*get_devices)(bool rec);
 	const char* (*name)();
 };
 
@@ -57,7 +58,7 @@ bool audioapi_driver_initialized();
  * Parameter pdev: The new sound device (playback).
  * Parameter rdev: The new sound device (recording)
  */
-void audioapi_driver_set_device(const std::string& pdev, const std::string& rdev) throw(std::bad_alloc,
+void audioapi_driver_set_device(const text& pdev, const text& rdev) throw(std::bad_alloc,
 	 std::runtime_error);
 
 /**
@@ -65,14 +66,14 @@ void audioapi_driver_set_device(const std::string& pdev, const std::string& rdev
  *
  * Returns: The current sound device.
  */
-std::string audioapi_driver_get_device(bool rec) throw(std::bad_alloc);
+text audioapi_driver_get_device(bool rec) throw(std::bad_alloc);
 
 /**
  * Get available sound devices (playback).
  *
  * Returns: The map of devices. Keyed by name of the device, values are human-readable names for devices.
  */
-std::map<std::string, std::string> audioapi_driver_get_devices(bool rec) throw(std::bad_alloc);
+std::map<text, text> audioapi_driver_get_devices(bool rec) throw(std::bad_alloc);
 
 /**
  * Identification for sound plugin.

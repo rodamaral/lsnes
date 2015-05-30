@@ -28,7 +28,7 @@ namespace
 		}
 	}
 
-	void dummy_error_message(const std::string& text) throw()
+	void dummy_error_message(const text& text) throw()
 	{
 		std::cerr << "Error message: " << text << std::endl;
 	}
@@ -83,7 +83,7 @@ void graphics_driver_notify_message() throw()
 	driver.notify_message();
 }
 
-void graphics_driver_error_message(const std::string& text) throw()
+void graphics_driver_error_message(const text& text) throw()
 {
 	driver.error_message(text);
 }

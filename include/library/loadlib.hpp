@@ -5,7 +5,9 @@
 #include <stdexcept>
 #include <map>
 #include <set>
+#include "text.hpp"
 #include "threads.hpp"
+
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -35,7 +37,7 @@ public:
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Error loading shared library.
  */
-	library(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
+	library(const text& filename) throw(std::bad_alloc, std::runtime_error)
 	{
 		try {
 			set_loading(this);
@@ -63,7 +65,7 @@ public:
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Error looking up the symbol.
  */
-	void* operator[](const std::string& symbol) const throw(std::bad_alloc, std::runtime_error)
+	void* operator[](const text& symbol) const throw(std::bad_alloc, std::runtime_error)
 	{
 		threads::alock h(global_mutex());
 		if(!lib) throw std::runtime_error("Symbol '" + symbol + "' not found");
@@ -74,13 +76,13 @@ public:
  *
  * Returns: The name of library.
  */
-	static const std::string& name() throw();
+	static const text& name() throw();
 /**
  * See what standard library extension is on this platform.
  *
  * Returns: The extension of library.
  */
-	static const std::string& extension() throw();
+	static const text& extension() throw();
 /**
  * Copy ctor.
  */
@@ -101,7 +103,7 @@ public:
 		if(lib) ++lib->refs;
 		return *this;
 	}
-	std::string get_libname() const { return lib->libname; }
+	text get_libname() const { return lib->libname; }
 	void mark(const void* obj) const { if(lib) lib->mark(obj); }
 	bool is_marked(const void* obj) const { return lib ? lib->is_marked(obj) : false; }
 /**
@@ -112,9 +114,9 @@ private:
 	void set_loading(library* lib) throw(std::bad_alloc);
 	struct internal
 	{
-		internal(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
+		internal(const text& filename) throw(std::bad_alloc, std::runtime_error);
 		~internal() throw();
-		void* operator[](const std::string& symbol) const throw(std::bad_alloc, std::runtime_error);
+		void* operator[](const text& symbol) const throw(std::bad_alloc, std::runtime_error);
 		internal(const internal&);
 		internal& operator=(const internal&);
 #if defined(_WIN32) || defined(_WIN64)
@@ -123,7 +125,7 @@ private:
 		void* handle;
 #endif
 		size_t refs;
-		std::string libname;
+		text libname;
 		void mark(const void* obj) { marked.insert(obj); }
 		bool is_marked(const void* obj) { return marked.count(obj); }
 		std::set<const void*> marked;
@@ -165,18 +167,18 @@ public:
 /**
  * Symbol lookup.
  */
-	void* operator[](const std::string& symbol) const throw(std::bad_alloc, std::runtime_error);
+	void* operator[](const text& symbol) const throw(std::bad_alloc, std::runtime_error);
 /**
  * Variable symbol lookup.
  */
-	template<typename T> T* var(const std::string& symbol) const throw(std::bad_alloc, std::runtime_error)
+	template<typename T> T* var(const text& symbol) const throw(std::bad_alloc, std::runtime_error)
 	{
 		return (T*)(*this)[symbol];
 	}
 /**
  * Function symbol lookup.
  */
-	template<typename T, typename... U> typename fntype<T, U...>::t fn(const std::string& symbol) const
+	template<typename T, typename... U> typename fntype<T, U...>::t fn(const text& symbol) const
 		throw(std::bad_alloc, std::runtime_error)
 	{
 		return (typename fntype<T, U...>::t)(*this)[symbol];
@@ -184,7 +186,7 @@ public:
 /**
  * Get name.
  */
-	std::string get_libname() const { return libname; }
+	text get_libname() const { return libname; }
 /**
  * Run all not ran initialization functions.
  */
@@ -200,9 +202,9 @@ public:
 private:
 	bool dynamic;
 	library lib;
-	std::map<std::string, void*> symbols;
+	std::map<text, void*> symbols;
 	std::function<void(const module&)> init;
-	std::string libname;
+	text libname;
 };
 
 }
