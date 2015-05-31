@@ -762,6 +762,8 @@ namespace
 		{
 			uint16_t _l = l_sample;
 			uint16_t _r = r_sample;
+			//Don't overflow buffers if bsnes goes bonkers.
+			if(soundbuf_fill >= sizeof(soundbuf) / sizeof(soundbuf[0])) return;
 			soundbuf[soundbuf_fill++] = l_sample;
 			soundbuf[soundbuf_fill++] = r_sample;
 			//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of
