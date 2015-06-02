@@ -4284,6 +4284,51 @@ handle = callback.paint:register(render_queue_function(my_rq));
 \end_layout
 
 \begin_layout Subsection
+get_directory_contents: Get files in directory
+\end_layout
+
+\begin_layout Itemize
+Syntax: table get_directory_contents(string name[, string base[, string
+ pattern]])
+\end_layout
+
+\begin_layout Standard
+Return array containg all files in specified directory <name> (relative
+ to <base>).
+ If <pattern> is specified, the filenames are matched to specified regex.
+ The returned filenames inherit path.
+\end_layout
+
+\begin_layout Subsection
+get_file_type: Get type of file
+\end_layout
+
+\begin_layout Itemize
+Syntax: string/nil get_file_type(string path)
+\end_layout
+
+\begin_layout Standard
+Return type of file <path>.
+ Currently possible return values are:
+\end_layout
+
+\begin_layout Itemize
+regular: regular file
+\end_layout
+
+\begin_layout Itemize
+directory: subdirectory
+\end_layout
+
+\begin_layout Itemize
+unknown: Exists, but type not known (not anything above).
+\end_layout
+
+\begin_layout Itemize
+<nil>: File does not exist.
+\end_layout
+
+\begin_layout Subsection
 identify_class: Identify class of object
 \end_layout
 

@@ -8,6 +8,8 @@
 #include "core/runmode.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
+#include "library/directory.hpp"
+#include "library/zip.hpp"
 #include "library/string.hpp"
 #include <sstream>
 
@@ -240,6 +242,38 @@ namespace
 		return 1;
 	}
 
+	int get_directory_contents(lua::state& L, lua::parameters& P)
+	{
+		std::string arg1, arg2, pattern;
+		P(arg1, P.optional(arg2, ""), P.optional(pattern, ".*"));
+		std::string arg = zip::resolverel(arg1, arg2);
+		auto dirlist = directory::enumerate(arg, pattern);
+		unsigned key = 1;
+		L.newtable();
+		for(auto i : dirlist) {
+			L.pushnumber(key++);
+			L.pushlstring(i);
+			L.settable(-3);
+		}
+		return 1;
+	}
+
+	int get_file_type(lua::state& L, lua::parameters& P)
+	{
+		std::string arg, type;
+		P(arg);
+		if(!directory::exists(arg)) {
+			L.pushnil();
+		} else if(directory::is_regular(arg)) {
+			L.pushstring("regular");
+		} else if(directory::is_directory(arg)) {
+			L.pushstring("directory");
+		} else {
+			L.pushstring("unknown");
+		}
+		return 1;
+	}
+
 	lua::functions LUA_misc_fns(lua_func_misc, "", {
 		{"print2", print2},
 		{"exec", exec},
@@ -249,6 +283,8 @@ namespace
 		{"set_timer_timeout", set_timer_timeout},
 		{"bus_address", bus_address},
 		{"get_lua_memory_use", get_lua_memory_use},
+		{"get_directory_contents", get_directory_contents},
+		{"get_file_type", get_file_type},
 		{"lsnes_features", lsnes_features},
 		{"memory.get_lag_flag", get_lag_flag},
 		{"memory.set_lag_flag", set_lag_flag},
