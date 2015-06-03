@@ -13,7 +13,7 @@ namespace
 
 		P(address);
 
-		auto& h = CORE().mlogic->get_mfile().dyn.host_memory;
+		auto& h = CORE().mlogic->get_mfile().dyn.host_memory_legacy;
 		if(address + sizeof(S) > h.size()) {
 			L.pushboolean(0);
 			return 1;
@@ -30,7 +30,7 @@ namespace
 
 		P(address, value);
 
-		auto& h = CORE().mlogic->get_mfile().dyn.host_memory;
+		auto& h = CORE().mlogic->get_mfile().dyn.host_memory_legacy;
 		if(address + sizeof(S) > h.size())
 			h.resize(address + sizeof(S));
 		serialization::write_endian<S>(&h[address], value, 1);

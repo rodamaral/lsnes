@@ -178,7 +178,9 @@ void moviefile::save(zip::writer& w, rrdata_set& rrd, bool as_state) throw(std::
 		w.write_numeric_file("saveframe", dyn.save_frame);
 		w.write_numeric_file("lagcounter", dyn.lagged_frames);
 		write_pollcounters(w, "pollcounters", dyn.pollcounters);
-		w.write_raw_file("hostmemory", dyn.host_memory);
+		w.write_raw_file("hostmemory", dyn.host_memory_legacy);
+		auto cbor = dyn.host_memory_cbor.serialize();
+		w.write_raw_file("hostmemory.cbor", cbor);
 		w.write_raw_file("savestate", dyn.savestate);
 		w.write_raw_file("screenshot", dyn.screenshot);
 		for(auto i : dyn.sram)

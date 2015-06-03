@@ -133,7 +133,11 @@ void moviefile::binary_io(int _stream, rrdata_set& rrd, bool as_state) throw(std
 			dyn.savestate.size());
 
 		out.extension(TAG_HOSTMEMORY, [this](binarystream::output& s) {
-			s.blob_implicit(this->dyn.host_memory);
+			s.blob_implicit(this->dyn.host_memory_legacy);
+		});
+		out.extension(TAG_HOSTMEMORY_CBOR, [this](binarystream::output& s) {
+			auto vec = this->dyn.host_memory_cbor.serialize();
+			s.blob_implicit(vec);
 		});
 
 		out.extension(TAG_SCREENSHOT, [this](binarystream::output& s) {
@@ -227,7 +231,15 @@ void moviefile::binary_io(int _stream, core_type& romtype) throw(std::bad_alloc,
 		}},{TAG_GAMENAME, [this](binarystream::input& s) {
 			this->gamename = s.string_implicit();
 		}},{TAG_HOSTMEMORY, [this](binarystream::input& s) {
-			s.blob_implicit(this->dyn.host_memory);
+			s.blob_implicit(this->dyn.host_memory_legacy);
+		}},{TAG_HOSTMEMORY_CBOR, [this](binarystream::input& s) {
+			std::vector<char> raw;
+			s.blob_implicit(raw);
+			try {
+				this->dyn.host_memory_cbor = CBOR::item(&raw[0], raw.size());
+			} catch(std::exception& e) {
+				(stringfmt() << "Error parsing CBOR hostdata: " << e.what()).throwex();
+			}
 		}},{TAG_MACRO, [this](binarystream::input& s) {
 			uint64_t n = s.number();
 			this->dyn.active_macros[s.string_implicit()] = n;

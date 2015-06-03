@@ -276,7 +276,16 @@ void moviefile::load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, s
 		r.read_numeric_file("lagcounter", dyn.lagged_frames, true);
 		read_pollcounters(r, "pollcounters", dyn.pollcounters);
 		if(r.has_member("hostmemory"))
-			r.read_raw_file("hostmemory", dyn.host_memory);
+			r.read_raw_file("hostmemory", dyn.host_memory_legacy);
+		if(r.has_member("hostmemory.cbor")) {
+			std::vector<char> tmp;
+			r.read_raw_file("hostmemory.cbor", tmp);
+			try {
+				dyn.host_memory_cbor = CBOR::item((const char*)&tmp[0], tmp.size());
+			} catch(std::exception& e) {
+				(stringfmt() << "Error parsing CBOR hostdata: " << e.what()).throwex();
+			}
+		}
 		r.read_raw_file("savestate", dyn.savestate);
 		for(auto name : r)
 			if(name.length() >= 5 && name.substr(0, 5) == "sram.")

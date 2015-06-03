@@ -9,6 +9,7 @@
 #include "core/rom-small.hpp"
 #include "core/subtitles.hpp"
 #include "interface/romtype.hpp"
+#include "library/cbor.hpp"
 #include "library/rrdata.hpp"
 #include "library/zip.hpp"
 
@@ -32,9 +33,13 @@ struct dynamic_state
  */
 	std::vector<char> savestate;		//Savestate to load (if is_savestate is true).
 /**
- * Host memory (if is_savestate is true).
+ * Legacy Host memory (if is_savestate is true).
  */
-	std::vector<char> host_memory;
+	std::vector<char> host_memory_legacy;
+/**
+ * CBOR host memory (if is_savestate is true).
+ */
+	CBOR::item host_memory_cbor;
 /**
  * Screenshot (if is_savestate is true).
  */

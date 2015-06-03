@@ -422,7 +422,8 @@ void dynamic_state::clear(int64_t sec, int64_t ssec, const std::map<std::string,
 {
 	sram = initsram;
 	savestate.clear();
-	host_memory.clear();
+	host_memory_legacy.clear();
+	host_memory_cbor.set_null();
 	screenshot.clear();
 	save_frame = 0;
 	lagged_frames = 0;
@@ -438,7 +439,8 @@ void dynamic_state::swap(dynamic_state& s) throw()
 {
 	std::swap(sram, s.sram);
 	std::swap(savestate, s.savestate);
-	std::swap(host_memory, s.host_memory);
+	std::swap(host_memory_legacy, s.host_memory_legacy);
+	host_memory_cbor.swap(s.host_memory_cbor);
 	std::swap(screenshot, s.screenshot);
 	std::swap(save_frame, s.save_frame);
 	std::swap(lagged_frames, s.lagged_frames);
