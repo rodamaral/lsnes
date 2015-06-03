@@ -2,6 +2,7 @@
 #include "library/range.hpp"
 #include "library/eatarg.hpp"
 #include <cstdint>
+#include <iostream>
 
 namespace
 {
@@ -63,14 +64,20 @@ void render_halo(unsigned char* pixmap, size_t width, size_t height)
 }
 
 template<bool X> void halo_blit(struct framebuffer::fb<X>& scr, unsigned char* pixmap, size_t width,
-	size_t height, uint32_t x, uint32_t y, framebuffer::color& bg, framebuffer::color& fg, framebuffer::color& hl)
-	throw()
+	size_t height, size_t owidth, size_t oheight, uint32_t x, uint32_t y, framebuffer::color& bg,
+	framebuffer::color& fg, framebuffer::color& hl) throw()
 {
+	uint32_t low = 1;
+	uint32_t border = 0;
 	framebuffer::color cmap4[4] = {bg, fg, hl, fg};
-	if(hl)
+	if(hl) {
+		//Make space for halo.
+		low = 0;
+		border = 2;
 		render_halo(pixmap, width, height);
-	range bX = (range::make_w(scr.get_width()) - x) & range::make_w(width);
-	range bY = (range::make_w(scr.get_height()) - y) & range::make_w(height);
+	}
+	range bX = (range::make_w(scr.get_width()) - x) & range::make_s(low, owidth + border);
+	range bY = (range::make_w(scr.get_height()) - y) & range::make_s(low, oheight + border);
 	for(uint32_t r = bY.low(); r < bY.high(); r++) {
 		typename framebuffer::fb<X>::element_t* rptr = scr.rowptr(y + r);
 		size_t eptr = x + bX.low();

@@ -61,6 +61,7 @@ namespace
 			std::u32string _text = utf8::to32(text);
 
 			auto size = fdata.get_metrics(_text, x);
+			auto orig_size = size;
 			//Enlarge size by 2 in each dimension, in order to accomodiate halo, if any.
 			//Round up width to multiple of 32.
 			size.first = (size.first + 33) >> 5 << 5;
@@ -70,26 +71,27 @@ namespace
 			if(allocsize > 32768) {
 				std::vector<uint8_t> memory;
 				memory.resize(allocsize);
-				op_with(scr, &memory[0], size, _text, fdata);
+				op_with(scr, &memory[0], size, orig_size, _text, fdata);
 			} else {
 				uint8_t memory[allocsize];
-				op_with(scr, memory, size, _text, fdata);
+				op_with(scr, memory, size, orig_size, _text, fdata);
 			}
 		}
 		template<bool X> void op_with(struct framebuffer::fb<X>& scr, unsigned char* mem,
-			std::pair<size_t, size_t> size, const std::u32string& _text, const framebuffer::font2& fdata)
-			throw()
+			std::pair<size_t, size_t> size, std::pair<size_t, size_t> orig_size,
+			const std::u32string& _text, const framebuffer::font2& fdata) throw()
 		{
 			memset(mem, 0, size.first * size.second);
-			int32_t rx = x + scr.get_origin_x();
-			int32_t ry = y + scr.get_origin_y();
+			int32_t rx = x + scr.get_origin_x() - 1;
+			int32_t ry = y + scr.get_origin_y() - 1;
 			fdata.for_each_glyph(_text, x, [mem, size](uint32_t x, uint32_t y,
 				const framebuffer::font2::glyph& glyph) {
 				x++;
 				y++;
 				glyph.render(mem + (y * size.first + x), size.first, 0, 0, glyph.width, glyph.height);
 			});
-			halo_blit(scr, mem, size.first, size.second, rx, ry, bg, fg, hl);
+			halo_blit(scr, mem, size.first, size.second, orig_size.first, orig_size.second, rx, ry, bg,
+				fg, hl);
 		}
 		bool kill_request(void* obj) throw()
 		{

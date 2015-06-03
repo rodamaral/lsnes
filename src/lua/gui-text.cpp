@@ -17,6 +17,7 @@ namespace
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
 			auto size = main_font.get_metrics(text, x, hdbl, vdbl);
+			auto orig_size = size;
 			//Enlarge size by 2 in each dimension, in order to accomodiate halo, if any.
 			//Round up width to multiple of 32.
 			size.first = (size.first + 33) >> 5 << 5;
@@ -27,21 +28,22 @@ namespace
 			if(allocsize > 32768) {
 				std::vector<uint8_t> memory;
 				memory.resize(allocsize);
-				op_with(scr, &memory[0], size);
+				op_with(scr, &memory[0], size, orig_size);
 			} else {
 				uint8_t memory[allocsize];
-				op_with(scr, memory, size);
+				op_with(scr, memory, size, orig_size);
 			}
 		}
 		template<bool X> void op_with(struct framebuffer::fb<X>& scr, unsigned char* mem,
-			std::pair<size_t, size_t> size) throw()
+			std::pair<size_t, size_t> size, std::pair<size_t, size_t> orig_size) throw()
 		{
 			uint32_t rx = x + (int32_t)scr.get_origin_x() - 1;
 			uint32_t ry = y + (int32_t)scr.get_origin_y() - 1;
 			mem += (32 - ((size_t)mem & 31)) & 31;	//Align.
 			memset(mem, 0, size.first * size.second);
 			main_font.render(mem + size.first + 1, size.first, text, x, hdbl, vdbl);
-			halo_blit(scr, mem, size.first, size.second, rx, ry, bg, fg, hl);
+			halo_blit(scr, mem, size.first, size.second, orig_size.first, orig_size.second, rx, ry, bg,
+				fg, hl);
 		}
 		void operator()(struct framebuffer::fb<true>& scr) throw()  { op(scr); }
 		void operator()(struct framebuffer::fb<false>& scr) throw() { op(scr); }

@@ -858,7 +858,6 @@ void font::render(uint8_t* buf, size_t stride, const std::string& str, uint32_t 
 
 		if(g.data)
 			for(size_t i = 0; i < height; i++) {
-				ptr += stride;
 				uint32_t _y = i >> (vdbl ? 1 : 0);
 				uint32_t d = g.data[_y >> (g.wide ? 1 : 2)];
 				if(g.wide)
@@ -875,6 +874,7 @@ void font::render(uint8_t* buf, size_t stride, const std::string& str, uint32_t 
 						uint32_t b = (g.wide ? 15 : 7) - j;
 						ptr[j] = ((d >> b) & 1);
 					}
+				ptr += stride;
 			}
 	});
 }
