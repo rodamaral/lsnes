@@ -640,7 +640,7 @@ void do_load_state_preserve(struct moviefile& _movie)
 		//Paint the screen.
 		framebuffer::raw tmp;
 		if(will_load_state) {
-			tmp.load(_movie.dyn.screenshot);
+			tmp.load(core.mlogic->get_mfile().dyn.screenshot);
 			core.fbuf->redraw_framebuffer(tmp);
 		} else
 			core.fbuf->redraw_framebuffer(core.rom->draw_cover());
