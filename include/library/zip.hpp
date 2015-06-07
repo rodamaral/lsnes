@@ -145,12 +145,12 @@ public:
 /**
  * This iterator iterates members of ZIP archive in forward order.
  */
-	typedef iterator_class<std::map<std::string, unsigned long long>::iterator, std::string> iterator;
+	typedef iterator_class<std::map<std::string, uint64_t>::iterator, std::string> iterator;
 
 /**
  * This iterator iterates members of ZIP archive in reverse order
  */
-	typedef iterator_class<std::map<std::string, unsigned long long>::reverse_iterator, std::string>
+	typedef iterator_class<std::map<std::string, uint64_t>::reverse_iterator, std::string>
 		riterator;
 
 /**
@@ -278,7 +278,7 @@ public:
 private:
 	reader(reader&);
 	reader& operator=(reader&);
-	std::map<std::string, unsigned long long> offsets;
+	std::map<std::string, uint64_t> offsets;
 	std::ifstream* zipstream;
 	size_t* refcnt;
 };
@@ -421,10 +421,10 @@ public:
 private:
 	struct file_info
 	{
-		unsigned long crc;
-		unsigned long uncompressed_size;
-		unsigned long compressed_size;
-		unsigned long offset;
+		uint32_t crc;
+		uint32_t uncompressed_size;
+		uint32_t compressed_size;
+		uint32_t offset;
 	};
 
 	writer(writer&);

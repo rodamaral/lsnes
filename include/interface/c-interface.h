@@ -51,6 +51,7 @@ THE SOFTWARE.
  * - If you only have one region, use ID of 0 for that and GET_REGION/SET_REGION are not needed.
  */
 
+#include <unistd.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -212,7 +213,7 @@ struct lsnes_core_fontrender_req
 	//Input: Text to render (UTF-8).
 	const char* text;
 	//Input: Length of text in bytes. If negative, text is null-terminated.
-	long text_len;
+	ssize_t text_len;
 	//Input: Bytes per pixel to request. Can be 1, 2, 3 or 4.
 	unsigned bytes_pp;
 	//Input: Foreground color (native endian).

@@ -3,6 +3,10 @@
 #include <list>
 #include <set>
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#endif
+
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
 #include <unistd.h>

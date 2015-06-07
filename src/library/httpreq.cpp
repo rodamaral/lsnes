@@ -213,7 +213,7 @@ void http_request::get_xfer_status(int64_t& dnow, int64_t& dtotal, int64_t& unow
 	utotal = ultotal;
 }
 
-long http_request::get_http_code()
+uint32_t http_request::get_http_code()
 {
 	long ret = 0;
 	curl_easy_getinfo((CURL*)handle, CURLINFO_RESPONSE_CODE, &ret);

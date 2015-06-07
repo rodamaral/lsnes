@@ -119,7 +119,7 @@ public:
 /**
  * Get final code.
  */
-	long get_http_code();
+	uint32_t get_http_code();
 private:
 	static int progress(void* userdata, double dltotal, double dlnow, double ultotal, double ulnow);
 	int _progress(double dltotal, double dlnow, double ultotal, double ulnow);
@@ -145,7 +145,7 @@ struct http_async_request
 	int64_t final_dl;				//Final amount downloaded (OUTPUT).
 	int64_t final_ul;				//Final amound uploaded (OUTPUT).
 	std::string errormsg;				//Final error (OUTPUT).
-	long http_code;					//HTTP error code (OUTPUT).
+	uint32_t http_code;				//HTTP error code (OUTPUT).
 	volatile bool finished;				//Finished flag (semi-transient).
 	threads::cv finished_cond;				//This condition variable is fired on finish.
 	http_request* req;				//The HTTP request object (TRANSIENT).

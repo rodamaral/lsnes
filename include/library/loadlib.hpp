@@ -7,10 +7,6 @@
 #include <set>
 #include "threads.hpp"
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
-#endif
-
 namespace loadlib
 {
 threads::lock& global_mutex();
@@ -117,11 +113,7 @@ private:
 		void* operator[](const std::string& symbol) const throw(std::bad_alloc, std::runtime_error);
 		internal(const internal&);
 		internal& operator=(const internal&);
-#if defined(_WIN32) || defined(_WIN64)
-		HMODULE handle;
-#elif !defined(NO_DLFCN)
 		void* handle;
-#endif
 		size_t refs;
 		std::string libname;
 		void mark(const void* obj) { marked.insert(obj); }
