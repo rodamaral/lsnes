@@ -29,6 +29,7 @@ namespace
 		static int load(lua::state& L, lua::parameters& P);
 		int draw(lua::state& L, lua::parameters& P);
 		int edit(lua::state& L, lua::parameters& P);
+		int dump(lua::state& L, lua::parameters& P);
 		const framebuffer::font2& get_font() { return font; }
 		std::string print()
 		{
@@ -45,6 +46,7 @@ namespace
 	}, {
 		{"__call", &lua_customfont::draw},
 		{"edit", &lua_customfont::edit},
+		{"dump", &lua_customfont::dump},
 	}, &lua_customfont::print);
 
 	struct render_object_text_cf : public framebuffer::object
@@ -193,4 +195,16 @@ namespace
 		lua::_class<lua_customfont>::create(L, filename, filename2);
 		return 1;
 	};
+
+	int lua_customfont::dump(lua::state& L, lua::parameters& P)
+	{
+		std::string filename, filename2;
+		P(P.skipped(), filename, P.optional(filename2, ""));
+		std::string rfilename = zip::resolverel(filename, filename2);
+
+		font.dump(rfilename);
+
+		return 0;
+	};
+
 }

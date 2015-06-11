@@ -26,6 +26,7 @@ public:
 		void render(fb<false>& fb, int32_t x, int32_t y, color fg, color bg, color hl) const;
 		void render(fb<true>& fb, int32_t x, int32_t y, color fg, color bg, color hl) const;
 		void render(uint8_t* buf, size_t stride, uint32_t u, uint32_t v, uint32_t w, uint32_t h) const;
+		void dump(std::ostream& s) const;
 	};
 	font2();
 	font2(const std::string& file);
@@ -38,6 +39,7 @@ public:
 	std::pair<uint32_t, uint32_t>  get_metrics(const std::u32string& str, uint32_t xalign) const;
 	void for_each_glyph(const std::u32string& str, uint32_t xalign, std::function<void(uint32_t x, uint32_t y,
 		const glyph& g)> cb) const;
+	void dump(const std::string& file) const;
 private:
 	std::map<std::u32string, glyph> glyphs;
 	unsigned rowadvance;

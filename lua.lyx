@@ -3350,7 +3350,7 @@ Method edit: Alter glyph in font
 \end_layout
 
 \begin_layout Itemize
-Syntax: font:edit(character, glyph)
+Syntax: font:edit(string character, bitmap glyph)
 \end_layout
 
 \begin_layout Standard
@@ -3385,6 +3385,31 @@ Color index 0 is background, everything else is foreground.
 \begin_layout Itemize
 <character> may be multi-codepoint string, meaning character used for that
  ligature.
+\end_layout
+
+\begin_layout Subsubsection
+Method dump: Dump font into file
+\end_layout
+
+\begin_layout Itemize
+Syntax: font:dump(string filename[, string base])
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+filename: string: The file to dump to
+\end_layout
+
+\begin_layout Itemize
+base: string: The base filename
+\end_layout
+
+\begin_layout Standard
+Dump contents of <font> in file <filename> (resolved relative to <base>).
+ The dump is in format CUSTOMFONT:load() can load.
 \end_layout
 
 \begin_layout Standard

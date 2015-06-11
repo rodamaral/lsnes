@@ -2,6 +2,7 @@
 #include "range.hpp"
 #include "serialization.hpp"
 #include <cstring>
+#include <sstream>
 #include "zip.hpp"
 #include "string.hpp"
 
@@ -150,6 +151,31 @@ font2::glyph::glyph(std::istream& s)
 			if(!s)
 				throw std::runtime_error("EOF while reading BMP data");
 		}
+	}
+}
+
+void font2::glyph::dump(std::ostream& s) const
+{
+	static uint8_t hdr[32] = {
+		0x42, 0x4d, 0x38, 0, 0, 0, 0, 0, 0, 0, 0x20, 0, 0, 0, 0x0c, 0,
+		0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 1, 0, 1, 0, 0, 0, 0, 0xff, 0xff, 0xff
+	};
+	serialization::u16l(hdr + 18, width);
+	serialization::u16l(hdr + 20, height);
+	s.write((char*)hdr, 32);
+	uint32_t rowsize = (width + 7) / 8;
+	rowsize = (rowsize + 3) & (~3);
+	uint8_t buf[rowsize];
+	memset(buf, 0, rowsize);
+	for(size_t i = 0; i < height; i++) {
+		size_t y = height - i - 1;
+		size_t bpos = y * stride * 32;
+		for(size_t j = 0; j < width; j += 8) {
+			size_t e = (bpos + j) / 32;
+			size_t b = (bpos + j) % 32;
+			buf[j >> 3] = fglyph[e] >> (24 - b);
+		}
+		s.write((char*)&buf[0], rowsize);
 	}
 }
 
@@ -352,5 +378,30 @@ void font2::for_each_glyph(const std::u32string& str, uint32_t xalign, std::func
 			drawx += g.width;
 		}
 	}
+}
+
+void font2::dump(const std::string& file) const
+{
+	zip::writer w(file, 9);
+	for(auto& i : glyphs) {
+		std::string key = "";
+		if(i.first == U"")
+			key = "bad";
+		else {
+			std::ostringstream x;
+			auto len = i.first.length();
+			bool first = true;
+			for(unsigned j = 0; j < len; j++) {
+				if(!first) x << "-";
+				x << i.first[j];
+				first = false;
+			}
+			key = x.str();
+		}
+		std::ostream& s = w.create_file(key);
+		i.second.dump(s);
+		w.close_file();
+	}
+	w.commit();
 }
 }
