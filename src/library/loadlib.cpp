@@ -82,7 +82,7 @@ library::internal::~internal() throw()
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 	dlclose(handle);
 #elif defined(_WIN32) || defined(_WIN64)
-	FreeLibrary(handle);
+	FreeLibrary((HMODULE)handle);
 #endif
 }
 
@@ -98,7 +98,7 @@ void* library::internal::operator[](const std::string& symbol) const throw(std::
 		throw std::runtime_error(e);
 	return NULL;	//Yes, real NULL symbol.
 #elif defined(_WIN32) || defined(_WIN64)
-	void* s = (void*)GetProcAddress(handle, symbol.c_str());
+	void* s = (void*)GetProcAddress((HMODULE)handle, symbol.c_str());
 	if(s)
 		return s;
 	int errcode = GetLastError();
