@@ -205,7 +205,6 @@ namespace
 				bool cut = outside && sY.in(r);
 				if(cut && sX.in(xmin)) {
 					xmin = sX.high();
-					//FIXME: This may overrun buffer (but the overrun pointer is not accessed.)
 					eptr += (sX.high() - X.low());
 				}
 				for(uint32_t c = xmin; c < X.high(); c++, eptr++) {
@@ -234,7 +233,6 @@ namespace
 				bool cut = outside && sY.in(r);
 				if(cut && sX.in(xmin)) {
 					xmin = sX.high();
-					//FIXME: This may overrun buffer (but the overrun pointer is not accessed.)
 					eptr += (sX.high() - X.low());
 				}
 				for(uint32_t c = xmin; c < X.high(); c++, eptr++) {
