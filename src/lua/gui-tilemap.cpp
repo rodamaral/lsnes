@@ -2,7 +2,6 @@
 #include "core/framebuffer.hpp"
 #include "core/instance.hpp"
 #include "library/png.hpp"
-#include "library/range.hpp"
 #include "library/string.hpp"
 #include "library/threads.hpp"
 #include "library/lua-framebuffer.hpp"
@@ -192,32 +191,6 @@ namespace
 				}
 			}
 		}
-		template<bool T, class B> void composite_op(struct framebuffer::fb<T>& scr, int32_t xp,
-			int32_t yp, const range& X, const range& Y, const range& sX, const range& sY, B bmp) throw()
-		{
-			if(!X.size() || !Y.size()) return;
-			size_t stride = bmp.stride();
-			bmp.lock();
-
-			for(uint32_t r = Y.low(); r != Y.high(); r++) {
-				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
-				size_t eptr = xp + X.low();
-				uint32_t xmin = X.low();
-				bool cut = outside && sY.in(r);
-				if(cut && sX.in(xmin)) {
-					xmin = sX.high();
-					eptr += (sX.high() - X.low());
-				}
-				for(uint32_t c = xmin; c < X.high(); c++, eptr++) {
-					if(__builtin_expect(cut && c == sX.low(), 0)) {
-						c += sX.size();
-						eptr += sX.size();
-					}
-					bmp.draw(r * stride + c, rptr[eptr]);
-				}
-			}
-			bmp.unlock();
-		}
 		template<bool T> void composite_op(struct framebuffer::fb<T>& scr, tilemap_entry& e, int32_t bx,
 			int32_t by) throw()
 		{
@@ -241,9 +214,11 @@ namespace
 			range sY = range::make_s(-y - by + y0, scr.get_last_blit_height());
 
 			if(e.b)
-				composite_op(scr, oX + bx, oY + by, bX, bY, sX, sY, lua_bitmap_holder<T>(*e.b, *e.p));
+				lua_bitmap_composite(scr, oX + bx, oY + by, bX, bY, sX, sY, outside,
+					lua_bitmap_holder<T>(*e.b, *e.p));
 			else if(e.d)
-				composite_op(scr, oX + bx, oY + by, bX, bY, sX, sY, lua_dbitmap_holder<T>(*e.d));
+				lua_bitmap_composite(scr, oX + bx, oY + by, bX, bY, sX, sY, outside,
+					lua_dbitmap_holder<T>(*e.d));
 		}
 		void operator()(struct framebuffer::fb<false>& x) throw() { composite_op(x); }
 		void operator()(struct framebuffer::fb<true>& x) throw() { composite_op(x); }

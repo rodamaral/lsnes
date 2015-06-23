@@ -9,6 +9,7 @@
 #include "library/lua-class.hpp"
 #include "library/lua-params.hpp"
 #include "library/framebuffer.hpp"
+#include "library/range.hpp"
 #include "library/threads.hpp"
 #include "library/string.hpp"
 
@@ -142,5 +143,32 @@ private:
 	lua_dbitmap& d;
 };
 
+
+template<bool T, class B> void lua_bitmap_composite(struct framebuffer::fb<T>& scr, int32_t xp,
+	int32_t yp, const range& X, const range& Y, const range& sX, const range& sY, bool outside, B bmp) throw()
+{
+	if(!X.size() || !Y.size()) return;
+	size_t stride = bmp.stride();
+	bmp.lock();
+
+	for(uint32_t r = Y.low(); r != Y.high(); r++) {
+		typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
+		size_t eptr = xp + X.low();
+		uint32_t xmin = X.low();
+		bool cut = outside && sY.in(r);
+		if(cut && sX.in(xmin)) {
+			xmin = sX.high();
+		eptr += (sX.high() - X.low());
+		}
+		for(uint32_t c = xmin; c < X.high(); c++, eptr++) {
+			if(__builtin_expect(cut && c == sX.low(), 0)) {
+				c += sX.size();
+				eptr += sX.size();
+			}
+			bmp.draw(r * stride + c, rptr[eptr]);
+		}
+	}
+	bmp.unlock();
+}
 
 #endif
