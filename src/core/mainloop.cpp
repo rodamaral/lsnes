@@ -951,6 +951,9 @@ out:
 	core.dbg->core_change();
 	core.project->set(NULL, true);
 	core.mwatch->clear_multi(core.mwatch->enumerate());
+	//Close the ROM.
+	load_null_rom();
+	do_load_rom();
 }
 
 void set_stop_at_frame(uint64_t frame)
