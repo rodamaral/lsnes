@@ -99,5 +99,48 @@ struct lua_loaded_bitmap
 	template<bool png> static int load_str(lua::state& L, lua::parameters& P);
 };
 
+template<bool T> class lua_bitmap_holder
+{
+public:
+	lua_bitmap_holder(lua_bitmap& _b, lua_palette& _p) : b(_b), p(_p) {};
+	size_t stride() { return b.width; }
+	void lock()
+	{
+		p.palette_mutex.lock();
+		palette = p.colors;
+		pallim = p.color_count;
+	}
+	void unlock()
+	{
+		p.palette_mutex.unlock();
+	}
+	void draw(size_t bmpidx, typename framebuffer::fb<T>::element_t& target)
+	{
+		uint16_t i = b.pixels[bmpidx];
+		if(i < pallim)
+			palette[i].apply(target);
+	}
+private:
+	lua_bitmap& b;
+	lua_palette& p;
+	framebuffer::color* palette;
+	size_t pallim;
+};
+
+template<bool T> class lua_dbitmap_holder
+{
+public:
+	lua_dbitmap_holder(lua_dbitmap& _d) : d(_d) {};
+	size_t stride() { return d.width; }
+	void lock() {}
+	void unlock() {}
+	void draw(size_t bmpidx, typename framebuffer::fb<T>::element_t& target)
+	{
+		d.pixels[bmpidx].apply(target);
+	}
+private:
+	lua_dbitmap& d;
+};
+
 
 #endif

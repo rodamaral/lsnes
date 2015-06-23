@@ -105,22 +105,42 @@ namespace
 				kill_request_ifeq(b2.object(), obj);
 		}
 
+		template<bool T, class B> void composite_op(struct framebuffer::fb<T>& scr,
+			uint32_t oX, uint32_t oY, const range& X, const range& Y, const range& sX, const range& sY,
+			B bmp) throw()
+		{
+			bmp.lock();
+			size_t stride = bmp.stride();
+			for(uint32_t r = Y.low(); r < Y.high(); r++) {
+				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(oY + r);
+				size_t eptr = oX + X.low();
+				uint32_t xmin = X.low();
+				bool cut = outside && sY.in(r);
+				if(cut && sX.in(xmin)) {
+					xmin = sX.high();
+					eptr += (sX.high() - X.low());
+				}
+				for(uint32_t c = xmin; c < X.high(); c++, eptr++) {
+					if(__builtin_expect(cut && c == sX.low(), 0)) {
+						c += sX.size();
+						if(c >= X.high()) break;
+						eptr += sX.size();
+					}
+					bmp.draw(r * stride + c, rptr[eptr]);
+				}
+			}
+			bmp.unlock();
+		}
+
 		template<bool T> void composite_op(struct framebuffer::fb<T>& scr) throw()
 		{
-			if(p)
-				p->palette_mutex.lock();
 			uint32_t oX = x + scr.get_origin_x() - x0;
 			uint32_t oY = y + scr.get_origin_y() - y0;
-			size_t pallim = 0;
 			size_t w, h;
-			framebuffer::color* palette;
 			if(b) {
-				palette = p->colors;
-				pallim = p->color_count;
 				w = b->width;
 				h = b->height;
 			} else {
-				palette = NULL; //Won't be accessed.
 				w = b2->width;
 				h = b2->height;
 			}
@@ -132,38 +152,10 @@ namespace
 			range sX = range::make_s(-x + x0, scr.get_last_blit_width());
 			range sY = range::make_s(-y + y0, scr.get_last_blit_height());
 
-			for(uint32_t r = bY.low(); r < bY.high(); r++) {
-				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(oY + r);
-				size_t eptr = oX + bX.low();
-				uint32_t xmin = bX.low();
-				bool cut = outside && sY.in(r);
-				if(cut && sX.in(xmin)) {
-					xmin = sX.high();
-					eptr += (sX.high() - bX.low());
-				}
-				if(b)
-					for(uint32_t c = xmin; c < bX.high(); c++, eptr++) {
-						if(__builtin_expect(cut && c == sX.low(), 0)) {
-							c += sX.size();
-							if(c >= bX.high()) break;
-							eptr += sX.size();
-						}
-						uint16_t i = b->pixels[r * b->width + c];
-						if(i < pallim)
-							palette[i].apply(rptr[eptr]);
-					}
-				else
-					for(uint32_t c = xmin; c < bX.high(); c++, eptr++) {
-						if(__builtin_expect(cut && c == sX.low(), 0)) {
-							c += sX.size();
-							if(c >= bX.high()) break;
-							eptr += sX.size();
-						}
-						b2->pixels[r * b2->width + c].apply(rptr[eptr]);
-					}
-			}
-			if(p)
-				p->palette_mutex.unlock();
+			if(b)
+				composite_op(scr, oX, oY, bX, bY, sX, sY, lua_bitmap_holder<T>(*b, *p));
+			else
+				composite_op(scr, oX, oY, bX, bY, sX, sY, lua_dbitmap_holder<T>(*b2));
 		}
 		void operator()(struct framebuffer::fb<false>& x) throw() { composite_op(x); }
 		void operator()(struct framebuffer::fb<true>& x) throw() { composite_op(x); }
