@@ -1,4 +1,5 @@
 #include "lua/halo.hpp"
+#include "lua/bitmap.hpp"
 #include "library/range.hpp"
 #include "library/eatarg.hpp"
 #include <cstdint>
@@ -46,6 +47,32 @@ namespace
 		for(size_t i = 0; i < pixels; i++)
 			pixmap[i] &= 0x03;
 	}
+
+	template<bool T> class text_bitmap_holder
+	{
+	public:
+		text_bitmap_holder(const framebuffer::color& bg, const framebuffer::color& fg,
+			const framebuffer::color& hl, const unsigned char* _pixmap, size_t _width)
+		{
+			cmap[0] = bg;
+			cmap[1] = fg;
+			cmap[2] = hl;
+			cmap[3] = fg;
+			pixmap = _pixmap;
+			width = _width;
+		}
+		size_t stride() { return width; }
+		void lock() {}
+		void unlock() {}
+		void draw(size_t bmpidx, typename framebuffer::fb<T>::element_t& target)
+		{
+			cmap[pixmap[bmpidx]].apply(target);
+		}
+	private:
+		framebuffer::color cmap[4];
+		const unsigned char* pixmap;
+		size_t width;
+	};
 }
 
 void render_halo(unsigned char* pixmap, size_t width, size_t height)
@@ -69,7 +96,6 @@ template<bool X> void halo_blit(struct framebuffer::fb<X>& scr, unsigned char* p
 {
 	uint32_t low = 1;
 	uint32_t border = 0;
-	framebuffer::color cmap4[4] = {bg, fg, hl, fg};
 	if(hl) {
 		//Make space for halo.
 		low = 0;
@@ -78,14 +104,9 @@ template<bool X> void halo_blit(struct framebuffer::fb<X>& scr, unsigned char* p
 	}
 	range bX = (range::make_w(scr.get_width()) - x) & range::make_s(low, owidth + border);
 	range bY = (range::make_w(scr.get_height()) - y) & range::make_s(low, oheight + border);
-	for(uint32_t r = bY.low(); r < bY.high(); r++) {
-		typename framebuffer::fb<X>::element_t* rptr = scr.rowptr(y + r);
-		size_t eptr = x + bX.low();
-		for(uint32_t c = bX.low(); c < bX.high(); c++, eptr++) {
-			uint16_t i = pixmap[r * width + c];
-			cmap4[i].apply(rptr[eptr]);
-		}
-	}
+	//Because outside is always false, screen can be passed as 0x0.
+	lua_bitmap_composite(scr, x, y, bX, bY, range::make_w(0), range::make_w(0), false,
+		text_bitmap_holder<X>(bg, fg, hl, pixmap, width));
 }
 
 void _pull_fn_68269328963289632986296386936()
