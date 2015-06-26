@@ -13,6 +13,7 @@
 #include <cassert>
 #include "string.hpp"
 #include "utf8.hpp"
+#include "int24.hpp"
 #include "lua-version.hpp"
 
 namespace lua
@@ -541,7 +542,7 @@ public:
 	void rawgeti(int index, int n) { lua_rawgeti(lua_handle, index, n); }
 	template<typename T> void pushnumber(T val)
 	{
-		if(std::numeric_limits<T>::is_integer)
+		if(std::numeric_limits<T>::is_integer || is_ss_int24<T>::flag)
 			_pushinteger(val);
 		else
 			_pushnumber(val);

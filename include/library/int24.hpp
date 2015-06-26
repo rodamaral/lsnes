@@ -40,4 +40,9 @@ private:
 	char v[3];
 };
 
+template<typename T> struct is_ss_int24 { const static bool flag = false; };
+template<> struct is_ss_int24<ss_uint24_t> { const static bool flag = true; };
+template<> struct is_ss_int24<ss_int24_t> { const static bool flag = true; };
+
+
 #endif
