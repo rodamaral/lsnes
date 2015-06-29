@@ -412,13 +412,16 @@ namespace
 		return portctrl::type_set::make(ctrldata.ports, ctrldata.portindex());
 	}
 
-	void handle_load_core(moviefile& _movie, portctrl::type_set& portset, bool will_load_state)
+	void handle_load_core(moviefile& _movie, portctrl::type_set& portset, bool will_load_state,
+		bool force = false);
+
+	void handle_load_core(moviefile& _movie, portctrl::type_set& portset, bool will_load_state, bool force)
 	{
 		auto& core = CORE();
 		core.random_seed_value = _movie.movie_rtc_second;
 		if(will_load_state) {
 			//If settings possibly change, reload the ROM.
-			if(!*core.mlogic || core.mlogic->get_mfile().projectid != _movie.projectid)
+			if(force || !*core.mlogic || core.mlogic->get_mfile().projectid != _movie.projectid)
 				core.rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 			//Load the savestate and movie state.
 			//Set the core ports in order to avoid port state being reinitialized when loading.
@@ -428,7 +431,7 @@ namespace
 			core.controls->set_macro_frames(_movie.dyn.active_macros);
 		} else {
 			//If settings possibly change, reload the ROM. Otherwise rewind to beginning.
-			if(!*core.mlogic || core.mlogic->get_mfile().projectid != _movie.projectid)
+			if(force || !*core.mlogic || core.mlogic->get_mfile().projectid != _movie.projectid)
 				core.rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 			else
 				core.rom->reset_to_load();
@@ -457,7 +460,9 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		portctrl::type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 		//If portset or gametype changes, force readwrite with new movie.
 		if(core.mlogic->get_mfile().input->get_types() != portset) load_readwrite = true;
-		if(!core.rom->is_of_type(core.mlogic->get_mfile().gametype->get_type())) load_readwrite = true;
+		else if(!core.rom->is_of_type(core.mlogic->get_mfile().gametype->get_type())) load_readwrite = true;
+		else if(!core.rom->region_compatible_with(core.mlogic->get_mfile().gametype->get_region()))
+			load_readwrite = true;
 	}
 
 	if(!load_readwrite) {
@@ -471,7 +476,10 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		portctrl::type_set& portset = construct_movie_portset(core.mlogic->get_mfile(), *core.rom);
 
 		try {
-			handle_load_core(core.mlogic->get_mfile(), portset, false);
+			//Force game's region to run's region. We already checked this is possible above.
+			core.rom->set_internal_region(core.mlogic->get_mfile().gametype->get_region());
+
+			handle_load_core(core.mlogic->get_mfile(), portset, false, true);
 			core.mlogic->get_mfile().gametype = &core.rom->get_sysregion();
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 				auto& img = core.rom->get_rom(i);
@@ -530,7 +538,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		//Movie data is lost.
 		core.lua2->callback_movie_lost("reload");
 		try {
-			handle_load_core(*_movie.get(), portset2, false);
+			handle_load_core(*_movie.get(), portset2, false, true);
 			_movie.get()->gametype = &core.rom->get_sysregion();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
