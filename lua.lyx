@@ -6705,6 +6705,25 @@ Returns starting subframe of given frame (frame numbers are 1-based).
 \end_layout
 
 \begin_layout Subsection
+movie.subframe_to_frame/INPUTMOVIE::subframe_to_frame: Find frame corresponding
+ to subframe
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.subframe_to_frame([INPUTMOVIE/string movie], number
+ subframe)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number INPUTMOVIE::subframe_to_frame(number subframe)
+\end_layout
+
+\begin_layout Standard
+Returns frame containing given subframe (subframe numbers are 0-based).
+ Returns -1 if subframe number is bad.
+\end_layout
+
+\begin_layout Subsection
 movie.blank_frame/INPUTMOVIE::blank_frame: Return a blank frame
 \end_layout
 

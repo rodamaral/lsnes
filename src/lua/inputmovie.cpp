@@ -226,6 +226,17 @@ namespace
 		return 1;
 	}
 
+	int _subframe_to_frame(lua::state& L, lua::parameters& P)
+	{
+		uint64_t n;
+		portctrl::frame_vector& v = framevector(L, P);
+
+		P(n);
+
+		L.pushnumber(v.subframe_to_frame(n));
+		return 1;
+	}
+
 	int _blank_frame(lua::state& L, lua::parameters& P)
 	{
 		portctrl::frame_vector& v = framevector(L, P);
@@ -426,6 +437,10 @@ namespace
 		{
 			return _find_frame(L, P);
 		}
+		int subframe_to_frame(lua::state& L, lua::parameters& P)
+		{
+			return _subframe_to_frame(L, P);
+		}
 		int blank_frame(lua::state& L, lua::parameters& P)
 		{
 			return _blank_frame(L, P);
@@ -505,6 +520,11 @@ namespace
 	int find_frame(lua::state& L, lua::parameters& P)
 	{
 		return _find_frame(L, P);
+	}
+
+	int subframe_to_frame(lua::state& L, lua::parameters& P)
+	{
+		return _subframe_to_frame(L, P);
 	}
 
 	int blank_frame(lua::state& L, lua::parameters& P)
@@ -628,6 +648,7 @@ namespace
 			{"get_size", &lua_inputmovie::get_size},
 			{"count_frames", &lua_inputmovie::count_frames},
 			{"find_frame", &lua_inputmovie::find_frame},
+			{"subframe_to_frame", &lua_inputmovie::subframe_to_frame},
 			{"blank_frame", &lua_inputmovie::blank_frame},
 			{"append_frames", &lua_inputmovie::append_frames},
 			{"append_frame", &lua_inputmovie::append_frame},
@@ -657,6 +678,7 @@ namespace
 		{"get_size", get_size},
 		{"count_frames", count_frames},
 		{"find_frame", find_frame},
+		{"subframe_to_frame", subframe_to_frame},
 		{"blank_frame", blank_frame},
 		{"append_frames", append_frames},
 		{"append_frame", append_frame},

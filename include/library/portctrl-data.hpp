@@ -1244,6 +1244,10 @@ public:
  */
 	int64_t find_frame(uint64_t n);
 /**
+ * Find frame number corresponding to given subframe (0-based).
+ */
+	int64_t subframe_to_frame(uint64_t n);
+/**
  * Notify sync flag polarity change.
  *
  * Parameter polarity: 1 if positive edge, -1 if negative edge. 0 is ignored.

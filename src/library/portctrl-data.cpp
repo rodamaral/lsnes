@@ -819,6 +819,35 @@ int64_t frame_vector::find_frame(uint64_t n)
 	return -1;
 }
 
+int64_t frame_vector::subframe_to_frame(uint64_t n)
+{
+	int64_t ret = 1;
+	uint64_t stride = get_stride();
+	uint64_t pageframes = get_frames_per_page();
+	uint64_t vsize = size();
+	if(n >= vsize) return -1;
+	size_t pagenum = 0;
+	size_t cpage = n / pageframes;
+	for(uint64_t p = 0; p < cpage; p++) {
+		const unsigned char* content = get_page_buffer(pagenum++);
+		size_t offset = 0;
+		for(unsigned i = 0; i < pageframes; i++) {
+			if(frame::sync(content + offset)) ret++;
+			offset += stride;
+		}
+	}
+	{
+		const unsigned char* content = get_page_buffer(pagenum++);
+		size_t offset = 0;
+		unsigned idx = n % pageframes;
+		for(unsigned i = 0; i < idx; i++) {
+			if(frame::sync(content + offset)) ret++;
+			offset += stride;
+		}
+	}
+	return ret;
+}
+
 frame::frame() throw()
 {
 	memset(memory, 0, sizeof(memory));
