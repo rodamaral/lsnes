@@ -308,6 +308,8 @@ size_t movie::restore_state(uint64_t curframe, uint64_t lagframe, const std::vec
 
 uint64_t movie::frame_subframes(uint64_t frame) throw()
 {
+	if(!frame) return 0;
+	if(frame > movie_data->size()) return 0;
 	if(frame < cached_frame)
 		clear_caches();
 	uint64_t p = cached_subframe;
