@@ -816,6 +816,8 @@ void decoder::decode_png(std::istream& stream)
 	std::vector<uint32_t> ndata;
 	std::vector<uint32_t> npalette;
 	ndata.resize(hdr.width * hdr.height);
+	if(hdr.width == 0 || hdr.height == 0)
+		throw std::runtime_error("PNG file has zero width or height");
 	if(ndata.size() / hdr.width != hdr.height)
 		throw std::bad_alloc();
 	if(hdr.type == 3) {
