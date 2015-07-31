@@ -30,19 +30,19 @@ joystick_driver::joystick_driver(_joystick_driver drv)
 	driver = drv;
 }
 
-void joystick_driver_init() throw()
+void joystick_driver_init(bool soft) throw()
 {
-	lsnes_gamepads_init();
+	if(!soft) lsnes_gamepads_init();
 	driver.init();
 	joystick_thread_handle = new threads::thread(joystick_thread, 6);
 }
 
-void joystick_driver_quit() throw()
+void joystick_driver_quit(bool soft) throw()
 {
 	driver.quit();
 	joystick_thread_handle->join();
 	joystick_thread_handle = NULL;
-	lsnes_gamepads_deinit();
+	if(!soft) lsnes_gamepads_deinit();
 }
 
 void joystick_driver_signal() throw()

@@ -23,7 +23,7 @@ struct joystick_driver
  * - The call occurs in the main thread.
  * - Implemented by the joystick plugin.
  */
-void joystick_driver_init() throw();
+void joystick_driver_init(bool soft = false) throw();
 /**
  * Joystick quit function.
  *
@@ -31,7 +31,7 @@ void joystick_driver_init() throw();
  * - The call occurs in the main thread.
  * - Implemented by the joystick plugin.
  */
-void joystick_driver_quit() throw();
+void joystick_driver_quit(bool soft = false) throw();
 /**
  * Signal the joystick thread to quit.
  */

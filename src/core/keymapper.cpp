@@ -116,9 +116,9 @@ namespace
 
 	command::fnptr<> reset_joysticks(lsnes_cmds, CKEYMAPPER::reset,
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			joystick_driver_quit();
-			lsnes_gamepads.offline_all(); //Not supposed to have online gamepads.
-			joystick_driver_init();
+			joystick_driver_quit(true);
+			lsnes_gamepads.offline_all(); //Not supposed to have online gamepads when entering reset.
+			joystick_driver_init(true);
 			messages << "Reset gamepads" << std::endl;
 		});
 

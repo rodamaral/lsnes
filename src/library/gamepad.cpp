@@ -104,19 +104,19 @@ void pad::set_online(bool status)
 		else {
 			online_flag = status;
 			//Offline everything.
-			for(auto i : _axes) {
+			for(auto& i : _axes) {
 				if(i.second.online) try { axes_off.push_back(i.first); } catch(...) {}
 				i.second.online = false;
 			}
-			for(auto i : _buttons) {
+			for(auto& i : _buttons) {
 				if(i.second.online) try { buttons_off.push_back(i.first); } catch(...) {}
 				i.second.online = false;
 			}
-			for(auto i : _hats) {
+			for(auto& i : _hats) {
 				if(i.second.online) try { hats_off.push_back(i.first); } catch(...) {}
 				i.second.online = false;
 			}
-			for(auto i : _axes_hat) {
+			for(auto& i : _axes_hat) {
 				if(i.second->online) try { hats_off.push_back(i.first); } catch(...) {}
 				i.second->online = false;
 			}
@@ -702,7 +702,14 @@ unsigned set::add(const std::string& name)
 	threads::alock h(mlock);
 	for(size_t i = 0; i < _gamepads.size(); i++) {
 		if(!_gamepads[i]->online() && _gamepads[i]->name() == name) {
-			_gamepads[i]->set_online(true);
+			auto& gp = _gamepads[i];
+			gp->set_online(true);
+			//Reset the functions.
+			gp->set_axis_cb(axis_fn);
+			gp->set_button_cb(button_fn);
+			gp->set_hat_cb(hat_fn);
+			gp->set_axismode_cb(amode_fn);
+			gp->set_newitem_cb(newitem_fn);
 			return i;
 		}
 	}

@@ -176,8 +176,10 @@ namespace
 		if(r < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
 			return 0;
 		if(r < 0) {
-			if(errno == ENODEV)
+			if(errno == ENODEV) {
+				messages << "Joystick #" << gamepad_map[fd] << " disconnected." << std::endl;
 				return -1;  //Disconnected.
+			}
 			messages << "Error reading from joystick (fd=" << fd << "): " << strerror(errno)
 				<< std::endl;
 			return 0;
