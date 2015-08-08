@@ -1,7 +1,7 @@
 From cf662a12578778cb50c25d5275ce58deabd7eabe Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 30 Apr 2014 00:18:58 +0300
-Subject: [PATCH 20/23] Fixes to SA1 open bus emulation
+Subject: [PATCH 20/24] Fixes to SA1 open bus emulation
 
 ---
  snes/chip/sa1/memory/memory.cpp | 19 +++++++++++--------
@@ -74,5 +74,5 @@ index 9bb4ff2..614dfb0 100755
  
  uint8 SA1::mmc_read(unsigned addr) {
 -- 
-2.1.4
+2.5.0
 

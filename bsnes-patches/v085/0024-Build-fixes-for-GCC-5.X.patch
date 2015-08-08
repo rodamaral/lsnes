@@ -1,0 +1,50 @@
+From f2bbef8a4e12e05190a68dfe410cff3e4b1eb13f Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Sat, 8 Aug 2015 11:09:41 +0300
+Subject: [PATCH 24/24] Build fixes for GCC 5.X
+
+---
+ nall/bit.hpp | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/nall/bit.hpp b/nall/bit.hpp
+index 67a35ad..11d9d8d 100755
+--- a/nall/bit.hpp
++++ b/nall/bit.hpp
+@@ -8,18 +8,27 @@ namespace nall {
+   }
+ 
+   template<int bits> constexpr inline unsigned uclip(const unsigned x) {
+-    enum { m = (1U << (bits - 1)) + ((1U << (bits - 1)) - 1) };
+-    return (x & m);
++    return x & ((1U << (bits - 1)) + ((1U << (bits - 1)) - 1));
++  }
++
++  template<int bits> constexpr inline signed sclamp_b() {
++    return 1U << (bits - 1);
++  }
++
++  template<int bits> constexpr inline signed sclamp_m() {
++    return (1U << (bits - 1)) - 1;
+   }
+ 
+   template<int bits> constexpr inline signed sclamp(const signed x) {
+-    enum { b = 1U << (bits - 1), m = (1U << (bits - 1)) - 1 };
+-    return (x > m) ? m : (x < -b) ? -b : x;
++    return (x > sclamp_m<bits>()) ? sclamp_m<bits>() : (x < -sclamp_b<bits>()) ? -sclamp_b<bits>() : x;
++  }
++
++  template<int bits> constexpr inline signed sclip_m() {
++    return (1U << (bits)) - 1;
+   }
+ 
+   template<int bits> constexpr inline signed sclip(const signed x) {
+-    enum { b = 1U << (bits - 1), m = (1U << bits) - 1 };
+-    return ((x & m) ^ b) - b;
++    return ((x & sclip_m<bits>()) ^ sclamp_b<bits>()) - sclamp_b<bits>();
+   }
+ 
+   namespace bit {
+-- 
+2.5.0
+

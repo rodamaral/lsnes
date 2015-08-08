@@ -1,7 +1,7 @@
 From f1106d3dffd27dab526a703aa434512495fbacea Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 14 Apr 2014 21:21:36 +0300
-Subject: [PATCH 19/23] SA1 trace hook support
+Subject: [PATCH 19/24] SA1 trace hook support
 
 ---
  snes/chip/sa1/sa1.cpp | 2 ++
@@ -49,5 +49,5 @@ index 27632bf..3bdca7e 100755
  namespace SNES {
    namespace Info {
 -- 
-2.1.4
+2.5.0
 
