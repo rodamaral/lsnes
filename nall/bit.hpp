@@ -8,18 +8,27 @@ namespace nall {
   }
 
   template<int bits> constexpr inline unsigned uclip(const unsigned x) {
-    enum { m = (1U << (bits - 1)) + ((1U << (bits - 1)) - 1) };
-    return (x & m);
+    return x & ((1U << (bits - 1)) + ((1U << (bits - 1)) - 1));
+  }
+
+  template<int bits> constexpr inline signed sclamp_b() {
+    return 1U << (bits - 1);
+  }
+
+  template<int bits> constexpr inline signed sclamp_m() {
+    return (1U << (bits - 1)) - 1;
   }
 
   template<int bits> constexpr inline signed sclamp(const signed x) {
-    enum { b = 1U << (bits - 1), m = (1U << (bits - 1)) - 1 };
-    return (x > m) ? m : (x < -b) ? -b : x;
+    return (x > sclamp_m<bits>()) ? sclamp_m<bits>() : (x < -sclamp_b<bits>()) ? -sclamp_b<bits>() : x;
+  }
+
+  template<int bits> constexpr inline signed sclip_m() {
+    return (1U << (bits)) - 1;
   }
 
   template<int bits> constexpr inline signed sclip(const signed x) {
-    enum { b = 1U << (bits - 1), m = (1U << bits) - 1 };
-    return ((x & m) ^ b) - b;
+    return ((x & sclip_m<bits>()) ^ sclamp_b<bits>()) - sclamp_b<bits>();
   }
 
   namespace bit {
