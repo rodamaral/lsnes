@@ -107,7 +107,7 @@ void MSU1::mmio_write(unsigned addr, uint8 data) {
     if(datafile.open()) datafile.seek(mmio.data_offset);
     mmio.data_busy = false;
     break;
-  case 4: mmio.audio_track = (mmio.audio_track & 0xff00) | (data << 0);
+  case 4: mmio.audio_track = (mmio.audio_track & 0xff00) | (data << 0); break;
   case 5: mmio.audio_track = (mmio.audio_track & 0x00ff) | (data << 8);
     if(audiofile.open()) audiofile.close();
     if(audiofile.open(interface->path(Cartridge::Slot::Base, { "-", (unsigned)mmio.audio_track, ".pcm" }), file::mode::read)) {
