@@ -363,7 +363,7 @@ void rom_image::load_bundle(const std::string& file, std::istream& spec, const s
 	}
 
 	//MSU-1 base.
-	if(cromimg[1] != "")
+	if(rtype->get_biosname() != "")
 		msu1_base = zip::resolverel(cromimg[1], file);
 	else
 		msu1_base = zip::resolverel(cromimg[0], file);
