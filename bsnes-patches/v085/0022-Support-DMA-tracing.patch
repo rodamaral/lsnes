@@ -1,7 +1,7 @@
 From 5bc96b8aeea26729ef4399c2d8d5e562894616e1 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Tue, 20 Jan 2015 10:04:58 +0200
-Subject: [PATCH 22/24] Support DMA tracing
+Subject: [PATCH 22/25] Support DMA tracing
 
 ---
  snes/alt/ppu-compatibility/mmio/mmio.cpp | 18 +++++++
@@ -284,5 +284,5 @@ index 3bdca7e..7c48ebb 100755
  namespace SNES {
    namespace Info {
 -- 
-2.5.0
+2.5.1
 

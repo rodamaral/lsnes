@@ -1,7 +1,7 @@
 From 863bde899b53ae31e854096ac5258208c848a293 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 6 Mar 2014 21:07:54 +0200
-Subject: [PATCH 15/24] Fix mouse speed support
+Subject: [PATCH 15/25] Fix mouse speed support
 
 ---
  snes/config/config.cpp          |  1 +
@@ -99,5 +99,5 @@ index b07c8ab..13a9313 100755
    int _position_y;
  };
 -- 
-2.5.0
+2.5.1
 

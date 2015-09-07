@@ -1,7 +1,7 @@
 From f2bbef8a4e12e05190a68dfe410cff3e4b1eb13f Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 8 Aug 2015 11:09:41 +0300
-Subject: [PATCH 24/24] Build fixes for GCC 5.X
+Subject: [PATCH 24/25] Build fixes for GCC 5.X
 
 ---
  nall/bit.hpp | 21 +++++++++++++++------
@@ -46,5 +46,5 @@ index 67a35ad..11d9d8d 100755
  
    namespace bit {
 -- 
-2.5.0
+2.5.1
 

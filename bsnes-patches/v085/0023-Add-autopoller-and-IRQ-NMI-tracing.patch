@@ -1,7 +1,7 @@
 From 9682df9e33c366dfe047a99c8bcefc2c8ab29620 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 24 Jan 2015 16:46:18 +0200
-Subject: [PATCH 23/24] Add autopoller and IRQ/NMI tracing
+Subject: [PATCH 23/25] Add autopoller and IRQ/NMI tracing
 
 ---
  snes/cpu/cpu.cpp           |  3 +++
@@ -82,5 +82,5 @@ index 3fd4d23..afca750 100755
      status.auto_joypad_counter++;
    }
 -- 
-2.5.0
+2.5.1
 
