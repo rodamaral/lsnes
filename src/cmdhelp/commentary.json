@@ -1,12 +1,12 @@
 {
 	"__mod":"CCOMMENTARY",
 	"+tangent":[
-		"p", "Voice tangent enage",
-		{"":"Voice tangent enage"},
+		"p", "Voice tangent enage (start recording)",
+		{"":"Start recording audio for commentary track item (creating new item)."},
 		{"":"Movie‣Voice tangent"}
 	],
 	"-tangent":[
-		"r", "Voice tangent disenage",
-		{"":"Voice tangent disenage."}
+		"r", "Voice tangent disenage (stop recording)",
+		{"":"Stop recording audio for commentary track item (finishing the item)."}
 	]
 }
