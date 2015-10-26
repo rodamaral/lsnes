@@ -214,6 +214,7 @@ namespace
 				case 'R':
 					o << "$" << hex::to(static_cast<uint16_t>(base + 3 +
 						fetch_le<int16_t>(fetchpc)));
+					break;
 				case 'w':
 					o << "$" << hex::to(fetch_le<uint16_t>(fetchpc));
 					break;
