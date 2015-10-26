@@ -584,7 +584,7 @@ namespace
 		case 16: v = serialization::u16b(in); m = 0x010101; s = 8; break;
 		};
 		uint32_t alpha = 0xFF000000U;
-		if(v == serialization::u16b(trans))
+		if(trans && v == serialization::u16b(trans))
 			alpha = 0;
 		return alpha | (m * (v >> s));
 	}
