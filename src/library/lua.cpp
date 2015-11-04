@@ -413,6 +413,11 @@ void state::push_trampoline(int(*fn)(state& L), unsigned n_upvals)
 	lua_pushcclosure(lua_handle, lua_main_trampoline, trampoline_upvals + n_upvals);
 }
 
+//Lua 5.1 doesn't define LUA_OK.
+#ifndef LUA_OK
+#define LUA_OK 0
+#endif
+
 void state::run_interruptable(std::function<void()> fn, unsigned in, unsigned out)
 {
 	pushnumber(out);
