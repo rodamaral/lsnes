@@ -540,6 +540,7 @@ namespace
 			{"ygamepad16", "Y-cabled gamepad (16-button)", 9},
 			{"multitap", "Multitap", 3},
 			{"multitap16", "Multitap (16-button)", 4},
+			{"multitapd", "Multitap (dynamic enable)", 10},
 			{"mouse", "Mouse", 5}
 		}},
 		{"port2", "Port 2 Type", "none", {
@@ -549,6 +550,7 @@ namespace
 			{"ygamepad16", "Y-cabled gamepad (16-button)", 9},
 			{"multitap", "Multitap", 3},
 			{"multitap16", "Multitap (16-button)", 4},
+			{"multitapd", "Multitap (dynamic enable)", 10},
 			{"mouse", "Mouse", 5},
 			{"superscope", "Super Scope", 8},
 			{"justifier", "Justifier", 6},
@@ -569,15 +571,22 @@ namespace
 	////////////////// PORTS COMMON ///////////////////
 	portctrl::type* index_to_ptype[] = {
 		&none, &gamepad, &gamepad16, &multitap, &multitap16, &mouse, &justifier, &justifiers, &superscope,
-		&ygamepad16
+		&ygamepad16, &multitapd
 	};
+	//The dynamic enable multitap is marked multitap here because initially it is one.
 	unsigned index_to_bsnes_type[] = {
 		SNES_DEVICE_NONE, SNES_DEVICE_JOYPAD, SNES_DEVICE_JOYPAD, SNES_DEVICE_MULTITAP, SNES_DEVICE_MULTITAP,
 		SNES_DEVICE_MOUSE, SNES_DEVICE_JUSTIFIER, SNES_DEVICE_JUSTIFIERS, SNES_DEVICE_SUPER_SCOPE,
-		SNES_DEVICE_JOYPAD
+		SNES_DEVICE_JOYPAD, SNES_DEVICE_MULTITAP
 	};
 
-	bool port_is_ycable[2];
+	struct port_flags_struct
+	{
+		bool is_ycable;			//Y-cable is connected to port?
+		bool dynamic_multitap;		//Port has dynamic multitap enable/disable?
+		bool multitap_enable;		//Multitap enabled on port (only meaningful if dynamic_multitap)?
+		bool multitap_toggle;		//Multitap is being toggled next frame.
+	} port_flags[2];
 
 	void snesdbg_on_break();
 	void snesdbg_on_trace();
@@ -625,6 +634,14 @@ namespace
 			img[2].markup, img[2].data, img[2].size);
 	}
 
+	void setup_state_vars_on_load()
+	{
+		do_reset_flag = -1;
+		port_flags[0].multitap_toggle = false;
+		port_flags[1].multitap_toggle = false;
+		port_flags[0].multitap_enable = (dynamic_cast<SNES::Multitap*>(SNES::input.port1) != NULL);
+		port_flags[1].multitap_enable = (dynamic_cast<SNES::Multitap*>(SNES::input.port2) != NULL);
+	}
 
 	int load_rom(core_type* ctype, core_romimage* img, std::map<std::string, std::string>& settings,
 		uint64_t secs, uint64_t subsecs, bool(*fun)(core_romimage*))
@@ -663,10 +680,12 @@ namespace
 			internal_rom = ctype;
 			snes_set_controller_port_device(false, index_to_bsnes_type[type1]);
 			snes_set_controller_port_device(true, index_to_bsnes_type[type2]);
-			port_is_ycable[0] = (type1 == 9);
-			port_is_ycable[1] = (type2 == 9);
+			port_flags[0].is_ycable = (type1 == 9);
+			port_flags[1].is_ycable = (type2 == 9);
+			port_flags[0].dynamic_multitap = (type1 == 10);
+			port_flags[1].dynamic_multitap = (type2 == 10);
 			have_saved_this_frame = false;
-			do_reset_flag = -1;
+			setup_state_vars_on_load();
 			if(ecore_callbacks)
 				ecore_callbacks->action_state_updated();
 			//Save initial state, so we can restore it later.
@@ -696,6 +715,8 @@ namespace
 		r.ports.push_back(index_to_ptype[type2]);
 		unsigned p1controllers = r.ports[1]->controller_info->controllers.size();
 		unsigned p2controllers = r.ports[2]->controller_info->controllers.size();
+		if(p1controllers == 5) p1controllers = 4;	//Skip 5th controller, it is control only.
+		if(p2controllers == 5) p2controllers = 4;	//Skip 5th controller, it is control only.
 		r.logical_map.resize(p1controllers + p2controllers);
 		if(p1controllers == 4) {
 			r.logical_map[0] = std::make_pair(1, 0);
@@ -773,7 +794,7 @@ namespace
 
 		int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 		{
-			if(port_is_ycable[port ? 1 : 0]) {
+			if(port_flags[port ? 1 : 0].is_ycable) {
 				int16_t bit0 = ecore_callbacks->get_input(port ? 2 : 1, 0, id);
 				int16_t bit1 = ecore_callbacks->get_input(port ? 2 : 1, 1, id);
 				return bit0 + 2 * bit1;
@@ -1103,12 +1124,22 @@ namespace
 			ecore_callbacks->memory_write(_addr, val);
 	}
 
+	bool switch_multitap_state(unsigned port, bool do_it)
+	{
+		if(port > 1 || !do_it) return false;
+		//FIXME: This does not handle the switch correctly if in mid-poll.
+		port_flags[port].multitap_enable = !port_flags[port].multitap_enable;
+		snes_set_controller_port_device(port == 1, port_flags[port].multitap_enable ? SNES_DEVICE_MULTITAP :
+			SNES_DEVICE_JOYPAD);
+		return true;
+	}
+
 	void redraw_cover_fbinfo();
 
 	struct _bsnes_core : public core_core
 	{
 		_bsnes_core() : core_core({&gamepad, &gamepad16, &justifier, &justifiers, &mouse, &multitap,
-			&multitap16, &none, &superscope, &psystem, &psystem_hreset, &psystem_compact}, {
+			&multitap16, &none, &superscope, &psystem, &psystem_hreset, &psystem_compact, &multitapd}, {
 				{0, "Soft reset", "reset", {}},
 				{1, "Hard reset", "hardreset", {}},
 #ifdef BSNES_HAS_DEBUGGER
@@ -1133,6 +1164,8 @@ namespace
 				{22, "Layers‣Sprite Priority 2", "oampri2", {{"", "toggle"}}},
 				{23, "Layers‣Sprite Priority 3", "oampri3", {{"", "toggle"}}},
 #endif
+				{24, "Port 1 multitap enable", "multitap1", {{"", "toggle"}}},
+				{25, "Port 2 multitap enable", "multitap2", {{"", "toggle"}}},
 			}) {}
 
 		std::string c_core_identifier() const {
@@ -1224,7 +1257,7 @@ namespace
 			if(!SNES::system.unserialize(s))
 				throw std::runtime_error("SNES core rejected savestate");
 			have_saved_this_frame = true;
-			do_reset_flag = -1;
+			setup_state_vars_on_load();
 		}
 		core_region& c_get_region() {
 			return (SNES::system.region() == SNES::System::Region::PAL) ? region_pal : region_ntsc;
@@ -1265,6 +1298,13 @@ namespace
 			if(!internal_rom)
 				return;
 			bool was_delay_reset = false;
+			bool a_updated = false;
+
+			for(unsigned i = 0; i < 2; i++)
+				a_updated |= switch_multitap_state(i, port_flags[i].dynamic_multitap &&
+					ecore_callbacks->get_input(i + 1, 4, 0));
+			if(a_updated) ecore_callbacks->action_state_updated();
+
 			int16_t reset = ecore_callbacks->get_input(0, 0, 1);
 			int16_t hreset = 0;
 			if(support_hreset)
@@ -1372,6 +1412,12 @@ again2:
 		}
 		void c_pre_emulate_frame(portctrl::frame& cf)
 		{
+			for(unsigned i = 0; i < 2; i++) {
+				if(port_flags[i].dynamic_multitap)
+					cf.axis3(i + 1, 4, 0, port_flags[i].multitap_toggle ? 1 : 0);
+				port_flags[i].multitap_toggle = false;
+			}
+
 			cf.axis3(0, 0, 1, (do_reset_flag >= 0) ? 1 : 0);
 			if(support_hreset)
 				cf.axis3(0, 0, 4, do_hreset_flag ? 1 : 0);
@@ -1410,6 +1456,11 @@ again2:
 				ecore_callbacks->action_state_updated();
 			}
 #endif
+			if(id == 24 || id == 25) {
+				if(!port_flags[id-24].dynamic_multitap) return;
+				port_flags[id - 24].multitap_toggle = !port_flags[id - 24].multitap_toggle;
+				ecore_callbacks->action_state_updated();
+			}
 		}
 		const interface_device_reg* c_get_registers() { return snes_registers; }
 		unsigned c_action_flags(unsigned id)
@@ -1426,6 +1477,13 @@ again2:
 				return SNES::ppu.layer_enabled[y][id % 4] ? 3 : 1;
 			}
 #endif
+			if(id == 24 || id == 25) {
+				//Controller 1/2 multitap enable.
+				unsigned flags = 0;
+				if(port_flags[id-24].multitap_enable ^ port_flags[id-24].multitap_toggle) flags |= 2;
+				if(port_flags[id-24].dynamic_multitap) flags |= 1;
+				return flags;
+			}
 			return 0; //WTF?
 		}
 		int c_reset_action(bool hard)
@@ -1552,7 +1610,7 @@ again2:
 			if(!SNES::system.unserialize(s))
 				throw std::runtime_error("SNES core rejected initial state?");
 			have_saved_this_frame = false;
-			do_reset_flag = -1;
+			setup_state_vars_on_load();
 			if(ecore_callbacks)
 				ecore_callbacks->action_state_updated();
 		}

@@ -29,6 +29,7 @@
 		"hard":{"type":"button", "name":"hard", "symbol":"H", "shadow":true},
 		"rhigh":{"type":"axis", "name":"rhigh", "shadow":true},
 		"rlow":{"type":"axis", "name":"rlow", "shadow":true},
+		"menable":{"type":"button", "name":"menable", "symbol":"M", "shadow":true},
 		"shadownull":{"type":"null", "shadow":true}
 	},"controllers":{
 		"gamepad":{"type":"gamepad", "class":"gamepad", "buttons":[
@@ -39,6 +40,9 @@
 			"buttons/B", "buttons/Y", "buttons/select", "buttons/start", "buttons/up", "buttons/down",
 			"buttons/left", "buttons/right", "buttons/A", "buttons/X", "buttons/L", "buttons/R",
 			"buttons/ext0", "buttons/ext1", "buttons/ext2", "buttons/ext3"
+		]},
+		"mtoggle":{"type":"mtoggle", "class":"mtoggle", "buttons":[
+			"buttons/menable"
 		]},
 		"justifier":{"type":"justifier", "class":"justifier", "buttons":[
 			"buttons/xaxis", "buttons/yaxis", "buttons/trigger", "buttons/start"
@@ -98,6 +102,10 @@
 		],"legal":[0]},
 		{"symbol":"psystem_compact", "name":"system", "hname":"system", "controllers":[
 			"controllers/system_compact"
-		],"legal":[0]}
+		],"legal":[0]},
+		{"symbol":"multitapd", "name":"multitapd", "hname":"Multitap (dynamic enable)", "controllers":[
+			"controllers/gamepad", "controllers/gamepad", "controllers/gamepad", "controllers/gamepad",
+			"controllers/mtoggle"
+		],"legal":[1, 2]}
 	]
 }
