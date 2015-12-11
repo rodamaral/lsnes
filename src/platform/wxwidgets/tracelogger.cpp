@@ -34,7 +34,6 @@
 #include <wx/statusbr.h>
 #include <wx/dataobj.h>
 #include <wx/sizer.h>
-#include <boost/regex.hpp>
 #include <set>
 
 namespace
@@ -841,7 +840,6 @@ namespace
 	bool find_match(const std::string& pattern, const std::string& candidate)
 	{
 		static std::string last_find;
-		static boost::regex regex;
 		if(pattern == "")
 			return false;
 		std::string tmp = pattern;
