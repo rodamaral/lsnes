@@ -106,6 +106,7 @@ exit:
 audioapi_instance::audioapi_instance()
 	: dummyproc(*this)
 {
+	dummythread = NULL;
 	music_ptr = 0;
 	last_complete_music_seen = MUSIC_BUFFERS + 1;
 	last_complete_music = MUSIC_BUFFERS;
