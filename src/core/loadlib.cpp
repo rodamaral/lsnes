@@ -208,3 +208,6 @@ void autoload_libraries(void(*on_error)(const std::string& libname, const std::s
 	}
 	handle_post_loadlibrary();
 }
+
+std::string loadlib_debug_get_user_library_dir() { return get_user_library_dir(); }
+std::string loadlib_debug_get_system_library_dir() { return get_system_library_dir(); }

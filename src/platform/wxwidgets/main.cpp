@@ -16,6 +16,7 @@
 #include "core/messages.hpp"
 #include "core/misc.hpp"
 #include "core/instance.hpp"
+#include "core/misc.hpp"
 #include "core/moviefile-common.hpp"
 #include "core/moviedata.hpp"
 #include "core/random.hpp"
@@ -25,6 +26,7 @@
 #include "interface/romtype.hpp"
 #include "library/crandom.hpp"
 #include "library/directory.hpp"
+#include "library/running-executable.hpp"
 #include "library/string.hpp"
 #include "library/threads.hpp"
 #include "library/utf8.hpp"
@@ -441,6 +443,21 @@ void lsnes_app::OnInitCmdLine(wxCmdLineParser& parser)
 	parser.SetSwitchChars(wxT(""));
 }
 
+static bool regex_sanity_check()
+{
+	bool regex_sane = true;
+	try {
+		//Simple sanity checks.
+		regex_sane &= regex_match("foo.*baz", "foobarbaz", REGEX_MATCH_REGEX);
+		regex_sane &= regex_match(".*foo.*baz.*", "foobarbaz", REGEX_MATCH_REGEX);
+		regex_sane &= regex_match("foo*baz", "FOOBARBAZ", REGEX_MATCH_IWILDCARDS);
+		regex_sane &= regex_match("foo.*baz", "FOOBARBAZ", REGEX_MATCH_IREGEX);
+	} catch(...) {
+		regex_sane = false;
+	}
+	return regex_sane;
+}
+
 bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 {
 	for(size_t i = 0; i< parser.GetParamCount(); i++)
@@ -457,6 +474,7 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 			std::cout << "--lua=<filename>: Load specified Lua script on startup" << std::endl;
 			std::cout << "--library=<filename>: Load specified library on startup" << std::endl;
 			std::cout << "--set=<a>=<b>: Set setting <a> to value <b>" << std::endl;
+			std::cout << "--sanity-check: Perfrom some simple sanity checks" << std::endl;
 			std::cout << "<filename>: Load specified ROM on startup" << std::endl;
 			exit_immediately = true;
 			return true;
@@ -475,6 +493,21 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 			c_lua.push_back(r[1]);
 		if(r = regex("--library=(.+)", i))
 			c_library.push_back(r[1]);
+		if(i == "--sanity-check") {
+			if(regex_sanity_check()) {
+				std::cout << "Regex library passes basic sanity checks." << std::endl;
+			} else {
+				std::cout << "Regex library FAILS basic sanity checks." << std::endl;
+			}
+			std::cout << "Executable: '" << running_executable() << "'" << std::endl; 
+			std::cout << "Configuration directory: '" << get_config_path()
+				<< "'" << std::endl;
+			std::cout << "System autoload directory: '" << loadlib_debug_get_system_library_dir()
+				<< "'" << std::endl;
+			std::cout << "User autoload directory: '" << loadlib_debug_get_user_library_dir()
+				<< "'" << std::endl;
+			exit_immediately = true;
+		}
 	}
 	return true;
 }
@@ -512,6 +545,11 @@ bool lsnes_app::OnInit()
 	} catch(std::exception& e) {
 		show_message_ok(NULL, "RNG error", "Error initializing system RNG", wxICON_ERROR);
 		return false;
+	}
+
+	if(!regex_sanity_check()) {
+		wxMessageBox(towxstring("Regex sanity check FAILED.\n\nExpect problems."),
+			_T("lsnes: Error"), wxICON_EXCLAMATION | wxOK, NULL);
 	}
 
 	reached_main();
