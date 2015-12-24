@@ -4930,6 +4930,50 @@ Multiply 32-bit numbers <a> and <b>.
  bits.
 \end_layout
 
+\begin_layout Subsection
+bit.fextract: Extract bit field
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.fextract(number value, number shift, number width)
+\end_layout
+
+\begin_layout Standard
+Extract <width> bits starting from bit <shift> from number <value>.
+ This is more compact way to write 
+\begin_inset Formula $\left(value\gg shift\right)\&\left(2^{width}-1\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+bit.bfields: Split number into bit fields
+\end_layout
+
+\begin_layout Itemize
+Syntax: number...
+ bit.bfields(number v, number q...)
+\end_layout
+
+\begin_layout Standard
+Split a number <v> into bitfields of <q> bits (in order, from least significant
+ towards more significant bits), with no padding in between.
+\end_layout
+
+\begin_layout Itemize
+Eg.
+ number of form 0 bbbbb ggggg rrrrr can be decoded to its component fields
+ using r,g,b = bit.bfields(v, 5, 5, 5).
+ 
+\end_layout
+
+\begin_layout Itemize
+Eg.
+ number of form x yyyyyyy w zzzzzzz can be decode to its component fields
+ using z, w, y, x = bit.bfields(v, 7, 1, 7, 1).
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset

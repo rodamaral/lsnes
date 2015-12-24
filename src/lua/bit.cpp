@@ -358,6 +358,40 @@ namespace
 		return 2;
 	}
 
+	int bit_fextract(lua::state& L, lua::parameters& P)
+	{
+		uint64_t a, b, c;
+
+		P(a, b, c);
+		if(b > 63)
+			L.pushnumber(0);
+		else if(c > 63)
+			L.pushnumber(a >> b);
+		else
+			L.pushnumber((a >> b) & ((1 << c) - 1));
+		return 1;
+	}
+
+	int bit_bfields(lua::state& L, lua::parameters& P)
+	{
+		uint64_t v;
+		unsigned values = L.gettop();
+
+		P(v);
+		for(unsigned i = 1; i < values; i++) {
+			uint64_t q;
+			P(q);
+			if(q > 63) {
+				L.pushnumber(v);
+				v = 0;
+			} else {
+				L.pushnumber(v & ((1 << q) - 1));
+				v >>= q;
+			}
+		}
+		return values - 1;
+	}
+
 	lua::functions LUA_bitops_fn(lua_func_bit, "bit", {
 		{"flagdecode", flagdecode_core<false>},
 		{"rflagdecode", flagdecode_core<true>},
@@ -412,6 +446,8 @@ namespace
 		{"quotent", bit_quotent},
 		{"multidiv", bit_multidiv},
 		{"mul32", bit_mul32},
+		{"fextract", bit_fextract},
+		{"bfields", bit_bfields},
 		{"binary_ld_u8be", bit_ldbinarynumber<uint8_t, false>},
 		{"binary_ld_s8be", bit_ldbinarynumber<int8_t, false>},
 		{"binary_ld_u16be", bit_ldbinarynumber<uint16_t, false>},
