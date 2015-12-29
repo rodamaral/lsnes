@@ -8403,12 +8403,36 @@ VRAM
 \end_layout
 
 \begin_layout Subsection
+bsnes.dump_sprite2: Dump a 2bpp sprite
+\end_layout
+
+\begin_layout Itemize
+Syntax: BITMAP bsnes.dump_sprite2(string marea, number addr, number width,
+ number height[, number stride])
+\end_layout
+
+\begin_layout Standard
+Dumps given sprite (in 2bpp format) from memory.
+ memory area is usually 
+\begin_inset Quotes eld
+\end_inset
+
+VRAM
+\begin_inset Quotes erd
+\end_inset
+
+.
+ <Width> and <height> are given in 8x8 blocks.
+ <Stride> overrides row stride (default 256).
+\end_layout
+
+\begin_layout Subsection
 bsnes.dump_palette: Dump a palette
 \end_layout
 
 \begin_layout Itemize
-Syntax: PALETTE bsnes.dump_palette(string marea, number addr, bool full256,
- bool first_trans)
+Syntax: PALETTE bsnes.dump_palette(string marea, number addr, bool/integer
+ full256, bool first_trans)
 \end_layout
 
 \begin_layout Standard
@@ -8423,6 +8447,7 @@ CGRAM
 
 .
  If <full256> is true, 256 colors are dumped (otherwise 16).
+ <full256> can also be number of colors (4, 16 or 256).
  If <first_trans> is true, first color is forced transparent.
 \end_layout
 
@@ -8449,6 +8474,20 @@ Syntax: none bsnes.redump_sprite(BITMAP bitmap, string marea, number addr[,
 
 \begin_layout Standard
 Like bsnes.dump_sprite, but instead dumps to specified bitmap <bitmap>.
+ The specified bitmap must have size multiple of 8x8.
+\end_layout
+
+\begin_layout Subsection
+bsnes.redump_sprite2: Redump a 2bpp sprite
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bsnes.redump_sprite2(BITMAP bitmap, string marea, number addr[,
+ number stride])
+\end_layout
+
+\begin_layout Standard
+Like bsnes.dump_sprite2, but instead dumps to specified bitmap <bitmap>.
  The specified bitmap must have size multiple of 8x8.
 \end_layout
 

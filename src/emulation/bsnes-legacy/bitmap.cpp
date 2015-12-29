@@ -7,14 +7,14 @@
 
 namespace
 {
-	template<bool create>
+	template<bool create, bool bpp2>
 	int dump_sprite(lua::state& L, lua::parameters& P)
 	{
 		auto& core = CORE();
 		lua_bitmap* b;
 		uint64_t addr;
 		uint32_t width, height;
-		size_t stride1 = 32;
+		size_t stride1 = bpp2 ? 16 : 32;
 		size_t stride2;
 
 		if(!create) {
@@ -27,7 +27,7 @@ namespace
 		addr = lua_get_read_address(P);
 		if(create)
 			P(width, height);
-		P(P.optional(stride2, 512));
+		P(P.optional(stride2, bpp2 ? 256 : 512));
 
 		if(create)
 			b = lua::_class<lua_bitmap>::create(L, width * 8, height * 8);
@@ -49,11 +49,12 @@ namespace
 					for(unsigned k = 0; k < 8; k++) {
 						uint8_t byte1 = mem[sbase + 2 * k];
 						uint8_t byte2 = mem[sbase + 2 * k + 1];
-						uint8_t byte3 = mem[sbase + 2 * k + 16];
-						uint8_t byte4 = mem[sbase + 2 * k + 17];
+						uint8_t byte3 = bpp2 ? 0 : mem[sbase + 2 * k + 16];
+						uint8_t byte4 = bpp2 ? 0 : mem[sbase + 2 * k + 17];
 						uint32_t soff = (j * 8 + k) * (8 * width) + i * 8;
 						for(unsigned l = 0; l < 8; l++) {
 							uint32_t v = 0;
+							//No harm including the nonexistent planes (they are 0).
 							if((byte1 >> (7 - l)) & 1) v |= 1;
 							if((byte2 >> (7 - l)) & 1) v |= 2;
 							if((byte3 >> (7 - l)) & 1) v |= 4;
@@ -69,10 +70,13 @@ namespace
 					for(unsigned k = 0; k < 8; k++) {
 						uint8_t byte1 = core.memory->read<uint8_t>(sbase + 2 * k);
 						uint8_t byte2 = core.memory->read<uint8_t>(sbase + 2 * k + 1);
-						uint8_t byte3 = core.memory->read<uint8_t>(sbase + 2 * k + 16);
-						uint8_t byte4 = core.memory->read<uint8_t>(sbase + 2 * k + 17);
+						uint8_t byte3 = bpp2 ? 0 : core.memory->read<uint8_t>(sbase + 2 * k +
+							16);
+						uint8_t byte4 = bpp2 ? 0 : core.memory->read<uint8_t>(sbase + 2 * k +
+							17);
 						uint32_t soff = (j * 8 + k) * (8 * width) + i * 8;
 						for(unsigned l = 0; l < 8; l++) {
+							//No harm including the nonexistent planes (they are 0).
 							uint32_t v = 0;
 							if((byte1 >> (7 - l)) & 1) v |= 1;
 							if((byte2 >> (7 - l)) & 1) v |= 2;
@@ -91,22 +95,36 @@ namespace
 	{
 		auto& core = CORE();
 		uint64_t addr;
-		bool full, ftrans;
+		bool full = false, ftrans;
+		bool fourcc = false;
 		lua_palette* p;
 
 		if(!create) {
 			P(p);
 			size_t ccount = p->color_count;
-			if(ccount != 16 && ccount != 256)
-				throw std::runtime_error("Palette to read must be 16 or 256 colors");
+			if(ccount != 4 && ccount != 16 && ccount != 256)
+				throw std::runtime_error("Palette to read must be 4, 16 or 256 colors");
 			full = (ccount == 256);
+			fourcc = (ccount == 4);
 		}
 		addr = lua_get_read_address(P);
-		if(create)
-			P(full);
+		if(create) {
+			//Hacky way to do integers.
+			if(P.is_number()) {
+				uint64_t col;
+				P(col);
+				if(col == 4) fourcc = true;
+				else if(col == 16);
+				else if(col == 256) full = true;
+				else
+					throw std::runtime_error("Palette to read must be 4, 16 or 256 colors");
+			} else {
+				P(full);
+			}
+		}
 		P(ftrans);
 
-		size_t ps = full ? 256 : 16;
+		size_t ps = full ? 256 : (fourcc ? 4 : 16);
 		if(create) {
 			p = lua::_class<lua_palette>::create(L);
 			p->adjust_palette_size(ps);
@@ -149,7 +167,9 @@ namespace
 	lua::functions bitmap_fns_snes(lua_func_misc, "bsnes", {
 		{"dump_palette", dump_palette<true>},
 		{"redump_palette", dump_palette<false>},
-		{"dump_sprite", dump_sprite<true>},
-		{"redump_sprite", dump_sprite<false>},
+		{"dump_sprite", dump_sprite<true, false>},
+		{"redump_sprite", dump_sprite<false, false>},
+		{"dump_sprite2", dump_sprite<true, true>},
+		{"redump_sprite2", dump_sprite<false, true>},
 	});
 }
