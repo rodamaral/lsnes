@@ -944,7 +944,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 out:
 	core.jukebox->unset_update();
 	core.mdumper->end_dumps();
-	core_core::uninstall_all_handlers();
 	core.commentary->kill();
 	core.iqueue->system_thread_available = false;
 	//Kill some things to avoid crashes.
@@ -954,6 +953,8 @@ out:
 	//Close the ROM.
 	load_null_rom();
 	do_load_rom();
+	//Uninstall the handlers. Don't do this with ROM loaded.
+	core_core::uninstall_all_handlers();
 }
 
 void set_stop_at_frame(uint64_t frame)
