@@ -119,7 +119,7 @@ namespace
 			coreid[++corecount] = i.second;
 		}
 		filter += "|All files|*";
-		std::string directory = inst.setcache->get("rompath");
+		std::string directory = SET_rompath(*inst.settings);
 		wxFileDialog* d = new wxFileDialog(parent, towxstring("Choose ROM to load"), towxstring(directory),
 			wxT(""), towxstring(filter), wxFD_OPEN);
 		if(d->ShowModal() == wxID_CANCEL) {
@@ -302,12 +302,12 @@ namespace
 			for(auto j : t.get_image_info(i).extensions)
 				exts.insert(j);
 			filter = "Known file types|" + implode_set(exts) + "|All files|*";
-			std::string directory;
+			auto _directory = &SET_firmwarepath;
 			if(t.get_biosname() != "" && i == 0)
-				directory = "firmwarepath";
+				_directory = &SET_firmwarepath;
 			else
-				directory = "rompath";
-			directory = inst.setcache->get(directory);
+				_directory = &SET_rompath;
+			std::string directory = (*_directory)(*inst.settings);
 			core_romimage_info iinfo = t.get_image_info(i);
 			wxFileDialog* d = new wxFileDialog(this, towxstring("Load " + iinfo.hname),
 				towxstring(directory), wxT(""), towxstring(filter), wxFD_OPEN);
@@ -439,12 +439,12 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 			continue;		//Shouldn't happen.
 		}
 		core_romimage_info iinfo = type.get_image_info(i);
-		std::string directory;
+		auto _directory = &SET_rompath;
 		if(i == 0 && has_bios)
-			directory = "firmwarepath";
+			_directory = &SET_firmwarepath;
 		else
-			directory = "rompath";
-		directory = inst.setcache->get(directory);
+			_directory = &SET_rompath;
+		std::string directory = (*_directory)(*inst.settings);
 		std::string _title = "Select " + iinfo.hname;
 		std::string filespec = "Known ROMs|";
 		std::string exts = "";

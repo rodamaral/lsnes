@@ -173,12 +173,12 @@ rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brie
 	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 		std::string optregex;
 		bool isbios = false;
-		std::string psetting;
+		auto psetting = &SET_firmwarepath;
 		std::string romid;
 		if(bios != "" && i == 0) {
 			optregex = "--bios=(.*)";
 			isbios = true;
-			psetting = "firmwarepath";
+			psetting = &SET_firmwarepath;
 			romid = "BIOS";
 		} else {
 			char j[2] = {0, 0};
@@ -186,7 +186,7 @@ rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brie
 			if(j[0] == 'a' + 26)
 				j[0] = '@';
 			optregex = std::string("--rom-") + j + "=(.*)";
-			psetting = "rompath";
+			psetting = &SET_rompath;
 			j[0] = i - ((bios != "") ? 1 : 0) + 'A';
 			if(j[0] == 'A' + 26)
 				j[0] = '@';
@@ -211,7 +211,7 @@ rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brie
 			//Try to use hint.
 			std::set<std::string> exts = img.extensions;
 			for(auto j : exts) {
-				std::string candidate = core.setcache->get(psetting) + "/" + info.hint[i] +
+				std::string candidate = (*psetting)(*core.settings) + "/" + info.hint[i] +
 					"." + j;
 				if(zip::file_exists(candidate)) {
 					roms[i] = candidate;
@@ -221,7 +221,7 @@ rom_image_handle construct_rom_multifile(core_type* ctype, const moviefile::brie
 		}
 		if(isbios && roms[i] == "" && i == 0) {
 			//Fallback default.
-			roms[0] = core.setcache->get("firmwarepath") + "/" + bios;
+			roms[0] = SET_firmwarepath(*core.settings) + "/" + bios;
 		}
 		if(roms[i] == "" && info.hash[i] != "")
 			roms[i] = try_to_guess_rom(info.hint[i], info.hash[i], info.hashxml[i], *ctype, i);

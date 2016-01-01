@@ -139,8 +139,8 @@ namespace
 	{
 		auto& core = CORE();
 		std::string x;
-		std::string romdir = core.setcache->get("rompath");
-		std::string biosdir = core.setcache->get("firmwarepath");
+		std::string romdir = SET_rompath(*core.settings);
+		std::string biosdir = SET_firmwarepath(*core.settings);
 		if((x = try_scan_hint_dir(hint, hash, xhash, romdir, extensions, headersize)) != "") return x;
 		if(bios && (x = try_scan_hint_dir(hint, hash, xhash, biosdir, extensions, headersize)) != "")
 			return x;

@@ -175,7 +175,7 @@ std::string translate_name_mprefix(std::string original, int& binary, int save)
 			}
 			return filename;
 		} else {
-			std::string pprf = core.setcache->get("slotpath") + "/";
+			std::string pprf = SET_slotpath(*core.settings) + "/";
 			return pprf + get_mprefix() + r[1] + ".lsmv";
 		}
 	} else {

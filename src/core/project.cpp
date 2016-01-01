@@ -191,9 +191,9 @@ namespace
 }
 
 project_state::project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
-	controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
+	controller_state& _controls, settingvar::group& _setgroup, button_mapping& _buttons,
 	emulator_dispatch& _edispatch, input_queue& _iqueue, loaded_rom& _rom, status_updater& _supdater)
-	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setcache(_setcache),
+	: commentary(_commentary), mwatch(_mwatch), command(_command), controls(_controls), setgroup(_setgroup),
 	buttons(_buttons), edispatch(_edispatch), iqueue(_iqueue), rom(_rom), supdater(_supdater),
 	branch_ls(command, CPROJECT::bls, [this]() { this->do_branch_ls(); }),
 	branch_mk(command, CPROJECT::bmk, [this](const std::string& a) { this->do_branch_mk(a); }),
@@ -460,7 +460,7 @@ std::string project_state::moviepath()
 	if(active_project)
 		return active_project->directory;
 	else
-		return setcache.get("moviepath");
+		return SET_moviepath(setgroup);
 }
 
 std::string project_state::otherpath()

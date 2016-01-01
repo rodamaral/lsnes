@@ -258,7 +258,7 @@ public:
 
 	std::string get_firmware_path()
 	{
-		return CORE().setcache->get("firmwarepath");
+		return SET_firmwarepath(*CORE().settings);
 	}
 
 	std::string get_base_path()

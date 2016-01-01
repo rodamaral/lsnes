@@ -108,7 +108,7 @@ emulator_instance::emulator_instance()
 	D.init(abindmanager, *mapper, *command);
 	D.init(nrrdata);
 	D.init(cmapper, *memory, *mlogic, *rom);
-	D.init(project, *commentary, *mwatch, *command, *controls, *setcache, *buttons, *dispatch, *iqueue, *rom,
+	D.init(project, *commentary, *mwatch, *command, *controls, *settings, *buttons, *dispatch, *iqueue, *rom,
 		*supdater);
 	D.init(dbg, *dispatch, *rom, *memory, *command);
 	D.init(framerate, *command);

@@ -164,7 +164,7 @@ class project_state
 {
 public:
 	project_state(voice_commentary& _commentary, memwatch_set& _mwatch, command::group& _command,
-		controller_state& _controls, settingvar::cache& _setcache, button_mapping& _buttons,
+		controller_state& _controls, settingvar::group& _setgroup, button_mapping& _buttons,
 		emulator_dispatch& _edispatch, input_queue& _iqueue, loaded_rom& _rom, status_updater& _supdater);
 	~project_state();
 /**
@@ -232,7 +232,7 @@ private:
 	memwatch_set& mwatch;
 	command::group& command;
 	controller_state& controls;
-	settingvar::cache& setcache;
+	settingvar::group& setgroup;
 	button_mapping& buttons;
 	emulator_dispatch& edispatch;
 	input_queue& iqueue;
