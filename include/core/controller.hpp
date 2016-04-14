@@ -121,6 +121,9 @@ private:
 	std::map<std::string, active_bind> active_buttons;
 	std::map<std::string, keyboard::ctrlrkey*> added_keys;
 	std::set<core_core*> cores_done;
+	bool promote_autohold;
+	bool promote_autofire;
+	bool promote_typed;
 	controller_state& controls;
 	keyboard::mapper& mapper;
 	keyboard::keyboard& keyboard;
@@ -138,6 +141,12 @@ private:
 	command::_fnptr<const std::string&> button_ar;
 	command::_fnptr<const std::string&> button_at;
 	command::_fnptr<const std::string&> button_a;
+	command::_fnptr<> afire_p;
+	command::_fnptr<> afire_n;
+	command::_fnptr<> ahold_p;
+	command::_fnptr<> ahold_n;
+	command::_fnptr<> typed_p;
+	command::_fnptr<> typed_n;
 };
 
 

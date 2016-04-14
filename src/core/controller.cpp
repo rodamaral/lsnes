@@ -2,6 +2,7 @@
 
 #include "cmdhelp/button.hpp"
 #include "cmdhelp/macro.hpp"
+#include "cmdhelp/buttonmode.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
@@ -43,7 +44,13 @@ button_mapping::button_mapping(controller_state& _controls, keyboard::mapper& _m
 	button_ap(cmd, CBUTTON::ap, [this](const std::string& a) { this->do_autofire_action(a, 1); }),
 	button_ar(cmd, CBUTTON::ar, [this](const std::string& a) { this->do_autofire_action(a, 0); }),
 	button_at(cmd, CBUTTON::at, [this](const std::string& a) { this->do_autofire_action(a, -1); }),
-	button_a(cmd, CBUTTON::a, [this](const std::string& a) { this->do_analog_action(a); })
+	button_a(cmd, CBUTTON::a, [this](const std::string& a) { this->do_analog_action(a); }),
+	afire_p(cmd, BMODE::afp, [this]() { this->promote_autofire = true; }),
+	afire_n(cmd, BMODE::afn, [this]() { this->promote_autofire = false; }),
+	ahold_p(cmd, BMODE::ahp, [this]() { this->promote_autohold = true; }),
+	ahold_n(cmd, BMODE::ahn, [this]() { this->promote_autohold = false; }),
+	typed_p(cmd, BMODE::atp, [this]() { this->promote_typed = true; }),
+	typed_n(cmd, BMODE::atn, [this]() { this->promote_typed = false; })
 {
 	ncore.set(notify_new_core, [this]() { this->init(); });
 }
@@ -388,14 +395,22 @@ void button_mapping::do_button_action(const std::string& name, short newstate, i
 	auto x = active_buttons[name];
 	if(x.bind.mode != 0)
 		return;
-	if(mode == 1) {
+	if(mode == 0 && newstate == 1 && promote_autofire) {
+		this->do_autofire_action(name, -1);
+	}
+	if(mode == 1 || (mode == 0 && promote_autohold && newstate == 1)) {
 		//Autohold.
 		int16_t nstate = controls.autohold2(x.port, x.controller, x.bind.control1) ^ newstate;
 		if(lua2.callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "hold" : "unhold"))
 			return;
 		controls.autohold2(x.port, x.controller, x.bind.control1, nstate);
 		edispatch.autohold_update(x.port, x.controller, x.bind.control1, nstate);
-	} else if(mode == 2) {
+		if(nstate)
+			messages << "Holding " << name << std::endl;
+		else
+			messages << "Not holding " << name << std::endl;
+	}
+	if(mode == 2 || (mode == 0 && promote_typed && newstate == 1)) {
 		//Framehold.
 		bool nstate = controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
 		if(lua2.callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "type" : "untype"))
@@ -405,7 +420,8 @@ void button_mapping::do_button_action(const std::string& name, short newstate, i
 			messages << "Holding " << name << " for the next frame" << std::endl;
 		else
 			messages << "Not holding " << name << " for the next frame" << std::endl;
-	} else {
+	}
+	if(mode == 0 && !promote_autohold && !promote_autofire && !promote_typed) {
 		if(lua2.callback_do_button(x.port, x.controller, x.bind.control1, newstate ? "press" :
 			"release"))
 			return;
@@ -512,11 +528,13 @@ void button_mapping::do_autofire_action(const std::string& a, int mode)
 			return;
 		controls.autofire2(z.port, z.controller, z.bind.control1, duty, cyclelen);
 		edispatch.autofire_update(z.port, z.controller, z.bind.control1, duty, cyclelen);
+		messages << "Autofiring " << name << " (duty " << duty << "/" << cyclelen << ")" << std::endl;
 	} else if(mode == 0 || (mode == -1 && afire.first != 0)) {
 		//Turn off.
 		if(lua2.callback_do_button(z.port, z.controller, z.bind.control1, "autofire"))
 			return;
 		controls.autofire2(z.port, z.controller, z.bind.control1, 0, 1);
 		edispatch.autofire_update(z.port, z.controller, z.bind.control1, 0, 1);
+		messages << "Not autofiring " << name << std::endl;
 	}
 }

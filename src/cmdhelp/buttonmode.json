@@ -1,0 +1,30 @@
+{
+	"__mod":"BMODE",
+	"+make-autofire":[
+		"afp", "Make normal buttons autofire",
+		{"":"Make normal buttons autofire"},
+		{"":"Button modes‣Make autofire"}
+	],
+	"-make-autofire":[
+		"afn", "No longer make normal buttons autofire",
+		{"":"No longer make normal buttons autofire"}
+	],
+	"+make-autohold":[
+		"ahp", "Make normal buttons autohold",
+		{"":"Make normal buttons autofire"},
+		{"":"Button modes‣Make autohold"}
+	],
+	"-make-autohold":[
+		"ahn", "No longer make normal buttons autohold",
+		{"":"No longer make normal buttons autohold"}
+	],
+	"+make-typed":[
+		"atp", "Make normal buttons typed",
+		{"":"Make normal buttons typed"},
+		{"":"Button modes‣Make typed"}
+	],
+	"-make-typed":[
+		"atn", "No longer make normal buttons typed",
+		{"":"No longer make normal buttons typed"}
+	]
+}
