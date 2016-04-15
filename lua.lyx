@@ -8261,6 +8261,105 @@ zip.writer: Class ZIPWRITER
 See class ZIPWRITER.
 \end_layout
 
+\begin_layout Section
+Table paths
+\end_layout
+
+\begin_layout Subsection
+paths.get_executable_file: Get the name of lsnes executable file
+\end_layout
+
+\begin_layout Itemize
+Syntax: String paths.get_executable_file()
+\end_layout
+
+\begin_layout Standard
+Returns the filename of the lsnes executable (together with path), if known.
+ If unknown, returns nil.
+\end_layout
+
+\begin_layout Subsection
+paths.get_executable_path: Get the path of lsnes executable file
+\end_layout
+
+\begin_layout Itemize
+Syntax: String paths.get_executable_path()
+\end_layout
+
+\begin_layout Standard
+Returns the directory of the lsnes executable path, if known.
+ If unknown, returns nil.
+\end_layout
+
+\begin_layout Subsection
+paths.get_config_path: Get the path of lsnes config file
+\end_layout
+
+\begin_layout Itemize
+Syntax: String paths.get_config_path()
+\end_layout
+
+\begin_layout Standard
+Returns the directory of the lsnes configuration.
+\end_layout
+
+\begin_layout Subsection
+paths.get_rompath: Get the path of ROM files
+\end_layout
+
+\begin_layout Itemize
+Syntax: String paths.get_rompath()
+\end_layout
+
+\begin_layout Standard
+Returns the default directory for various ROMs.
+\end_layout
+
+\begin_layout Subsection
+paths.get_firmwarepath: Get the path of firmware files
+\end_layout
+
+\begin_layout Itemize
+Syntax: String paths.get_firmwarepath()
+\end_layout
+
+\begin_layout Standard
+Returns the default directory for various firmwares.
+\end_layout
+
+\begin_layout Subsection
+paths.get_slotpath: Get the path of save slot files
+\end_layout
+
+\begin_layout Itemize
+Syntax: String paths.get_slotpath()
+\end_layout
+
+\begin_layout Standard
+Returns the default directory for various save slots.
+ If in project context, returns the project directory.
+\end_layout
+
+\begin_layout Subsection
+paths.get_save_slot_file: Get save slot filename
+\end_layout
+
+\begin_layout Itemize
+Syntax: String paths.get_slotpath(string name)
+\end_layout
+
+\begin_layout Itemize
+Syntax: String paths.get_slotpath(integer slotnum, bool for_save)
+\end_layout
+
+\begin_layout Standard
+Resolve the filename of specified save slot <name> or <slotnum>.
+ Projects and save branches are taken into account.
+ If <for_save> is true, the filename is always for current branch.
+ If <for_save> is false, branch tree is walked upwards until root is reached
+ or desired file is located.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
