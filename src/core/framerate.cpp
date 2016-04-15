@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <limits>
+#include <cmath>
 
 bool graphics_driver_is_dummy();
 
@@ -23,8 +24,11 @@ framerate_regulator::framerate_regulator(command::group& _cmd)
 	turbo_p(cmd, CTURBO::p, [this]() { this->turboed = true; }),
 	turbo_r(cmd, CTURBO::r, [this]() { this->turboed = false; }),
 	turbo_t(cmd, CTURBO::t, [this]() { this->turboed = !this->turboed; }),
-	setspeed_t(cmd, CTURBO::ss, [this](const std::string& args) { this->set_speed_cmd(args); })
+	setspeed_t(cmd, CTURBO::ss, [this](const std::string& args) { this->set_speed_cmd(args); }),
+	spd_inc(cmd, CTURBO::inc, [this]() { this->increase_speed(); }),
+	spd_dec(cmd, CTURBO::dec, [this]() { this->decrease_speed(); })
 {
+	framerate_realtime_locked = false;
 	last_time_update = 0;
 	time_at_last_update = 0;
 	time_frozen = true;
@@ -41,6 +45,7 @@ void framerate_regulator::set_speed_multiplier(double multiplier) throw()
 {
 	threads::alock h(framerate_lock);
 	multiplier_framerate = multiplier;
+	framerate_realtime_locked = false;
 }
 
 //Get the speed multiplier. Note that this may be INFINITE.
@@ -66,7 +71,14 @@ void framerate_regulator::unfreeze_time(uint64_t curtime)
 void framerate_regulator::set_nominal_framerate(double fps) throw()
 {
 	threads::alock h(framerate_lock);
+	double old_nominal_framerate = nominal_framerate;
 	nominal_framerate = fps;
+	//If framerate is realtime-locked, adjust the framerate multiplier as nominal framerate changes.
+	//E.g. if multiplier is 1/30 and nominal framerate changes from 60 to 30, the multiplier needs to be
+	//adjusted to 1/15.
+	if(framerate_realtime_locked) {
+		multiplier_framerate *= old_nominal_framerate / nominal_framerate;
+	}
 }
 
 double framerate_regulator::get_realized_multiplier() throw()
@@ -178,4 +190,103 @@ void framerate_regulator::set_speed_cmd(const std::string& args)
 	} catch(...) {
 		messages << "Expected positive speed multiplier or \"turbo\"" << std::endl;
 	}
+}
+
+namespace
+{
+	double seconds_per_frame[] = {4, 3, 2, 1, 0.5, 0.2};
+	double relative_speed[] = {0.01, 0.04, 0.1, 0.2, 0.25, 0.333, 0.5, 1, 2, 3, 5, 10};
+
+	std::vector<std::pair<double, bool>> construct_speedscale(double basefps)
+	{
+		std::vector<std::pair<double, bool>> ret;
+		unsigned idx1 = 0;
+		unsigned idx2 = 0;
+		unsigned size1 = sizeof(seconds_per_frame)/sizeof(seconds_per_frame[0]);
+		unsigned size2 = sizeof(relative_speed)/sizeof(relative_speed[0]);
+		while(idx1 < size1 || idx2 < size2) {
+			double x1 = std::numeric_limits<double>::infinity();
+			double x2 = std::numeric_limits<double>::infinity();
+			if(idx1 < size1) x1 = 1 / (seconds_per_frame[idx1] * basefps);
+			if(idx2 < size2) x2 = relative_speed[idx2];
+			if(x1 < x2) {
+				ret.push_back(std::make_pair(x1, true));
+				idx1++;
+			} else if(x1 > x2) {
+				ret.push_back(std::make_pair(x2, false));
+				idx2++;
+			} else {
+				ret.push_back(std::make_pair(x2, true));
+				idx1++;
+				idx2++;
+			}
+		}
+		return ret;
+	}
+}
+
+//Step should be ODD.
+void framerate_regulator::set_speedstep(unsigned step)
+{
+	auto scale = construct_speedscale(nominal_framerate);
+	step = (step - 1) / 2;
+	if(step >= scale.size()) {
+		//Infinity.
+		multiplier_framerate = std::numeric_limits<double>::infinity();
+		framerate_realtime_locked = false;
+		messages << "Speed set to turbo." << std::endl;
+		return;
+	}
+	auto _step = scale[step];
+	multiplier_framerate = _step.first;
+	framerate_realtime_locked = _step.second;
+	if(framerate_realtime_locked)
+		messages << "Speed set to " << multiplier_framerate * nominal_framerate << "fps." << std::endl;
+	else
+		messages << "Speed set to " << (double)(unsigned)(multiplier_framerate * 1000) / 10 << "%."
+			<< std::endl;
+}
+
+#define SPD_TOLERANCE 1e-10
+
+//{1/100, 1/fps, 2/fps, 1/10, 1/5, 1/3, 1/2, 1, 2, 3, 5, 10}
+//Step can be EVEN if between steps.
+unsigned framerate_regulator::get_speedstep()
+{
+	auto scale = construct_speedscale(nominal_framerate);
+	if(multiplier_framerate == std::numeric_limits<double>::infinity())
+		return 2 * scale.size() + 1;	//Infinity.
+	unsigned idx = 0;
+	for(auto i: scale) {
+		if(multiplier_framerate < i.first)
+			return idx;	//Between steps.
+		if(fabs(multiplier_framerate) - i.first < SPD_TOLERANCE)
+			return idx + 1;	//On step.
+		idx += 2;
+	}
+	return 2 * scale.size();	//Above maximum step but below infinity.
+}
+
+void framerate_regulator::increase_speed() throw()
+{
+	threads::alock h(framerate_lock);
+	unsigned step = get_speedstep();
+	if(step < 2) return;	//At or below minimum speed in scale.
+	if(step & 1)
+		step-=2;	//If step is odd, decrement by 2 (full step).
+	else
+		step--;		//If step is even, decrement by 1 to reach previous step.
+	set_speedstep(step);
+}
+
+void framerate_regulator::decrease_speed() throw()
+{
+	threads::alock h(framerate_lock);
+	unsigned step = get_speedstep();
+	if(multiplier_framerate == std::numeric_limits<double>::infinity()) return;	//Already turbo.
+	if(step & 1)
+		step+=2;	//If step is odd, increment by 2 (full step).
+	else
+		step++;		//If step is even, increment by 1 to reach next step.
+	set_speedstep(step);
 }

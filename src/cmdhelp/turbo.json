@@ -31,5 +31,15 @@
 		"3.0":"Speed‣Set 3x speed",
 		"10.0":"Speed‣Set 10x speed",
 		"turbo":"Speed‣Set turbo speed"}
+	],
+	"increase-speed":[
+		"inc", "Increase speed",
+		{"":"Increase emulation speed."},
+		{"":"Speed‣Increase speed"}
+	],
+	"decrease-speed":[
+		"dec", "Decrease speed",
+		{"":"Decrease emulation speed."},
+		{"":"Speed‣Decrease speed"}
 	]
 }

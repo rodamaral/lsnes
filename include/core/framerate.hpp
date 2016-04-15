@@ -22,6 +22,16 @@ public:
 	void set_speed_multiplier(double multiplier) throw();
 
 /**
+ * Increase the speed to next step.
+ */
+	void increase_speed() throw();
+
+/**
+ * Decrease the speed to next step.
+ */
+	void decrease_speed() throw();
+
+/**
  * Get the target speed multiplier.
  *
  * Returns: The multiplier. May be INFINITE.
@@ -89,6 +99,10 @@ private:
 	double get_realized_fps();
 	void add_frame(uint64_t linear_time);
 	std::pair<bool, double> read_fps();
+	//Step should be ODD.
+	void set_speedstep(unsigned step);
+	//Step can be EVEN if between steps.
+	unsigned get_speedstep();
 	uint64_t last_time_update;
 	uint64_t time_at_last_update;
 	bool time_frozen;
@@ -97,12 +111,15 @@ private:
 	//Framerate.
 	double nominal_framerate;
 	double multiplier_framerate;
+	bool framerate_realtime_locked;
 	threads::lock framerate_lock;
 	command::group& cmd;
 	command::_fnptr<> turbo_p;
 	command::_fnptr<> turbo_r;
 	command::_fnptr<> turbo_t;
 	command::_fnptr<const std::string&> setspeed_t;
+	command::_fnptr<> spd_inc;
+	command::_fnptr<> spd_dec;
 };
 
 #endif

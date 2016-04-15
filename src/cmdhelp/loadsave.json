@@ -162,7 +162,8 @@
 	],
 	"flush-slotinfo":[
 		"flushslots", "Flush slotinfo cache",
-		{"":"Flush slotinfo cache"}
+		{"":"Flush slotinfo cache"},
+		{"":"Save‣Flush slotinfo cache"}
 	],
 	"load-rom":[
 		"lrom", "Load specified ROM",
@@ -170,10 +171,12 @@
 	],
 	"reload-rom":[
 		"rlrom", "Reload the current ROM",
-		{"":"Reload the currently loaded ROM from disk"}
+		{"":"Reload the currently loaded ROM from disk"},
+		{"":"Movie‣Reload the current ROM"}
 	],
 	"close-rom":[
 		"clrom", "Close the current ROM",
-		{"":"Close the currentloy loaded ROM and return to null core"}
+		{"":"Close the currentloy loaded ROM and return to null core"},
+		{"":"Movie‣Close current ROM"}
 	]
 }
