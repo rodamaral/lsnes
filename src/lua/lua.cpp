@@ -404,9 +404,8 @@ void lua_state::callback_keyhook(const std::string& key, keyboard::key& p) throw
 	run_callback(*on_keyhook, lua::state::string_tag(key), lua::state::fnptr_tag(push_keygroup_parameters2, &p));
 }
 
-void init_lua() throw()
+void init_lua(emulator_instance& core) throw()
 {
-	auto& core = lsnes_instance;
 	core.lua->set_oom_handler(OOM_panic);
 	core.lua->set_soft_oom_handler(soft_oom);
 	try {
@@ -431,9 +430,9 @@ void init_lua() throw()
 	copy_system_tables(*core.lua);
 }
 
-void quit_lua() throw()
+void quit_lua(emulator_instance& core) throw()
 {
-	lsnes_instance.lua->deinit();
+	core.lua->deinit();
 }
 
 

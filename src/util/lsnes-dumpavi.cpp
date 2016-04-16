@@ -336,7 +336,7 @@ int main(int argc, char** argv)
 
 	set_random_seed();
 	platform::init();
-	init_lua();
+	init_lua(lsnes_instance);
 	lsnes_instance.mdumper->set_output(&messages.getstream());
 	set_hasher_callback(hash_callback);
 
@@ -387,7 +387,7 @@ int main(int argc, char** argv)
 		movfn = do_download_movie(movfn);
 	} catch(std::exception& e) {
 		messages << "FATAL: Can't download movie: " << e.what() << std::endl;
-		quit_lua();
+		quit_lua(lsnes_instance);
 		fatal_error();
 		exit(1);
 	}
@@ -404,7 +404,7 @@ int main(int argc, char** argv)
 		OOM_panic();
 	} catch(std::exception& e) {
 		messages << "FATAL: Can't load ROM: " << e.what() << std::endl;
-		quit_lua();
+		quit_lua(lsnes_instance);
 		fatal_error();
 		exit(1);
 	}
@@ -430,11 +430,11 @@ int main(int argc, char** argv)
 		OOM_panic();
 	} catch(std::exception& e) {
 		messages << "FATAL: " << e.what() << std::endl;
-		quit_lua();
+		quit_lua(lsnes_instance);
 		fatal_error();
 		return 1;
 	}
-	quit_lua();
+	quit_lua(lsnes_instance);
 	lsnes_instance.mlogic->release_memory();
 	lsnes_instance.buttons->cleanup();
 	return 0;

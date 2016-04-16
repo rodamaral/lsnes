@@ -19,8 +19,10 @@ namespace keyboard { class key; }
 #define LUA_TIMED_HOOK_IDLE 0
 #define LUA_TIMED_HOOK_TIMER 1
 
-void init_lua() throw();
-void quit_lua() throw();
+class emulator_instance;
+
+void init_lua(emulator_instance& inst) throw();
+void quit_lua(emulator_instance& inst) throw();
 
 struct lua_state
 {

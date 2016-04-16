@@ -195,14 +195,14 @@ dumper_information UI_get_dumpers(emulator_instance& inst)
 void UI_start_dump(emulator_instance& inst, dumper_factory_base& factory, const std::string& mode,
 	const std::string& prefix)
 {
-	lsnes_instance.iqueue->run([&inst, &factory, mode, prefix]() {
+	inst.iqueue->run([&inst, &factory, mode, prefix]() {
 		inst.mdumper->start(factory, mode, prefix);
 	});
 }
 
 void UI_end_dump(emulator_instance& inst, dumper_factory_base& factory)
 {
-	lsnes_instance.iqueue->run([&inst, &factory]() {
+	inst.iqueue->run([&inst, &factory]() {
 		auto in = inst.mdumper->get_instance(&factory);
 		delete in;
 	});
@@ -220,7 +220,7 @@ void UI_do_keypress(emulator_instance& inst, const keyboard::modifier_set& mods,
 bool UI_has_movie(emulator_instance& inst)
 {
 	bool ret = false;
-	lsnes_instance.iqueue->run([&inst, &ret]() {
+	inst.iqueue->run([&inst, &ret]() {
 		ret = !!*inst.mlogic && !inst.rom->isnull();
 	});
 	return ret;
@@ -228,7 +228,7 @@ bool UI_has_movie(emulator_instance& inst)
 
 void UI_save_movie(emulator_instance& inst, std::ostringstream& stream)
 {
-	lsnes_instance.iqueue->run([&inst, &stream]() {
+	inst.iqueue->run([&inst, &stream]() {
 		auto prj = inst.project->get();
 		if(prj) {
 			inst.mlogic->get_mfile().gamename = prj->gamename;
@@ -243,7 +243,7 @@ std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instanc
 {
 	std::string plat;
 	std::string game;
-	lsnes_instance.iqueue->run([&inst, &plat, &game]() {
+	inst.iqueue->run([&inst, &plat, &game]() {
 		auto prj = inst.project->get();
 		if(prj)
 			game = prj->gamename;
@@ -257,7 +257,7 @@ std::pair<std::string, std::string> UI_lookup_platform_and_game(emulator_instanc
 std::string UI_get_project_otherpath(emulator_instance& inst)
 {
 	std::string path;
-	lsnes_instance.iqueue->run([&inst, &path]() {
+	inst.iqueue->run([&inst, &path]() {
 		path = inst.project->otherpath();
 	});
 	return path;
@@ -266,7 +266,7 @@ std::string UI_get_project_otherpath(emulator_instance& inst)
 std::string UI_get_project_moviepath(emulator_instance& inst)
 {
 	std::string path;
-	lsnes_instance.iqueue->run([&inst, &path]() {
+	inst.iqueue->run([&inst, &path]() {
 		path = inst.project->moviepath();
 	});
 	return path;
@@ -275,7 +275,7 @@ std::string UI_get_project_moviepath(emulator_instance& inst)
 bool UI_in_project_context(emulator_instance& inst)
 {
 	bool pc;
-	lsnes_instance.iqueue->run([&inst, &pc]() {
+	inst.iqueue->run([&inst, &pc]() {
 		pc = (inst.project->get() != NULL);
 	});
 	return pc;

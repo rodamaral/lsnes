@@ -598,7 +598,7 @@ bool lsnes_app::OnInit()
 		save_configuration();
 		return false;
 	}
-	init_lua();
+	init_lua(lsnes_instance);
 	lsnes_instance.mdumper->set_output(&messages.getstream());
 
 	msg_window = new wxwin_messages(lsnes_instance);
@@ -626,7 +626,7 @@ bool lsnes_app::OnInit()
 		std::cerr << "Can't load ROM: " << e.what() << std::endl;
 		show_message_ok(NULL, "Error loading ROM", std::string("Error loading ROM:\n\n") +
 			e.what(), wxICON_EXCLAMATION);
-		quit_lua();	//Don't crash.
+		quit_lua(lsnes_instance);	//Don't crash.
 		return false;
 	}
 
@@ -639,7 +639,7 @@ bool lsnes_app::OnInit()
 			std::cerr << "Can't load state: " << e.what() << std::endl;
 			show_message_ok(NULL, "Error loading movie", std::string("Error loading movie:\n\n") +
 				e.what(), wxICON_EXCLAMATION);
-			quit_lua();	//Don't crash.
+			quit_lua(lsnes_instance);	//Don't crash.
 			return false;
 		}
 	else {
@@ -665,7 +665,7 @@ int lsnes_app::OnExit()
 	if(x)
 		x->Destroy();
 	save_configuration();
-	quit_lua();
+	quit_lua(lsnes_instance);
 	lsnes_instance.mlogic->release_memory();
 	platform::quit();
 	lsnes_instance.buttons->cleanup();
