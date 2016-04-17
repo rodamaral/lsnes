@@ -276,10 +276,12 @@ void platform::init()
 	lsnes_instance.audio->init();
 	audioapi_driver_init();
 	joystick_driver_init();
+	audioapi_connect_instance(*lsnes_instance.audio);
 }
 
 void platform::quit()
 {
+	audioapi_disconnect_instance(*lsnes_instance.audio);
 	joystick_driver_quit();
 	audioapi_driver_quit();
 	lsnes_instance.audio->quit();

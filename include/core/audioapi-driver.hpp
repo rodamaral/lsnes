@@ -5,6 +5,8 @@
 #include <string>
 #include <map>
 
+class audioapi_instance;
+
 //All the following need to be implemented by the sound driver itself
 struct _audioapi_driver
 {
@@ -78,5 +80,30 @@ std::map<std::string, std::string> audioapi_driver_get_devices(bool rec) throw(s
  * Identification for sound plugin.
  */
 const char* audioapi_driver_name() throw();
+
+/**
+ * Add an instance to be mixed.
+ */
+void audioapi_connect_instance(audioapi_instance& instance);
+
+/**
+ * Remove an instance from being mixed.
+ */
+void audioapi_disconnect_instance(audioapi_instance& instance);
+
+/**
+ * Send a rate change.
+ */
+void audioapi_send_rate_change(unsigned rrate, unsigned prate);
+
+/**
+ * Broadcast voice input to all instances.
+ */
+void audioapi_put_voice(float* samples, size_t count);
+
+/**
+ * Get mixed music + voice out from all instances.
+ */
+void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo);
 
 #endif
