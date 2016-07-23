@@ -2,6 +2,7 @@
 #define _framebuffer__hpp__included__
 
 #include "core/window.hpp"
+#include "core/queue.hpp"
 #include "library/command.hpp"
 #include "library/framebuffer.hpp"
 #include "library/triplebuffer.hpp"
@@ -31,7 +32,7 @@ class emu_framebuffer
 public:
 	emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
 		keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom,
-		status_updater& _supdater, command::group& _cmd);
+		status_updater& _supdater, command::group& _cmd, input_queue& _iqueue);
 /**
  * The main framebuffer.
  */
@@ -110,6 +111,7 @@ private:
 	loaded_rom& rom;
 	status_updater& supdater;
 	command::group& cmd;
+	input_queue& iqueue;
 	command::_fnptr<command::arg_filename> screenshot;
 };
 

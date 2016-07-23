@@ -90,10 +90,10 @@ framebuffer::raw emu_framebuffer::screen_corrupt;
 
 emu_framebuffer::emu_framebuffer(subtitle_commentary& _subtitles, settingvar::group& _settings, memwatch_set& _mwatch,
 	keyboard::keyboard& _keyboard, emulator_dispatch& _dispatch, lua_state& _lua2, loaded_rom& _rom,
-	status_updater& _supdater, command::group& _cmd)
+	status_updater& _supdater, command::group& _cmd, input_queue& _iqueue)
 	: buffering(buffer1, buffer2, buffer3), subtitles(_subtitles), settings(_settings), mwatch(_mwatch),
 	keyboard(_keyboard), edispatch(_dispatch), lua2(_lua2), rom(_rom), supdater(_supdater), cmd(_cmd),
-	screenshot(cmd, CFRAMEBUF::ss, [this](command::arg_filename a) { this->do_screenshot(a); })
+	iqueue(_iqueue), screenshot(cmd, CFRAMEBUF::ss, [this](command::arg_filename a) { this->do_screenshot(a); })
 {
 	last_redraw_no_lua = false;
 }
@@ -186,16 +186,19 @@ void emu_framebuffer::render_framebuffer()
 	main_screen.copy_from(ri.fbuf, ri.hscl, ri.vscl);
 	ri.rq.run(main_screen);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	keyboard::key* mouse_x = keyboard.try_lookup_key("mouse_x");
-	keyboard::key* mouse_y = keyboard.try_lookup_key("mouse_y");
 	keyboard::mouse_calibration xcal;
 	keyboard::mouse_calibration ycal;
 	xcal.offset = ri.lgap;
 	ycal.offset = ri.tgap;
-	if(mouse_x && mouse_x->get_type() == keyboard::KBD_KEYTYPE_MOUSE)
-		mouse_x->cast_mouse()->set_calibration(xcal);
-	if(mouse_y && mouse_y->get_type() == keyboard::KBD_KEYTYPE_MOUSE)
-		mouse_y->cast_mouse()->set_calibration(ycal);
+	auto kbd = &keyboard;
+	iqueue.run_async([kbd, xcal, ycal]() {
+		keyboard::key* mouse_x = kbd->try_lookup_key("mouse_x");
+		keyboard::key* mouse_y = kbd->try_lookup_key("mouse_y");
+		if(mouse_x && mouse_x->get_type() == keyboard::KBD_KEYTYPE_MOUSE)
+			mouse_x->cast_mouse()->set_calibration(xcal);
+		if(mouse_y && mouse_y->get_type() == keyboard::KBD_KEYTYPE_MOUSE)
+			mouse_y->cast_mouse()->set_calibration(ycal);
+	}, [](std::exception& e){});
 	buffering.put_read();
 }
 

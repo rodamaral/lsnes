@@ -98,7 +98,8 @@ emulator_instance::emulator_instance()
 	D.init(keyboard);
 	D.init(mapper, *keyboard, *command);
 	D.init(rom);
-	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2, *rom, *supdater, *command);
+	D.init(fbuf, *subtitles, *settings, *mwatch, *keyboard, *dispatch, *lua2, *rom, *supdater, *command,
+		*iqueue);
 	D.init(buttons, *controls, *mapper, *keyboard, *fbuf, *dispatch, *lua2, *command);
 	D.init(mteditor, *mlogic, *controls, *dispatch, *supdater, *buttons, *command);
 	D.init(status_A);
