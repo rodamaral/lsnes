@@ -22,6 +22,7 @@ namespace SNES {
 
 #include <libco/libco.h>
 
+#include <vector>
 #include <nall/platform.hpp>
 #include <nall/algorithm.hpp>
 #include <nall/any.hpp>
