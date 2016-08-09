@@ -1,7 +1,7 @@
 From d39571de650d49636778a73c66414aff372c08af Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 7 Sep 2015 20:48:14 +0300
-Subject: [PATCH 25/25] Fix MSU-1 bug where write to MSU1BASE+4 is mirred to
+Subject: [PATCH 25/26] Fix MSU-1 bug where write to MSU1BASE+4 is mirred to
  MSUBASE+5
 
 ---
@@ -22,5 +22,5 @@ index 71700e6..ec1cf46 100755
      if(audiofile.open()) audiofile.close();
      if(audiofile.open(interface->path(Cartridge::Slot::Base, { "-", (unsigned)mmio.audio_track, ".pcm" }), file::mode::read)) {
 -- 
-2.5.1
+2.8.1
 

@@ -1,7 +1,7 @@
 From 63fc77b07d517c2f9a0fd6ca3fa94f30fb0f5ec2 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sun, 15 Jun 2014 22:01:26 +0300
-Subject: [PATCH 21/25] Call notify latch function on alternate timings mode
+Subject: [PATCH 21/26] Call notify latch function on alternate timings mode
  too
 
 ---
@@ -21,5 +21,5 @@ index ae8e94f..3fd4d23 100755
          input.port2->latch(1);
        }
 -- 
-2.5.1
+2.8.1
 

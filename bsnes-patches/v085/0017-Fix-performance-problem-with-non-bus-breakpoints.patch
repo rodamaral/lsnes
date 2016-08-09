@@ -1,7 +1,7 @@
 From de71f12eb59a41899a5c77d797e144e6f0919777 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 17 Mar 2014 14:22:58 +0200
-Subject: [PATCH 17/25] Fix performance problem with non-bus breakpoints
+Subject: [PATCH 17/26] Fix performance problem with non-bus breakpoints
 
 ---
  snes/memory/memory.cpp | 35 ++++++++++++++++++++++++++---------
@@ -101,5 +101,5 @@ index 4e3ba64..9589db9 100755
  
  #include <gameboy/gameboy.hpp>
 -- 
-2.5.1
+2.8.1
 

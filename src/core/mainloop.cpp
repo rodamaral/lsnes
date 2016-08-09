@@ -179,8 +179,11 @@ namespace
 	//Do pending load (automatically unpauses).
 	void mark_pending_load(std::string filename, int lmode)
 	{
-		//Convert break pause to ordinary pause.
 		auto& core = CORE();
+		//Ignore requests to loadstate when loadstate is already in progress. Should fix that "gets stuck
+		//on high speed" bug.
+		if(core.runmode->get() == emulator_runmode::LOAD) return;
+		//Convert break pause to ordinary pause.
 		loadmode = lmode;
 		pending_load = filename;
 		core.runmode->decay_break();

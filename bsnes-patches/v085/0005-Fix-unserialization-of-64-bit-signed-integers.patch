@@ -1,7 +1,7 @@
 From cdf2f46490f128308eb7f399d03530936ebeda0a Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Fri, 11 Nov 2011 03:05:48 +0200
-Subject: [PATCH 05/25] Fix unserialization of 64-bit signed integers
+Subject: [PATCH 05/26] Fix unserialization of 64-bit signed integers
 
 ---
  nall/serializer.hpp | 2 +-
@@ -21,5 +21,5 @@ index ff2337a..e6bc8fa 100755
          isize += size;
        }
 -- 
-2.5.1
+2.8.1
 

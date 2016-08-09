@@ -1,0 +1,25 @@
+From c0a2270cfd5f56e8a311b36011e1f15fac6c54ca Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilariliusvaara@welho.com>
+Date: Tue, 9 Aug 2016 18:54:57 +0300
+Subject: [PATCH 26/26] Add <vector> to avoid compile error due to missing
+ std::vector
+
+---
+ snes/snes.hpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/snes/snes.hpp b/snes/snes.hpp
+index 7c48ebb..3a65e36 100755
+--- a/snes/snes.hpp
++++ b/snes/snes.hpp
+@@ -22,6 +22,7 @@ namespace SNES {
+ 
+ #include <libco/libco.h>
+ 
++#include <vector>
+ #include <nall/platform.hpp>
+ #include <nall/algorithm.hpp>
+ #include <nall/any.hpp>
+-- 
+2.8.1
+
