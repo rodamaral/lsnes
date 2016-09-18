@@ -897,7 +897,7 @@ void font::for_each_glyph(const std::string& str, uint32_t alignx, bool xdbl, bo
 			layout_x = (layout_x + TABSTOPS) / TABSTOPS * TABSTOPS;
 			break;
 		case 10:
-			layout_x = 0;
+			layout_x = offset;
 			layout_y = layout_y + 16;
 			break;
 		default:
