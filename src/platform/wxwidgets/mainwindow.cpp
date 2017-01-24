@@ -972,7 +972,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		uint32_t h = inst.fbuf->main_screen.get_height();
 		if(w && h)
 			sws_ctx = sws_getCachedContext(sws_ctx, rotate_enabled ? h : w, rotate_enabled ? w : h,
-				PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags, NULL, NULL, NULL);
+				AV_PIX_FMT_RGBA, tw, th, AV_PIX_FMT_BGR24, scaling_flags, NULL, NULL, NULL);
 		tw = max(tw, static_cast<uint32_t>(128));
 		th = max(th, static_cast<uint32_t>(112));
 		screen_buffer = new unsigned char[tw * th * 3 + 64];

@@ -1486,8 +1486,8 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		buf.resize(3 * (ciX.rmax - ciX.rmin + 1) * (ciY.rmax - ciY.rmin + 1));
 		unsigned offX = -ciX.rmin;
 		unsigned offY = -ciY.rmin;
-		struct SwsContext* ctx = sws_getContext(osize.first, osize.second, PIX_FMT_RGBA,
-			size.first, size.second, PIX_FMT_BGR24, SWS_POINT, NULL, NULL, NULL);
+		struct SwsContext* ctx = sws_getContext(osize.first, osize.second, AV_PIX_FMT_RGBA,
+			size.first, size.second, AV_PIX_FMT_BGR24, SWS_POINT, NULL, NULL, NULL);
 		uint8_t* srcp[1];
 		int srcs[1];
 		uint8_t* dstp[1];

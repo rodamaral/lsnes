@@ -285,8 +285,8 @@ void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 		buf.resize(3 * (t.xmax - t.xmin + 1) * (t.ymax - t.ymin + 1));
 		unsigned offX = -t.xmin;
 		unsigned offY = -t.ymin;
-		rctx = sws_getCachedContext(rctx, osize.first, osize.second, PIX_FMT_RGBA,
-			size.first, size.second, PIX_FMT_BGR24, SWS_POINT, NULL, NULL, NULL);
+		rctx = sws_getCachedContext(rctx, osize.first, osize.second, AV_PIX_FMT_RGBA,
+			size.first, size.second, AV_PIX_FMT_BGR24, SWS_POINT, NULL, NULL, NULL);
 		uint8_t* srcp[1];
 		int srcs[1];
 		uint8_t* dstp[1];
