@@ -12,6 +12,7 @@
 #include <boost/iostreams/stream_buffer.hpp>
 #include <boost/iostreams/filter/symmetric.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
@@ -231,7 +232,7 @@ namespace
 		uint16_t extra_len = serialization::u16l(buffer + 28);
 		if(!filename_len)
 			throw std::runtime_error("Unsupported ZIP feature: Empty filename not allowed");
-		if(info.version_needed > 20) {
+		if(info.version_needed > 20 && info.version_needed != 46) {
 			throw std::runtime_error("Unsupported ZIP feature: Only ZIP versions up to 2.0 supported");
 		}
 		if(info.flags & 0x2001)
@@ -240,7 +241,7 @@ namespace
 			throw std::runtime_error("Unsupported ZIP feature: Indeterminate length not supported");
 		if(info.flags & 0x20)
 			throw std::runtime_error("Unsupported ZIP feature: Binary patching is not supported");
-		if(info.compression != 0 && info.compression != 8)
+		if(info.compression != 0 && info.compression != 8 && info.compression != 12)
 			throw std::runtime_error("Unsupported ZIP feature: Unsupported compression method");
 		if(info.compression == 0 && info.compressed_size != info.uncompressed_size)
 			throw std::runtime_error("ZIP archive corrupt: csize ≠ usize for stored member");
@@ -293,6 +294,12 @@ std::istream& reader::operator[](const std::string& name) throw(std::bad_alloc, 
 		boost::iostreams::zlib_params params;
 		params.noheader = true;
 		s->push(boost::iostreams::zlib_decompressor(params));
+		s->push(file_input(*zipstream, info.compressed_size, refcnt));
+		return *s;
+	} else if(info.compression == 12) {
+		//Bzip2 compression.
+		boost::iostreams::filtering_istream* s = new boost::iostreams::filtering_istream();
+		s->push(boost::iostreams::bzip2_decompressor());
 		s->push(file_input(*zipstream, info.compressed_size, refcnt));
 		return *s;
 	} else
