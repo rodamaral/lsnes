@@ -514,7 +514,7 @@ public:
 	int toboolean(int index) { return lua_toboolean(lua_handle, index); }
 	const char* tolstring(int index, size_t *len) { return lua_tolstring(lua_handle, index, len); }
 	lua_Number tonumber(int index) { return lua_tonumber(lua_handle, index); }
-	uint64_t tointeger(int index) { return LUA_INTEGER_POSTFIX(lua_to) (lua_handle, index); }
+	int64_t tointeger(int index) { return LUA_INTEGER_POSTFIX(lua_to) (lua_handle, index); }
 	void gettable(int index) { lua_gettable(lua_handle, index); }
 	int load(lua_Reader reader, void* data, const char* chunkname, const char* mode) {
 		(void)mode;
@@ -543,15 +543,13 @@ public:
 	template<typename T> void pushnumber(T val)
 	{
 		if(std::numeric_limits<T>::is_integer || is_ss_int24<T>::flag)
-			_pushinteger(val);
+			return LUA_INTEGER_POSTFIX(lua_push) (lua_handle, val);
 		else
-			_pushnumber(val);
+			return lua_pushnumber(lua_handle, val);
 	}
 	void pushboolean(bool b) { lua_pushboolean(lua_handle, b); }
 	void pushglobals() { LUA_LOADGLOBALS }
 private:
-	void _pushnumber(lua_Number n) { return lua_pushnumber(lua_handle, n); }
-	void _pushinteger(uint64_t n) { return LUA_INTEGER_POSTFIX(lua_push) (lua_handle, n); }
 	static void builtin_oom();
 	static void builtin_soft_oom(int status);
 	static void* builtin_alloc(void* user, void* old, size_t olds, size_t news);
