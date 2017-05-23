@@ -170,9 +170,8 @@ void emu_framebuffer::redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, 
 
 void emu_framebuffer::redraw_framebuffer()
 {
-	render_info& ri = buffering.get_read();
-	framebuffer::raw copy = ri.fbuf;
-	buffering.put_read();
+	framebuffer::raw copy;
+	buffering.read_last_write_synchronous([&copy](render_info& ri) { copy = ri.fbuf; });
 	//Redraws are never spontaneous
 	redraw_framebuffer(copy, last_redraw_no_lua, false);
 }

@@ -60,4 +60,11 @@ void logic::put_write() throw(std::logic_error)
 	if(!count_write)
 		last_complete = current_write;
 }
+
+void logic::read_last_write_synchronous(std::function<void(unsigned)> fn) throw()
+{
+	threads::alock h(lock);
+	fn(last_complete);
+}
+
 }

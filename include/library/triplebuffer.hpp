@@ -45,6 +45,12 @@ public:
  * Throws std::logic_error: If write count is 0.
  */
 	void put_write() throw(std::logic_error);
+/**
+ * Call specified function synchronously for last written buffer.
+ *
+ * The buffer number is passed to specified function.
+ */
+	void read_last_write_synchronous(std::function<void(unsigned)> fn) throw();
 private:
 	threads::lock lock;
 	unsigned last_complete;		//Number of last completed buffer
@@ -103,6 +109,15 @@ public:
  * Throws std::logic_error: If write count is 0.
  */
 	void put_write() throw(std::logic_error) { l.put_write(); }
+/**
+ * Call specified function synchronously for last written buffer.
+ *
+ * The buffer itself is passed to the function.
+ */
+	void read_last_write_synchronous(std::function<void(T&)> fn) throw()
+	{
+		l.read_last_write_synchronous([this,fn](unsigned x){ fn(*objs[x]); });
+	}
 private:
 	T* objs[3];
 	logic l;
