@@ -187,6 +187,7 @@ namespace
 		ivcodec = info.vcodec;
 		segframes = 0;
 		max_segframes = info.max_frames;
+		closed = false;
 		fire();
 	}
 

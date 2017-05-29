@@ -56,7 +56,7 @@ namespace
 		char buf[8 + PADGRANULARITY];
 		serialization::u32l(buf + 0, fulltype);
 		serialization::u32l(buf + 4, pkt.payload.size());
-		serialization::u32l(buf + 8, 0);
+		serialization::u16l(buf + 8, 0);
 		size_t padding = (PADGRANULARITY - pkt.payload.size() % PADGRANULARITY) % PADGRANULARITY;
 		avifile.outstream->write(buf, 8);
 		avifile.outstream->write(&pkt.payload[0], pkt.payload.size());

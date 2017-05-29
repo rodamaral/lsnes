@@ -97,4 +97,5 @@ avi_writer::avi_writer(const std::string& _prefix, struct avi_video_codec& _vcod
 	next_segment = 0;
 	samplerate = _samplerate;
 	channels = _audiochannels;
+	curwidth = curheight = curfps_n = curfps_d = 0;
 }
