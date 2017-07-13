@@ -536,11 +536,67 @@ namespace
 		}
 	}
 
+	//Similar as _sample_texture(), but for the s=2^n, n integer special case.
+	template<typename pixel>
+	inline void _sample_texture_log2(pixel* dest, uint32_t dwidth, uint32_t dheight, pixel* source,
+		uint32_t swidth, uint32_t sheight, int32_t xx, int32_t xy, int32_t x0, int32_t yx, int32_t yy,
+		int32_t y0, int32_t log2s, bool wrap, pixel transparent)
+	{
+		uint32_t th = (1 << log2s) >> 1;		//Two shifts, as log2s=0 should give th=0.
+		uint32_t fsmask = (1u << log2s) - 1;
+		uint64_t bias = 1ull << (31 + log2s);
+		size_t didx = 0;
+		for(int32_t i = 0; i < (int32_t)dheight; i++) {
+			uint64_t ssx = (int64_t)xy * i + (int64_t)x0 + bias;
+			uint64_t ssy = (int64_t)yy * i + (int64_t)y0 + bias;
+			for(int32_t j = 0; j < (int32_t)dwidth; j++) {
+				//Compute whole and fractional parts.
+				uint32_t _isx = ssx >> log2s;
+				uint32_t fsx = ssx & fsmask;
+				uint32_t _isy = ssy >> log2s;
+				uint32_t fsy = ssy & fsmask;
+				//The above always give positive fractional parts.
+				//Round the whole parts.
+				_isx += fsx > th;
+				_isy += fsy > th;
+				//Remove biases.
+				int32_t isx = _isx - (1u << 31);
+				int32_t isy = _isy - (1u << 31);
+				//Compute color.
+				pixel p = transparent;
+				if(wrap) {
+					isx = isx % swidth;
+					if(isx < 0) isx += swidth;
+					isy = isy % sheight;
+					if(isy < 0) isy += sheight;
+					p = source[isy * swidth + isx];
+				} else if(isx >= 0 && isx < (int32_t)swidth && isy >= 0 && isy < (int32_t)sheight) {
+					p = source[isy * swidth + isx];
+				}
+				dest[didx] = p;
+				//Update values for next pixel.
+				ssx += (int64_t)xx;
+				ssy += (int64_t)yx;
+				didx++;
+			}
+		}
+	}
+
 	template<typename pixel>
 	inline void _sample_texture(pixel* dest, uint32_t dwidth, uint32_t dheight, pixel* source, uint32_t swidth,
 		uint32_t sheight, int32_t xx, int32_t xy, int32_t x0, int32_t yx, int32_t yy, int32_t y0, uint32_t s,
 		bool wrap, pixel transparent)
 	{
+		if((s & (s - 1)) == 0) {
+			//S is power of two. Compute the logarithm.
+			uint32_t log2s = 0;
+			while(s > 1) {
+				log2s++;
+				s >>= 1;
+			}
+			return _sample_texture_log2(dest, dwidth, dheight, source, swidth, sheight, xx, xy, x0, yx,
+				yy, y0, log2s, wrap, transparent);
+		}
 		int32_t th = s / 2;
 		size_t didx = 0;
 		for(int32_t i = 0; i < (int32_t)dheight; i++) {
@@ -566,7 +622,7 @@ namespace
 					isy = isy % sheight;
 					if(isy < 0) isy += sheight;
 					p = source[isy * swidth + isx];
-				} else if(isx >= 0 && isx < swidth && isy >= 0 && isy < sheight) {
+				} else if(isx >= 0 && isx < (int32_t)swidth && isy >= 0 && isy < (int32_t)sheight) {
 					p = source[isy * swidth + isx];
 				}
 				dest[didx] = p;
