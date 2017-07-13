@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass article
 \use_default_options true
 \maintain_unincluded_children false
@@ -9,16 +11,16 @@
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -133,6 +135,10 @@ Drawing and contexts
 Methods that draw something (unless stated otherwise) require a valid rendering
  context.
  This context can come in three ways:
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -175,6 +181,10 @@ Non-negative numbers less than
 \end_inset
 
 )
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -195,6 +205,10 @@ Non-negative numbers less than
 \end_inset
 
  would be fully transparent.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -316,6 +330,10 @@ n4 steelblue steelblue1 steelblue2 steelblue3 steelblue4 tan tan1 tan2 tan3
 
 \begin_layout Itemize
 The HSL base color names: hsl-<hue><saturation><lightness>.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -339,6 +357,10 @@ The color names can have a modifier after space (multiple modifiers are
  allowed, separated by spaces): opaque10, opaque20, opaque25, opaque30,
  opaque40, opaque50, opaque60, opaque70, opaque75, opaque80, opaque90, opaque,
  hue{+,-}{1-23}, {saturation,lightness}{+,-}{1-16}.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -451,6 +473,10 @@ addrobj: ADDRESS: The memory address.
 
 \begin_layout Itemize
 type: String: The type of data to map.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -1373,6 +1399,10 @@ Load a palette from file <file> (resolved relative to <base>).
 
 \begin_layout Itemize
 The file format is a series of lines, each with following format:
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -1887,6 +1917,10 @@ h: number: The height of area to blit.
 \begin_layout Itemize
 ck: number: The color key.
  Pixels with this index are not copied.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -1961,6 +1995,10 @@ vscl: number: Vertical scale factor (integer).
 \begin_layout Itemize
 ck: number: The color key.
  Pixels with this index are not copied.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -2024,6 +2062,10 @@ h: number: The height of area to blit.
 
 \begin_layout Itemize
 operator: string: The operator to use.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -2104,6 +2146,10 @@ vscl: number: Vertical scale factor (integer).
 
 \begin_layout Itemize
 operator: string: The operator to use.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -2319,6 +2365,61 @@ Hashes bitmap <bitmap> and returns crypto-strong hash.
 
 \begin_layout Itemize
 Color order in bitmap is significant.
+\end_layout
+
+\begin_layout Subsubsection
+Method sample_texture: Sample a texture
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bitmap:sample_texture(BITMAP source, number xx, number xy,
+ number x0, number yx, number yy, number y0, number scale, boolean wrap)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+source: BITMAP: The bitmap to sample
+\end_layout
+
+\begin_layout Itemize
+xx: number: s times the source x coefficient of target x axis.
+\end_layout
+
+\begin_layout Itemize
+xy: number: s times the source y coefficient of target x axis.
+\end_layout
+
+\begin_layout Itemize
+x0: number: s times the target x axis offset.
+\end_layout
+
+\begin_layout Itemize
+yx: number: s times the source x coefficient of target y axis.
+\end_layout
+
+\begin_layout Itemize
+yy: number: s times the source y coefficient of target y axis.
+\end_layout
+
+\begin_layout Itemize
+y0: number: s times the target y axis offset.
+\end_layout
+
+\begin_layout Itemize
+s: number: Scale of coordinates
+\end_layout
+
+\begin_layout Itemize
+wrap: boolean: If true, wrap the texture.
+ If false, read outside the texture as color 0.
+\end_layout
+
+\begin_layout Standard
+Samples the source as texture, performing linear transform (with nearest-neighbo
+r sampling) and writes the result to this bitmap.
 \end_layout
 
 \begin_layout Standard
@@ -2652,6 +2753,10 @@ h: number: The height of area to blit.
 \begin_layout Itemize
 ck: number: The color key.
  Pixels with this index are not copied.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -2739,6 +2844,10 @@ vscl: number: Vertical scale factor (integer).
 \begin_layout Itemize
 ck: number: The color key.
  Pixels with this index are not copied.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -2814,6 +2923,10 @@ h: number: The height of area to blit.
 
 \begin_layout Itemize
 operator: string: The operator to use.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -2905,6 +3018,10 @@ vscl: number: Vertical scale factor (integer).
 
 \begin_layout Itemize
 operator: string: The operator to use.
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -3024,6 +3141,65 @@ hash: string: 64-hex digit hash
 \begin_layout Standard
 Hashes bitmap <bitmap> and returns crypto-strong hash.
  
+\end_layout
+
+\begin_layout Subsubsection
+Method sample_texture: Sample a texture
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bitmap:sample_texture(BITMAP source, number xx, number xy,
+ number x0, number yx, number yy, number y0, number scale, boolean wrap)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+source: BITMAP: The bitmap to sample
+\end_layout
+
+\begin_layout Itemize
+xx: number: s times the source x coefficient of target x axis.
+\end_layout
+
+\begin_layout Itemize
+xy: number: s times the source y coefficient of target x axis.
+\end_layout
+
+\begin_layout Itemize
+x0: number: s times the target x axis offset.
+\end_layout
+
+\begin_layout Itemize
+yx: number: s times the source x coefficient of target y axis.
+\end_layout
+
+\begin_layout Itemize
+yy: number: s times the source y coefficient of target y axis.
+\end_layout
+
+\begin_layout Itemize
+y0: number: s times the target y axis offset.
+\end_layout
+
+\begin_layout Itemize
+s: number: Scale of coordinates
+\end_layout
+
+\begin_layout Itemize
+wrap: boolean: If true, wrap the texture.
+ If false, read outside the texture as color 0.
+\end_layout
+
+\begin_layout Standard
+Samples the source as texture, performing linear transform (with nearest-neighbo
+r sampling) and writes the result to this bitmap.
+\begin_inset Newpage pagebreak
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -3504,6 +3680,10 @@ unconvered: number: Number of bytes that were not converted (only if <success>
 \begin_layout Itemize
 error: string: Error that caused conversion to stop (only if <success> is
  false).
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -4121,11 +4301,19 @@ Calls function <fun> with function and specified arguments.
 
 \begin_layout LyX-Code
 on_paint = loopwrapper(function(wait)
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
 \begin_layout LyX-Code
 while true do
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -4884,6 +5072,10 @@ Set v' to <v>.
 
 \begin_layout Enumerate
 For each <q> q:
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -5839,6 +6031,10 @@ button_count (number): Number of buttons on controller
 
 \begin_layout Itemize
 buttons (array): Array of following info about each button:
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -5995,6 +6191,10 @@ Returns table of tables of all available keys and axes.
 
 \begin_layout Itemize
 value: Last reported value for control
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper
@@ -8378,7 +8578,7 @@ Various callback-related functions.
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:callback.register:-Register-a"
+name "subsec:callback.register:-Register-a"
 
 \end_inset
 
@@ -8415,7 +8615,7 @@ paint
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:callback.unregister:-Unregister-"
+name "subsec:callback.unregister:-Unregister-"
 
 \end_inset
 
@@ -8443,7 +8643,7 @@ Syntax: function callback.<cbname>:register(function cbfun)
 Synonym for callback.register (section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:callback.register:-Register-a"
+reference "subsec:callback.register:-Register-a"
 
 \end_inset
 
@@ -8462,7 +8662,7 @@ Syntax: function callback.<cbname>:unregister(function cbfun)
 Synonym for callback.unregister (section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:callback.unregister:-Unregister-"
+reference "subsec:callback.unregister:-Unregister-"
 
 \end_inset
 
@@ -9049,6 +9249,10 @@ index: Index of button.
 
 \begin_layout Itemize
 type: Type of event, one of:
+\begin_inset Separator latexpar
+\end_inset
+
+
 \end_layout
 
 \begin_deeper

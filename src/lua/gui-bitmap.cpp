@@ -536,6 +536,48 @@ namespace
 		}
 	}
 
+	template<typename pixel>
+	inline void _sample_texture(pixel* dest, uint32_t dwidth, uint32_t dheight, pixel* source, uint32_t swidth,
+		uint32_t sheight, int32_t xx, int32_t xy, int32_t x0, int32_t yx, int32_t yy, int32_t y0, uint32_t s,
+		bool wrap, pixel transparent)
+	{
+		int32_t th = s / 2;
+		size_t didx = 0;
+		for(int32_t i = 0; i < (int32_t)dheight; i++) {
+			int64_t ssx = (int64_t)xy * i + (int64_t)x0;
+			int64_t ssy = (int64_t)yy * i + (int64_t)y0;
+			for(int32_t j = 0; j < (int32_t)dwidth; j++) {
+				//Compute whole and fractional parts.
+				int64_t isx = ssx / (int32_t)s;
+				int32_t fsx = ssx % (int32_t)s;
+				int64_t isy = ssy / (int32_t)s;
+				int32_t fsy = ssy % (int32_t)s;
+				//Make the fractional parts always positive.
+				if(fsx < 0) { fsx += s; isx--; }
+				if(fsy < 0) { fsy += s; isy--; }
+				//Round the whole parts.
+				isx += fsx > th;
+				isy += fsy > th;
+				//Compute color.
+				pixel p = transparent;
+				if(wrap) {
+					isx = isx % swidth;
+					if(isx < 0) isx += swidth;
+					isy = isy % sheight;
+					if(isy < 0) isy += sheight;
+					p = source[isy * swidth + isx];
+				} else if(isx >= 0 && isx < swidth && isy >= 0 && isy < sheight) {
+					p = source[isy * swidth + isx];
+				}
+				dest[didx] = p;
+				//Update values for next pixel.
+				ssx += (int64_t)xx;
+				ssy += (int64_t)yx;
+				didx++;
+			}
+		}
+	}
+
 	inline int64_t mangle_color(uint32_t c)
 	{
 		if(c < 0x1000000)
@@ -739,6 +781,7 @@ namespace
 		{"blit_porterduff", &lua_bitmap::blit<false, true>},
 		{"blit_scaled_porterduff", &lua_bitmap::blit<true, true>},
 		{"save_png", &lua_bitmap::save_png},
+		{"sample_texture", &lua_bitmap::sample_texture},
 	}, &lua_bitmap::print);
 
 	lua::_class<lua_dbitmap> LUA_class_dbitmap(lua_class_gui, "DBITMAP", {
@@ -758,6 +801,7 @@ namespace
 		{"blit_scaled_porterduff", &lua_dbitmap::blit<true, true>},
 		{"save_png", &lua_dbitmap::save_png},
 		{"adjust_transparency", &lua_dbitmap::adjust_transparency},
+		{"sample_texture", &lua_dbitmap::sample_texture},
 	}, &lua_dbitmap::print);
 }
 
@@ -1088,6 +1132,21 @@ int lua_bitmap::save_png(lua::state& L, lua::parameters& P)
 	}
 }
 
+int lua_bitmap::sample_texture(lua::state& L, lua::parameters& P)
+{
+	lua_bitmap* src_p;
+	int32_t xx, xy, yx, yy, x0, y0;
+	uint32_t s;
+	bool wrap;
+	uint16_t trans = 0;
+
+	P(P.skipped(), src_p, xx, xy, x0, yx, yy, y0, s, wrap);
+
+	_sample_texture(pixels, width, height, src_p->pixels, src_p->width, src_p->height, xx, xy, x0, yx, yy, y0,
+		s, wrap, trans);
+	return 0;
+}
+
 /** DBITMAP **/
 lua_dbitmap::lua_dbitmap(lua::state& L, uint32_t w, uint32_t h)
 {
@@ -1288,6 +1347,19 @@ int lua_dbitmap::adjust_transparency(lua::state& L, lua::parameters& P)
 	return 0;
 }
 
+int lua_dbitmap::sample_texture(lua::state& L, lua::parameters& P)
+{
+	lua_dbitmap* src_p;
+	int32_t xx, xy, yx, yy, x0, y0;
+	uint32_t s;
+	bool wrap;
+
+	P(P.skipped(), src_p, xx, xy, x0, yx, yy, y0, s, wrap);
+
+	_sample_texture(pixels, width, height, src_p->pixels, src_p->width, src_p->height, xx, xy, x0, yx, yy, y0,
+		s, wrap, framebuffer::color());
+	return 0;
+}
 
 template<bool png> int lua_loaded_bitmap::load(lua::state& L, lua::parameters& P)
 {

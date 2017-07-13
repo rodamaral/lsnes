@@ -61,6 +61,7 @@ struct lua_bitmap
 	template<bool scaled> int blit_priority(lua::state& L, lua::parameters& P);
 	int save_png(lua::state& L, lua::parameters& P);
 	int _save_png(lua::state& L, lua::parameters& P, bool is_method);
+	int sample_texture(lua::state& L, lua::parameters& P);
 };
 
 struct lua_dbitmap
@@ -85,6 +86,7 @@ struct lua_dbitmap
 	int save_png(lua::state& L, lua::parameters& P);
 	int adjust_transparency(lua::state& L, lua::parameters& P);
 	int _save_png(lua::state& L, lua::parameters& P, bool is_method);
+	int sample_texture(lua::state& L, lua::parameters& P);
 };
 
 struct lua_loaded_bitmap
