@@ -56,6 +56,8 @@ struct lua_bitmap
 	int pset(lua::state& L, lua::parameters& P);
 	int pget(lua::state& L, lua::parameters& P);
 	int size(lua::state& L, lua::parameters& P);
+	int hflip(lua::state& L, lua::parameters& P);
+	int vflip(lua::state& L, lua::parameters& P);
 	int hash(lua::state& L, lua::parameters& P);
 	template<bool scaled, bool porterduff> int blit(lua::state& L, lua::parameters& P);
 	template<bool scaled> int blit_priority(lua::state& L, lua::parameters& P);
@@ -81,6 +83,8 @@ struct lua_dbitmap
 	int pset(lua::state& L, lua::parameters& P);
 	int pget(lua::state& L, lua::parameters& P);
 	int size(lua::state& L, lua::parameters& P);
+	int hflip(lua::state& L, lua::parameters& P);
+	int vflip(lua::state& L, lua::parameters& P);
 	int hash(lua::state& L, lua::parameters& P);
 	template<bool scaled, bool porterduff> int blit(lua::state& L, lua::parameters& P);
 	int save_png(lua::state& L, lua::parameters& P);

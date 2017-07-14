@@ -634,6 +634,33 @@ namespace
 		}
 	}
 
+	template<typename pixel>
+	inline int _hflip(pixel* pixels, uint32_t width, uint32_t height)
+	{
+		uint32_t w = width, h = height;
+
+		for (uint32_t x = 0; x < w/2; x++) {
+			for (uint32_t y = 0; y < h; y++) {
+				std::swap(pixels[y * w + x], pixels[(y + 1) * w - x - 1]);
+			}
+		}
+		return 0;
+	}
+
+	template<typename pixel>
+	inline int _vflip(pixel* pixels, uint32_t width, uint32_t height)
+	{
+		uint32_t w = width, h = height;
+
+		for (uint32_t x = 0; x < w; x++) {
+			for (uint32_t y = 0; y < h/2; y++) {
+				std::swap(pixels[y * w + x], pixels[(h - y - 1) * w + x]);
+			}
+		}
+		return 0;
+	}
+
+
 	inline int64_t mangle_color(uint32_t c)
 	{
 		if(c < 0x1000000)
@@ -829,6 +856,8 @@ namespace
 		{"pset", &lua_bitmap::pset},
 		{"pget", &lua_bitmap::pget},
 		{"size", &lua_bitmap::size},
+		{"hflip", &lua_bitmap::hflip},
+		{"vflip", &lua_bitmap::vflip},
 		{"hash", &lua_bitmap::hash},
 		{"blit", &lua_bitmap::blit<false, false>},
 		{"blit_priority", &lua_bitmap::blit_priority<false>},
@@ -850,6 +879,8 @@ namespace
 		{"pset", &lua_dbitmap::pset},
 		{"pget", &lua_dbitmap::pget},
 		{"size", &lua_dbitmap::size},
+		{"hflip", &lua_dbitmap::hflip},
+		{"vflip", &lua_dbitmap::vflip},
 		{"hash", &lua_dbitmap::hash},
 		{"blit", &lua_dbitmap::blit<false, false>},
 		{"blit_scaled", &lua_dbitmap::blit<true, false>},
@@ -1102,6 +1133,16 @@ int lua_bitmap::size(lua::state& L, lua::parameters& P)
 	return 2;
 }
 
+int lua_bitmap::hflip(lua::state& L, lua::parameters& P)
+{
+	return _hflip(pixels, width, height);
+}
+
+int lua_bitmap::vflip(lua::state& L, lua::parameters& P)
+{
+	return _vflip(pixels, width, height);
+}
+
 int lua_bitmap::hash(lua::state& L, lua::parameters& P)
 {
 	sha256 h;
@@ -1287,6 +1328,16 @@ int lua_dbitmap::size(lua::state& L, lua::parameters& P)
 	L.pushnumber(this->width);
 	L.pushnumber(this->height);
 	return 2;
+}
+
+int lua_dbitmap::hflip(lua::state& L, lua::parameters& P)
+{
+	return _hflip(pixels, width, height);
+}
+
+int lua_dbitmap::vflip(lua::state& L, lua::parameters& P)
+{
+	return _vflip(pixels, width, height);
 }
 
 int lua_dbitmap::hash(lua::state& L, lua::parameters& P)

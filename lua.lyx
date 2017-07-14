@@ -2422,6 +2422,30 @@ Samples the source as texture, performing linear transform (with nearest-neighbo
 r sampling) and writes the result to this bitmap.
 \end_layout
 
+\begin_layout Subsubsection
+Method hflip: Horizontally flip a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bitmap:hflip()
+\end_layout
+
+\begin_layout Standard
+Horizontally flips a bitmap.
+\end_layout
+
+\begin_layout Subsubsection
+Method vflip: Vertically flip a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bitmap:vflip()
+\end_layout
+
+\begin_layout Standard
+Vertically flips a bitmap.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
@@ -3196,6 +3220,33 @@ wrap: boolean: If true, wrap the texture.
 \begin_layout Standard
 Samples the source as texture, performing linear transform (with nearest-neighbo
 r sampling) and writes the result to this bitmap.
+\end_layout
+
+\begin_layout Subsubsection
+Method hflip: Horizontally flip a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none dbitmap:hflip()
+\end_layout
+
+\begin_layout Standard
+Horizontally flips a bitmap.
+\end_layout
+
+\begin_layout Subsubsection
+Method vflip: Vertically flip a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none dbitmap:vflip()
+\end_layout
+
+\begin_layout Standard
+Vertically flips a bitmap.
+\end_layout
+
+\begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
 
