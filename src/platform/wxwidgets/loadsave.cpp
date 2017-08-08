@@ -82,8 +82,13 @@ filedialog_output_params show_filedialog(wxWindow* parent, const std::string& ti
 	if(saving && p.types[findex].primaryext != "") {
 		//Append extension if needed.
 		std::string ext = p.types[findex].primaryext;
-		size_t dpos = filename.find_first_of(".");
-		if(dpos > filename.length() || filename.substr(dpos + 1) != ext)
+		size_t dpos = filename.find_last_of(".");
+		std::string extension;
+		if(dpos < filename.length()) {
+			extension = filename.substr(dpos + 1);
+			std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+		}
+		if(extension != ext)
 			filename = filename + "." + ext;
 	}
 	filedialog_output_params r;
