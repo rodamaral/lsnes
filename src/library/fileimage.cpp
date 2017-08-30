@@ -26,8 +26,7 @@ namespace
 	uint64_t calculate_headersize(uint64_t f, uint64_t h)
 	{
 		if(!h) return 0;
-		if(f % (2 * h) == h) return h;
-		return 0;
+		return f % (2 * h);
 	}
 
 	void* thread_trampoline(hash* h)
