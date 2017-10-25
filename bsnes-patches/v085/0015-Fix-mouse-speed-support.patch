@@ -1,7 +1,7 @@
 From 863bde899b53ae31e854096ac5258208c848a293 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 6 Mar 2014 21:07:54 +0200
-Subject: [PATCH 15/26] Fix mouse speed support
+Subject: [PATCH 15/27] Fix mouse speed support
 
 ---
  snes/config/config.cpp          |  1 +
@@ -11,7 +11,7 @@ Subject: [PATCH 15/26] Fix mouse speed support
  4 files changed, 14 insertions(+), 2 deletions(-)
 
 diff --git a/snes/config/config.cpp b/snes/config/config.cpp
-index 206daae..1983137 100755
+index 206daae0..19831370 100755
 --- a/snes/config/config.cpp
 +++ b/snes/config/config.cpp
 @@ -8,6 +8,7 @@ Configuration::Configuration() {
@@ -23,7 +23,7 @@ index 206daae..1983137 100755
    cpu.version         = 2;
    cpu.ntsc_frequency  = 21477272;  //315 / 88 * 6000000
 diff --git a/snes/config/config.hpp b/snes/config/config.hpp
-index dabde59..68fe0bd 100755
+index dabde597..68fe0bde 100755
 --- a/snes/config/config.hpp
 +++ b/snes/config/config.hpp
 @@ -1,9 +1,12 @@
@@ -40,7 +40,7 @@ index dabde59..68fe0bd 100755
    struct CPU {
      unsigned version;
 diff --git a/snes/controller/mouse/mouse.cpp b/snes/controller/mouse/mouse.cpp
-index 1a066b9..caa7a35 100755
+index 1a066b98..caa7a358 100755
 --- a/snes/controller/mouse/mouse.cpp
 +++ b/snes/controller/mouse/mouse.cpp
 @@ -1,6 +1,10 @@
@@ -87,7 +87,7 @@ index 1a066b9..caa7a35 100755
  
  #endif
 diff --git a/snes/controller/mouse/mouse.hpp b/snes/controller/mouse/mouse.hpp
-index b07c8ab..13a9313 100755
+index b07c8ab7..13a9313e 100755
 --- a/snes/controller/mouse/mouse.hpp
 +++ b/snes/controller/mouse/mouse.hpp
 @@ -6,6 +6,7 @@ struct Mouse : Controller {
@@ -99,5 +99,5 @@ index b07c8ab..13a9313 100755
    int _position_y;
  };
 -- 
-2.8.1
+2.15.0.rc1
 

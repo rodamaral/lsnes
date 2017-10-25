@@ -1,7 +1,7 @@
 From 6e0364c9a86caa71623a188a720b2d68b304b89b Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 24 Sep 2012 21:46:09 +0300
-Subject: [PATCH 09/26] Add needed support for detecting true polls as opposed
+Subject: [PATCH 09/27] Add needed support for detecting true polls as opposed
  to just autopolling
 
 ---
@@ -10,7 +10,7 @@ Subject: [PATCH 09/26] Add needed support for detecting true polls as opposed
  2 files changed, 11 insertions(+), 8 deletions(-)
 
 diff --git a/snes/cpu/cpu.hpp b/snes/cpu/cpu.hpp
-index 3da865e..4944577 100755
+index 3da865e2..49445773 100755
 --- a/snes/cpu/cpu.hpp
 +++ b/snes/cpu/cpu.hpp
 @@ -25,6 +25,7 @@ struct CPU : public Processor, public CPUcore, public PPUcounter {
@@ -22,7 +22,7 @@ index 3da865e..4944577 100755
    #include "dma/dma.hpp"
    #include "memory/memory.hpp"
 diff --git a/snes/cpu/mmio/mmio.cpp b/snes/cpu/mmio/mmio.cpp
-index 8b6aaa6..c5ee930 100755
+index 8b6aaa6a..c5ee930f 100755
 --- a/snes/cpu/mmio/mmio.cpp
 +++ b/snes/cpu/mmio/mmio.cpp
 @@ -42,6 +42,7 @@ void CPU::mmio_w4016(uint8 data) {
@@ -65,5 +65,5 @@ index 8b6aaa6..c5ee930 100755
  //DMAPx
  uint8 CPU::mmio_r43x0(uint8 i) {
 -- 
-2.8.1
+2.15.0.rc1
 

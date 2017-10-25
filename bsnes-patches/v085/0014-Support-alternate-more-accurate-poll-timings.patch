@@ -1,7 +1,7 @@
 From 40c456dadd79cb2c94379fda8b41a4d0ba051ad1 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 7 Dec 2013 23:32:44 +0200
-Subject: [PATCH 14/26] Support alternate (more accurate) poll timings
+Subject: [PATCH 14/27] Support alternate (more accurate) poll timings
 
 ---
  snes/config/config.cpp     |  1 +
@@ -13,7 +13,7 @@ Subject: [PATCH 14/26] Support alternate (more accurate) poll timings
  6 files changed, 56 insertions(+), 4 deletions(-)
 
 diff --git a/snes/config/config.cpp b/snes/config/config.cpp
-index 701af94..206daae 100755
+index 701af94c..206daae0 100755
 --- a/snes/config/config.cpp
 +++ b/snes/config/config.cpp
 @@ -13,6 +13,7 @@ Configuration::Configuration() {
@@ -25,7 +25,7 @@ index 701af94..206daae 100755
    smp.ntsc_frequency = 24607104;   //32040.5 * 768
    smp.pal_frequency  = 24607104;
 diff --git a/snes/config/config.hpp b/snes/config/config.hpp
-index 1f4d037..dabde59 100755
+index 1f4d037c..dabde597 100755
 --- a/snes/config/config.hpp
 +++ b/snes/config/config.hpp
 @@ -10,6 +10,7 @@ struct Configuration {
@@ -37,7 +37,7 @@ index 1f4d037..dabde59 100755
  
    struct SMP {
 diff --git a/snes/cpu/timing/joypad.cpp b/snes/cpu/timing/joypad.cpp
-index 6a98de0..ae8e94f 100755
+index 6a98de00..ae8e94f8 100755
 --- a/snes/cpu/timing/joypad.cpp
 +++ b/snes/cpu/timing/joypad.cpp
 @@ -29,4 +29,44 @@ void CPU::step_auto_joypad_poll() {
@@ -86,7 +86,7 @@ index 6a98de0..ae8e94f 100755
 +
  #endif
 diff --git a/snes/cpu/timing/timing.cpp b/snes/cpu/timing/timing.cpp
-index f1378f0..d7cf24f 100755
+index f1378f0c..d7cf24f3 100755
 --- a/snes/cpu/timing/timing.cpp
 +++ b/snes/cpu/timing/timing.cpp
 @@ -17,10 +17,18 @@ void CPU::add_clocks(unsigned clocks) {
@@ -113,7 +113,7 @@ index f1378f0..d7cf24f 100755
  
    if(status.dram_refreshed == false && hcounter() >= status.dram_refresh_position) {
 diff --git a/snes/cpu/timing/timing.hpp b/snes/cpu/timing/timing.hpp
-index 6c225da..bf15a72 100755
+index 6c225dab..bf15a727 100755
 --- a/snes/cpu/timing/timing.hpp
 +++ b/snes/cpu/timing/timing.hpp
 @@ -22,3 +22,4 @@ alwaysinline bool irq_test();
@@ -122,7 +122,7 @@ index 6c225da..bf15a72 100755
  void step_auto_joypad_poll();
 +void step_auto_joypad_poll_NEW(bool polarity);
 diff --git a/snes/snes.hpp b/snes/snes.hpp
-index 37ed1fe..4e3ba64 100755
+index 37ed1feb..4e3ba64c 100755
 --- a/snes/snes.hpp
 +++ b/snes/snes.hpp
 @@ -1,6 +1,7 @@
@@ -134,5 +134,5 @@ index 37ed1fe..4e3ba64 100755
  namespace SNES {
    namespace Info {
 -- 
-2.8.1
+2.15.0.rc1
 

@@ -1,7 +1,7 @@
 From e047aa8eb9883f60e4141effba8128a4a555d8be Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sun, 27 Oct 2013 10:52:45 +0200
-Subject: [PATCH 11/26] Support notifying latches
+Subject: [PATCH 11/27] Support notifying latches
 
 ---
  snes/cpu/mmio/mmio.cpp       | 1 +
@@ -11,7 +11,7 @@ Subject: [PATCH 11/26] Support notifying latches
  4 files changed, 8 insertions(+)
 
 diff --git a/snes/cpu/mmio/mmio.cpp b/snes/cpu/mmio/mmio.cpp
-index c5ee930..b7afff0 100755
+index c5ee930f..b7afff00 100755
 --- a/snes/cpu/mmio/mmio.cpp
 +++ b/snes/cpu/mmio/mmio.cpp
 @@ -33,6 +33,7 @@ void CPU::mmio_w2183(uint8 data) {
@@ -23,7 +23,7 @@ index c5ee930..b7afff0 100755
    input.port2->latch(data & 1);
  }
 diff --git a/snes/cpu/timing/joypad.cpp b/snes/cpu/timing/joypad.cpp
-index 179df27..6a98de0 100755
+index 179df27d..6a98de00 100755
 --- a/snes/cpu/timing/joypad.cpp
 +++ b/snes/cpu/timing/joypad.cpp
 @@ -9,6 +9,7 @@ void CPU::step_auto_joypad_poll() {
@@ -35,7 +35,7 @@ index 179df27..6a98de0 100755
          input.port2->latch(1);
          input.port1->latch(0);
 diff --git a/snes/interface/interface.cpp b/snes/interface/interface.cpp
-index 0a21a13..6685556 100755
+index 0a21a132..6685556c 100755
 --- a/snes/interface/interface.cpp
 +++ b/snes/interface/interface.cpp
 @@ -28,4 +28,9 @@ time_t Interface::randomSeed()
@@ -49,7 +49,7 @@ index 0a21a13..6685556 100755
 +
  }
 diff --git a/snes/interface/interface.hpp b/snes/interface/interface.hpp
-index 30ee7fd..203f7b0 100755
+index 30ee7fde..203f7b0c 100755
 --- a/snes/interface/interface.hpp
 +++ b/snes/interface/interface.hpp
 @@ -7,6 +7,7 @@ struct Interface {
@@ -61,5 +61,5 @@ index 30ee7fd..203f7b0 100755
  
  extern Interface *interface;
 -- 
-2.8.1
+2.15.0.rc1
 

@@ -1,7 +1,7 @@
 From 4dc46334ec175e26277632fee4aea80768749af9 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Fri, 11 Nov 2011 19:49:46 +0200
-Subject: [PATCH 06/26] Allow frontend to control random number seed
+Subject: [PATCH 06/27] Allow frontend to control random number seed
 
 ---
  snes/interface/interface.cpp | 5 +++++
@@ -10,7 +10,7 @@ Subject: [PATCH 06/26] Allow frontend to control random number seed
  3 files changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/snes/interface/interface.cpp b/snes/interface/interface.cpp
-index b3017c9..0a21a13 100755
+index b3017c90..0a21a132 100755
 --- a/snes/interface/interface.cpp
 +++ b/snes/interface/interface.cpp
 @@ -23,4 +23,9 @@ time_t Interface::currentTime()
@@ -24,7 +24,7 @@ index b3017c9..0a21a13 100755
 +
  }
 diff --git a/snes/interface/interface.hpp b/snes/interface/interface.hpp
-index df975e8..30ee7fd 100755
+index df975e83..30ee7fde 100755
 --- a/snes/interface/interface.hpp
 +++ b/snes/interface/interface.hpp
 @@ -6,6 +6,7 @@ struct Interface {
@@ -36,7 +36,7 @@ index df975e8..30ee7fd 100755
  
  extern Interface *interface;
 diff --git a/snes/system/system.cpp b/snes/system/system.cpp
-index c19a7c5..dbd912d 100755
+index c19a7c51..dbd912d8 100755
 --- a/snes/system/system.cpp
 +++ b/snes/system/system.cpp
 @@ -146,7 +146,7 @@ void System::unload() {
@@ -49,5 +49,5 @@ index c19a7c5..dbd912d 100755
    region = config.region;
    expansion = config.expansion_port;
 -- 
-2.8.1
+2.15.0.rc1
 

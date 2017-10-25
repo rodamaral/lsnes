@@ -1,7 +1,7 @@
 From de71f12eb59a41899a5c77d797e144e6f0919777 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 17 Mar 2014 14:22:58 +0200
-Subject: [PATCH 17/26] Fix performance problem with non-bus breakpoints
+Subject: [PATCH 17/27] Fix performance problem with non-bus breakpoints
 
 ---
  snes/memory/memory.cpp | 35 ++++++++++++++++++++++++++---------
@@ -10,7 +10,7 @@ Subject: [PATCH 17/26] Fix performance problem with non-bus breakpoints
  3 files changed, 28 insertions(+), 9 deletions(-)
 
 diff --git a/snes/memory/memory.cpp b/snes/memory/memory.cpp
-index a9a484a..d22e313 100755
+index a9a484a0..d22e3137 100755
 --- a/snes/memory/memory.cpp
 +++ b/snes/memory/memory.cpp
 @@ -43,6 +43,7 @@ void Bus::map(
@@ -77,7 +77,7 @@ index a9a484a..d22e313 100755
  
  Bus::Bus() {
 diff --git a/snes/memory/memory.hpp b/snes/memory/memory.hpp
-index c20e14d..ee0c0a9 100755
+index c20e14db..ee0c0a9e 100755
 --- a/snes/memory/memory.hpp
 +++ b/snes/memory/memory.hpp
 @@ -52,6 +52,7 @@ struct Bus {
@@ -89,7 +89,7 @@ index c20e14d..ee0c0a9 100755
    unsigned idcount;
    function<uint8 (unsigned)> reader[256];
 diff --git a/snes/snes.hpp b/snes/snes.hpp
-index 4e3ba64..9589db9 100755
+index 4e3ba64c..9589db9b 100755
 --- a/snes/snes.hpp
 +++ b/snes/snes.hpp
 @@ -38,6 +38,7 @@ namespace SNES {
@@ -101,5 +101,5 @@ index 4e3ba64..9589db9 100755
  
  #include <gameboy/gameboy.hpp>
 -- 
-2.8.1
+2.15.0.rc1
 

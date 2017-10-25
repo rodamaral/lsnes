@@ -1,7 +1,7 @@
 From 7018377c93553071fc404db872b2746d40ac3bce Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 1 Sep 2012 11:23:34 +0300
-Subject: [PATCH 08/26] Fix uninitialized variables
+Subject: [PATCH 08/27] Fix uninitialized variables
 
 These uninitialized variables cause a lot of desyncs in Shadowrun.
 ---
@@ -16,7 +16,7 @@ These uninitialized variables cause a lot of desyncs in Shadowrun.
  8 files changed, 38 insertions(+)
 
 diff --git a/snes/alt/dsp/dsp.cpp b/snes/alt/dsp/dsp.cpp
-index d0c9e07..c6809f7 100755
+index d0c9e077..c6809f73 100755
 --- a/snes/alt/dsp/dsp.cpp
 +++ b/snes/alt/dsp/dsp.cpp
 @@ -40,6 +40,8 @@ void DSP::write(uint8 addr, uint8 data) {
@@ -29,7 +29,7 @@ index d0c9e07..c6809f7 100755
    spc_dsp.reset();
    spc_dsp.set_output(samplebuffer, 8192);
 diff --git a/snes/alt/ppu-compatibility/ppu.cpp b/snes/alt/ppu-compatibility/ppu.cpp
-index 1a3835b..a21e5e3 100755
+index 1a3835b3..a21e5e31 100755
 --- a/snes/alt/ppu-compatibility/ppu.cpp
 +++ b/snes/alt/ppu-compatibility/ppu.cpp
 @@ -345,6 +345,17 @@ void PPU::power() {
@@ -51,7 +51,7 @@ index 1a3835b..a21e5e3 100755
  }
  
 diff --git a/snes/cpu/core/core.cpp b/snes/cpu/core/core.cpp
-index 427176b..a5b809b 100755
+index 427176b0..a5b809b9 100755
 --- a/snes/cpu/core/core.cpp
 +++ b/snes/cpu/core/core.cpp
 @@ -86,4 +86,12 @@ CPUcore::CPUcore() {
@@ -68,7 +68,7 @@ index 427176b..a5b809b 100755
 +
  }
 diff --git a/snes/cpu/core/core.hpp b/snes/cpu/core/core.hpp
-index 964bd12..7a685a8 100755
+index 964bd128..7a685a8d 100755
 --- a/snes/cpu/core/core.hpp
 +++ b/snes/cpu/core/core.hpp
 @@ -7,6 +7,8 @@ struct CPUcore {
@@ -81,7 +81,7 @@ index 964bd12..7a685a8 100755
    virtual uint8_t op_read(uint32_t addr) = 0;
    virtual void op_write(uint32_t addr, uint8_t data) = 0;
 diff --git a/snes/cpu/cpu.cpp b/snes/cpu/cpu.cpp
-index f6ae975..2d7d343 100755
+index f6ae9754..2d7d3432 100755
 --- a/snes/cpu/cpu.cpp
 +++ b/snes/cpu/cpu.cpp
 @@ -125,6 +125,7 @@ void CPU::power() {
@@ -93,7 +93,7 @@ index f6ae975..2d7d343 100755
  
  void CPU::reset() {
 diff --git a/snes/smp/core/core.cpp b/snes/smp/core/core.cpp
-index 9c94d00..2fc29be 100755
+index 9c94d00a..2fc29be1 100755
 --- a/snes/smp/core/core.cpp
 +++ b/snes/smp/core/core.cpp
 @@ -269,4 +269,15 @@ void SMPcore::op_step() {
@@ -113,7 +113,7 @@ index 9c94d00..2fc29be 100755
 +
  }
 diff --git a/snes/smp/core/core.hpp b/snes/smp/core/core.hpp
-index 6adf6f6..1489fce 100755
+index 6adf6f6b..1489fcef 100755
 --- a/snes/smp/core/core.hpp
 +++ b/snes/smp/core/core.hpp
 @@ -11,6 +11,8 @@ struct SMPcore {
@@ -126,7 +126,7 @@ index 6adf6f6..1489fce 100755
    string disassemble_opcode(uint16 addr);
  
 diff --git a/snes/smp/smp.cpp b/snes/smp/smp.cpp
-index 9080624..d4ccf42 100755
+index 90806245..d4ccf425 100755
 --- a/snes/smp/smp.cpp
 +++ b/snes/smp/smp.cpp
 @@ -53,6 +53,7 @@ void SMP::power() {
@@ -138,5 +138,5 @@ index 9080624..d4ccf42 100755
  
  void SMP::reset() {
 -- 
-2.8.1
+2.15.0.rc1
 

@@ -1,7 +1,7 @@
 From 7379b4570e5755a5a1da25181ba4f5d1ca461a98 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:37:44 +0200
-Subject: [PATCH 03/26] Don't use time() in emulating chips
+Subject: [PATCH 03/27] Don't use time() in emulating chips
 
 Instead of using time() in chip emulation, create new interface method
 currentTime(), defaulting to time(0). This way frontend can cleanly
@@ -15,7 +15,7 @@ override the current time bsnes is using.
  5 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/snes/chip/bsx/satellaview/satellaview.cpp b/snes/chip/bsx/satellaview/satellaview.cpp
-index 386fb62..3c98019 100755
+index 386fb628..3c980195 100755
 --- a/snes/chip/bsx/satellaview/satellaview.cpp
 +++ b/snes/chip/bsx/satellaview/satellaview.cpp
 @@ -38,7 +38,7 @@ uint8 BSXSatellaview::mmio_read(unsigned addr) {
@@ -28,7 +28,7 @@ index 386fb62..3c98019 100755
  
          regs.r2192_hour   = t->tm_hour;
 diff --git a/snes/chip/spc7110/spc7110.cpp b/snes/chip/spc7110/spc7110.cpp
-index d2dc640..74a817a 100755
+index d2dc640b..74a817a6 100755
 --- a/snes/chip/spc7110/spc7110.cpp
 +++ b/snes/chip/spc7110/spc7110.cpp
 @@ -101,7 +101,7 @@ void SPC7110::set_data_adjust(unsigned addr)  { r4814 = addr; r4815 = addr >> 8;
@@ -41,7 +41,7 @@ index d2dc640..74a817a 100755
    //sizeof(time_t) is platform-dependent; though rtc[] needs to be platform-agnostic.
    //yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by
 diff --git a/snes/chip/srtc/srtc.cpp b/snes/chip/srtc/srtc.cpp
-index 1b2fd2a..78fc4c1 100755
+index 1b2fd2aa..78fc4c1f 100755
 --- a/snes/chip/srtc/srtc.cpp
 +++ b/snes/chip/srtc/srtc.cpp
 @@ -31,7 +31,7 @@ void SRTC::reset() {
@@ -54,7 +54,7 @@ index 1b2fd2a..78fc4c1 100755
    //sizeof(time_t) is platform-dependent; though rtc[] needs to be platform-agnostic.
    //yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by
 diff --git a/snes/interface/interface.cpp b/snes/interface/interface.cpp
-index a0e3a81..b3017c9 100755
+index a0e3a81b..b3017c90 100755
 --- a/snes/interface/interface.cpp
 +++ b/snes/interface/interface.cpp
 @@ -18,4 +18,9 @@ void Interface::message(const string &text) {
@@ -68,7 +68,7 @@ index a0e3a81..b3017c9 100755
 +
  }
 diff --git a/snes/interface/interface.hpp b/snes/interface/interface.hpp
-index f1a48c0..df975e8 100755
+index f1a48c0f..df975e83 100755
 --- a/snes/interface/interface.hpp
 +++ b/snes/interface/interface.hpp
 @@ -5,6 +5,7 @@ struct Interface {
@@ -80,5 +80,5 @@ index f1a48c0..df975e8 100755
  
  extern Interface *interface;
 -- 
-2.8.1
+2.15.0.rc1
 

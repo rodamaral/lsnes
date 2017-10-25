@@ -1,7 +1,7 @@
 From 9682df9e33c366dfe047a99c8bcefc2c8ab29620 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 24 Jan 2015 16:46:18 +0200
-Subject: [PATCH 23/26] Add autopoller and IRQ/NMI tracing
+Subject: [PATCH 23/27] Add autopoller and IRQ/NMI tracing
 
 ---
  snes/cpu/cpu.cpp           |  3 +++
@@ -9,7 +9,7 @@ Subject: [PATCH 23/26] Add autopoller and IRQ/NMI tracing
  2 files changed, 17 insertions(+), 2 deletions(-)
 
 diff --git a/snes/cpu/cpu.cpp b/snes/cpu/cpu.cpp
-index ce112af..e11fc88 100755
+index ce112afa..e11fc882 100755
 --- a/snes/cpu/cpu.cpp
 +++ b/snes/cpu/cpu.cpp
 @@ -69,14 +69,17 @@ void CPU::enter() {
@@ -31,7 +31,7 @@ index ce112af..e11fc88 100755
          add_clocks(186);
          regs.pc.l = bus.read(0xfffc, false);
 diff --git a/snes/cpu/timing/joypad.cpp b/snes/cpu/timing/joypad.cpp
-index 3fd4d23..afca750 100755
+index 3fd4d23e..afca7504 100755
 --- a/snes/cpu/timing/joypad.cpp
 +++ b/snes/cpu/timing/joypad.cpp
 @@ -6,9 +6,9 @@ void CPU::step_auto_joypad_poll() {
@@ -82,5 +82,5 @@ index 3fd4d23..afca750 100755
      status.auto_joypad_counter++;
    }
 -- 
-2.8.1
+2.15.0.rc1
 

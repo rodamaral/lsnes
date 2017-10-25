@@ -1,7 +1,7 @@
 From f1106d3dffd27dab526a703aa434512495fbacea Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 14 Apr 2014 21:21:36 +0300
-Subject: [PATCH 19/26] SA1 trace hook support
+Subject: [PATCH 19/27] SA1 trace hook support
 
 ---
  snes/chip/sa1/sa1.cpp | 2 ++
@@ -10,7 +10,7 @@ Subject: [PATCH 19/26] SA1 trace hook support
  3 files changed, 6 insertions(+)
 
 diff --git a/snes/chip/sa1/sa1.cpp b/snes/chip/sa1/sa1.cpp
-index 30e0080..fdec362 100755
+index 30e00809..fdec362c 100755
 --- a/snes/chip/sa1/sa1.cpp
 +++ b/snes/chip/sa1/sa1.cpp
 @@ -32,6 +32,8 @@ void SA1::enter() {
@@ -23,7 +23,7 @@ index 30e0080..fdec362 100755
    }
  }
 diff --git a/snes/chip/sa1/sa1.hpp b/snes/chip/sa1/sa1.hpp
-index 732b2a8..efd3637 100755
+index 732b2a85..efd36376 100755
 --- a/snes/chip/sa1/sa1.hpp
 +++ b/snes/chip/sa1/sa1.hpp
 @@ -15,6 +15,9 @@ public:
@@ -37,7 +37,7 @@ index 732b2a8..efd3637 100755
    void enter();
    void tick();
 diff --git a/snes/snes.hpp b/snes/snes.hpp
-index 27632bf..3bdca7e 100755
+index 27632bff..3bdca7e5 100755
 --- a/snes/snes.hpp
 +++ b/snes/snes.hpp
 @@ -3,6 +3,7 @@
@@ -49,5 +49,5 @@ index 27632bf..3bdca7e 100755
  namespace SNES {
    namespace Info {
 -- 
-2.8.1
+2.15.0.rc1
 

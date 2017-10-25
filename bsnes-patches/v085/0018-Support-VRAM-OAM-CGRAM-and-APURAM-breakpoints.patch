@@ -1,7 +1,7 @@
 From 6bd069191d29ad70d38c82d59dd72cd0996fc45c Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 31 Mar 2014 20:17:46 +0300
-Subject: [PATCH 18/26] Support VRAM, OAM, CGRAM and APURAM breakpoints
+Subject: [PATCH 18/27] Support VRAM, OAM, CGRAM and APURAM breakpoints
 
 ---
  snes/alt/ppu-compatibility/memory/memory.cpp | 44 +++++++++++++++++++++--
@@ -19,7 +19,7 @@ Subject: [PATCH 18/26] Support VRAM, OAM, CGRAM and APURAM breakpoints
  12 files changed, 122 insertions(+), 45 deletions(-)
 
 diff --git a/snes/alt/ppu-compatibility/memory/memory.cpp b/snes/alt/ppu-compatibility/memory/memory.cpp
-index 3f120d8..e47cf20 100755
+index 3f120d84..e47cf201 100755
 --- a/snes/alt/ppu-compatibility/memory/memory.cpp
 +++ b/snes/alt/ppu-compatibility/memory/memory.cpp
 @@ -47,20 +47,31 @@ uint8 PPU::vram_mmio_read(uint16 addr) {
@@ -139,7 +139,7 @@ index 3f120d8..e47cf20 100755
      }
    }
 diff --git a/snes/alt/ppu-compatibility/ppu.hpp b/snes/alt/ppu-compatibility/ppu.hpp
-index cccaabb..4adac4c 100755
+index cccaabba..4adac4c4 100755
 --- a/snes/alt/ppu-compatibility/ppu.hpp
 +++ b/snes/alt/ppu-compatibility/ppu.hpp
 @@ -3,6 +3,12 @@ public:
@@ -156,7 +156,7 @@ index cccaabb..4adac4c 100755
    enum : bool { Threaded = true };
    alwaysinline void step(unsigned clocks);
 diff --git a/snes/cartridge/cartridge.hpp b/snes/cartridge/cartridge.hpp
-index 82e73c4..2358c08 100755
+index 82e73c4c..2358c088 100755
 --- a/snes/cartridge/cartridge.hpp
 +++ b/snes/cartridge/cartridge.hpp
 @@ -26,6 +26,10 @@ struct Cartridge : property<Cartridge> {
@@ -171,7 +171,7 @@ index 82e73c4..2358c08 100755
  
    enum class Slot : unsigned {
 diff --git a/snes/smp/core/core.hpp b/snes/smp/core/core.hpp
-index 13d6936..03f9ac6 100755
+index 13d69364..03f9ac66 100755
 --- a/snes/smp/core/core.hpp
 +++ b/snes/smp/core/core.hpp
 @@ -1,6 +1,6 @@
@@ -183,7 +183,7 @@ index 13d6936..03f9ac6 100755
    virtual void op_step();
  
 diff --git a/snes/smp/core/memory.hpp b/snes/smp/core/memory.hpp
-index c4b6d99..c297962 100755
+index c4b6d99f..c297962f 100755
 --- a/snes/smp/core/memory.hpp
 +++ b/snes/smp/core/memory.hpp
 @@ -1,9 +1,9 @@
@@ -208,7 +208,7 @@ index c4b6d99..c297962 100755
  
  alwaysinline void op_writedp(uint8 addr, uint8 data) {
 diff --git a/snes/smp/core/opcodes.cpp b/snes/smp/core/opcodes.cpp
-index 95b9844..43db081 100755
+index 95b9844f..43db081d 100755
 --- a/snes/smp/core/opcodes.cpp
 +++ b/snes/smp/core/opcodes.cpp
 @@ -11,7 +11,7 @@ template<uint8 (SMPcore::*op)(uint8)>
@@ -348,7 +348,7 @@ index 95b9844..43db081 100755
  }
  
 diff --git a/snes/smp/debugger/debugger.cpp b/snes/smp/debugger/debugger.cpp
-index 9546c11..894fdac 100755
+index 9546c118..894fdac9 100755
 --- a/snes/smp/debugger/debugger.cpp
 +++ b/snes/smp/debugger/debugger.cpp
 @@ -18,8 +18,8 @@ void SMPDebugger::op_step() {
@@ -363,7 +363,7 @@ index 9546c11..894fdac 100755
    debugger.breakpoint_test(Debugger::Breakpoint::Source::APURAM, Debugger::Breakpoint::Mode::Read, addr, data);
    return data;
 diff --git a/snes/smp/debugger/debugger.hpp b/snes/smp/debugger/debugger.hpp
-index d5d28e5..26bc7af 100755
+index d5d28e53..26bc7af9 100755
 --- a/snes/smp/debugger/debugger.hpp
 +++ b/snes/smp/debugger/debugger.hpp
 @@ -14,7 +14,7 @@ public:
@@ -376,7 +376,7 @@ index d5d28e5..26bc7af 100755
  
    SMPDebugger();
 diff --git a/snes/smp/memory/memory.cpp b/snes/smp/memory/memory.cpp
-index 391324c..58c1191 100755
+index 391324c4..58c11915 100755
 --- a/snes/smp/memory/memory.cpp
 +++ b/snes/smp/memory/memory.cpp
 @@ -19,61 +19,83 @@ void SMP::port_write(uint2 port, uint8 data) {
@@ -490,7 +490,7 @@ index 391324c..58c1191 100755
    cycle_edge();
    return r;
 diff --git a/snes/smp/memory/memory.hpp b/snes/smp/memory/memory.hpp
-index 1a07445..faa28da 100755
+index 1a07445d..faa28daa 100755
 --- a/snes/smp/memory/memory.hpp
 +++ b/snes/smp/memory/memory.hpp
 @@ -1,9 +1,9 @@
@@ -506,7 +506,7 @@ index 1a07445..faa28da 100755
 +debugvirtual uint8 op_read(uint16 addr, bool exec);
  debugvirtual void op_write(uint16 addr, uint8 data);
 diff --git a/snes/smp/smp.hpp b/snes/smp/smp.hpp
-index 6b387cb..6b6ae83 100755
+index 6b387cba..6b6ae837 100755
 --- a/snes/smp/smp.hpp
 +++ b/snes/smp/smp.hpp
 @@ -1,6 +1,10 @@
@@ -521,7 +521,7 @@ index 6b387cb..6b6ae83 100755
    enum : bool { Threaded = true };
    alwaysinline void step(unsigned clocks);
 diff --git a/snes/snes.hpp b/snes/snes.hpp
-index 9589db9..27632bf 100755
+index 9589db9b..27632bff 100755
 --- a/snes/snes.hpp
 +++ b/snes/snes.hpp
 @@ -1,6 +1,7 @@
@@ -533,5 +533,5 @@ index 9589db9..27632bf 100755
  
  namespace SNES {
 -- 
-2.8.1
+2.15.0.rc1
 

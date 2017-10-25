@@ -1,0 +1,377 @@
+From 4cfbbeadc3abe3e3911f7f59ce57b715edc76563 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilariliusvaara@welho.com>
+Date: Wed, 25 Oct 2017 14:18:34 +0300
+Subject: [PATCH 27/27] Bus fixes: Do not update MDR on read from CPU MMIO
+ space
+
+Also, updates the controller read timings to be more accurate.
+---
+ snes/config/config.cpp     |   1 +
+ snes/config/config.hpp     |   1 +
+ snes/cpu/cpu.cpp           |   2 +
+ snes/cpu/memory/memory.cpp |  26 ++++++++-
+ snes/cpu/mmio/mmio.cpp     |  14 +++--
+ snes/cpu/timing/joypad.cpp | 132 +++++++++++++++++++++++++++++++++++++++------
+ snes/cpu/timing/timing.cpp |  11 ++--
+ snes/cpu/timing/timing.hpp |   3 +-
+ snes/snes.hpp              |   1 +
+ 9 files changed, 166 insertions(+), 25 deletions(-)
+
+diff --git a/snes/config/config.cpp b/snes/config/config.cpp
+index 19831370..8dcfd7e8 100755
+--- a/snes/config/config.cpp
++++ b/snes/config/config.cpp
+@@ -15,6 +15,7 @@ Configuration::Configuration() {
+   cpu.pal_frequency   = 21281370;
+   cpu.wram_init_value = 0x55;
+   cpu.alt_poll_timings = false;
++  cpu.bus_fixes = false;
+ 
+   smp.ntsc_frequency = 24607104;   //32040.5 * 768
+   smp.pal_frequency  = 24607104;
+diff --git a/snes/config/config.hpp b/snes/config/config.hpp
+index 68fe0bde..d8577e39 100755
+--- a/snes/config/config.hpp
++++ b/snes/config/config.hpp
+@@ -14,6 +14,7 @@ struct Configuration {
+     unsigned pal_frequency;
+     unsigned wram_init_value;
+     bool alt_poll_timings;
++    bool bus_fixes;
+   } cpu;
+ 
+   struct SMP {
+diff --git a/snes/cpu/cpu.cpp b/snes/cpu/cpu.cpp
+index e11fc882..5e8e3137 100755
+--- a/snes/cpu/cpu.cpp
++++ b/snes/cpu/cpu.cpp
+@@ -1,5 +1,7 @@
+ #include <snes/snes.hpp>
+ #include <cstdio>
++#include <iostream>
++#include <cassert>
+ 
+ #define CPU_CPP
+ namespace SNES {
+diff --git a/snes/cpu/memory/memory.cpp b/snes/cpu/memory/memory.cpp
+index 31f82c31..df439c22 100755
+--- a/snes/cpu/memory/memory.cpp
++++ b/snes/cpu/memory/memory.cpp
+@@ -14,10 +14,32 @@ uint8 CPU::op_read(uint32 addr, bool exec) {
+   status.clock_count = speed(addr);
+   dma_edge();
+   add_clocks(status.clock_count - 4);
+-  regs.mdr = bus.read(addr, exec);
++  //MDR presents the state held by parasitic capacitance of the external bus.
++  //This bus is not affected by reads from CPU-internal registers, only if
++  //some external device responds. SDD1 does hook some of these addresses, but
++  //passes read straight through, as expected (as the CPU probably won't
++  //monitor if external device responds, even if it broadcasts a read).
++  //
++  //We use 4000-43FF as CPU register range, and not 4000-437F it likely is
++  //for quickness of checking. This will only affect things if some device
++  //tries to map the 4380-43FF range (that device will still work correctly,
++  //but openbus in that range won't).
++  //
++  //This was discovered while investigating why one Super Metroid glitch
++  //worked on emulator but crashed on real console.
++  //
++  //a word fetch from 2f4017 AND 0xfffc results in 2f3c and a word fetch from
++  //2f4210 AND 0x7f7f results in 2f22. This also extends to long fetches
++  //by arguments. E.g. long argument fetch from 94420F with 2F already on
++  //the bus AND 0x7f7fff results in 2f222f.
++  //
++  //The reason for masking some bits in above explanation was to ignore some
++  //known bits in those registers (bits 7 of 4210 and 4211, bits 0&1 of 4017).
++  uint8_t tmp = bus.read(addr, exec);
++  if(!config.cpu.bus_fixes || (addr & 0x40FC00) != 0x004000) regs.mdr = tmp;
+   add_clocks(4);
+   alu_edge();
+-  return regs.mdr;
++  return tmp;
+ }
+ 
+ void CPU::op_write(uint32 addr, uint8 data) {
+diff --git a/snes/cpu/mmio/mmio.cpp b/snes/cpu/mmio/mmio.cpp
+index 30048c19..be2990a3 100755
+--- a/snes/cpu/mmio/mmio.cpp
++++ b/snes/cpu/mmio/mmio.cpp
+@@ -33,9 +33,17 @@ void CPU::mmio_w2183(uint8 data) {
+ //strobing $4016.d0 affects both controller port latches.
+ //$4017 bit 0 writes are ignored.
+ void CPU::mmio_w4016(uint8 data) {
+-  if(data&1) interface->notifyLatched();
+-  input.port1->latch(data & 1);
+-  input.port2->latch(data & 1);
++  //Only consider autoassert if both busfix and auto flags are set.
++  auto auto_asserted = (status.auto_joypad_counter & 384) == 384;
++  //Bit 6 of status.auto_joypad_counter follows "manual" latch.
++  auto oldstatus = auto_asserted || (status.auto_joypad_counter & 64) != 0;
++  status.auto_joypad_counter &= ~64;
++  status.auto_joypad_counter |= (data & 1) << 6;
++  auto newstatus = auto_asserted || (status.auto_joypad_counter & 64) != 0;
++  //If !oldstatus and newstatus, signal latch.
++  if(!oldstatus && newstatus) interface->notifyLatched();
++  input.port1->latch(newstatus);
++  input.port2->latch(newstatus);
+ }
+ 
+ //JOYSER0
+diff --git a/snes/cpu/timing/joypad.cpp b/snes/cpu/timing/joypad.cpp
+index afca7504..b60be020 100755
+--- a/snes/cpu/timing/joypad.cpp
++++ b/snes/cpu/timing/joypad.cpp
+@@ -3,11 +3,14 @@
+ //called every 256 clocks; see CPU::add_clocks()
+ void CPU::step_auto_joypad_poll() {
+   if(vcounter() >= (ppu.overscan() == false ? 225 : 240)) {
++    auto cycle = status.auto_joypad_counter & 63;
+     //cache enable state at first iteration
+-    if(status.auto_joypad_counter == 0) status.auto_joypad_latch = status.auto_joypad_poll;
+-    status.auto_joypad_active = status.auto_joypad_counter <= 15;
++    if(cycle == 0) status.auto_joypad_latch = status.auto_joypad_poll;
++    status.auto_joypad_active = cycle <= 15;
+     if(status.auto_joypad_active && status.auto_joypad_latch) {
+-      if(status.auto_joypad_counter == 0) {
++      if(cycle == 0) {
++        if(status.auto_joypad_counter & 128)
++          std::cerr << "step_auto_joypad_poll(): bus fixes set (counter=" << status.auto_joypad_counter << ")???" << std::endl;
+         if(dma_trace_fn) dma_trace_fn("-- Start automatic polling --");
+         interface->notifyLatched();
+         input.port1->latch(1);
+@@ -23,7 +26,7 @@ void CPU::step_auto_joypad_poll() {
+       status.joy2 = (status.joy2 << 1) | (bool)(port1 & 1);
+       status.joy3 = (status.joy3 << 1) | (bool)(port0 & 2);
+       status.joy4 = (status.joy4 << 1) | (bool)(port1 & 2);
+-      if(status.auto_joypad_counter == 15) {
++      if(cycle == 15) {
+         char buf[512];
+         sprintf(buf, "-- End automatic polling [%04x %04x %04x %04x] --",
+           status.joy1, status.joy2, status.joy3, status.joy4);
+@@ -31,32 +34,129 @@ void CPU::step_auto_joypad_poll() {
+       }
+     }
+ 
+-    status.auto_joypad_counter++;
++    //Only bits 0-5 are supposed to increment.
++    if(cycle < 60)
++      status.auto_joypad_counter++;
+   }
+ }
+ 
+ //called every 128 clocks; see CPU::add_clocks()
+-void CPU::step_auto_joypad_poll_NEW(bool polarity) {
+-  if(status.auto_joypad_counter > 0 && status.auto_joypad_counter <= 34) {
++void CPU::step_auto_joypad_poll_NEW2(bool polarity) {
++  //Poll starts on multiple of 128 mod 256 clocks (polarity=false) on first
++  //vblank scanline. If autopoller is off, mark as done for the frame.
++  if(vcounter() >= (ppu.overscan() == false ? 225 : 240) && !polarity &&
++    (status.auto_joypad_counter & 63) == 0) {
++    if(!(status.auto_joypad_counter & 128))
++      std::cerr << "step_auto_joypad_poll_NEW2(): bus fixes clear???" << std::endl;
++    //Preserve high bits of autopoll counter.
++    auto x = status.auto_joypad_counter & ~63;
++    status.auto_joypad_counter = x | (status.auto_joypad_poll ? 1 : 36);
++    status.auto_joypad_latch = status.auto_joypad_poll;
++  }
++  //Abuse bit 6 of counter for "manual" poll flag. Bit 7 is supposed to be
++  //always set.
++  auto cycle = status.auto_joypad_counter & 63;
++  auto old_latchstate = (status.auto_joypad_counter & 320) != 0;
++  //If not enabled... This is not latched, as autopoll can be aborted.
++  if(!status.auto_joypad_poll && cycle > 0 && cycle < 36) {
++    if(dma_trace_fn) dma_trace_fn("-- Automatic polling ABORTED --");
++    status.auto_joypad_counter += (36 - cycle);
++    status.auto_joypad_active = false;
++    status.auto_joypad_latch = false;
++    //Release autopoll latch.
++    status.auto_joypad_counter &= ~256;	//Autopoll clears latch.
++    auto new_latchstate = (status.auto_joypad_counter & 320) != 0;
++    if(old_latchstate && !new_latchstate) {
++      input.port1->latch(0);
++      input.port2->latch(0);
++    }
++    return;
++  }
++  //On cycle #1, latch is asserted (unless latch is already high, in this
++  //case the autopoller is supposed to force latch high too).
++  if(cycle == 1) {
++    if(dma_trace_fn) dma_trace_fn("-- Start automatic polling --");
++    //Assert autopoll latch.
++    status.auto_joypad_counter |= 256;
++    auto new_latchstate = (status.auto_joypad_counter & 320) != 0;
++    if(!old_latchstate && new_latchstate) {
++      interface->notifyLatched();
++      input.port1->latch(1);
++      input.port2->latch(1);
++    }
++  }
++  //On cycle #2, busy is asserted and controllers are cleared.
++  if(cycle == 2) {
++    status.joy1 = 0;
++    status.joy2 = 0;
++    status.joy3 = 0;
++    status.joy4 = 0;
++    status.auto_joypad_active = true;
++  }
++  //Then, on cycle #3, latch is deasserted, unless "manual" latch forces
++  //real latch high.
++  if(cycle == 3) {
++    //Release autopoll latch.
++    status.auto_joypad_counter &= ~256;
++    auto new_latchstate = (status.auto_joypad_counter & 320) != 0;
++    if(old_latchstate && !new_latchstate) {
++      input.port1->latch(0);
++      input.port2->latch(0);
++    }
++  }
++  //Then on cycles #4, #6, #8, ..., #34, a bit is shifted. Also, clock would
++  //go low, but we can not emulate that.
++  if(cycle >= 4 && cycle <= 34 && cycle % 2 == 0) {
++    uint2 port0 = input.port1->data();
++    uint2 port1 = input.port2->data();
++    status.joy1 = (status.joy1 << 1) | (bool)(port0 & 1);
++    status.joy2 = (status.joy2 << 1) | (bool)(port1 & 1);
++    status.joy3 = (status.joy3 << 1) | (bool)(port0 & 2);
++    status.joy4 = (status.joy4 << 1) | (bool)(port1 & 2);
++  }
++  //Then on cycles #5, #7, #9, ..., #35, clock drops high, But we can not
++  //emulate that.
++  //Then on cycle #35, busy flag is deasserted and poll is complete.
++  if(cycle == 35) {
++    status.auto_joypad_active = false;
++    char buf[512];
++    sprintf(buf, "-- End automatic polling [%04x %04x %04x %04x] --",
++      status.joy1, status.joy2, status.joy3, status.joy4);
++    if(dma_trace_fn) dma_trace_fn(buf);
++  }
++  //The entiere train is 35 cycles.
++  if(cycle > 0 && cycle < 36) {
++      status.auto_joypad_counter++;
++  }
++}
++
++
++//called every 128 clocks; see CPU::add_clocks()
++void CPU::step_auto_joypad_poll_NEW(bool polarity, bool new2) {
++  if(new2) return step_auto_joypad_poll_NEW2(polarity);
++  auto cycle = status.auto_joypad_counter & 63;
++  if(cycle > 0 && cycle <= 34) {
+     if(!status.auto_joypad_latch) {
+       //FIXME: Is this right, busy flag goes on even if not enabled???
+-      if(status.auto_joypad_counter == 1)
++      if(cycle == 1)
+         status.auto_joypad_active = true;
+-      if(status.auto_joypad_counter == 34)
++      if(cycle == 34)
+         status.auto_joypad_active = false;
+     } else {
+-      if(status.auto_joypad_counter == 1) {
++      if(cycle == 1) {
++        if(status.auto_joypad_counter & 128)
++          std::cerr << "step_auto_joypad_poll_NEW(): bus fixes set???" << std::endl;
+         if(dma_trace_fn) dma_trace_fn("-- Start automatic polling --");
+         status.auto_joypad_active = true;
+         interface->notifyLatched();
+         input.port1->latch(1);
+         input.port2->latch(1);
+       }
+-      if(status.auto_joypad_counter == 3) {
++      if(cycle == 3) {
+         input.port1->latch(0);
+         input.port2->latch(0);
+       }
+-      if((status.auto_joypad_counter & 1) != 0 &&  status.auto_joypad_counter != 1) {
++      if((cycle & 1) != 0 && cycle != 1) {
+         uint2 port0 = input.port1->data();
+         uint2 port1 = input.port2->data();
+ 
+@@ -65,7 +165,7 @@ void CPU::step_auto_joypad_poll_NEW(bool polarity) {
+         status.joy3 = (status.joy3 << 1) | (bool)(port0 & 2);
+         status.joy4 = (status.joy4 << 1) | (bool)(port1 & 2);
+       }
+-      if(status.auto_joypad_counter == 34) {
++      if(cycle == 34) {
+         status.auto_joypad_active = false;
+         char buf[512];
+         sprintf(buf, "-- End automatic polling [%04x %04x %04x %04x] --",
+@@ -75,9 +175,11 @@ void CPU::step_auto_joypad_poll_NEW(bool polarity) {
+     }
+     status.auto_joypad_counter++;
+   }
+-  if(vcounter() >= (ppu.overscan() == false ? 225 : 240) && status.auto_joypad_counter == 0 && !polarity) {
++  if(vcounter() >= (ppu.overscan() == false ? 225 : 240) && cycle == 0 && !polarity) {
++    //Preserve high bits of autopoller counter.
++    auto x = status.auto_joypad_counter & ~63;
+     status.auto_joypad_latch = status.auto_joypad_poll;
+-    status.auto_joypad_counter = 1;
++    status.auto_joypad_counter = x | 1;
+   }
+ }
+ 
+diff --git a/snes/cpu/timing/timing.cpp b/snes/cpu/timing/timing.cpp
+index d7cf24f3..ef81d891 100755
+--- a/snes/cpu/timing/timing.cpp
++++ b/snes/cpu/timing/timing.cpp
+@@ -17,12 +17,12 @@ void CPU::add_clocks(unsigned clocks) {
+ 
+   step(clocks);
+ 
+-  if(config.cpu.alt_poll_timings) {
++  if(config.cpu.alt_poll_timings || config.cpu.bus_fixes) {
+     bool opolarity = (status.auto_joypad_clock & 128);
+     status.auto_joypad_clock = (status.auto_joypad_clock + clocks) & 0xFF;
+     bool npolarity = (status.auto_joypad_clock & 128);
+     if(opolarity != npolarity)
+-      step_auto_joypad_poll_NEW(opolarity);
++      step_auto_joypad_poll_NEW(opolarity, config.cpu.bus_fixes);
+   } else {
+     status.auto_joypad_clock += clocks;
+     if(status.auto_joypad_clock >= 256) {
+@@ -53,7 +53,8 @@ void CPU::scanline() {
+     status.hdma_init_position = (cpu_version == 1 ? 12 + 8 - dma_counter() : 12 + dma_counter());
+     status.hdma_init_triggered = false;
+ 
+-    status.auto_joypad_counter = 0;
++    //Only clear the low 6 bits (counter).
++    status.auto_joypad_counter &= ~63;
+   }
+ 
+   //DRAM refresh occurs once every scanline
+@@ -200,7 +201,9 @@ void CPU::timing_reset() {
+ 
+   status.auto_joypad_active  = false;
+   status.auto_joypad_latch   = false;
+-  status.auto_joypad_counter = 0;
++  //Set bit 7 of joypad counter if bus fixes are active (for combined
++  //latch behavior).
++  status.auto_joypad_counter = config.cpu.bus_fixes ? 128 : 0;
+   status.auto_joypad_clock   = 0;
+ }
+ 
+diff --git a/snes/cpu/timing/timing.hpp b/snes/cpu/timing/timing.hpp
+index bf15a727..8be2b830 100755
+--- a/snes/cpu/timing/timing.hpp
++++ b/snes/cpu/timing/timing.hpp
+@@ -22,4 +22,5 @@ alwaysinline bool irq_test();
+ 
+ //joypad.cpp
+ void step_auto_joypad_poll();
+-void step_auto_joypad_poll_NEW(bool polarity);
++void step_auto_joypad_poll_NEW(bool polarity, bool new2);
++void step_auto_joypad_poll_NEW2(bool polarity);
+diff --git a/snes/snes.hpp b/snes/snes.hpp
+index 3a65e360..961842b3 100755
+--- a/snes/snes.hpp
++++ b/snes/snes.hpp
+@@ -3,6 +3,7 @@
+ #define BSNES_SUPPORTS_ADV_BREAKPOINTS
+ #define BSNES_SUPPORTS_ADV_BREAKPOINTS_PPU
+ #define BSNES_SUPPORTS_ALT_TIMINGS
++#define BSNES_SUPPORTS_BUS_FIXES
+ #define BSNES_SUPPORTS_TRACE_SA1
+ #define BSNES_SUPPORTS_DMA_TRACE
+ 
+-- 
+2.15.0.rc1
+

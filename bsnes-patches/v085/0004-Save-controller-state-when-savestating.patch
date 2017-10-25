@@ -1,7 +1,7 @@
 From efe1b5884c316ce070953edd87c6c9aeffffaa94 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 01:52:08 +0200
-Subject: [PATCH 04/26] Save controller state when savestating
+Subject: [PATCH 04/27] Save controller state when savestating
 
 When savestating, save the controller state and restore it upon loadstate.
 Prevents libsnes from mixing up buttons.
@@ -24,7 +24,7 @@ Prevents libsnes from mixing up buttons.
  15 files changed, 142 insertions(+), 3 deletions(-)
 
 diff --git a/snes/controller/controller.cpp b/snes/controller/controller.cpp
-index 9091b21..f254bed 100755
+index 9091b21b..f254bedb 100755
 --- a/snes/controller/controller.cpp
 +++ b/snes/controller/controller.cpp
 @@ -46,8 +46,16 @@ void Controller::iobit(bool data) {
@@ -45,7 +45,7 @@ index 9091b21..f254bed 100755
 +
  }
 diff --git a/snes/controller/controller.hpp b/snes/controller/controller.hpp
-index 7332712..827b2eb 100755
+index 73327129..827b2eb4 100755
 --- a/snes/controller/controller.hpp
 +++ b/snes/controller/controller.hpp
 @@ -13,12 +13,14 @@
@@ -64,7 +64,7 @@ index 7332712..827b2eb 100755
    bool iobit();
    void iobit(bool data);
 diff --git a/snes/controller/gamepad/gamepad.cpp b/snes/controller/gamepad/gamepad.cpp
-index 594020d..4fa1c99 100755
+index 594020d2..4fa1c99e 100755
 --- a/snes/controller/gamepad/gamepad.cpp
 +++ b/snes/controller/gamepad/gamepad.cpp
 @@ -13,6 +13,19 @@ void Gamepad::latch(bool data) {
@@ -88,7 +88,7 @@ index 594020d..4fa1c99 100755
    latched = 0;
    counter = 0;
 diff --git a/snes/controller/gamepad/gamepad.hpp b/snes/controller/gamepad/gamepad.hpp
-index c5ca69c..a2392d1 100755
+index c5ca69ca..a2392d1e 100755
 --- a/snes/controller/gamepad/gamepad.hpp
 +++ b/snes/controller/gamepad/gamepad.hpp
 @@ -2,7 +2,7 @@ struct Gamepad : Controller {
@@ -101,7 +101,7 @@ index c5ca69c..a2392d1 100755
    bool latched;
    unsigned counter;
 diff --git a/snes/controller/justifier/justifier.cpp b/snes/controller/justifier/justifier.cpp
-index 6207916..ad13a9b 100755
+index 62079166..ad13a9bd 100755
 --- a/snes/controller/justifier/justifier.cpp
 +++ b/snes/controller/justifier/justifier.cpp
 @@ -100,6 +100,42 @@ void Justifier::latch(bool data) {
@@ -148,7 +148,7 @@ index 6207916..ad13a9b 100755
    create(Controller::Enter, 21477272);
    latched = 0;
 diff --git a/snes/controller/justifier/justifier.hpp b/snes/controller/justifier/justifier.hpp
-index f927acf..6b7bba0 100755
+index f927acf6..6b7bba07 100755
 --- a/snes/controller/justifier/justifier.hpp
 +++ b/snes/controller/justifier/justifier.hpp
 @@ -2,6 +2,7 @@ struct Justifier : Controller {
@@ -160,7 +160,7 @@ index f927acf..6b7bba0 100755
  
  //private:
 diff --git a/snes/controller/mouse/mouse.cpp b/snes/controller/mouse/mouse.cpp
-index c9f5d16..6b26fae 100755
+index c9f5d16b..6b26fae5 100755
 --- a/snes/controller/mouse/mouse.cpp
 +++ b/snes/controller/mouse/mouse.cpp
 @@ -61,6 +61,19 @@ void Mouse::latch(bool data) {
@@ -184,7 +184,7 @@ index c9f5d16..6b26fae 100755
    latched = 0;
    counter = 0;
 diff --git a/snes/controller/mouse/mouse.hpp b/snes/controller/mouse/mouse.hpp
-index 95e24b6..b66ea51 100755
+index 95e24b65..b66ea513 100755
 --- a/snes/controller/mouse/mouse.hpp
 +++ b/snes/controller/mouse/mouse.hpp
 @@ -2,7 +2,7 @@ struct Mouse : Controller {
@@ -197,7 +197,7 @@ index 95e24b6..b66ea51 100755
    bool latched;
    unsigned counter;
 diff --git a/snes/controller/multitap/multitap.cpp b/snes/controller/multitap/multitap.cpp
-index 3a6eb72..146c41d 100755
+index 3a6eb720..146c41d4 100755
 --- a/snes/controller/multitap/multitap.cpp
 +++ b/snes/controller/multitap/multitap.cpp
 @@ -30,6 +30,22 @@ void Multitap::latch(bool data) {
@@ -224,7 +224,7 @@ index 3a6eb72..146c41d 100755
    latched = 0;
    counter1 = 0;
 diff --git a/snes/controller/multitap/multitap.hpp b/snes/controller/multitap/multitap.hpp
-index 0540af7..e6324ac 100755
+index 0540af71..e6324ac5 100755
 --- a/snes/controller/multitap/multitap.hpp
 +++ b/snes/controller/multitap/multitap.hpp
 @@ -2,7 +2,7 @@ struct Multitap : Controller {
@@ -237,7 +237,7 @@ index 0540af7..e6324ac 100755
    bool latched;
    unsigned counter1;
 diff --git a/snes/controller/superscope/superscope.cpp b/snes/controller/superscope/superscope.cpp
-index 12068f0..1a1dfbf 100755
+index 12068f05..1a1dfbff 100755
 --- a/snes/controller/superscope/superscope.cpp
 +++ b/snes/controller/superscope/superscope.cpp
 @@ -100,6 +100,37 @@ void SuperScope::latch(bool data) {
@@ -279,7 +279,7 @@ index 12068f0..1a1dfbf 100755
    create(Controller::Enter, 21477272);
    latched = 0;
 diff --git a/snes/controller/superscope/superscope.hpp b/snes/controller/superscope/superscope.hpp
-index a7a90b7..93509d7 100755
+index a7a90b71..93509d79 100755
 --- a/snes/controller/superscope/superscope.hpp
 +++ b/snes/controller/superscope/superscope.hpp
 @@ -2,6 +2,7 @@ struct SuperScope : Controller {
@@ -291,7 +291,7 @@ index a7a90b7..93509d7 100755
  
  //private:
 diff --git a/snes/system/input.cpp b/snes/system/input.cpp
-index 9050310..ec5559d 100755
+index 90503106..ec5559dc 100755
 --- a/snes/system/input.cpp
 +++ b/snes/system/input.cpp
 @@ -26,6 +26,22 @@ void Input::connect(bool port, Input::Device id) {
@@ -318,7 +318,7 @@ index 9050310..ec5559d 100755
    connect(Controller::Port1, Input::Device::Joypad);
    connect(Controller::Port2, Input::Device::Joypad);
 diff --git a/snes/system/input.hpp b/snes/system/input.hpp
-index 13ef46e..6832e82 100755
+index 13ef46e1..6832e823 100755
 --- a/snes/system/input.hpp
 +++ b/snes/system/input.hpp
 @@ -31,6 +31,7 @@ struct Input {
@@ -330,7 +330,7 @@ index 13ef46e..6832e82 100755
    Input();
    ~Input();
 diff --git a/snes/system/serialization.cpp b/snes/system/serialization.cpp
-index f7d6f3b..08e7051 100755
+index f7d6f3b1..08e70510 100755
 --- a/snes/system/serialization.cpp
 +++ b/snes/system/serialization.cpp
 @@ -56,6 +56,7 @@ void System::serialize_all(serializer &s) {
@@ -342,5 +342,5 @@ index f7d6f3b..08e7051 100755
    if(cartridge.mode() == Cartridge::Mode::SufamiTurbo) sufamiturbo.serialize(s);
    if(cartridge.mode() == Cartridge::Mode::SuperGameBoy) icd2.serialize(s);
 -- 
-2.8.1
+2.15.0.rc1
 

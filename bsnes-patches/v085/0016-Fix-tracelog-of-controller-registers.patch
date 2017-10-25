@@ -1,14 +1,14 @@
 From 60267d1f22fd2ff3197c6c829640f66304c89283 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sun, 16 Mar 2014 16:40:55 +0200
-Subject: [PATCH 16/26] Fix tracelog of controller registers
+Subject: [PATCH 16/27] Fix tracelog of controller registers
 
 ---
  snes/cpu/core/disassembler/disassembler.cpp | 2 ++
  1 file changed, 2 insertions(+)
 
 diff --git a/snes/cpu/core/disassembler/disassembler.cpp b/snes/cpu/core/disassembler/disassembler.cpp
-index ab8dde2..624a80c 100755
+index ab8dde24..624a80ce 100755
 --- a/snes/cpu/core/disassembler/disassembler.cpp
 +++ b/snes/cpu/core/disassembler/disassembler.cpp
 @@ -1,6 +1,8 @@
@@ -21,5 +21,5 @@ index ab8dde2..624a80c 100755
      //$[00-3f|80-bf]:[2000-5fff]
      //do not read MMIO registers within debugger
 -- 
-2.8.1
+2.15.0.rc1
 

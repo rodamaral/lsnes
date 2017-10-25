@@ -1,7 +1,7 @@
 From eeaf6dc52d39ca9c150ff61864c11297d200d968 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 7 Mar 2012 16:57:18 +0200
-Subject: [PATCH 07/26] Fix mouse polling
+Subject: [PATCH 07/27] Fix mouse polling
 
 Don't poll for mouse motion excessive number of times (no need to poll it for
 each bit!)
@@ -11,7 +11,7 @@ each bit!)
  2 files changed, 14 insertions(+), 2 deletions(-)
 
 diff --git a/snes/controller/mouse/mouse.cpp b/snes/controller/mouse/mouse.cpp
-index 6b26fae..1a066b9 100755
+index 6b26fae5..1a066b98 100755
 --- a/snes/controller/mouse/mouse.cpp
 +++ b/snes/controller/mouse/mouse.cpp
 @@ -3,9 +3,13 @@
@@ -48,7 +48,7 @@ index 6b26fae..1a066b9 100755
  }
  
 diff --git a/snes/controller/mouse/mouse.hpp b/snes/controller/mouse/mouse.hpp
-index b66ea51..b07c8ab 100755
+index b66ea513..b07c8ab7 100755
 --- a/snes/controller/mouse/mouse.hpp
 +++ b/snes/controller/mouse/mouse.hpp
 @@ -6,4 +6,6 @@ struct Mouse : Controller {
@@ -59,5 +59,5 @@ index b66ea51..b07c8ab 100755
 +  int _position_y;
  };
 -- 
-2.8.1
+2.15.0.rc1
 

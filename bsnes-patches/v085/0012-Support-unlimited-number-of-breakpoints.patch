@@ -1,7 +1,7 @@
 From a5b380757b086e3a00b47fe14e2a63c74683e8da Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 28 Nov 2013 22:36:29 +0200
-Subject: [PATCH 12/26] Support unlimited number of breakpoints
+Subject: [PATCH 12/27] Support unlimited number of breakpoints
 
 ---
  snes/alt/cpu/cpu.cpp                        | 22 +++++++-------
@@ -40,7 +40,7 @@ Subject: [PATCH 12/26] Support unlimited number of breakpoints
  33 files changed, 166 insertions(+), 70 deletions(-)
 
 diff --git a/snes/alt/cpu/cpu.cpp b/snes/alt/cpu/cpu.cpp
-index 814908d..dcbb92d 100755
+index 814908d0..dcbb92d3 100755
 --- a/snes/alt/cpu/cpu.cpp
 +++ b/snes/alt/cpu/cpu.cpp
 @@ -89,24 +89,24 @@ void CPU::enable() {
@@ -80,7 +80,7 @@ index 814908d..dcbb92d 100755
  
  void CPU::power() {
 diff --git a/snes/alt/ppu-compatibility/ppu.cpp b/snes/alt/ppu-compatibility/ppu.cpp
-index a21e5e3..122b143 100755
+index a21e5e31..122b1430 100755
 --- a/snes/alt/ppu-compatibility/ppu.cpp
 +++ b/snes/alt/ppu-compatibility/ppu.cpp
 @@ -126,8 +126,8 @@ void PPU::enable() {
@@ -95,7 +95,7 @@ index a21e5e3..122b143 100755
  
  void PPU::power() {
 diff --git a/snes/alt/ppu-parallel/ppu.cpp b/snes/alt/ppu-parallel/ppu.cpp
-index 1c3dcb7..8dd118b 100755
+index 1c3dcb70..8dd118b2 100755
 --- a/snes/alt/ppu-parallel/ppu.cpp
 +++ b/snes/alt/ppu-parallel/ppu.cpp
 @@ -36,8 +36,8 @@ void PPU::frame() {
@@ -110,7 +110,7 @@ index 1c3dcb7..8dd118b 100755
  
  void PPU::power() {
 diff --git a/snes/alt/ppu-performance/ppu.cpp b/snes/alt/ppu-performance/ppu.cpp
-index 7c231bc..4b2b294 100755
+index 7c231bc0..4b2b2948 100755
 --- a/snes/alt/ppu-performance/ppu.cpp
 +++ b/snes/alt/ppu-performance/ppu.cpp
 @@ -90,8 +90,8 @@ void PPU::enable() {
@@ -125,7 +125,7 @@ index 7c231bc..4b2b294 100755
  
  void PPU::power() {
 diff --git a/snes/cartridge/cartridge.hpp b/snes/cartridge/cartridge.hpp
-index 37555bc..82e73c4 100755
+index 37555bc0..82e73c4c 100755
 --- a/snes/cartridge/cartridge.hpp
 +++ b/snes/cartridge/cartridge.hpp
 @@ -12,6 +12,22 @@ struct Cartridge : property<Cartridge> {
@@ -160,7 +160,7 @@ index 37555bc..82e73c4 100755
      Mapping();
      Mapping(const function<uint8 (unsigned)>&, const function<void (unsigned, uint8)>&);
 diff --git a/snes/cartridge/markup.cpp b/snes/cartridge/markup.cpp
-index e639fe5..2dd0d64 100755
+index e639fe52..2dd0d646 100755
 --- a/snes/cartridge/markup.cpp
 +++ b/snes/cartridge/markup.cpp
 @@ -74,6 +74,7 @@ void Cartridge::parse_markup_rom(XML::Node &root) {
@@ -250,7 +250,7 @@ index e639fe5..2dd0d64 100755
    write = { &Memory::write, &memory };
    mode = Bus::MapMode::Direct;
 diff --git a/snes/cheat/cheat.cpp b/snes/cheat/cheat.cpp
-index 46c42d1..3a269cc 100755
+index 46c42d1c..3a269cc5 100755
 --- a/snes/cheat/cheat.cpp
 +++ b/snes/cheat/cheat.cpp
 @@ -21,9 +21,9 @@ void Cheat::synchronize() {
@@ -283,7 +283,7 @@ index 46c42d1..3a269cc 100755
      }
    }
 diff --git a/snes/cheat/cheat.hpp b/snes/cheat/cheat.hpp
-index 306b99b..b4d2a42 100755
+index 306b99b1..b4d2a42e 100755
 --- a/snes/cheat/cheat.hpp
 +++ b/snes/cheat/cheat.hpp
 @@ -1,6 +1,7 @@
@@ -295,7 +295,7 @@ index 306b99b..b4d2a42 100755
  
  struct Cheat : public linear_vector<CheatCode> {
 diff --git a/snes/chip/bsx/satellaview/satellaview.cpp b/snes/chip/bsx/satellaview/satellaview.cpp
-index 3c98019..25af8e5 100755
+index 3c980195..25af8e56 100755
 --- a/snes/chip/bsx/satellaview/satellaview.cpp
 +++ b/snes/chip/bsx/satellaview/satellaview.cpp
 @@ -6,8 +6,8 @@ void BSXSatellaview::init() {
@@ -310,7 +310,7 @@ index 3c98019..25af8e5 100755
  
  void BSXSatellaview::unload() {
 diff --git a/snes/chip/hitachidsp/hitachidsp.cpp b/snes/chip/hitachidsp/hitachidsp.cpp
-index 1042267..3e5c5bd 100755
+index 1042267e..3e5c5bdb 100755
 --- a/snes/chip/hitachidsp/hitachidsp.cpp
 +++ b/snes/chip/hitachidsp/hitachidsp.cpp
 @@ -23,7 +23,7 @@ void HitachiDSP::enter() {
@@ -323,7 +323,7 @@ index 1042267..3e5c5bd 100755
        }
        state = State::Idle;
 diff --git a/snes/chip/hitachidsp/memory.cpp b/snes/chip/hitachidsp/memory.cpp
-index 3c9c3af..36868e8 100755
+index 3c9c3af1..36868e88 100755
 --- a/snes/chip/hitachidsp/memory.cpp
 +++ b/snes/chip/hitachidsp/memory.cpp
 @@ -1,7 +1,7 @@
@@ -336,7 +336,7 @@ index 3c9c3af..36868e8 100755
  }
  
 diff --git a/snes/chip/nss/nss.cpp b/snes/chip/nss/nss.cpp
-index 964973d..5946af3 100755
+index 964973d0..5946af3b 100755
 --- a/snes/chip/nss/nss.cpp
 +++ b/snes/chip/nss/nss.cpp
 @@ -10,8 +10,8 @@ void NSS::init() {
@@ -351,7 +351,7 @@ index 964973d..5946af3 100755
  
  void NSS::unload() {
 diff --git a/snes/chip/sa1/memory/memory.cpp b/snes/chip/sa1/memory/memory.cpp
-index d13ac92..9bb4ff2 100755
+index d13ac929..9bb4ff20 100755
 --- a/snes/chip/sa1/memory/memory.cpp
 +++ b/snes/chip/sa1/memory/memory.cpp
 @@ -107,7 +107,7 @@ void SA1::op_io() {
@@ -364,7 +364,7 @@ index d13ac92..9bb4ff2 100755
    if(((addr & 0x40e000) == 0x006000) || ((addr & 0xd00000) == 0x400000)) tick();
    return bus_read(addr);
 diff --git a/snes/chip/sa1/memory/memory.hpp b/snes/chip/sa1/memory/memory.hpp
-index ffb9e9f..ab8e1ed 100755
+index ffb9e9f6..ab8e1edd 100755
 --- a/snes/chip/sa1/memory/memory.hpp
 +++ b/snes/chip/sa1/memory/memory.hpp
 @@ -3,7 +3,7 @@ void bus_write(unsigned addr, uint8 data);
@@ -377,7 +377,7 @@ index ffb9e9f..ab8e1ed 100755
  
  uint8 mmc_read(unsigned addr);
 diff --git a/snes/chip/sa1/sa1.cpp b/snes/chip/sa1/sa1.cpp
-index 71c6310..30e0080 100755
+index 71c6310a..30e00809 100755
 --- a/snes/chip/sa1/sa1.cpp
 +++ b/snes/chip/sa1/sa1.cpp
 @@ -37,7 +37,7 @@ void SA1::enter() {
@@ -390,7 +390,7 @@ index 71c6310..30e0080 100755
    if(!regs.e) op_writestack(regs.pc.b);
    op_writestack(regs.pc.h);
 diff --git a/snes/chip/sdd1/sdd1.cpp b/snes/chip/sdd1/sdd1.cpp
-index c9b8b1c..5d6cc55 100755
+index c9b8b1c4..5d6cc55f 100755
 --- a/snes/chip/sdd1/sdd1.cpp
 +++ b/snes/chip/sdd1/sdd1.cpp
 @@ -14,8 +14,8 @@ void SDD1::init() {
@@ -405,7 +405,7 @@ index c9b8b1c..5d6cc55 100755
  
  void SDD1::unload() {
 diff --git a/snes/cpu/core/core.hpp b/snes/cpu/core/core.hpp
-index 7a685a8..9d77f3c 100755
+index 7a685a8d..9d77f3c5 100755
 --- a/snes/cpu/core/core.hpp
 +++ b/snes/cpu/core/core.hpp
 @@ -10,7 +10,7 @@ struct CPUcore {
@@ -418,7 +418,7 @@ index 7a685a8..9d77f3c 100755
    virtual void last_cycle() = 0;
    virtual bool interrupt_pending() = 0;
 diff --git a/snes/cpu/core/disassembler/disassembler.cpp b/snes/cpu/core/disassembler/disassembler.cpp
-index 030b3ab..ab8dde2 100755
+index 030b3ab5..ab8dde24 100755
 --- a/snes/cpu/core/disassembler/disassembler.cpp
 +++ b/snes/cpu/core/disassembler/disassembler.cpp
 @@ -6,7 +6,7 @@ uint8 CPUcore::dreadb(uint32 addr) {
@@ -431,7 +431,7 @@ index 030b3ab..ab8dde2 100755
  
  uint16 CPUcore::dreadw(uint32 addr) {
 diff --git a/snes/cpu/core/memory.hpp b/snes/cpu/core/memory.hpp
-index 4992657..132501c 100755
+index 49926578..132501c1 100755
 --- a/snes/cpu/core/memory.hpp
 +++ b/snes/cpu/core/memory.hpp
 @@ -1,5 +1,5 @@
@@ -442,7 +442,7 @@ index 4992657..132501c 100755
  
  alwaysinline uint8_t op_readstack() {
 diff --git a/snes/cpu/cpu.cpp b/snes/cpu/cpu.cpp
-index 2d7d343..39da6b1 100755
+index 2d7d3432..39da6b16 100755
 --- a/snes/cpu/cpu.cpp
 +++ b/snes/cpu/cpu.cpp
 @@ -78,8 +78,8 @@ void CPU::enter() {
@@ -493,7 +493,7 @@ index 2d7d343..39da6b1 100755
  
  void CPU::power() {
 diff --git a/snes/cpu/debugger/debugger.cpp b/snes/cpu/debugger/debugger.cpp
-index a33518e..8301bdb 100755
+index a33518ed..8301bdb6 100755
 --- a/snes/cpu/debugger/debugger.cpp
 +++ b/snes/cpu/debugger/debugger.cpp
 @@ -19,8 +19,8 @@ void CPUDebugger::op_step() {
@@ -508,7 +508,7 @@ index a33518e..8301bdb 100755
    debugger.breakpoint_test(Debugger::Breakpoint::Source::CPUBus, Debugger::Breakpoint::Mode::Read, addr, data);
    return data;
 diff --git a/snes/cpu/debugger/debugger.hpp b/snes/cpu/debugger/debugger.hpp
-index 579f6f0..c3d66db 100755
+index 579f6f03..c3d66db5 100755
 --- a/snes/cpu/debugger/debugger.hpp
 +++ b/snes/cpu/debugger/debugger.hpp
 @@ -16,7 +16,7 @@ public:
@@ -521,7 +521,7 @@ index 579f6f0..c3d66db 100755
  
    CPUDebugger();
 diff --git a/snes/cpu/dma/dma.cpp b/snes/cpu/dma/dma.cpp
-index e8cdb3e..0a00bfe 100755
+index e8cdb3ec..0a00bfea 100755
 --- a/snes/cpu/dma/dma.cpp
 +++ b/snes/cpu/dma/dma.cpp
 @@ -26,7 +26,7 @@ bool CPU::dma_addr_valid(uint32 abus) {
@@ -543,7 +543,7 @@ index e8cdb3e..0a00bfe 100755
      dma_write(dma_addr_valid(abus), abus, regs.mdr);
    }
 diff --git a/snes/cpu/memory/memory.cpp b/snes/cpu/memory/memory.cpp
-index c2c8f1f..31f82c3 100755
+index c2c8f1fa..31f82c31 100755
 --- a/snes/cpu/memory/memory.cpp
 +++ b/snes/cpu/memory/memory.cpp
 @@ -10,11 +10,11 @@ void CPU::op_io() {
@@ -561,7 +561,7 @@ index c2c8f1f..31f82c3 100755
    alu_edge();
    return regs.mdr;
 diff --git a/snes/cpu/memory/memory.hpp b/snes/cpu/memory/memory.hpp
-index d33861d..fd64ba8 100755
+index d33861d4..fd64ba8b 100755
 --- a/snes/cpu/memory/memory.hpp
 +++ b/snes/cpu/memory/memory.hpp
 @@ -1,4 +1,4 @@
@@ -571,7 +571,7 @@ index d33861d..fd64ba8 100755
  debugvirtual void op_write(uint32 addr, uint8 data);
  alwaysinline unsigned speed(unsigned addr) const;
 diff --git a/snes/cpu/mmio/mmio.cpp b/snes/cpu/mmio/mmio.cpp
-index b7afff0..30048c1 100755
+index b7afff00..30048c19 100755
 --- a/snes/cpu/mmio/mmio.cpp
 +++ b/snes/cpu/mmio/mmio.cpp
 @@ -5,7 +5,7 @@ bool CPU::joylatch() { return status.joypad_strobe_latch; }
@@ -584,7 +584,7 @@ index b7afff0..30048c1 100755
  
  //WMDATA
 diff --git a/snes/debugger/debugger.cpp b/snes/debugger/debugger.cpp
-index b131233..e8d0f5a 100755
+index b1312339..e8d0f5af 100755
 --- a/snes/debugger/debugger.cpp
 +++ b/snes/debugger/debugger.cpp
 @@ -33,7 +33,7 @@ uint8 Debugger::read(Debugger::MemorySource source, unsigned addr) {
@@ -597,7 +597,7 @@ index b131233..e8d0f5a 100755
  
      case MemorySource::APUBus: {
 diff --git a/snes/memory/memory-inline.hpp b/snes/memory/memory-inline.hpp
-index 70503be..45f150c 100755
+index 70503bea..45f150c9 100755
 --- a/snes/memory/memory-inline.hpp
 +++ b/snes/memory/memory-inline.hpp
 @@ -51,11 +51,26 @@ MappedRAM::MappedRAM() : data_(0), size_(0), write_protect_(false) {}
@@ -631,7 +631,7 @@ index 70503be..45f150c 100755
    return writer[lookup[addr]](target[addr], data);
  }
 diff --git a/snes/memory/memory.cpp b/snes/memory/memory.cpp
-index ede9cbd..a9a484a 100755
+index ede9cbd0..a9a484a0 100755
 --- a/snes/memory/memory.cpp
 +++ b/snes/memory/memory.cpp
 @@ -27,6 +27,7 @@ void Bus::map(
@@ -715,7 +715,7 @@ index ede9cbd..a9a484a 100755
  
  }
 diff --git a/snes/memory/memory.hpp b/snes/memory/memory.hpp
-index 634e071..c20e14d 100755
+index 634e0717..c20e14db 100755
 --- a/snes/memory/memory.hpp
 +++ b/snes/memory/memory.hpp
 @@ -44,10 +44,13 @@ private:
@@ -756,7 +756,7 @@ index 634e071..c20e14d 100755
    ~Bus();
  };
 diff --git a/snes/ppu/ppu.cpp b/snes/ppu/ppu.cpp
-index 8545175..13e231c 100755
+index 8545175f..13e231cf 100755
 --- a/snes/ppu/ppu.cpp
 +++ b/snes/ppu/ppu.cpp
 @@ -87,8 +87,8 @@ void PPU::enable() {
@@ -771,7 +771,7 @@ index 8545175..13e231c 100755
  
  void PPU::power() {
 diff --git a/snes/smp/core/core.hpp b/snes/smp/core/core.hpp
-index 1489fce..13d6936 100755
+index 1489fcef..13d69364 100755
 --- a/snes/smp/core/core.hpp
 +++ b/snes/smp/core/core.hpp
 @@ -2,7 +2,7 @@ struct SMPcore {
@@ -784,7 +784,7 @@ index 1489fce..13d6936 100755
    #include "registers.hpp"
    #include "memory.hpp"
 diff --git a/snes/snes.hpp b/snes/snes.hpp
-index dffeeee..37ed1fe 100755
+index dffeeee3..37ed1feb 100755
 --- a/snes/snes.hpp
 +++ b/snes/snes.hpp
 @@ -1,5 +1,6 @@
@@ -795,5 +795,5 @@ index dffeeee..37ed1fe 100755
  namespace SNES {
    namespace Info {
 -- 
-2.8.1
+2.15.0.rc1
 

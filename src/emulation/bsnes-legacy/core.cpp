@@ -561,6 +561,9 @@ namespace
 #ifdef BSNES_SUPPORTS_ALT_TIMINGS
 		{"alttimings", "Alternate poll timings", "0", boolean_values},
 #endif
+#ifdef BSNES_SUPPORTS_BUS_FIXES
+		{"busfixes", "System bus fixes", "0", boolean_values},
+#endif
 #ifdef BSNES_SUPPORTS_MOUSE_SPEED_FIX
 		{"mousespeed", "Support mouse speeds", "0", boolean_values},
 #endif
@@ -640,6 +643,9 @@ namespace
 #ifdef BSNES_SUPPORTS_ALT_TIMINGS
 		signed ialttimings = bsnes_settings.ivalue_to_index(_settings, "alttimings");
 #endif
+#ifdef BSNES_SUPPORTS_BUS_FIXES
+		signed ibusfixes = bsnes_settings.ivalue_to_index(_settings, "busfixes");
+#endif
 #ifdef BSNES_SUPPORTS_MOUSE_SPEED_FIX
 		signed ispeedfix = bsnes_settings.ivalue_to_index(_settings, "mousespeed");
 #endif
@@ -654,6 +660,9 @@ namespace
 		SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
 #ifdef BSNES_SUPPORTS_ALT_TIMINGS
 		SNES::config.cpu.alt_poll_timings = (ialttimings != 0);
+#endif
+#ifdef BSNES_SUPPORTS_BUS_FIXES
+		SNES::config.cpu.bus_fixes = (ibusfixes != 0);
 #endif
 #ifdef BSNES_SUPPORTS_MOUSE_SPEED_FIX
 		SNES::config.mouse_speed_fix = (ispeedfix != 0);
@@ -1739,6 +1748,13 @@ again2:
 #ifdef BSNES_SUPPORTS_ALT_TIMINGS
 		if(SNES::config.cpu.alt_poll_timings) {
 			cover_render_string(cover_fbmem, 0, y, "Alternate timings enabled.", 0x7FFFF, 0x00000,
+				512, 448, 2048, 4);
+			y += 16;
+		}
+#endif
+#ifdef BSNES_SUPPORTS_BUS_FIXES
+		if(SNES::config.cpu.bus_fixes) {
+			cover_render_string(cover_fbmem, 0, y, "Bus fixes enabled.", 0x7FFFF, 0x00000,
 				512, 448, 2048, 4);
 			y += 16;
 		}

@@ -1,14 +1,14 @@
 From f2bbef8a4e12e05190a68dfe410cff3e4b1eb13f Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 8 Aug 2015 11:09:41 +0300
-Subject: [PATCH 24/26] Build fixes for GCC 5.X
+Subject: [PATCH 24/27] Build fixes for GCC 5.X
 
 ---
  nall/bit.hpp | 21 +++++++++++++++------
  1 file changed, 15 insertions(+), 6 deletions(-)
 
 diff --git a/nall/bit.hpp b/nall/bit.hpp
-index 67a35ad..11d9d8d 100755
+index 67a35ad6..11d9d8de 100755
 --- a/nall/bit.hpp
 +++ b/nall/bit.hpp
 @@ -8,18 +8,27 @@ namespace nall {
@@ -46,5 +46,5 @@ index 67a35ad..11d9d8d 100755
  
    namespace bit {
 -- 
-2.8.1
+2.15.0.rc1
 
