@@ -217,7 +217,7 @@ namespace
 				prefix = a.substr(9);
 			else if(a.length() >= 9 && a.substr(0, 9) == "--length=")
 				try {
-					length = boost::lexical_cast<uint64_t>(a.substr(9));
+					length = raw_lexical_cast<uint64_t>(a.substr(9));
 					if(!length)
 						throw std::runtime_error("Length out of range (1-)");
 					if(overdump_mode)
@@ -229,7 +229,7 @@ namespace
 				}
 			else if(a.length() >= 18 && a.substr(0, 18) == "--overdump-length=")
 				try {
-					overdump_length = boost::lexical_cast<uint64_t>(a.substr(18));
+					overdump_length = raw_lexical_cast<uint64_t>(a.substr(18));
 					overdump_mode = true;
 					if(length)
 						throw std::runtime_error("--length and --overdump-length are "

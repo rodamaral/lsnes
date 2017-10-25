@@ -21,7 +21,6 @@
 #include "library/directory.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
-#include <boost/lexical_cast.hpp>
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
@@ -624,8 +623,8 @@ void wxwin_project::on_filename_change(wxCommandEvent& e)
 {
 	CHECK_UI_THREAD;
 	try {
-		boost::lexical_cast<int64_t>(tostdstring(rtc_sec->GetValue()));
-		if(boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue())) < 0)
+		raw_lexical_cast<int64_t>(tostdstring(rtc_sec->GetValue()));
+		if(raw_lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue())) < 0)
 			throw 42;
 		size_t lines = authors->GetNumberOfLines();
 		for(size_t i = 0; i < lines; i++) {
@@ -705,9 +704,9 @@ struct moviefile& wxwin_project::make_movie()
 				*target = zip::readrel(sf, "");
 		}
 	}
-	f.movie_rtc_second = f.dyn.rtc_second = boost::lexical_cast<int64_t>(tostdstring(rtc_sec->GetValue()));
+	f.movie_rtc_second = f.dyn.rtc_second = raw_lexical_cast<int64_t>(tostdstring(rtc_sec->GetValue()));
 	f.movie_rtc_subsecond = f.dyn.rtc_subsecond =
-		boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
+		raw_lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
 	auto ctrldata = inst.rom->controllerconfig(f.settings);

@@ -11,6 +11,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/framebuffer.hpp"
+#include "library/string.hpp"
 
 #include <cstring>
 #include <cstdlib>
@@ -25,7 +26,6 @@
 #include <map>
 #include <stdexcept>
 #include <portaudio.h>
-#include <boost/lexical_cast.hpp>
 
 namespace
 {
@@ -320,7 +320,7 @@ namespace
 			idx = paNoDevice;
 		} else {
 			try {
-				idx = boost::lexical_cast<PaDeviceIndex>(dev);
+				idx = raw_lexical_cast<PaDeviceIndex>(dev);
 				if(idx < 0 || !Pa_GetDeviceInfo(idx))
 					throw std::runtime_error("foo");
 			} catch(std::exception& e) {

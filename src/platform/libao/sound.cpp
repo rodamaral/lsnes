@@ -29,7 +29,6 @@
 #include <map>
 #include <stdexcept>
 #include <ao/ao.h>
-#include <boost/lexical_cast.hpp>
 
 namespace
 {

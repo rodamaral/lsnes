@@ -88,15 +88,15 @@ namespace
 
 			try {
 				bad_what = "Bad low calibration value";
-				minus = boost::lexical_cast<int64_t>(tostdstring(low->GetValue()));
+				minus = raw_lexical_cast<int64_t>(tostdstring(low->GetValue()));
 				bad_what = "Bad middle calibration value";
-				zero = boost::lexical_cast<int64_t>(tostdstring(mid->GetValue()));
+				zero = raw_lexical_cast<int64_t>(tostdstring(mid->GetValue()));
 				bad_what = "Bad high calibration value";
-				plus = boost::lexical_cast<int32_t>(tostdstring(hi->GetValue()));
+				plus = raw_lexical_cast<int32_t>(tostdstring(hi->GetValue()));
 				bad_what = "Bad neutral zone width";
-				neutral = boost::lexical_cast<int64_t>(tostdstring(null->GetValue()));
+				neutral = raw_lexical_cast<int64_t>(tostdstring(null->GetValue()));
 				bad_what = "Bad threshold (range is 0 - 1)";
-				threshold = boost::lexical_cast<double>(tostdstring(thresh->GetValue()));
+				threshold = raw_lexical_cast<double>(tostdstring(thresh->GetValue()));
 				if(threshold <= 0 || threshold >= 1)
 					throw 42;
 				pressure = _pressure->GetValue();

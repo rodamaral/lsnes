@@ -265,6 +265,11 @@ bool regex_match(const std::string& regex, const std::string& str, enum regex_ma
  */
 int string_to_bool(const std::string& cast_to_bool);
 
+template<typename T> T raw_lexical_cast(const std::string& value)
+{
+	return boost::lexical_cast<T>(value);
+}
+
 /**
  * \brief Typeconvert string.
  */
@@ -315,7 +320,7 @@ template<typename T> inline T parse_value(const std::string& value) throw(std::b
 			}
 			return val;
 		}
-		return boost::lexical_cast<T>(value);
+		return raw_lexical_cast<T>(value);
 	} catch(std::exception& e) {
 		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
 	}
