@@ -20,6 +20,7 @@
 #include "library/memorywatch-null.hpp"
 #include "library/string.hpp"
 
+#include <functional>
 #include <cstdio>
 #include <cstdlib>
 #include <list>

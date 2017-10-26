@@ -2,6 +2,7 @@
 #include "serialization.hpp"
 #include "string.hpp"
 #include "hex.hpp"
+#include <functional>
 #include <cstring>
 #include <iostream>
 #include <fstream>

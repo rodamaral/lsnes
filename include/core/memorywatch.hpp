@@ -4,6 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <set>
+#include <functional>
 #include "library/memorywatch.hpp"
 #include "library/json.hpp"
 

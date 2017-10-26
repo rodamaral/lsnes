@@ -15,6 +15,7 @@
 #include "core/audioapi.hpp"
 #include "core/instance.hpp"
 #include "core/messages.hpp"
+#include <functional>
 
 template<> int ccore_call_param_map<lsnes_core_enumerate_cores>::id = LSNES_CORE_ENUMERATE_CORES;
 template<> int ccore_call_param_map<lsnes_core_get_core_info>::id = LSNES_CORE_GET_CORE_INFO;

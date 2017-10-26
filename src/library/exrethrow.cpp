@@ -1,4 +1,5 @@
 #include "exrethrow.hpp"
+#include <functional>
 #include <list>
 #include <iostream>
 #include <future>

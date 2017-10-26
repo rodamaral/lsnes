@@ -3,6 +3,7 @@
 #include "core/random.hpp"
 #include "library/command.hpp"
 #include "library/threads.hpp"
+#include <functional>
 
 input_queue::input_queue(command::group& _command)
 	: command(_command)

@@ -1,6 +1,7 @@
 #ifndef _library__loadlib__hpp__included__
 #define _library__loadlib__hpp__included__
 
+#include <functional>
 #include <string>
 #include <stdexcept>
 #include <map>

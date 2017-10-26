@@ -1,6 +1,7 @@
 #include "rrdata.hpp"
 #include "string.hpp"
 #include "minmax.hpp"
+#include <functional>
 #include <iostream>
 #include "library/directory.hpp"
 #include <sstream>

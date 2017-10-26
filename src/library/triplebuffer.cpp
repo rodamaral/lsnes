@@ -1,4 +1,5 @@
 #include "triplebuffer.hpp"
+#include <functional>
 #include <iostream>
 
 namespace triplebuffer

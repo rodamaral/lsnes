@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <map>
 #include <string>
+#include <functional>
 #include "threads.hpp"
 
 class http_request

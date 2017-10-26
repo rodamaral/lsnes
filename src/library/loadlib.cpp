@@ -1,4 +1,5 @@
 #include "loadlib.hpp"
+#include <functional>
 #include <sstream>
 #include <list>
 #include <set>

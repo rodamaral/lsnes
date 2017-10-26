@@ -1,6 +1,7 @@
 #ifndef _plat_wxwidgets__menu_loadrom__hpp__included__
 #define _plat_wxwidgets__menu_loadrom__hpp__included__
 
+#include <functional>
 #include <wx/string.h>
 #include <wx/wx.h>
 #include "interface/romtype.hpp"

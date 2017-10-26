@@ -1,4 +1,5 @@
 #include "interface/disassembler.hpp"
+#include <functional>
 #include <stdexcept>
 #include <iostream>
 

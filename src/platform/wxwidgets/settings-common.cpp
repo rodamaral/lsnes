@@ -1,3 +1,4 @@
+#include <functional>
 #include "platform/wxwidgets/settings-common.hpp"
 #include "core/instance.hpp"
 #include "core/instance-map.hpp"

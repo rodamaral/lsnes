@@ -1,6 +1,7 @@
 #ifndef _platform__wxwidgets__settings_common__hpp__included__
 #define _platform__wxwidgets__settings_common__hpp__included__
 
+#include <functional>
 #include <string>
 #include "platform/wxwidgets/platform.hpp"
 #include <wx/wx.h>

@@ -3,6 +3,7 @@
 #include "core/settings.hpp"
 #include "library/settingvar.hpp"
 
+#include <functional>
 #include <stdexcept>
 
 namespace

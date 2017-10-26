@@ -1,5 +1,6 @@
 #include "mathexpr.hpp"
 #include "string.hpp"
+#include <functional>
 #include <set>
 #include <map>
 

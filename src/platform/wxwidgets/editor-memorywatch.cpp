@@ -1,3 +1,4 @@
+#include <functional>
 #include <wx/wx.h>
 #include <wx/statline.h>
 #include <wx/event.h>

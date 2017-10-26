@@ -2,6 +2,7 @@
 #include "memorywatch-fb.hpp"
 #include "utf8.hpp"
 #include "minmax.hpp"
+#include <functional>
 
 namespace memorywatch
 {

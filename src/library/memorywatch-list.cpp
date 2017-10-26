@@ -1,4 +1,5 @@
 #include "memorywatch-list.hpp"
+#include <functional>
 
 namespace memorywatch
 {

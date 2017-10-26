@@ -3,6 +3,7 @@
 
 #include "core/dispatch.hpp"
 #include "library/recentfiles.hpp"
+#include <functional>
 #include <wx/string.h>
 #include <wx/wx.h>
 #include <map>

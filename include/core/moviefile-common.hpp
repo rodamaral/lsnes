@@ -1,6 +1,7 @@
 #ifndef _moviefile_common__hpp__included__
 #define _moviefile_common__hpp__included__
 
+#include <functional>
 #include "core/moviefile.hpp"
 #define DEFAULT_RTC_SECOND 1000000000ULL
 #define DEFAULT_RTC_SUBSECOND 0ULL

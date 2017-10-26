@@ -16,6 +16,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 #include "lsnes.hpp"
+#include <functional>
 #include <sstream>
 #include <iostream>
 #include <map>

@@ -1,4 +1,5 @@
 #include "opus-ogg.hpp"
+#include <functional>
 #include <cstring>
 #include "serialization.hpp"
 #include "minmax.hpp"

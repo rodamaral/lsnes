@@ -1,6 +1,7 @@
 #include "platform/wxwidgets/scrollbar.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "library/minmax.hpp"
+#include <functional>
 #include <iostream>
 
 scroll_bar::scroll_bar(wxWindow* parent, wxWindowID id, bool vertical)

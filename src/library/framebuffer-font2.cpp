@@ -1,6 +1,7 @@
 #include "framebuffer-font2.hpp"
 #include "range.hpp"
 #include "serialization.hpp"
+#include <functional>
 #include <cstring>
 #include <sstream>
 #include "zip.hpp"

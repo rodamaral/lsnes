@@ -9,6 +9,7 @@
 #include "core/rom.hpp"
 #include "core/ui-services.hpp"
 #include "library/keyboard.hpp"
+#include <functional>
 
 namespace
 {

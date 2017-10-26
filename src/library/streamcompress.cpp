@@ -1,5 +1,6 @@
 #include "streamcompress.hpp"
 #include "string.hpp"
+#include <functional>
 #include <stdexcept>
 
 namespace streamcompress

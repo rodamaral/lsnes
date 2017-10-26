@@ -38,6 +38,7 @@
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/window_mainwindow.hpp"
 
+#include <functional>
 #include <math.h>
 #include <cassert>
 

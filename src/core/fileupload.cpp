@@ -7,6 +7,7 @@
 #include "library/streamcompress.hpp"
 #include "library/string.hpp"
 
+#include <functional>
 #include <fstream>
 #include <boost/iostreams/categories.hpp>
 #include <boost/iostreams/copy.hpp>

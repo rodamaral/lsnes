@@ -11,6 +11,7 @@
 #include "core/window.hpp"
 #include "library/threads.hpp"
 
+#include <functional>
 #include <cstdlib>
 #include <cstdint>
 #include <cstddef>

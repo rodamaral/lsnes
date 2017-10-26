@@ -12,6 +12,7 @@
 #include "library/zip.hpp"
 #include "lua/bitmap.hpp"
 #include "library/threads.hpp"
+#include <functional>
 #include <vector>
 #include <sstream>
 

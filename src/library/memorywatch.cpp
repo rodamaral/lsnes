@@ -4,6 +4,7 @@
 #include "int24.hpp"
 #include "mathexpr-error.hpp"
 #include "mathexpr.hpp"
+#include <functional>
 #include <sstream>
 #include "string.hpp"
 

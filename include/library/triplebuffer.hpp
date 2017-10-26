@@ -1,6 +1,7 @@
 #ifndef _library_triplebuffer__hpp__included__
 #define _library_triplebuffer__hpp__included__
 
+#include <functional>
 #include <stdexcept>
 #include "threads.hpp"
 

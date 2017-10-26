@@ -5,6 +5,7 @@
 #include "lua-pin.hpp"
 #include "stateobject.hpp"
 #include "threads.hpp"
+#include <functional>
 #include <iostream>
 #include <cassert>
 

@@ -1,6 +1,8 @@
 #ifndef _library__lua_function__hpp__included__
 #define _library__lua_function__hpp__included__
 
+#include <functional>
+
 namespace lua
 {
 class parameters;

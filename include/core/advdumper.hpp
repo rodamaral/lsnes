@@ -5,6 +5,7 @@
 #include <set>
 #include <stdexcept>
 #include <iostream>
+#include <functional>
 
 #include "library/framebuffer.hpp"
 #include "library/dispatch.hpp"

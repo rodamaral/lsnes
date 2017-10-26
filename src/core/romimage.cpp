@@ -7,6 +7,7 @@
 #include "core/window.hpp"
 #include "library/memtracker.hpp"
 #include "library/zip.hpp"
+#include <functional>
 
 fileimage::image rom_image::null_img;
 fileimage::hash lsnes_image_hasher;

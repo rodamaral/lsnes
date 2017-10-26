@@ -1,3 +1,4 @@
+#include <functional>
 #include "platform/wxwidgets/menu_loadrom.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "core/dispatch.hpp"

@@ -1,6 +1,7 @@
 #ifndef _romimage__hpp__included__
 #define _romimage__hpp__included__
 
+#include <functional>
 #include "core/rom-small.hpp"
 #include "interface/romtype.hpp"
 #include "library/fileimage.hpp"

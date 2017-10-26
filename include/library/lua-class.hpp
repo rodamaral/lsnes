@@ -1,6 +1,7 @@
 #ifndef _library__lua_class__hpp__included__
 #define _library__lua_class__hpp__included__
 
+#include <functional>
 #include "lua-base.hpp"
 #include "lua-pin.hpp"
 

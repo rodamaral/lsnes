@@ -6,6 +6,7 @@
 #include "string.hpp"
 #include "threads.hpp"
 #include "zip.hpp"
+#include <functional>
 #include <iostream>
 #include <cstdlib>
 

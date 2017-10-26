@@ -9,6 +9,7 @@
 #include "threads.hpp"
 #include "streamcompress.hpp"
 #include <curl/curl.h>
+#include <functional>
 #include <cstring>
 #include <fstream>
 #include <boost/iostreams/categories.hpp>

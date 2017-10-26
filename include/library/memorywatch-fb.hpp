@@ -1,6 +1,7 @@
 #ifndef _library__memorywatch_fb__hpp__included__
 #define _library__memorywatch_fb__hpp__included__
 
+#include <functional>
 #include "framebuffer.hpp"
 #include "memorywatch.hpp"
 #include "mathexpr.hpp"

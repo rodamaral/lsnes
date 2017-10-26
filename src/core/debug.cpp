@@ -10,6 +10,7 @@
 #include "library/directory.hpp"
 #include "library/memoryspace.hpp"
 
+#include <functional>
 #include <stdexcept>
 #include <list>
 #include <map>

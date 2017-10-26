@@ -1,3 +1,4 @@
+#include <functional>
 #include "gamepad.hpp"
 #include "string.hpp"
 

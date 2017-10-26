@@ -5,6 +5,7 @@
 #include "library/string.hpp"
 #include "lua/lua.hpp"
 
+#include <functional>
 #include <map>
 #include <string>
 

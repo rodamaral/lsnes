@@ -2,6 +2,7 @@
 #define _library__memorywatch__hpp__included__
 
 #include "mathexpr.hpp"
+#include <functional>
 #include <list>
 #include <set>
 #include <map>

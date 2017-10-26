@@ -5,6 +5,7 @@
 #include "minmax.hpp"
 #include "zip.hpp"
 #include "directory.hpp"
+#include <functional>
 #include <sstream>
 
 namespace fileimage

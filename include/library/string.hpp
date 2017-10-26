@@ -1,6 +1,7 @@
 #ifndef _library__string__hpp__included__
 #define _library__string__hpp__included__
 
+#include <functional>
 #include <string>
 #include <sstream>
 #include <set>

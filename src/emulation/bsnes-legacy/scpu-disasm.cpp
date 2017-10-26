@@ -1,6 +1,7 @@
 #include "interface/disassembler.hpp"
 #include "library/hex.hpp"
 #include "library/string.hpp"
+#include <functional>
 #include <sstream>
 #include <iomanip>
 

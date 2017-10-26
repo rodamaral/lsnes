@@ -4,6 +4,7 @@
 #include "library/exrethrow.hpp"
 #include "library/keyboard.hpp"
 #include "library/threads.hpp"
+#include <functional>
 #include <deque>
 
 namespace command

@@ -2,6 +2,7 @@
 #define _plat_wxwidgets__menu_tracelog__hpp__included__
 
 #include "core/dispatch.hpp"
+#include <functional>
 #include <wx/string.h>
 #include <wx/wx.h>
 #include <map>

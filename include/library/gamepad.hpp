@@ -1,6 +1,7 @@
 #ifndef _library__gamepad__hpp__included__
 #define _library__gamepad__hpp__included__
 
+#include <functional>
 #include <cstdint>
 #include <set>
 #include "json.hpp"

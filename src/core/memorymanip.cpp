@@ -12,6 +12,7 @@
 #include "library/minmax.hpp"
 #include "library/string.hpp"
 
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <sstream>

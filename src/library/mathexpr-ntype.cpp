@@ -2,6 +2,7 @@
 #include "mathexpr-error.hpp"
 #include "mathexpr-format.hpp"
 #include "string.hpp"
+#include <functional>
 #include <iostream>
 #include <map>
 

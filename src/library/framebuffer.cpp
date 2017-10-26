@@ -5,6 +5,7 @@
 #include "string.hpp"
 #include "minmax.hpp"
 #include "utf8.hpp"
+#include <functional>
 #include <cstring>
 #include <iostream>
 #include <list>
