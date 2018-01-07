@@ -182,6 +182,7 @@ namespace
 	threads::thread* emulation_thread;
 	bool status_updated = false;
 	bool becoming_fullscreen = false;
+	wxSize current_resolution;
 
 	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(*lsnes_instance.settings,
 		"background-audio", "GUI‣Enable background audio", true);
@@ -934,7 +935,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 			dx = (screen.GetWidth() - tw) / 2;
 		if((signed)th < screen.GetHeight())
 			dy = (screen.GetHeight() - th) / 2;
-		if(becoming_fullscreen) {
+		if(becoming_fullscreen && current_resolution != screen) {
 			//Force panel to fullscreen.
 			SetSize(screen);
 			Move(0, 0);
@@ -1863,6 +1864,8 @@ void wxwin_mainwindow::enter_or_leave_fullscreen(bool fs)
 {
 	CHECK_UI_THREAD;
 	if(fs && !is_fs) {
+		//Save current resolution, so we can see the change.
+		current_resolution = main_window->GetSize();
 		if(spanel_shown)
 			toplevel->Detach(spanel);
 		spanel->Hide();
