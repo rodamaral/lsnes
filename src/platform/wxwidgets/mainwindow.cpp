@@ -928,6 +928,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	unsigned dx = 0, dy = 0;
 	if(is_fs) {
 		wxSize screen = main_window->GetSize();
+
 		double fss = min(1.0 * screen.GetWidth() / tw, 1.0 * screen.GetHeight() / th);
 		tw *= fss;
 		th *= fss;
@@ -935,11 +936,12 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 			dx = (screen.GetWidth() - tw) / 2;
 		if((signed)th < screen.GetHeight())
 			dy = (screen.GetHeight() - th) / 2;
-		if(becoming_fullscreen && current_resolution != screen) {
+		if(/*becoming_fullscreen && */current_resolution != screen) {
 			//Force panel to fullscreen.
 			SetSize(screen);
 			Move(0, 0);
-			becoming_fullscreen = false;
+			current_resolution = screen;
+			//becoming_fullscreen = false;
 		}
 		//Erase borders.
 		signed dx2 = dx + tw;
